@@ -1,0 +1,3 @@
+[submodule "source/tor_crypto/tor"]
+	path = source/tor_crypto/tor
+	url = /home/pospeselr/Code/tor/.git
