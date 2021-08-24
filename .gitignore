@@ -1,0 +1,5 @@
+source/gosling/Cargo.lock
+out/Debug
+out/Release
+out/RelWithDebInfo
+out/MinSizeRel

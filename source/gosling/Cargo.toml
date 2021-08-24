@@ -1,0 +1,13 @@
+[package]
+name = "Gosling"
+build = "build.rs"
+authors = ["Richard Pospesel <richard@blueprintforfreespeech.net>"]
+version = "0.0.1"
+
+[build-dependencies]
+cbindgen = "0.20.0"
+
+[lib]
+name = "gosling"
+path = "source/gosling.rs"
+crate-type = ["staticlib"]
