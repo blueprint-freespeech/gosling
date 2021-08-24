@@ -1,0 +1,72 @@
+@startuml
+participant Client
+participant "Introduction Server" as Server
+
+Client->Server: begin_handshake()
+
+    note over Server: Evaluate Protocol Version
+
+    alt Unsupported Version
+        Client<-Server: error
+        note over Server: Close Connection
+    end
+
+    note over Server: Check Client Block-List
+
+    alt Client Blocked
+        Client<-Server: error
+        note over Server: Close Connection
+    end
+
+Client<-Server: return
+
+Client->Server: send_client_proof()
+
+    alt Handshake Not Begun
+        Client<-Server: error
+        note over Server: Close Connection
+    end
+
+    note over Server: Evaluate Client Proof
+
+    alt Invalid Proof
+        Client<-Server: error
+        note over Server: Close Connection
+    end
+
+Server->Client: return
+
+Client->Server: request_endpoint
+
+    alt Client Not Authenticated
+        Client<-Server: error
+        note over Server: Close Connection
+    end
+
+    note over Server: Evaluate Endpoint
+    alt Invalid Endpoint
+        Client<-Server: return
+    end
+
+    note over Server: Evaluate Friend-List
+    alt Existing Friend
+        Client<-Server: return
+    end
+
+    note over Client, Server: Some time may pass as the Server considers request
+
+    alt Server Rejects Request
+        Client<-Server: error
+    end
+
+    note over Server: Adds the Client to Friend-List
+
+    Client<-Server: return
+
+    note over Server
+        Maintains connection to allow
+        client to make more requests
+    endnote
+
+    note over Client: Close Connection
+@enduml

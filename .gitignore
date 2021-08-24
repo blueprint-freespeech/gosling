@@ -3,3 +3,4 @@ out/Debug
 out/Release
 out/RelWithDebInfo
 out/MinSizeRel
+specs/*.png

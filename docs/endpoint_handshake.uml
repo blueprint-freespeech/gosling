@@ -1,0 +1,52 @@
+@startuml
+participant Client
+participant "Endpoint Server" as Server
+
+Client->Server: begin_handshake()
+
+    note over Server: Evaluate Protocol Version
+
+    alt Unsupported Version
+        Client<-Server: error
+        note over Server: Close Connection
+    end
+
+    note over Server: Check Client Allow-List
+
+    alt Client Blocked
+        Client<-Server: error
+        note over Server: Close Connection
+    end
+
+Client<-Server: return
+
+Client->Server: send_client_proof()
+
+    note over Server: Evaluate Client Proof
+
+    alt Invalid Proof
+        Client<-Server: error
+        note over Server: Close Connection
+    end
+
+Server->Client: return
+
+Client->Server: open_endpoint()
+    note over Server: Evaluate Endpoint
+
+    alt Invalid Service Endpoint
+        Client<-Server: error
+        note over Server: Close Connection
+    end
+
+    note over Server: Evaluate Channel
+
+    alt Channel Already Open
+        note over Server: Close Existing Connection on Channel
+    end
+
+    Client<-Server: return
+
+note over Client,Server: RPC session handed over to application
+
+@enduml
