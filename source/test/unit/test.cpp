@@ -6,5 +6,6 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-    ::rust_hello_world();
+    auto retval = ::rust_hello_world();
+    cout << "retval: " << retval << endl;
 }

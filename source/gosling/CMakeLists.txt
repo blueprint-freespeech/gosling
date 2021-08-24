@@ -29,6 +29,7 @@ add_custom_target(gosling_target
 add_library(gosling STATIC IMPORTED GLOBAL)
 # which depends on the above command target
 add_dependencies(gosling gosling_target)
+add_dependencies(gosling tor_crypto)
 
 # create include directory ahead of time or else cmake falls over
 set(GOSLING_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
@@ -49,3 +50,6 @@ if(LINUX)
     target_link_libraries(gosling INTERFACE pthread)
     target_link_libraries(gosling INTERFACE dl)
 endif()
+
+# tell gosling consumers to link againt tor_crypto
+target_link_libraries(gosling INTERFACE tor_crypto)
