@@ -8,4 +8,6 @@ int main(int argc, char** argv)
 {
     auto retval = ::rust_hello_world();
     cout << "retval: " << retval << endl;
+
+    ::another_func();
 }

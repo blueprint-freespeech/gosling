@@ -9,5 +9,4 @@ cbindgen = "0.20.0"
 
 [lib]
 name = "gosling"
-path = "source/gosling.rs"
 crate-type = ["staticlib"]
