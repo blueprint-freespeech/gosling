@@ -6,6 +6,9 @@ if(UNIX AND NOT APPLE)
     set(LINUX TRUE)
 endif()
 
+# enable tests
+enable_testing()
+
 project(gosling)
 
 # toggle to enable debug spew
