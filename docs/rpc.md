@@ -1,9 +1,9 @@
-# Gosling RPC v1
+# Honk RPC v1
 
-All Gosling communications occur via an asynchronous, bi-directional, dynamic, binary  RPC interface:
-- **asynchronous**: All method calls are asynchronous by default
-- **bi-directional**: Each side of a gosling interaction may simultaneously act as both a server and a client, regardless of who has connected to whom; both parties may call methods on the other
-- **dynamic**: The function interface is dynamic, in that it is up to the receiver to route method call requests. There is no pre-compiled interface definition.
+Honk RPC is an asynchronous, bi-directional, dynamic, binary remote procedure call interface:
+- **asynchronous**: All procedures are asynchronous by default
+- **bi-directional**: Each participant in a Honk session may simultaneously act as both a server and a client, regardless of who has connected to whom; both parties may call procedures on the other
+- **dynamic**: The procedure interface is dynamic, in that it is up to the receiver to route function call requests. There is no pre-compiled interface definition.
 - **binary**: Underlying messages are encoded in version 1.1 binary-json (BSON)[^1]
 
 ## Making Method Calls
@@ -16,8 +16,8 @@ All `message` objects have the following format.
 
 ```c++
 document message {
-    // the Gosling RPC version number
-    [[required]] byte gosling_rpc;
+    // the Honk RPC version number
+    [[required]] byte honk_rpc;
     // if true, error sections sent as a response to this message may also
     // return human-readable errors or additional debug data; when not
     // present assumed to be false
@@ -43,7 +43,7 @@ Each section contains the following in-line header:
 
 An `error_section` may be sent in response to a request, or due to an unrelated runtime error.
 
-Error codes are 32-bit signed integers. **Negative** error codes are reserved for **protocol errors**, while **positive** codes are reserved for per-application developer-defined **runtime errors**.
+Error codes are 32-bit signed integers. **Negative** error codes are reserved for **protocol errors**, while **positive** codes are reserved for per-application, developer-defined **runtime errors**.
 
 Negative (protocol) errors are fatal, and the sender must terminate the connection after sending one. Positive (runtime) errors are application specific, and should be handled accordingly by the application developer.
 
@@ -119,7 +119,7 @@ document request_section {
     // the version of the function to call; if not provided assumed to be 0
     [[optional]] byte version;
     // a document containing arguments for the function; not required for a
-    // method which has no arguments
+    // function which has no arguments
     [[optional]] document arguments;
 }
 ```
@@ -144,7 +144,7 @@ document response_section {
     // the cookie associated with a previous request this response document
     // refers to
     [[required]] uint64_t cookie;
-    // the current state of method execution
+    // the current state of function execution
     [[required]] request_state_t state;
     // the primitive or structured return from the request associated with
     // 'cookie'
@@ -152,40 +152,51 @@ document response_section {
 }
 ```
 
-## Built-in Methods
+## Built-in Functions
 
-Gosling RPC defines its own `gosling_rpc` namespace for the following built-in functions. The version for each function is `0` unless otherwise stated.
+Honk RPC defines its own `honk_rpc` namespace for the following built-in functions. The version for each function is `0` unless otherwise stated.
 
 ```c++
-namespace gosling_rpc {
-    // gets the maximum size message the receiver will accept
+namespace honk_rpc {
+    // Gets the maximum size message the receiver will accept
+    //
+    // returns: Largest message receiver will accept in bytes; a value
+    // of 0 indicates no maximum size
+    get_maximum_message_size() -> uint32_t;
+
+    // Try and set the maximum message size
+    //
+    // params:
+    // - uint32_t size: proposed maximum number of bytes a sent message can be;
+    //   a value of 0 indicates no maximum size
     //
     // returns: largest message receiver will accept in bytes
-    get_maximum_message_size() -> int32_t;
-    // try and set the maximum message size
-    // size: proposed maximum number of bytes a sent message can be
+    try_set_maximum_message_size(uint32_t size) -> uint32_t;
+
+    // Gets the amount of time in milliseconds the receiver is willing
+    // to wait between function calls before closing the connection
     //
-    // returns: largest message receiver will accept in bytes
-    try_set_maximum_message_size(int32_t size) -> int32_t;
-    // gets the amount of time in milliseconds the receiver is willing
-    // to wait before closing the connection
+    // returns: timeout period in milliseconds; a value of 0 indicates no
+    // timeout
+    get_timeout_period() -> uint32_t;
+
+    // Try and set the maximum amount of time the receiver is willing
+    // to wait between function calls  before closing the connection;
     //
-    // returns: timeout period in milliseconds
-    get_timeout_period() -> int32_t;
-    // try and set the maximum amount of time the receiver is willing
-    // to wait before closing the connection
+    // params:
+    // - uint32_t period: the number of milliseconds to wait before closing
+    //   the underlying a transport. A value of 0 indicates no timeout.
     //
-    // returns: timeout period in milliseconds
-    try_set_timeout_period(int32_t period) -> int32_t;
-    // a no-op method which solely resets the receivers wait timer
+    // returns: timeout period in milliseconds; a value of 0 indicates no
+    // timeout
+    try_set_timeout_period(uint32_t period) -> uint32_t;
+
+    // A no-op function which solely resets the receivers wait timer
     //
     // returns: the number of milliseconds since the last time the
     // the connection's wait timer was reset
-    keep_alive() -> int32_t;
+    keep_alive() -> uint32_t;
 }
 ```
 
 [^1]: https://bsonspec.org/spec.html
-
-TODO:
-- maybe remove 'gosling' references from this doc and make it its own thing
