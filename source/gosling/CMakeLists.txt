@@ -25,19 +25,21 @@ add_custom_target(gosling_target
     BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/${CARGO_PROFILE} ${CMAKE_CURRENT_BINARY_DIR}/include
 )
 
-add_test(NAME gosling_test
-    COMMAND cargo test ${CARGO_FLAGS}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-)
-set_tests_properties(gosling_test
-    PROPERTIES ENVIRONMENT "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}; RUSTFLAGS=${RUSTFLAGS}"
-)
-
 # create gosling library target
 add_library(gosling STATIC IMPORTED GLOBAL)
 # which depends on the above command target
 add_dependencies(gosling gosling_target)
 add_dependencies(gosling tor_crypto)
+
+add_test(NAME gosling_test
+    COMMAND cargo test ${CARGO_FLAGS}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+set(RUSTFLAGS "${RUSTFLAGS} -L ${CMAKE_CURRENT_BINARY_DIR}/../tor_crypto -l tor_crypto")
+set_tests_properties(gosling_test
+    PROPERTIES ENVIRONMENT "RUSTFLAGS=${RUSTFLAGS};CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}"
+)
+
 
 # create include directory ahead of time or else cmake falls over
 set(GOSLING_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
