@@ -1,5 +1,5 @@
 [package]
-name = "Gosling"
+name = "gosling"
 build = "build.rs"
 authors = ["Richard Pospesel <richard@blueprintforfreespeech.net>"]
 version = "0.0.1"
@@ -7,6 +7,10 @@ version = "0.0.1"
 [build-dependencies]
 cbindgen = "0.20.0"
 
+[dependencies]
+lazy_static = "1.4.0"
+
 [lib]
 name = "gosling"
 crate-type = ["staticlib"]
+
