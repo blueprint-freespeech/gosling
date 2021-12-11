@@ -38,7 +38,6 @@ impl ED25519PrivateKey {
 
     pub fn from_key_blob(key_blob: &str) -> ED25519PrivateKey {
         const ED25519_KEYBLOB_HEADER:&str = "ED25519-V3:";
-        // ensure
         const ED25519_KEYBLOB_BASE64_LENGTH:usize = 88;
         const ED25519_KEYBLOB_LENGTH:usize = ED25519_KEYBLOB_HEADER.len() + ED25519_KEYBLOB_BASE64_LENGTH;
         assert_eq!(key_blob.len(), ED25519_KEYBLOB_LENGTH);
@@ -46,21 +45,21 @@ impl ED25519PrivateKey {
 
         let base64:&str = &key_blob[ED25519_KEYBLOB_HEADER.len()..];
 
-        let maxByteCount = unsafe { base64_decode_maxsize(base64.len()) };
-        assert!(maxByteCount >= ED25519_PRIVATE_KEY_SIZE);
+        let max_byte_count = unsafe { base64_decode_maxsize(base64.len()) };
+        assert!(max_byte_count >= ED25519_PRIVATE_KEY_SIZE);
 
-        let mut privateKeyData= [0u8; ED25519_PRIVATE_KEY_SIZE];
+        let mut private_key_data= [0u8; ED25519_PRIVATE_KEY_SIZE];
 
-        let bytesWritten = unsafe {
+        let bytes_written = unsafe {
             base64_decode(
-                privateKeyData.as_mut_ptr() as *mut i8,
-                privateKeyData.len(),
+                private_key_data.as_mut_ptr() as *mut i8,
+                private_key_data.len(),
                 base64.as_ptr() as *const i8,
                 base64.len())
         };
-        assert_eq!(bytesWritten, ED25519_PRIVATE_KEY_SIZE as c_int);
+        assert_eq!(bytes_written, ED25519_PRIVATE_KEY_SIZE as c_int);
 
-        return ED25519PrivateKey{data: privateKeyData};
+        return ED25519PrivateKey{data: private_key_data};
     }
 }
 
