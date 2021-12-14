@@ -12,7 +12,7 @@ Each node has three components: a **client**, an **introduction server**, and a 
 - **Introduction Server** - A node's onion-service which listens for requests coming from clients who have never connected before that wish to become 'friends'. The introduction server and a client perform a handshake and exchange information required to reach the introduction server's endpoint server(s)[^1]. An introduction server may serve as the introduction server for mutltiple endpoint applications.
 - **Endpoint Server** - A node's onion-service(s) which listen for connections coming from authenticated clients. The route to this server is protected with tor client authentication[^2]. A node may have multiple simultaneous endpoint servers (each with a different onion-service id), as tor only supports a finite number of authenticated clients per onion service.
 
-Nodes communicate with each other using a BSON-based RPC protocol[^3]. After a client connects and successfully authenticates with an endpoint server, we exit the Gosling handshake state machine and control over the RPC session is handed over to the endpoint's application. The endpoint application may then the RPC session and communicate over the underlying TCP socket directly.
+Nodes communicate with each other using a BSON-based RPC protocol[^3]. After a client connects and successfully authenticates with an endpoint server, we exit the Gosling handshake state machine and control over the RPC session is handed over to the endpoint's application. The endpoint application may then optionally end the RPC session and communicate over the underlying TCP socket directly.
 
 # Gosling Handshakes
 
@@ -128,8 +128,8 @@ proof = SHA256(domain_separator +
 The **'+'** operator here indicates concatenation. The parameters are defined as:
 
 - **domain_separator** : an ASCII string (without a null terminator); for the introduction handshake, this string is "gosling-introduction"; for the endpoint handshake, this string is "gosling-endpoint"
-- **client_onion_id** : an ASCII string (with a null terminator); the base-32 encoded onion service id (without the ".onion" suffix) of the connecting client's introduction server
-- **server_onion_id** : an ASCII string (with a null terminator); the base-32 encoded onion service id (without the ".onion" suffix) of the connected server (ie: when connected to the introduction server, the introduction server's onion service id is used; when connected to an endpoint server, that endpoint server's onion service id is used)
+- **client_onion_id** : an ASCII string (without a null terminator); the base-32 encoded onion service id (without the ".onion" suffix) of the connecting client's introduction server
+- **server_onion_id** : an ASCII string (without a null terminator); the base-32 encoded onion service id (without the ".onion" suffix) of the connected server (ie: when connected to the introduction server, the introduction server's onion service id is used; when connected to an endpoint server, that endpoint server's onion service id is used)
 - **client_cookie** : cryptographically-randomly generated 32 byte client cookie
 - **server_cookie** : cryptographically-randomly generated 32 byte server cookie
 
