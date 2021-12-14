@@ -10,7 +10,7 @@ Each node has three components: a **client**, an **introduction server**, and a 
 
 - **Client**  - A node's component making an outgoing connection to another node
 - **Introduction Server** - A node's onion-service which listens for requests coming from clients who have never connected before that wish to become 'friends'. The introduction server and a client perform a handshake and exchange information required to reach the introduction server's endpoint server(s)[^1]. An introduction server may serve as the introduction server for mutltiple endpoint applications.
--**Endpoint Server** - A node's onion-service(s) which listen for connections coming from authenticated clients. The route to this server is protected with tor client authentication[^2]. A node may have multiple simultaneous endpoint servers (each with a different onion-service id), as tor only supports a finite number of authenticated clients per onion service.
+- **Endpoint Server** - A node's onion-service(s) which listen for connections coming from authenticated clients. The route to this server is protected with tor client authentication[^2]. A node may have multiple simultaneous endpoint servers (each with a different onion-service id), as tor only supports a finite number of authenticated clients per onion service.
 
 Nodes communicate with each other using a BSON-based RPC protocol[^3]. After a client connects and successfully authenticates with an endpoint server, we exit the Gosling handshake state machine and control over the RPC session is handed over to the endpoint's application. The endpoint application may then the RPC session and communicate over the underlying TCP socket directly.
 
