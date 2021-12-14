@@ -1,10 +1,3 @@
-
-int32_t stub_func()
-{
-    puts("Inside stub_func()");
-    return 42;
-}
-
 void *tor_malloc_(size_t size)
 {
     return malloc(size);
