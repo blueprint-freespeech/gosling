@@ -19,11 +19,12 @@ add_custom_target(tor_orconfig DEPENDS ${TOR_ROOT_DIR}/orconfig.h)
 add_dependencies(tor_orconfig tor_configure)
 # tor code may not be compiled with NDEBUG defined
 add_definitions(-UNDEBUG)
+# compile tor to not require openssl for sha512
+add_definitions(-DED25519_CUSTOMHASH)
 
 add_library(tor_crypto STATIC
     precomp.c
-    ${TOR_SRC_DIR}/ext/ed25519/donna/ed25519_tor.c
-    tor_stubs.c)
+    ${TOR_SRC_DIR}/ext/ed25519/donna/ed25519_tor.c)
 target_precompile_headers(tor_crypto PRIVATE precomp.h)
 
 add_dependencies(tor_crypto tor_orconfig)
