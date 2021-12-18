@@ -1,5 +1,7 @@
 #[macro_use]
 extern crate lazy_static;
+extern crate crypto;
+extern crate data_encoding;
 
 mod ffi;
 mod tor_crypto;

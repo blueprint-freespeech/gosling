@@ -23,8 +23,6 @@ add_definitions(-UNDEBUG)
 add_library(tor_crypto STATIC
     precomp.c
     ${TOR_SRC_DIR}/ext/ed25519/donna/ed25519_tor.c
-    ${TOR_SRC_DIR}/lib/encoding/binascii.c
-    ${TOR_SRC_DIR}/lib/crypt_ops/crypto_digest_openssl.c
     tor_stubs.c)
 target_precompile_headers(tor_crypto PRIVATE precomp.h)
 
