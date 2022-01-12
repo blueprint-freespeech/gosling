@@ -11,8 +11,9 @@ cbindgen = "0.20.0"
 lazy_static = "1.4.0"
 rust-crypto = "^0.2"
 data-encoding = "2.3.2"
+anyhow = "1.0"
+
 
 [lib]
 name = "gosling"
 crate-type = ["staticlib"]
-

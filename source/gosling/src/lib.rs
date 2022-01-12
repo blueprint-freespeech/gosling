@@ -2,6 +2,7 @@
 extern crate lazy_static;
 extern crate crypto;
 extern crate data_encoding;
+extern crate anyhow;
 
 mod ffi;
 mod tor_crypto;
