@@ -6,11 +6,9 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-    auto retval = ::rust_hello_world();
-    cout << "retval: " << retval << endl;
-
     gosling_error* perror = nullptr;
-    ::gosling_example_work(&perror);
+    auto retval = ::gosling_example_work(&perror);
+    cout << "retval: " << retval << endl;
 
     cout << "perror: " << (void*)perror << endl;
 
