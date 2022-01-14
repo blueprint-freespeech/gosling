@@ -5,7 +5,7 @@ use std::panic;
 use std::ffi::CString;
 use std::os::raw::c_char;
 use std::sync::Mutex;
-
+use anyhow::{bail, Result};
 use object_registry::ObjectRegistry;
 
 /// Error Handling
@@ -65,33 +65,49 @@ pub extern "C" fn gosling_error_free(error: *mut GoslingError) -> () {
     ERROR_REGISTRY.lock().unwrap().remove(key);
 }
 
-/// This function encapsulates the process of converting a panic to a GoslingError object
+/// Wrapper around rust code which may panic or return a failing Result to be used at FFI boundaries.
+/// Converts panics or error Results into GoslingErrors if a memory location is provided.
 ///
-/// @param result: a Result object returned by panic::catch_unwind
-/// @param default: the default value to return in the event an error occurs
-/// @param out_error: pointer to pointer to GoslingError 'struct' for the C FFI
-fn handle_result<D,E: Debug>(result: std::result::Result<D,E>, default: D, out_error: *mut *mut GoslingError) -> D {
-    match result {
-        Ok(retval) => return retval,
+/// @param default : The default value to return in the event of failure
+/// @param out_error : A pointer to pointer to GoslingError 'struct' for the C FFI
+/// @param closure : The functionality we need to encapsulate behind the error handling logic
+/// @return : The result of closure() on success, or the value of default on failure.
+fn translate_failures<R,F>(default: R, out_error: *mut *mut GoslingError, closure:F) -> R where F: FnOnce() -> Result<R> + panic::UnwindSafe {
+    match(panic::catch_unwind(closure)) {
+        // handle success
+        Ok(Ok(retval)) => {
+            return retval;
+        },
+        // handle runtime error
+        Ok(Err(err)) => {
+            if !out_error.is_null() {
+                // populate error with runtime error message
+                let key = ERROR_REGISTRY.lock().unwrap().insert(ErrorMessage::new(format!("Runtime Error: {:?}", err).as_str()));
+                unsafe {*out_error = (key as *mut GoslingError);};
+            }
+            return default;
+        },
+        // handle panic
         Err(err) => {
-            if out_error.is_null() {
-                return default;
+            if !out_error.is_null() {
+                // populate error with panic message
+                let key = ERROR_REGISTRY.lock().unwrap().insert(ErrorMessage::new("Panic Occurred"));
+                unsafe {*out_error = (key as *mut GoslingError);};
             }
-            let key = ERROR_REGISTRY.lock().unwrap().insert(ErrorMessage::new(format!("Caught Unwind: {:?}", err).as_str()));
-            unsafe {
-                *out_error = (key as *mut GoslingError);
-            }
+            return default;
         },
     }
-    return default;
 }
 
 #[no_mangle]
-pub extern "C" fn gosling_example_work(out_error: *mut *mut GoslingError) -> () {
-    let result = panic::catch_unwind(|| {
-
-    });
-    return handle_result(result, (), out_error);
+pub extern "C" fn gosling_example_work(out_error: *mut *mut GoslingError) -> i32 {
+    let x: i32 = 100i32;
+    translate_failures(0, out_error, || -> Result<i32> {
+        let y = 2*x;
+        // bail!("oh god why");
+        // panic!("panic!");
+        Ok(y)
+    })
 }
 
 pub struct GoslingED25519PrivateKey;
