@@ -1,11 +1,10 @@
 use std::ptr;
 use std::str;
-use std::fmt::Debug;
 use std::panic;
 use std::ffi::CString;
 use std::os::raw::c_char;
 use std::sync::Mutex;
-use anyhow::{bail, Result};
+use anyhow::{Result};
 use object_registry::ObjectRegistry;
 use define_registry;
 
@@ -34,7 +33,7 @@ pub struct GoslingError;
 ///  lifetime is tied to the source
 pub extern "C" fn gosling_error_get_message(error: *const GoslingError) -> *const c_char {
     if !error.is_null() {
-        let key = (error as usize);
+        let key = error as usize;
 
         let registry = error_message_registry();
         if registry.contains_key(key) {
@@ -60,7 +59,7 @@ pub extern "C" fn gosling_error_free(error: *mut GoslingError) -> () {
         return;
     }
 
-    let key = (error as usize);
+    let key = error as usize;
     error_message_registry().remove(key);
 }
 
@@ -72,7 +71,7 @@ pub extern "C" fn gosling_error_free(error: *mut GoslingError) -> () {
 /// @param closure : The functionality we need to encapsulate behind the error handling logic
 /// @return : The result of closure() on success, or the value of default on failure.
 fn translate_failures<R,F>(default: R, out_error: *mut *mut GoslingError, closure:F) -> R where F: FnOnce() -> Result<R> + panic::UnwindSafe {
-    match(panic::catch_unwind(closure)) {
+    match panic::catch_unwind(closure) {
         // handle success
         Ok(Ok(retval)) => {
             return retval;
@@ -82,7 +81,7 @@ fn translate_failures<R,F>(default: R, out_error: *mut *mut GoslingError, closur
             if !out_error.is_null() {
                 // populate error with runtime error message
                 let key = error_message_registry().insert(ErrorMessage::new(format!("Runtime Error: {:?}", err).as_str()));
-                unsafe {*out_error = (key as *mut GoslingError);};
+                unsafe {*out_error = key as *mut GoslingError;};
             }
             return default;
         },
@@ -91,7 +90,7 @@ fn translate_failures<R,F>(default: R, out_error: *mut *mut GoslingError, closur
             if !out_error.is_null() {
                 // populate error with panic message
                 let key = error_message_registry().insert(ErrorMessage::new("Panic Occurred"));
-                unsafe {*out_error = (key as *mut GoslingError);};
+                unsafe {*out_error = key as *mut GoslingError;};
             }
             return default;
         },

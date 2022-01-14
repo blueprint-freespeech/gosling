@@ -1,5 +1,5 @@
 use std::convert::TryInto;
-use std::{str, ptr};
+use std::str;
 use std::os::raw::{c_char, c_uchar, c_int, c_void};
 use std::sync::Mutex;
 use crypto::digest::Digest;
@@ -89,23 +89,23 @@ extern "C" fn crypto_digest512(digest: *mut c_char, m: *const c_char, len: usize
 }
 
 #[no_mangle]
-extern "C" fn memwipe(mem: *mut c_void, byte: u8, sz: usize) -> () {
+extern "C" fn memwipe(_mem: *mut c_void, _byte: u8, _sz: usize) -> () {
     panic!("no-op memwipe called");
 }
 
 #[no_mangle]
-extern "C" fn crypto_strongest_rand(out: *mut u8, out_len: usize) -> () {
+extern "C" fn crypto_strongest_rand(_out: *mut u8, _out_len: usize) -> () {
     panic!("no-op crypto_strongest_rand called");
 }
 
 #[no_mangle]
-extern "C" fn RAND_bytes(buf: *mut c_uchar, num: c_int) -> c_int {
+extern "C" fn RAND_bytes(_buf: *mut c_uchar, _num: c_int) -> c_int {
     panic!("no-op RAND_bytes called");
 }
 
 // see https://github.com/torproject/torspec/blob/main/rend-spec-v3.txt#L2143
 fn calc_truncated_checksum(public_key: &[u8]) -> Result<[u8; TRUNCATED_CHECKSUM_SIZE]> {
-    if (public_key.len() != ED25519_PUBLIC_KEY_SIZE) {
+    if public_key.len() != ED25519_PUBLIC_KEY_SIZE {
         bail!("calc_truncated_checksum expects byte array of length '{}'; received array of length '{}'", ED25519_PUBLIC_KEY_SIZE, public_key.len());
     }
 
@@ -147,7 +147,7 @@ pub struct V3OnionServiceId {
 
 impl Ed25519PrivateKey {
     pub fn from_raw(raw: &[u8]) -> Result<Ed25519PrivateKey> {
-        if (raw.len() != ED25519_PRIVATE_KEY_SIZE) {
+        if raw.len() != ED25519_PRIVATE_KEY_SIZE {
             bail!("Ed25519PrivateKey::from_raw expects byte array of length '{}'; received array of length '{}'", ED25519_PRIVATE_KEY_SIZE, raw.len());
         }
         return Ok(Ed25519PrivateKey{data: raw.try_into()?});
@@ -156,18 +156,18 @@ impl Ed25519PrivateKey {
     pub fn from_key_blob(key_blob: &str) -> Result<Ed25519PrivateKey> {
         const ED25519_KEYBLOB_BASE64_LENGTH:usize = 88;
         const ED25519_KEYBLOB_LENGTH:usize = ED25519_KEYBLOB_HEADER.len() + ED25519_KEYBLOB_BASE64_LENGTH;
-        if (key_blob.len() != ED25519_KEYBLOB_LENGTH) {
+        if key_blob.len() != ED25519_KEYBLOB_LENGTH {
             bail!("Ed25519PrivateKey::from_key_blob expects string of length '{}'; received '{}' with length '{}'", ED25519_KEYBLOB_LENGTH, &key_blob, key_blob.len());
         }
 
-        if (!key_blob.starts_with(&ED25519_KEYBLOB_HEADER)) {
+        if !key_blob.starts_with(&ED25519_KEYBLOB_HEADER) {
             bail!("Ed25519PrivateKey::from_key_blob expects string that begins with '{}'; received '{}'", &ED25519_KEYBLOB_HEADER, &key_blob);
         }
 
         let base64_key:&str = &key_blob[ED25519_KEYBLOB_HEADER.len()..];
         let private_key_data = BASE64.decode(base64_key.as_bytes())?;
 
-        if (private_key_data.len() != ED25519_PRIVATE_KEY_SIZE) {
+        if private_key_data.len() != ED25519_PRIVATE_KEY_SIZE {
             bail!("Ed25519PrivateKey::from_key_blob expected decoded private key length '{}'; actual '{}'", ED25519_PRIVATE_KEY_SIZE, private_key_data.len());
         }
 
@@ -192,7 +192,7 @@ impl Ed25519PrivateKey {
                 public_key.get_data().as_ptr() as *const c_uchar)
         };
 
-        if (result != (0 as c_int)) {
+        if result != (0 as c_int) {
             bail!("Ed25519PrivateKey::sign_message_ex call to ed25519_donna_sign() returned unexpected value '{}', expected '0'", result);
         }
 
@@ -219,7 +219,7 @@ impl PartialEq for Ed25519PrivateKey {
 
 impl Ed25519PublicKey {
     pub fn from_raw(raw: &[u8]) -> Result<Ed25519PublicKey> {
-        if (raw.len() != ED25519_PUBLIC_KEY_SIZE) {
+        if raw.len() != ED25519_PUBLIC_KEY_SIZE {
             bail!("Ed25519PublicKey::from_raw expects byte array of length '{}'; received array of length '{}'", ED25519_PUBLIC_KEY_SIZE, raw.len());
         }
 
@@ -230,7 +230,7 @@ impl Ed25519PublicKey {
         // decode base32 encoded service id
         let mut decoded_service_id = [0u8; V3_ONION_SERVICE_ID_RAW_SIZE];
         let decoded_byte_count = BASE32.decode_mut(service_id.get_data(), &mut decoded_service_id).unwrap();
-        if (decoded_byte_count != V3_ONION_SERVICE_ID_RAW_SIZE) {
+        if decoded_byte_count != V3_ONION_SERVICE_ID_RAW_SIZE {
             bail!("Ed25519PublicKey::from_service_id decoded byte count is '{}', expected '{}'", decoded_byte_count, V3_ONION_SERVICE_ID_RAW_SIZE);
         }
 
@@ -246,7 +246,7 @@ impl Ed25519PublicKey {
                 public_key_data.as_mut_ptr() as *mut c_uchar,
                 private_key.get_data().as_ptr() as *const c_uchar)
         };
-        if (result != (0 as c_int)) {
+        if result != (0 as c_int) {
             bail!("Ed25519PublicKey::from_private_key call to ed25519_donna_pubkey() returned unexpected value '{}', expected '0'", result);
         }
 
@@ -268,7 +268,7 @@ impl PartialEq for Ed25519PublicKey {
 
 impl Ed25519Signature {
     pub fn from_raw(raw: &[u8]) -> Result<Ed25519Signature> {
-        if (raw.len() != ED25519_SIGNATURE_SIZE) {
+        if raw.len() != ED25519_SIGNATURE_SIZE {
             bail!("Ed25519Signature::from_raw input array has incorrect length {}; expected length {}", raw.len(), ED25519_SIGNATURE_SIZE);
         }
         return Ok(Ed25519Signature{data: raw.try_into()?});
@@ -282,12 +282,12 @@ impl Ed25519Signature {
                 message.len(),
                 public_key.get_data().as_ptr() as *const c_uchar)
         };
-        if (result != (0 as c_int) &&
-            result != (-1 as c_int)) {
-            bail!("Ed25519Signature::verify call to ed25519_donna_open() returned unexpected value '{}', expected '0' or '-1'", result);
-        }
 
-        return Ok(result == (0 as c_int));
+        match result {
+            0 => Ok(true),
+            -1 => Ok(false),
+            _ => bail!("Ed25519Signature::verify call to ed25519_donna_open() returned unexpected value '{}', expected '0' or '-1'", result),
+        }
     }
 
     pub fn get_data(&self) -> &[u8] {
@@ -305,7 +305,7 @@ impl PartialEq for Ed25519Signature {
 
 impl V3OnionServiceId {
     pub fn from_string(service_id: &str) -> Result<V3OnionServiceId> {
-        if (!V3OnionServiceId::is_valid(&service_id)?) {
+        if !V3OnionServiceId::is_valid(&service_id)? {
             bail!("{} is not a valid v3 onion service id", &service_id);
         }
         return Ok(V3OnionServiceId{data: service_id.to_uppercase().as_bytes().try_into()?});
@@ -328,7 +328,7 @@ impl V3OnionServiceId {
     }
 
     pub fn is_valid(service_id: &str) -> Result<bool> {
-        if (service_id.len() != V3_ONION_SERVICE_ID_LENGTH) {
+        if service_id.len() != V3_ONION_SERVICE_ID_LENGTH {
             return Ok(false);
         }
 
@@ -337,7 +337,7 @@ impl V3OnionServiceId {
 
         // decode base32 encoded service id
         let decoded_byte_count = BASE32.decode_len(bytes.len())?;
-        if (decoded_byte_count != V3_ONION_SERVICE_ID_RAW_SIZE) {
+        if decoded_byte_count != V3_ONION_SERVICE_ID_RAW_SIZE {
             return Ok(false);
         }
 
@@ -345,18 +345,18 @@ impl V3OnionServiceId {
         let decoded_byte_count = BASE32.decode_mut(&bytes, &mut decoded_service_id).unwrap();
 
         // ensure right size
-        if (decoded_byte_count != V3_ONION_SERVICE_ID_RAW_SIZE) {
+        if decoded_byte_count != V3_ONION_SERVICE_ID_RAW_SIZE {
             return Ok(false);
         }
         // ensure correct version
-        if (decoded_service_id[V3_ONION_SERVICE_ID_VERSION_OFFSET] != 0x03) {
+        if decoded_service_id[V3_ONION_SERVICE_ID_VERSION_OFFSET] != 0x03 {
             return Ok(false);
         }
 
         // ensure checksum is correct
         let truncated_checksum = calc_truncated_checksum(&decoded_service_id[0..ED25519_PUBLIC_KEY_SIZE])?;
-        if (truncated_checksum[0] != decoded_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 0] ||
-            truncated_checksum[1] != decoded_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 1]) {
+        if truncated_checksum[0] != decoded_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 0] ||
+           truncated_checksum[1] != decoded_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 1] {
             return Ok(false);
         }
 
