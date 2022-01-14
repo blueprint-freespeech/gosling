@@ -10,6 +10,7 @@ use data_encoding::{BASE32, BASE64};
 use anyhow::{bail, Result};
 
 use object_registry::ObjectRegistry;
+use define_registry;
 
 /// The number of bytes in an ed25519 secret key
 pub const ED25519_PRIVATE_KEY_SIZE: usize = 64;
@@ -42,9 +43,7 @@ extern "C" {
 
 // ed25510-hash-custom implementation
 
-lazy_static! {
-    static ref SHA512_REGISTRY: Mutex<ObjectRegistry<Sha512>> = Mutex::new(ObjectRegistry::new());
-}
+define_registry!{Sha512}
 
 const DIGEST_SHA512: c_int = 2;
 const SHA512_BYTES: usize = 512/8;
@@ -52,20 +51,20 @@ const SHA512_BYTES: usize = 512/8;
 #[no_mangle]
 extern "C" fn crypto_digest512_new(algorithm: c_int) -> *mut c_void {
     assert_eq!(algorithm, DIGEST_SHA512);
-    let key = SHA512_REGISTRY.lock().unwrap().insert(Sha512::new());
+    let key = sha512_registry().insert(Sha512::new());
     return key as *mut c_void;
 }
 
 #[no_mangle]
 extern "C" fn crypto_digest_add_bytes(digest: *mut c_void, data: *const c_char, len: usize) -> () {
-    let mut registry = SHA512_REGISTRY.lock().unwrap();
+    let mut registry = sha512_registry();
     let hasher = registry.get_mut(digest as usize).unwrap();
     hasher.input(unsafe {std::slice::from_raw_parts(data as *const u8, len)});
 }
 
 #[no_mangle]
 extern "C" fn crypto_digest_get_digest(digest: *mut c_void, out: *mut c_char, out_len: usize) -> () {
-    let mut registry = SHA512_REGISTRY.lock().unwrap();
+    let mut registry = sha512_registry();
     let hasher = registry.get_mut(digest as usize).unwrap();
 
     assert_eq!(SHA512_BYTES, hasher.output_bytes());
@@ -75,7 +74,7 @@ extern "C" fn crypto_digest_get_digest(digest: *mut c_void, out: *mut c_char, ou
 
 #[no_mangle]
 extern "C" fn crypto_digest_free_(digest: *mut c_void) -> () {
-    SHA512_REGISTRY.lock().unwrap().remove(digest as usize);
+    sha512_registry().remove(digest as usize);
 }
 
 #[no_mangle]

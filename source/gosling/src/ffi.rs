@@ -7,6 +7,7 @@ use std::os::raw::c_char;
 use std::sync::Mutex;
 use anyhow::{bail, Result};
 use object_registry::ObjectRegistry;
+use define_registry;
 
 /// Error Handling
 
@@ -20,9 +21,7 @@ impl ErrorMessage {
     }
 }
 
-lazy_static! {
-    static ref ERROR_REGISTRY: Mutex<ObjectRegistry<ErrorMessage>> = Mutex::new(ObjectRegistry::new());
-}
+define_registry!{ErrorMessage}
 
 // exported C type
 pub struct GoslingError;
@@ -37,7 +36,7 @@ pub extern "C" fn gosling_error_get_message(error: *const GoslingError) -> *cons
     if !error.is_null() {
         let key = (error as usize);
 
-        let registry = ERROR_REGISTRY.lock().unwrap();
+        let registry = error_message_registry();
         if registry.contains_key(key) {
             let obj = registry.get(key);
             match obj {
@@ -62,7 +61,7 @@ pub extern "C" fn gosling_error_free(error: *mut GoslingError) -> () {
     }
 
     let key = (error as usize);
-    ERROR_REGISTRY.lock().unwrap().remove(key);
+    error_message_registry().remove(key);
 }
 
 /// Wrapper around rust code which may panic or return a failing Result to be used at FFI boundaries.
@@ -82,7 +81,7 @@ fn translate_failures<R,F>(default: R, out_error: *mut *mut GoslingError, closur
         Ok(Err(err)) => {
             if !out_error.is_null() {
                 // populate error with runtime error message
-                let key = ERROR_REGISTRY.lock().unwrap().insert(ErrorMessage::new(format!("Runtime Error: {:?}", err).as_str()));
+                let key = error_message_registry().insert(ErrorMessage::new(format!("Runtime Error: {:?}", err).as_str()));
                 unsafe {*out_error = (key as *mut GoslingError);};
             }
             return default;
@@ -91,7 +90,7 @@ fn translate_failures<R,F>(default: R, out_error: *mut *mut GoslingError, closur
         Err(err) => {
             if !out_error.is_null() {
                 // populate error with panic message
-                let key = ERROR_REGISTRY.lock().unwrap().insert(ErrorMessage::new("Panic Occurred"));
+                let key = error_message_registry().insert(ErrorMessage::new("Panic Occurred"));
                 unsafe {*out_error = (key as *mut GoslingError);};
             }
             return default;
@@ -101,12 +100,11 @@ fn translate_failures<R,F>(default: R, out_error: *mut *mut GoslingError, closur
 
 #[no_mangle]
 pub extern "C" fn gosling_example_work(out_error: *mut *mut GoslingError) -> i32 {
-    let x: i32 = 100i32;
+
     translate_failures(0, out_error, || -> Result<i32> {
-        let y = 2*x;
         // bail!("oh god why");
         // panic!("panic!");
-        Ok(y)
+        Ok(123)
     })
 }
 

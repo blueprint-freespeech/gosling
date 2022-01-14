@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
 use std::option::Option;
 
+// An ObjectRegistry<T> maintains ownership of objects and maps them to usize handles
+// which can be safely handed out to external consumers
 pub struct ObjectRegistry<T> {
     map: BTreeMap<usize, T>,
     next_id: usize,
@@ -36,3 +38,21 @@ impl<T> ObjectRegistry<T> {
         return self.map.get_mut(&key);
     }
 }
+
+#[macro_export]
+macro_rules! define_registry {
+    ($type:ty) => {
+        paste::paste! {
+            // statically allocates our object registry
+            lazy_static! {
+                static ref [<$type:snake:upper _REGISTRY>]: Mutex<ObjectRegistry<$type>> = Mutex::new(ObjectRegistry::new());
+            }
+
+            // get a mutex guard wrapping the object registry
+            pub fn [<$type:snake _registry>]<'a>() -> std::sync::MutexGuard<'a, ObjectRegistry<$type>> {
+                [<$type:snake:upper _REGISTRY>].lock().unwrap()
+            }
+        }
+    }
+}
+
