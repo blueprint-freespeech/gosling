@@ -33,7 +33,8 @@ const TRUNCATED_CHECKSUM_SIZE: usize = 2;
 /// key klob header string
 const ED25519_KEYBLOB_HEADER: &str = "ED25519-V3:";
 
-// imports from tor_crypto
+/// imports from tor_crypto
+/// cbindgen:ignore
 extern "C" {
     // ed25519 functions
     fn ed25519_donna_pubkey(pk: *mut c_uchar, sk: *const c_uchar) -> c_int;
