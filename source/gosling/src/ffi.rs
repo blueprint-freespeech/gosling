@@ -10,17 +10,17 @@ use define_registry;
 
 /// Error Handling
 
-pub struct ErrorMessage {
-    data: CString,
+pub struct Error {
+    message: CString,
 }
 
-impl ErrorMessage {
-    pub fn new(message: &str) -> ErrorMessage {
-        return ErrorMessage{data: CString::new(message).unwrap()};
+impl Error {
+    pub fn new(message: &str) -> Error {
+        return Error{message: CString::new(message).unwrap()};
     }
 }
 
-define_registry!{ErrorMessage}
+define_registry!{Error}
 
 // exported C type
 pub struct GoslingError;
@@ -35,11 +35,11 @@ pub extern "C" fn gosling_error_get_message(error: *const GoslingError) -> *cons
     if !error.is_null() {
         let key = error as usize;
 
-        let registry = error_message_registry();
+        let registry = error_registry();
         if registry.contains_key(key) {
             let obj = registry.get(key);
             match obj {
-                Some(x) => return x.data.as_ptr(),
+                Some(x) => return x.message.as_ptr(),
                 _ => (),
             }
         }
@@ -60,7 +60,7 @@ pub extern "C" fn gosling_error_free(error: *mut GoslingError) -> () {
     }
 
     let key = error as usize;
-    error_message_registry().remove(key);
+    error_registry().remove(key);
 }
 
 /// Wrapper around rust code which may panic or return a failing Result to be used at FFI boundaries.
@@ -80,7 +80,7 @@ fn translate_failures<R,F>(default: R, out_error: *mut *mut GoslingError, closur
         Ok(Err(err)) => {
             if !out_error.is_null() {
                 // populate error with runtime error message
-                let key = error_message_registry().insert(ErrorMessage::new(format!("Runtime Error: {:?}", err).as_str()));
+                let key = error_registry().insert(Error::new(format!("Runtime Error: {:?}", err).as_str()));
                 unsafe {*out_error = key as *mut GoslingError;};
             }
             return default;
@@ -89,7 +89,7 @@ fn translate_failures<R,F>(default: R, out_error: *mut *mut GoslingError, closur
         Err(err) => {
             if !out_error.is_null() {
                 // populate error with panic message
-                let key = error_message_registry().insert(ErrorMessage::new("Panic Occurred"));
+                let key = error_registry().insert(Error::new("Panic Occurred"));
                 unsafe {*out_error = key as *mut GoslingError;};
             }
             return default;
@@ -109,7 +109,6 @@ pub extern "C" fn gosling_example_work(out_error: *mut *mut GoslingError) -> i32
 
 pub struct GoslingED25519PrivateKey;
 pub struct GoslingED25519PublicKey;
-
 
 /// Conversion method for converting the KeyBlob string returned by ADD_ONION
 /// command into an ed25519_private_key_t
