@@ -4,9 +4,11 @@ use std::panic;
 use std::ffi::CString;
 use std::os::raw::c_char;
 use std::sync::Mutex;
-use anyhow::{Result};
+use anyhow::{Result, bail};
 use object_registry::ObjectRegistry;
 use define_registry;
+
+use tor_crypto::{Ed25519PrivateKey, Ed25519PublicKey, Ed25519Signature, V3OnionServiceId};
 
 /// Error Handling
 
@@ -80,7 +82,7 @@ fn translate_failures<R,F>(default: R, out_error: *mut *mut GoslingError, closur
         Ok(Err(err)) => {
             if !out_error.is_null() {
                 // populate error with runtime error message
-                let key = error_registry().insert(Error::new(format!("Gosling Error: {:?}", err).as_str()));
+                let key = error_registry().insert(Error::new(format!("{:?}", err).as_str()));
                 unsafe {*out_error = key as *mut GoslingError;};
             }
             return default;
@@ -89,7 +91,7 @@ fn translate_failures<R,F>(default: R, out_error: *mut *mut GoslingError, closur
         Err(err) => {
             if !out_error.is_null() {
                 // populate error with panic message
-                let key = error_registry().insert(Error::new("Gosling Error: Panic Occurred"));
+                let key = error_registry().insert(Error::new("panic occurred"));
                 unsafe {*out_error = key as *mut GoslingError;};
             }
             return default;
@@ -101,7 +103,7 @@ fn translate_failures<R,F>(default: R, out_error: *mut *mut GoslingError, closur
 pub extern "C" fn gosling_example_work(out_error: *mut *mut GoslingError) -> i32 {
 
     translate_failures(0, out_error, || -> Result<i32> {
-        // bail!("oh god why");
+        bail!("oh god why");
         // panic!("panic!");
         Ok(123)
     })
@@ -109,6 +111,12 @@ pub extern "C" fn gosling_example_work(out_error: *mut *mut GoslingError) -> i32
 
 pub struct GoslingED25519PrivateKey;
 pub struct GoslingED25519PublicKey;
+
+define_registry!{Ed25519PrivateKey}
+define_registry!{Ed25519PublicKey}
+define_registry!{Ed25519Signature}
+define_registry!{V3OnionServiceId}
+
 
 /// Conversion method for converting the KeyBlob string returned by ADD_ONION
 /// command into an ed25519_private_key_t
@@ -126,6 +134,24 @@ pub extern "C" fn gosling_ed25519_private_key_from_keyblob(
     key_blob_length: usize,
     error: *mut *mut GoslingError) -> () {
 
+    translate_failures((), error, || -> Result<()> {
+        if out_private_key.is_null() {
+            bail!("gosling_ed25519_private_key_from_keyblob(): out_private_key may not be null");
+        }
+
+        if key_blob.is_null() {
+            bail!("gosling_ed25519_private_key_from_keyblob(): key_blob may not not be null");
+        }
+
+        let key_blob_view = unsafe { std::slice::from_raw_parts(key_blob as *const u8, key_blob_length) };
+        let key_blob_str = std::str::from_utf8(&key_blob_view)?;
+        let private_key = Ed25519PrivateKey::from_key_blob(key_blob_str)?;
+
+        let handle = ed25519_private_key_registry().insert(private_key);
+        unsafe { *out_private_key = handle as *mut GoslingED25519PrivateKey };
+
+        Ok(())
+    })
 }
 
 /// Conversion method for converting an ed25519 private key to a null-

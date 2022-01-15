@@ -148,7 +148,7 @@ pub struct V3OnionServiceId {
 impl Ed25519PrivateKey {
     pub fn from_raw(raw: &[u8]) -> Result<Ed25519PrivateKey> {
         if raw.len() != ED25519_PRIVATE_KEY_SIZE {
-            bail!("Ed25519PrivateKey::from_raw expects byte array of length '{}'; received array of length '{}'", ED25519_PRIVATE_KEY_SIZE, raw.len());
+            bail!("Ed25519PrivateKey::from_raw(): expects byte array of length '{}'; received array of length '{}'", ED25519_PRIVATE_KEY_SIZE, raw.len());
         }
         return Ok(Ed25519PrivateKey{data: raw.try_into()?});
     }
@@ -157,18 +157,18 @@ impl Ed25519PrivateKey {
         const ED25519_KEYBLOB_BASE64_LENGTH:usize = 88;
         const ED25519_KEYBLOB_LENGTH:usize = ED25519_KEYBLOB_HEADER.len() + ED25519_KEYBLOB_BASE64_LENGTH;
         if key_blob.len() != ED25519_KEYBLOB_LENGTH {
-            bail!("Ed25519PrivateKey::from_key_blob expects string of length '{}'; received '{}' with length '{}'", ED25519_KEYBLOB_LENGTH, &key_blob, key_blob.len());
+            bail!("Ed25519PrivateKey::from_key_blob(): expects string of length '{}'; received '{}' with length '{}'", ED25519_KEYBLOB_LENGTH, &key_blob, key_blob.len());
         }
 
         if !key_blob.starts_with(&ED25519_KEYBLOB_HEADER) {
-            bail!("Ed25519PrivateKey::from_key_blob expects string that begins with '{}'; received '{}'", &ED25519_KEYBLOB_HEADER, &key_blob);
+            bail!("Ed25519PrivateKey::from_key_blob(): expects string that begins with '{}'; received '{}'", &ED25519_KEYBLOB_HEADER, &key_blob);
         }
 
         let base64_key:&str = &key_blob[ED25519_KEYBLOB_HEADER.len()..];
         let private_key_data = BASE64.decode(base64_key.as_bytes())?;
 
         if private_key_data.len() != ED25519_PRIVATE_KEY_SIZE {
-            bail!("Ed25519PrivateKey::from_key_blob expected decoded private key length '{}'; actual '{}'", ED25519_PRIVATE_KEY_SIZE, private_key_data.len());
+            bail!("Ed25519PrivateKey::from_key_blob(): expects decoded private key length '{}'; actual '{}'", ED25519_PRIVATE_KEY_SIZE, private_key_data.len());
         }
 
         return Ok(Ed25519PrivateKey{data: private_key_data.as_slice().try_into()? });
@@ -193,7 +193,7 @@ impl Ed25519PrivateKey {
         };
 
         if result != (0 as c_int) {
-            bail!("Ed25519PrivateKey::sign_message_ex call to ed25519_donna_sign() returned unexpected value '{}', expected '0'", result);
+            bail!("Ed25519PrivateKey::sign_message_ex(): call to ed25519_donna_sign() returned unexpected value '{}', expected '0'", result);
         }
 
         return Ed25519Signature::from_raw(&signature_data);
@@ -220,7 +220,7 @@ impl PartialEq for Ed25519PrivateKey {
 impl Ed25519PublicKey {
     pub fn from_raw(raw: &[u8]) -> Result<Ed25519PublicKey> {
         if raw.len() != ED25519_PUBLIC_KEY_SIZE {
-            bail!("Ed25519PublicKey::from_raw expects byte array of length '{}'; received array of length '{}'", ED25519_PUBLIC_KEY_SIZE, raw.len());
+            bail!("Ed25519PublicKey::from_raw(): expects byte array of length '{}'; received array of length '{}'", ED25519_PUBLIC_KEY_SIZE, raw.len());
         }
 
         return Ok(Ed25519PublicKey{data: raw.try_into()?});
@@ -231,7 +231,7 @@ impl Ed25519PublicKey {
         let mut decoded_service_id = [0u8; V3_ONION_SERVICE_ID_RAW_SIZE];
         let decoded_byte_count = BASE32.decode_mut(service_id.get_data(), &mut decoded_service_id).unwrap();
         if decoded_byte_count != V3_ONION_SERVICE_ID_RAW_SIZE {
-            bail!("Ed25519PublicKey::from_service_id decoded byte count is '{}', expected '{}'", decoded_byte_count, V3_ONION_SERVICE_ID_RAW_SIZE);
+            bail!("Ed25519PublicKey::from_service_id(): decoded byte count is '{}', expected '{}'", decoded_byte_count, V3_ONION_SERVICE_ID_RAW_SIZE);
         }
 
         let public_key = &decoded_service_id[0..ED25519_PUBLIC_KEY_SIZE];
@@ -247,7 +247,7 @@ impl Ed25519PublicKey {
                 private_key.get_data().as_ptr() as *const c_uchar)
         };
         if result != (0 as c_int) {
-            bail!("Ed25519PublicKey::from_private_key call to ed25519_donna_pubkey() returned unexpected value '{}', expected '0'", result);
+            bail!("Ed25519PublicKey::from_private_key(): call to ed25519_donna_pubkey() returned unexpected value '{}', expected '0'", result);
         }
 
         return Ok(Ed25519PublicKey::from_raw(&public_key_data)?);
@@ -269,7 +269,7 @@ impl PartialEq for Ed25519PublicKey {
 impl Ed25519Signature {
     pub fn from_raw(raw: &[u8]) -> Result<Ed25519Signature> {
         if raw.len() != ED25519_SIGNATURE_SIZE {
-            bail!("Ed25519Signature::from_raw input array has incorrect length {}; expected length {}", raw.len(), ED25519_SIGNATURE_SIZE);
+            bail!("Ed25519Signature::from_raw input(): array has incorrect length {}; expected length {}", raw.len(), ED25519_SIGNATURE_SIZE);
         }
         return Ok(Ed25519Signature{data: raw.try_into()?});
     }
@@ -286,7 +286,7 @@ impl Ed25519Signature {
         match result {
             0 => Ok(true),
             -1 => Ok(false),
-            _ => bail!("Ed25519Signature::verify call to ed25519_donna_open() returned unexpected value '{}', expected '0' or '-1'", result),
+            _ => bail!("Ed25519Signature::verify(): call to ed25519_donna_open() returned unexpected value '{}', expected '0' or '-1'", result),
         }
     }
 
@@ -306,7 +306,7 @@ impl PartialEq for Ed25519Signature {
 impl V3OnionServiceId {
     pub fn from_string(service_id: &str) -> Result<V3OnionServiceId> {
         if !V3OnionServiceId::is_valid(&service_id)? {
-            bail!("{} is not a valid v3 onion service id", &service_id);
+            bail!("V3OnionServiceId::from_string(): '{}' is not a valid v3 onion service id", &service_id);
         }
         return Ok(V3OnionServiceId{data: service_id.to_uppercase().as_bytes().try_into()?});
     }
