@@ -80,7 +80,7 @@ fn translate_failures<R,F>(default: R, out_error: *mut *mut GoslingError, closur
         Ok(Err(err)) => {
             if !out_error.is_null() {
                 // populate error with runtime error message
-                let key = error_registry().insert(Error::new(format!("Runtime Error: {:?}", err).as_str()));
+                let key = error_registry().insert(Error::new(format!("Gosling Error: {:?}", err).as_str()));
                 unsafe {*out_error = key as *mut GoslingError;};
             }
             return default;
@@ -89,7 +89,7 @@ fn translate_failures<R,F>(default: R, out_error: *mut *mut GoslingError, closur
         Err(err) => {
             if !out_error.is_null() {
                 // populate error with panic message
-                let key = error_registry().insert(Error::new("Panic Occurred"));
+                let key = error_registry().insert(Error::new("Gosling Error: Panic Occurred"));
                 unsafe {*out_error = key as *mut GoslingError;};
             }
             return default;
