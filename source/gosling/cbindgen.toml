@@ -15,7 +15,10 @@ line_length = 80
 
 [export.rename]
 "GoslingError" = "gosling_error"
-"GoslingED25519PrivateKey" = "gosling_ed25519_private_key"
-"GoslingED25519PublicKey" = "gosling_ed25519_public_key"
+"GoslingEd25519PrivateKey" = "gosling_ed25519_private_key"
+"GoslingEd25519PublicKey" = "gosling_ed25519_public_key"
+"GoslingEd25519Signature" = "gosling_ed25519_signature"
+"GoslingV3OnionServiceId" = "gosling_v3_onion_service_id"
+
 [fn]
 args = "vertical"

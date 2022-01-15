@@ -50,19 +50,68 @@ pub extern "C" fn gosling_error_get_message(error: *const GoslingError) -> *cons
     return ptr::null();
 }
 
-/// Frees an error message returned by a gosling function, invalidates
-/// any message strings returned by GoslingError_get_message() from the given
+// macro for defining the implmenetation of freeing objects
+// owned by an ObjectRegistry
+macro_rules! impl_registry_free {
+    ($error:expr, $type:ty) => {
+        if $error.is_null() {
+            return;
+        }
+
+        let key = $error as usize;
+        paste::paste! {
+            [<$type:snake _registry>]().remove(key);
+        }
+    }
+}
+
+/// Frees gosling_error and invalidates any message strings
+/// returned by GoslingError_get_message() from the given
 /// error object.
 ///
-/// @param error : the error object to delete
+/// @param error : the error object to free
 #[no_mangle]
 pub extern "C" fn gosling_error_free(error: *mut GoslingError) -> () {
-    if error.is_null() {
-        return;
-    }
+    impl_registry_free!(error, Error);
+}
 
-    let key = error as usize;
-    error_registry().remove(key);
+pub struct GoslingEd25519PrivateKey;
+pub struct GoslingEd25519PublicKey;
+pub struct GoslingEd25519Signature;
+pub struct GoslingV3OnionServiceId;
+
+define_registry!{Ed25519PrivateKey}
+define_registry!{Ed25519PublicKey}
+define_registry!{Ed25519Signature}
+define_registry!{V3OnionServiceId}
+
+/// Frees a gosling_ed25519_private_key object
+///
+/// @param private_key : the private key to free
+#[no_mangle]
+pub extern "C" fn gosling_ed25519_private_key_free(private_key: *mut GoslingEd25519PrivateKey) -> () {
+    impl_registry_free!(private_key, Ed25519PrivateKey);
+}
+/// Frees a gosling_ed25519_public_key object
+///
+/// @param public_key : the public key to free
+#[no_mangle]
+pub extern "C" fn gosling_ed25519_public_key_free(public_key: *mut GoslingEd25519PublicKey) -> () {
+    impl_registry_free!(public_key, Ed25519PublicKey);
+}
+/// Frees a gosling_ed25519_signature object
+///
+/// @param signature : the signature object to free
+#[no_mangle]
+pub extern "C" fn gosling_ed25519_signature_free(signature: *mut GoslingEd25519Signature) -> () {
+    impl_registry_free!(signature, Ed25519Signature);
+}
+/// Frees a gosling_v3_onion_service_id object
+///
+/// @param service_id : the service id object to free
+#[no_mangle]
+pub extern "C" fn gosling_v3_onion_service_id_free(service_id: *mut GoslingV3OnionServiceId) -> () {
+    impl_registry_free!(service_id, V3OnionServiceId);
 }
 
 /// Wrapper around rust code which may panic or return a failing Result to be used at FFI boundaries.
@@ -109,27 +158,18 @@ pub extern "C" fn gosling_example_work(out_error: *mut *mut GoslingError) -> i32
     })
 }
 
-pub struct GoslingED25519PrivateKey;
-pub struct GoslingED25519PublicKey;
-
-define_registry!{Ed25519PrivateKey}
-define_registry!{Ed25519PublicKey}
-define_registry!{Ed25519Signature}
-define_registry!{V3OnionServiceId}
-
-
 /// Conversion method for converting the KeyBlob string returned by ADD_ONION
-/// command into an ed25519_private_key_t
+/// command into a gosling_ed25519_private_key
 ///
 /// @param out_privateKey : returned ed25519 private key
-/// @param keyBlob : an ED25519 KeyBlob string in the form
+/// @param keyBlob : an ed25519 KeyBlob string in the form
 ///  "ED25519-V3:abcd1234..."
 /// @param keyBlobLength : number of characters in keyBlob not counting the
 ///  null terminator
 /// @param error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_ed25519_private_key_from_keyblob(
-    out_private_key: *mut *mut GoslingED25519PrivateKey,
+    out_private_key: *mut *mut GoslingEd25519PrivateKey,
     key_blob: *const c_char,
     key_blob_length: usize,
     error: *mut *mut GoslingError) -> () {
@@ -148,7 +188,7 @@ pub extern "C" fn gosling_ed25519_private_key_from_keyblob(
         let private_key = Ed25519PrivateKey::from_key_blob(key_blob_str)?;
 
         let handle = ed25519_private_key_registry().insert(private_key);
-        unsafe { *out_private_key = handle as *mut GoslingED25519PrivateKey };
+        unsafe { *out_private_key = handle as *mut GoslingEd25519PrivateKey };
 
         Ok(())
     })
@@ -167,7 +207,7 @@ pub extern "C" fn gosling_ed25519_private_key_from_keyblob(
 ///  to out_keyBlob
 #[no_mangle]
 pub extern "C" fn gosling_ed25519_private_key_to_keyblob(
-    private_key: *const GoslingED25519PrivateKey,
+    private_key: *const GoslingEd25519PrivateKey,
     out_key_blob: *mut c_char,
     key_blob_size: usize,
     error: *mut *mut GoslingError) -> () {
@@ -181,8 +221,8 @@ pub extern "C" fn gosling_ed25519_private_key_to_keyblob(
 /// @param error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_ed25519_public_key_from_ed25519_private_key(
-    out_public_key: *mut *mut GoslingED25519PublicKey,
-    private_key: *const GoslingED25519PrivateKey,
+    out_public_key: *mut *mut GoslingEd25519PublicKey,
+    private_key: *const GoslingEd25519PrivateKey,
     error: *mut *mut GoslingError) -> () {
 
 }
