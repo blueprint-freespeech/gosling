@@ -8,7 +8,7 @@ use anyhow::{Result, bail};
 use object_registry::ObjectRegistry;
 use define_registry;
 
-use tor_crypto::{Ed25519PrivateKey, Ed25519PublicKey, Ed25519Signature, V3OnionServiceId};
+use tor_crypto::*;
 
 /// Error Handling
 
@@ -212,6 +212,38 @@ pub extern "C" fn gosling_ed25519_private_key_to_keyblob(
     key_blob_size: usize,
     error: *mut *mut GoslingError) -> () {
 
+    translate_failures((), error, || -> Result<()> {
+        if private_key.is_null() {
+            bail!("gosling_ed25519_private_key_to_keyblob(): private_key may not be null");
+        }
+
+        if out_key_blob.is_null() {
+            bail!("gosling_ed25519_private_key_to_keyblob(): out_key_blob may not be null");
+        }
+
+        if key_blob_size != ED25519_KEYBLOB_SIZE {
+            bail!("gosling_ed25519_private_key_to_keyblob(): key_blob_size must be at least '{}', received '{}'", ED25519_KEYBLOB_SIZE, key_blob_size);
+        }
+
+        let registry = ed25519_private_key_registry();
+        match registry.get(private_key as usize) {
+            Some(private_key) => {
+                let private_key_blob = private_key.to_key_blob()?;
+                unsafe {
+                    // copy keyblob into output buffer
+                    let key_blob_view = std::slice::from_raw_parts_mut(out_key_blob as *mut u8, key_blob_size);
+                    std::ptr::copy(private_key_blob.as_ptr(), key_blob_view.as_mut_ptr(), ED25519_KEYBLOB_LENGTH);
+                    // add final null-terminator
+                    key_blob_view[ED25519_KEYBLOB_LENGTH] = 0u8;
+                };
+            },
+            None => {
+                bail!("gosling_ed25519_private_key_to_keyblob(): private_key is invalid");
+            },
+        };
+
+        Ok(())
+    })
 }
 
 /// Calculate ed25519 public key from ed25519 private key
@@ -225,6 +257,9 @@ pub extern "C" fn gosling_ed25519_public_key_from_ed25519_private_key(
     private_key: *const GoslingEd25519PrivateKey,
     error: *mut *mut GoslingError) -> () {
 
+    translate_failures((), error, || -> Result<()> {
+        Ok(())
+    })
 }
 
 /// Checks if a service id string is valid per tor rend spec:
@@ -239,5 +274,8 @@ pub extern "C" fn gosling_string_is_valid_v3_onion_service_id(
     service_id_string: *const c_char,
     service_id_string_length: usize,
     error: *mut *mut GoslingError) -> bool {
-    return false;
+
+    translate_failures(false, error, || -> Result<bool> {
+        Ok(false)
+    })
 }

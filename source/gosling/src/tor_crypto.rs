@@ -22,6 +22,18 @@ pub const ED25519_SIGNATURE_SIZE: usize = 64;
 pub const V3_ONION_SERVICE_ID_LENGTH: usize = 56;
 /// The number of bytes needed to store onion service id in a c-string (including null-terminator)
 pub const V3_ONION_SERVICE_ID_SIZE: usize = V3_ONION_SERVICE_ID_LENGTH + 1;
+/// The number of bytes needed to store ed25519 private key
+pub const ED25519_KEYBLOB_BASE64_LENGTH: usize = 88;
+/// key klob header string
+const ED25519_KEYBLOB_HEADER: &str = "ED25519-V3:";
+/// The number of bytes needed to store the keyblob header
+pub const ED25519_KEYBLOB_HEADER_LENGTH: usize = 11;
+/// The number of bytes needed to store ed25519 private keyblob including the
+/// header
+pub const ED25519_KEYBLOB_LENGTH: usize = ED25519_KEYBLOB_HEADER_LENGTH + ED25519_KEYBLOB_BASE64_LENGTH;
+/// The number of bytes needed to store ed25519 private keyblob including null
+/// terminator
+pub const ED25519_KEYBLOB_SIZE: usize = ED25519_KEYBLOB_LENGTH + 1;
 // number of bytes in an onion service idea after base32 decode
 const V3_ONION_SERVICE_ID_RAW_SIZE: usize = 35;
 // byte index of the start of the public key checksum
@@ -30,8 +42,7 @@ const V3_ONION_SERVICE_ID_CHECKSUM_OFFSET: usize = 32;
 const V3_ONION_SERVICE_ID_VERSION_OFFSET: usize = 34;
 /// The number of bytes in a v3 service id's truncated checksum
 const TRUNCATED_CHECKSUM_SIZE: usize = 2;
-/// key klob header string
-const ED25519_KEYBLOB_HEADER: &str = "ED25519-V3:";
+
 
 /// imports from tor_crypto
 /// cbindgen:ignore
@@ -106,7 +117,7 @@ extern "C" fn RAND_bytes(_buf: *mut c_uchar, _num: c_int) -> c_int {
 // see https://github.com/torproject/torspec/blob/main/rend-spec-v3.txt#L2143
 fn calc_truncated_checksum(public_key: &[u8]) -> Result<[u8; TRUNCATED_CHECKSUM_SIZE]> {
     if public_key.len() != ED25519_PUBLIC_KEY_SIZE {
-        bail!("calc_truncated_checksum expects byte array of length '{}'; received array of length '{}'", ED25519_PUBLIC_KEY_SIZE, public_key.len());
+        bail!("calc_truncated_checksum(): expects byte array of length '{}'; received array of length '{}'", ED25519_PUBLIC_KEY_SIZE, public_key.len());
     }
 
     // space for full checksum
@@ -154,8 +165,6 @@ impl Ed25519PrivateKey {
     }
 
     pub fn from_key_blob(key_blob: &str) -> Result<Ed25519PrivateKey> {
-        const ED25519_KEYBLOB_BASE64_LENGTH:usize = 88;
-        const ED25519_KEYBLOB_LENGTH:usize = ED25519_KEYBLOB_HEADER.len() + ED25519_KEYBLOB_BASE64_LENGTH;
         if key_blob.len() != ED25519_KEYBLOB_LENGTH {
             bail!("Ed25519PrivateKey::from_key_blob(): expects string of length '{}'; received '{}' with length '{}'", ED25519_KEYBLOB_LENGTH, &key_blob, key_blob.len());
         }
