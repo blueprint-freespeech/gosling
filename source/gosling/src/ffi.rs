@@ -173,6 +173,10 @@ pub extern "C" fn gosling_ed25519_private_key_from_keyblob(
             bail!("gosling_ed25519_private_key_from_keyblob(): key_blob must not not be null");
         }
 
+        if key_blob_length != ED25519_KEYBLOB_LENGTH {
+            bail!("gosling_ed25519_private_key_from_keyblob(): key_blob_length must be exactly ED25519_KEYBLOB_LENGTH ({}); received '{}'", ED25519_KEYBLOB_LENGTH, key_blob_length);
+        }
+
         let key_blob_view = unsafe { std::slice::from_raw_parts(key_blob as *const u8, key_blob_length) };
         let key_blob_str = std::str::from_utf8(&key_blob_view)?;
         let private_key = Ed25519PrivateKey::from_key_blob(key_blob_str)?;
@@ -277,7 +281,7 @@ pub extern "C" fn gosling_ed25519_public_key_from_ed25519_private_key(
 ///
 /// @param service_id_string : string containing the v3 service id to be validated
 /// @param service_id_string_length : length of serviceIdString not counting the
-///  null terminator; must be at least V3_ONION_SERVICE_ID_LENGTH (56)
+///  null terminator; must be V3_ONION_SERVICE_ID_LENGTH (56)
 /// @param error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_string_is_valid_v3_onion_service_id(
@@ -290,8 +294,8 @@ pub extern "C" fn gosling_string_is_valid_v3_onion_service_id(
             bail!("gosling_string_is_valid_v3_onion_service_id(): service_id_string must not be null");
         }
 
-        if service_id_string_length < V3_ONION_SERVICE_ID_LENGTH {
-            bail!("gosling_string_is_valid_v3_onion_service_id(): service_id_string_length must be at least V3_ONION_SERVICE_ID_LENGTH (56); received '{}'", service_id_string_length);
+        if service_id_string_length != V3_ONION_SERVICE_ID_LENGTH {
+            bail!("gosling_string_is_valid_v3_onion_service_id(): service_id_string_length must be V3_ONION_SERVICE_ID_LENGTH (56); received '{}'", service_id_string_length);
         }
 
         let service_id_string_slice = unsafe { std::slice::from_raw_parts(service_id_string as *const u8, service_id_string_length) };
