@@ -18,9 +18,9 @@ pub const ED25519_PRIVATE_KEY_SIZE: usize = 64;
 pub const ED25519_PUBLIC_KEY_SIZE: usize = 32;
 /// The number of bytes in an ed25519 signature
 pub const ED25519_SIGNATURE_SIZE: usize = 64;
-/// The number of bytes in a v3 onion service id (sans .onion suffix)
+/// The number of bytes needed to store onion service id as an ASCII c-string (not including null-terminator)
 pub const V3_ONION_SERVICE_ID_LENGTH: usize = 56;
-/// The number of bytes needed to store onion service id in a c-string (including null-terminator)
+/// The number of bytes needed to store onion service id as an ASCII c-string (including null-terminator)
 pub const V3_ONION_SERVICE_ID_SIZE: usize = V3_ONION_SERVICE_ID_LENGTH + 1;
 /// The number of bytes needed to store ed25519 private key
 pub const ED25519_KEYBLOB_BASE64_LENGTH: usize = 88;
@@ -28,11 +28,10 @@ pub const ED25519_KEYBLOB_BASE64_LENGTH: usize = 88;
 const ED25519_KEYBLOB_HEADER: &str = "ED25519-V3:";
 /// The number of bytes needed to store the keyblob header
 pub const ED25519_KEYBLOB_HEADER_LENGTH: usize = 11;
-/// The number of bytes needed to store ed25519 private keyblob including the
-/// header
+/// The number of bytes needed to store ed25519 private keyblob as an ASCII c-string (not including a null terminator)
+///
 pub const ED25519_KEYBLOB_LENGTH: usize = ED25519_KEYBLOB_HEADER_LENGTH + ED25519_KEYBLOB_BASE64_LENGTH;
-/// The number of bytes needed to store ed25519 private keyblob including null
-/// terminator
+/// The number of bytes needed to store ed25519 private keyblob as an ASCII c-string (including a null terminator)
 pub const ED25519_KEYBLOB_SIZE: usize = ED25519_KEYBLOB_LENGTH + 1;
 // number of bytes in an onion service idea after base32 decode
 const V3_ONION_SERVICE_ID_RAW_SIZE: usize = 35;

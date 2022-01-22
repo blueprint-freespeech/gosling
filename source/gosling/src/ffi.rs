@@ -148,16 +148,6 @@ fn translate_failures<R,F>(default: R, out_error: *mut *mut GoslingError, closur
     }
 }
 
-#[no_mangle]
-pub extern "C" fn gosling_example_work(out_error: *mut *mut GoslingError) -> i32 {
-
-    translate_failures(0, out_error, || -> Result<i32> {
-        bail!("oh god why");
-        // panic!("panic!");
-        Ok(123)
-    })
-}
-
 /// Conversion method for converting the KeyBlob string returned by ADD_ONION
 /// command into a gosling_ed25519_private_key
 ///
@@ -176,11 +166,11 @@ pub extern "C" fn gosling_ed25519_private_key_from_keyblob(
 
     translate_failures((), error, || -> Result<()> {
         if out_private_key.is_null() {
-            bail!("gosling_ed25519_private_key_from_keyblob(): out_private_key may not be null");
+            bail!("gosling_ed25519_private_key_from_keyblob(): out_private_key must not be null");
         }
 
         if key_blob.is_null() {
-            bail!("gosling_ed25519_private_key_from_keyblob(): key_blob may not not be null");
+            bail!("gosling_ed25519_private_key_from_keyblob(): key_blob must not not be null");
         }
 
         let key_blob_view = unsafe { std::slice::from_raw_parts(key_blob as *const u8, key_blob_length) };
@@ -214,11 +204,11 @@ pub extern "C" fn gosling_ed25519_private_key_to_keyblob(
 
     translate_failures((), error, || -> Result<()> {
         if private_key.is_null() {
-            bail!("gosling_ed25519_private_key_to_keyblob(): private_key may not be null");
+            bail!("gosling_ed25519_private_key_to_keyblob(): private_key must not be null");
         }
 
         if out_key_blob.is_null() {
-            bail!("gosling_ed25519_private_key_to_keyblob(): out_key_blob may not be null");
+            bail!("gosling_ed25519_private_key_to_keyblob(): out_key_blob must not be null");
         }
 
         if key_blob_size != ED25519_KEYBLOB_SIZE {
@@ -258,6 +248,26 @@ pub extern "C" fn gosling_ed25519_public_key_from_ed25519_private_key(
     error: *mut *mut GoslingError) -> () {
 
     translate_failures((), error, || -> Result<()> {
+        if out_public_key.is_null() {
+            bail!("gosling_ed25519_public_key_from_ed25519_private_key(): out_public_key must not be null");
+        }
+
+        if private_key.is_null() {
+            bail!("gosling_ed25519_public_key_from_ed25519_private_key(): private_key must not be null");
+        }
+
+        let private_key_registry = ed25519_private_key_registry();
+        match private_key_registry.get(private_key as usize) {
+            Some(private_key) => {
+                let public_key = Ed25519PublicKey::from_private_key(&private_key)?;
+                unsafe {
+                    *out_public_key = ed25519_public_key_registry().insert(public_key) as *mut GoslingEd25519PublicKey;
+                };
+            },
+            None => {
+                bail!("gosling_ed25519_public_key_from_ed25519_private_key(): private_key is invalid");
+            },
+        }
         Ok(())
     })
 }
@@ -267,7 +277,7 @@ pub extern "C" fn gosling_ed25519_public_key_from_ed25519_private_key(
 ///
 /// @param service_id_string : string containing the v3 service id to be validated
 /// @param service_id_string_length : length of serviceIdString not counting the
-///  null terminator
+///  null terminator; must be at least V3_ONION_SERVICE_ID_LENGTH (56)
 /// @param error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_string_is_valid_v3_onion_service_id(
@@ -276,6 +286,15 @@ pub extern "C" fn gosling_string_is_valid_v3_onion_service_id(
     error: *mut *mut GoslingError) -> bool {
 
     translate_failures(false, error, || -> Result<bool> {
-        Ok(false)
+        if service_id_string.is_null() {
+            bail!("gosling_string_is_valid_v3_onion_service_id(): service_id_string must not be null");
+        }
+
+        if service_id_string_length < V3_ONION_SERVICE_ID_LENGTH {
+            bail!("gosling_string_is_valid_v3_onion_service_id(): service_id_string_length must be at least V3_ONION_SERVICE_ID_LENGTH (56); received '{}'", service_id_string_length);
+        }
+
+        let service_id_string_slice = unsafe { std::slice::from_raw_parts(service_id_string as *const u8, service_id_string_length) };
+        return V3OnionServiceId::is_valid(str::from_utf8(service_id_string_slice)?);
     })
 }
