@@ -5,10 +5,11 @@ use std::ffi::CString;
 use std::os::raw::c_char;
 use std::sync::Mutex;
 use anyhow::{Result, bail};
-use object_registry::ObjectRegistry;
-use define_registry;
 
+use object_registry::*;
+use define_registry;
 use tor_crypto::*;
+
 
 /// Error Handling
 
@@ -22,7 +23,7 @@ impl Error {
     }
 }
 
-define_registry!{Error}
+define_registry!{Error, ObjectTypes::Error}
 
 // exported C type
 pub struct GoslingError;
@@ -80,10 +81,10 @@ pub struct GoslingEd25519PublicKey;
 pub struct GoslingEd25519Signature;
 pub struct GoslingV3OnionServiceId;
 
-define_registry!{Ed25519PrivateKey}
-define_registry!{Ed25519PublicKey}
-define_registry!{Ed25519Signature}
-define_registry!{V3OnionServiceId}
+define_registry!{Ed25519PrivateKey, ObjectTypes::Ed25519PrivateKey}
+define_registry!{Ed25519PublicKey, ObjectTypes::Ed25519PublicKey}
+define_registry!{Ed25519Signature, ObjectTypes::Ed25519Signature}
+define_registry!{V3OnionServiceId, ObjectTypes::V3OnionServiceId}
 
 /// Frees a gosling_ed25519_private_key object
 ///

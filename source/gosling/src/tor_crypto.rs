@@ -9,7 +9,7 @@ use data_encoding::{BASE32, BASE64};
 
 use anyhow::{bail, Result};
 
-use object_registry::ObjectRegistry;
+use object_registry::*;
 use define_registry;
 
 /// The number of bytes in an ed25519 secret key
@@ -54,7 +54,7 @@ extern "C" {
 
 // ed25510-hash-custom implementation
 
-define_registry!{Sha512}
+define_registry!{Sha512, ObjectTypes::Sha512}
 
 const DIGEST_SHA512: c_int = 2;
 const SHA512_BYTES: usize = 512/8;

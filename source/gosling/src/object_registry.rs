@@ -1,16 +1,48 @@
 use std::collections::BTreeMap;
 use std::option::Option;
+use num_enum::TryFromPrimitive;
+use std::convert::TryFrom;
+
+use anyhow::Result;
+
+// Ids used for types we put in ObjectRegistrys
+#[derive(Debug, Eq, PartialEq, TryFromPrimitive)]
+#[repr(u8)]
+pub enum ObjectTypes {
+    Sha512,
+    Error,
+    Ed25519PrivateKey,
+    Ed25519PublicKey,
+    Ed25519Signature,
+    V3OnionServiceId,
+}
+
+// This trait is required for types we want to keep in an ObjectRegistry
+pub trait HasByteTypeId {
+    fn get_byte_type_id() -> usize;
+}
+
+pub fn key_to_object_type(key: usize) -> Result<ObjectTypes> {
+    Ok(ObjectTypes::try_from((key & 0xFF) as u8)?)
+}
 
 // An ObjectRegistry<T> maintains ownership of objects and maps them to usize handles
 // which can be safely handed out to external consumers
 pub struct ObjectRegistry<T> {
     map: BTreeMap<usize, T>,
-    next_id: usize,
+    counter: usize,
 }
 
-impl<T> ObjectRegistry<T> {
+impl<T> ObjectRegistry<T> where T : HasByteTypeId{
+    fn next_key(&mut self) -> usize {
+        self.counter = self.counter + 1;
+        let retval = (self.counter << 8) + T::get_byte_type_id();
+        return retval;
+    }
+
     pub fn new() -> ObjectRegistry<T> {
-        return ObjectRegistry{map: BTreeMap::new(), next_id: 0};
+        let type_id = T::get_byte_type_id();
+        return ObjectRegistry{map: BTreeMap::new(), counter: 0};
     }
 
     pub fn contains_key(&self, key:usize) -> bool {
@@ -22,12 +54,11 @@ impl<T> ObjectRegistry<T> {
     }
 
     pub fn insert(&mut self, val:T) -> usize {
-        let next_id = self.next_id + 1;
-        if !self.map.insert(next_id, val).is_none() {
+        let key = self.next_key();
+        if !self.map.insert(key, val).is_none() {
             panic!();
         }
-        self.next_id = next_id;
-        return self.next_id;
+        return key;
     }
 
     pub fn get(&self, key:usize) -> Option<&T> {
@@ -41,7 +72,7 @@ impl<T> ObjectRegistry<T> {
 
 #[macro_export]
 macro_rules! define_registry {
-    ($type:ty) => {
+    ($type:ty, $id:expr) => {
         paste::paste! {
             // statically allocates our object registry
             lazy_static! {
@@ -51,6 +82,15 @@ macro_rules! define_registry {
             // get a mutex guard wrapping the object registry
             pub fn [<$type:snake _registry>]<'a>() -> std::sync::MutexGuard<'a, ObjectRegistry<$type>> {
                 [<$type:snake:upper _REGISTRY>].lock().unwrap()
+            }
+
+            static_assertions::const_assert!($id as usize <= 0xFF);
+            const [<$type:snake:upper _BYTE_TYPE_ID>]: usize = $id as usize;
+
+            impl HasByteTypeId for $type {
+                fn get_byte_type_id() -> usize {
+                    return [<$type:snake:upper _BYTE_TYPE_ID>];
+                }
             }
         }
     }
