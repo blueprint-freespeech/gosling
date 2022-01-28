@@ -42,7 +42,6 @@ impl<T> ObjectRegistry<T> where T : HasByteTypeId{
     }
 
     pub fn new() -> ObjectRegistry<T> {
-        let type_id = T::get_byte_type_id();
         return ObjectRegistry{map: BTreeMap::new(), counter: 0};
     }
 
