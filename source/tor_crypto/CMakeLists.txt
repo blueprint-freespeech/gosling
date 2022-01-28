@@ -24,7 +24,8 @@ add_definitions(-DED25519_CUSTOMHASH)
 
 add_library(tor_crypto STATIC
     precomp.c
-    ${TOR_SRC_DIR}/ext/ed25519/donna/ed25519_tor.c)
+    ${TOR_SRC_DIR}/ext/ed25519/donna/ed25519_tor.c
+    ${TOR_SRC_DIR}/lib/crypt_ops/crypto_s2k.c)
 target_precompile_headers(tor_crypto PRIVATE precomp.h)
 
 add_dependencies(tor_crypto tor_orconfig)

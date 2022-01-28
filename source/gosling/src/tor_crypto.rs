@@ -1,11 +1,16 @@
 use std::convert::TryInto;
 use std::str;
-use std::os::raw::{c_char, c_uchar, c_int, c_void};
+use std::ptr;
+use std::os::raw::*;
 use std::sync::Mutex;
 use crypto::digest::Digest;
+use crypto::sha1::Sha1;
 use crypto::sha3::Sha3;
 use crypto::sha2::Sha512;
-use data_encoding::{BASE32, BASE64};
+use data_encoding::{HEXUPPER, BASE32, BASE64};
+use rand::RngCore;
+use rand::rngs::OsRng;
+use zeroize::Zeroize;
 
 use anyhow::{bail, Result};
 
@@ -46,18 +51,32 @@ const TRUNCATED_CHECKSUM_SIZE: usize = 2;
 /// imports from tor_crypto
 /// cbindgen:ignore
 extern "C" {
+    // stdlib
+    fn malloc(size: usize) -> *mut c_void;
     // ed25519 functions
     fn ed25519_donna_pubkey(pk: *mut c_uchar, sk: *const c_uchar) -> c_int;
     fn ed25519_donna_sign(sig: *mut c_uchar, m: *const c_uchar, mlen: usize, sk: *const c_uchar, pk: *const c_uchar) -> c_int;
     fn ed25519_donna_open(signature: *const c_uchar, m: *const c_uchar, mlen: usize, pk: *const c_uchar) -> c_int;
+    // password hashing
+    fn secret_to_key_rfc2440(key_out: *mut c_char, key_out_len: usize, secret: *const c_char, secret_len: usize, s2k_specifier: *const c_char) -> ();
 }
 
 // ed25510-hash-custom implementation
 
 define_registry!{Sha512, ObjectTypes::Sha512}
+define_registry!{Sha1, ObjectTypes::Sha1}
 
 const DIGEST_SHA512: c_int = 2;
+const SHA1_BYTES: usize = 160/8;
 const SHA512_BYTES: usize = 512/8;
+const S2K_RFC2440_SPECIFIER_LEN: usize = 9;
+const DIGEST_LEN: usize = 20;
+
+#[no_mangle]
+extern "C" fn crypto_digest_new() -> *mut c_void {
+    let key = sha1_registry().insert(Sha1::new());
+    return key as *mut c_void;
+}
 
 #[no_mangle]
 extern "C" fn crypto_digest512_new(algorithm: c_int) -> *mut c_void {
@@ -68,24 +87,72 @@ extern "C" fn crypto_digest512_new(algorithm: c_int) -> *mut c_void {
 
 #[no_mangle]
 extern "C" fn crypto_digest_add_bytes(digest: *mut c_void, data: *const c_char, len: usize) -> () {
-    let mut registry = sha512_registry();
-    let hasher = registry.get_mut(digest as usize).unwrap();
-    hasher.input(unsafe {std::slice::from_raw_parts(data as *const u8, len)});
+    match key_to_object_type(digest as usize) {
+        Ok(ObjectTypes::Sha512) => {
+            let mut registry = sha512_registry();
+            let hasher = registry.get_mut(digest as usize).unwrap();
+            hasher.input(unsafe {std::slice::from_raw_parts(data as *const u8, len)});
+        },
+        Ok(ObjectTypes::Sha1) => {
+            let mut registry = sha1_registry();
+            let hasher = registry.get_mut(digest as usize).unwrap();
+            hasher.input(unsafe {std::slice::from_raw_parts(data as *const u8, len)});
+        },
+        _ => {
+            panic!("Received unexpected digest: {}", digest as usize);
+        },
+        Err(err) => {
+            panic!("{}", err);
+        }
+    }
 }
 
 #[no_mangle]
 extern "C" fn crypto_digest_get_digest(digest: *mut c_void, out: *mut c_char, out_len: usize) -> () {
-    let mut registry = sha512_registry();
-    let hasher = registry.get_mut(digest as usize).unwrap();
+    match key_to_object_type(digest as usize) {
+        Ok(ObjectTypes::Sha1) => {
+            let mut registry = sha1_registry();
+            let hasher = registry.get_mut(digest as usize).unwrap();
 
-    assert_eq!(SHA512_BYTES, hasher.output_bytes());
-    assert!(out_len >= SHA512_BYTES);
-    hasher.result(unsafe {std::slice::from_raw_parts_mut(out as *mut u8, out_len)});
+            assert_eq!(SHA1_BYTES, hasher.output_bytes());
+            assert!(out_len >= SHA1_BYTES);
+            hasher.result(unsafe {std::slice::from_raw_parts_mut(out as *mut u8, out_len)})
+        },
+        Ok(ObjectTypes::Sha512) => {
+            let mut registry = sha512_registry();
+            let hasher = registry.get_mut(digest as usize).unwrap();
+
+            assert_eq!(SHA512_BYTES, hasher.output_bytes());
+            assert!(out_len >= SHA512_BYTES);
+            hasher.result(unsafe {std::slice::from_raw_parts_mut(out as *mut u8, out_len)});
+        },
+        _ => {
+            panic!("Received unexpected digest: {}", digest as usize);
+        },
+        Err(err) => {
+            panic!("{}", err);
+        }
+    }
 }
 
 #[no_mangle]
 extern "C" fn crypto_digest_free_(digest: *mut c_void) -> () {
     sha512_registry().remove(digest as usize);
+    match key_to_object_type(digest as usize) {
+        Ok(ObjectTypes::Sha1) => {
+            sha1_registry().remove(digest as usize);
+
+        },
+        Ok(ObjectTypes::Sha512) => {
+            sha512_registry().remove(digest as usize);
+        },
+        _ => {
+            panic!("Received unexpected digest: {}", digest as usize);
+        },
+        Err(err) => {
+            panic!("{}", err);
+        }
+    }
 }
 
 #[no_mangle]
@@ -99,8 +166,10 @@ extern "C" fn crypto_digest512(digest: *mut c_char, m: *const c_char, len: usize
 }
 
 #[no_mangle]
-extern "C" fn memwipe(_mem: *mut c_void, _byte: u8, _sz: usize) -> () {
-    panic!("no-op memwipe called");
+extern "C" fn memwipe(mem: *mut c_void, byte: u8, sz: usize) -> () {
+    let mut mem_slice = unsafe {std::slice::from_raw_parts_mut(mem as *mut u8, sz)};
+    mem_slice.zeroize();
+    mem_slice.fill(byte);
 }
 
 #[no_mangle]
@@ -111,6 +180,45 @@ extern "C" fn crypto_strongest_rand(_out: *mut u8, _out_len: usize) -> () {
 #[no_mangle]
 extern "C" fn RAND_bytes(_buf: *mut c_uchar, _num: c_int) -> c_int {
     panic!("no-op RAND_bytes called");
+}
+
+#[no_mangle]
+extern "C" fn tor_abort_() -> () {
+    panic!("no-op tor_abort_ called");
+}
+
+#[no_mangle]
+extern "C" fn crypto_rand(_to: *mut c_char, _n: usize) -> () {
+    panic!("no-op crypto_rand called");
+}
+
+#[no_mangle]
+extern "C" fn tor_malloc_(size: usize) -> *mut c_void {
+    let retval = unsafe { malloc(size) };
+    if retval == ptr::null_mut() {
+        panic!("malloc({}) returned NULL", size);
+    }
+    return retval;
+}
+
+#[no_mangle]
+extern "C" fn crypto_expand_key_material_rfc5869_sha256(_key_in: *const u8, _key_in_len: usize,
+                                                        _salt_in: *const u8, _salt_in_len: usize,
+                                                        _info_in: *const u8, _info_in_len: usize,
+                                                        _key_out: *mut u8, _key_out_len: usize) -> c_int {
+    panic!("no-op crypto_expand_key_material_rfc5869_sha256 called");
+}
+
+#[no_mangle]
+extern "C" fn PKCS5_PBKDF2_HMAC_SHA1(_pass: *const c_char, _passlen: c_int,
+                                     _salt: *const c_uchar, _saltlen: c_int, _iter: c_int,
+                                     _keylen: c_int, _out: *mut c_uchar) -> c_int {
+    panic!("no-op PKCS5_PBKDF2_HMAC_SHA1 called");
+}
+
+#[no_mangle]
+extern "C" fn tor_memeq(_a: *const c_void, _b: *const c_void, _sz: usize) -> c_int {
+    panic!("no-op tor_memeq called");
 }
 
 // see https://github.com/torproject/torspec/blob/main/rend-spec-v3.txt#L2143
@@ -133,6 +241,43 @@ fn calc_truncated_checksum(public_key: &[u8]) -> Result<[u8; TRUNCATED_CHECKSUM_
     hasher.result(&mut hash_bytes);
 
     return Ok([hash_bytes[0], hash_bytes[1]]);
+}
+
+// Free functions
+
+fn hash_tor_password_with_salt(salt: &[u8], password: &str) -> Result<String> {
+
+    if salt.len() != S2K_RFC2440_SPECIFIER_LEN {
+        bail!("hash_tor_password_with_salt(): salt must be array with length '{}', received length '{}'", S2K_RFC2440_SPECIFIER_LEN, salt.len());
+    }
+
+    if salt[S2K_RFC2440_SPECIFIER_LEN - 1] != 0x60 {
+        bail!("hash_tor_password_with_salt(): last byte in salt must be '0x60', received '{:#02X}'", salt[S2K_RFC2440_SPECIFIER_LEN - 1]);
+    }
+
+    let mut key = [0x00u8; DIGEST_LEN];
+
+    unsafe {
+        secret_to_key_rfc2440(key.as_mut_ptr() as *mut c_char, DIGEST_LEN,
+                              password.as_ptr() as *const c_char, password.len(), salt.as_ptr() as *const c_char);
+    }
+
+    let mut hash = "16:".to_string();
+    HEXUPPER.encode_append(&salt, &mut hash);
+    HEXUPPER.encode_append(&key, &mut hash);
+
+    return Ok(hash);
+}
+
+pub fn hash_tor_password(password: &str) -> Result<String> {
+
+    let mut key = [0x00u8; DIGEST_LEN];
+
+    let mut salt = [0x00u8; S2K_RFC2440_SPECIFIER_LEN];
+    OsRng.fill_bytes(&mut salt);
+    salt[S2K_RFC2440_SPECIFIER_LEN - 1] = 0x60u8;
+
+    return hash_tor_password_with_salt(&salt, password);
 }
 
 // Struct deinitions
@@ -416,6 +561,22 @@ fn test_ed25519() -> Result<()> {
     // some invalid service ids
     assert!(!V3OnionServiceId::is_valid("")?);
     assert!(!V3OnionServiceId::is_valid("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")?);
+
+    return Ok(());
+}
+
+#[test]
+fn test_password_hash() -> Result<()> {
+    let salt1: [u8; S2K_RFC2440_SPECIFIER_LEN] = [0xbeu8,0x2au8,0x25u8,0x1du8,0xe6u8,0x2cu8,0xb2u8,0x7au8,0x60u8];
+    let hash1 = hash_tor_password_with_salt(&salt1, "abcdefghijklmnopqrstuvwxyz")?;
+    assert!(hash1 == "16:BE2A251DE62CB27A60AC9178A937990E8ED0AB662FA82A5C7DE3EBB23A");
+
+    let salt2: [u8; S2K_RFC2440_SPECIFIER_LEN] = [0x36u8,0x73u8,0x0eu8,0xefu8,0xd1u8,0x8cu8,0x60u8,0xd6u8,0x60u8];
+    let hash2 = hash_tor_password_with_salt(&salt2, "password")?;
+    assert!(hash2 == "16:36730EEFD18C60D66052E7EA535438761C0928D316EEA56A190C99B50A");
+
+    // ensure same password is hashed to different things
+    assert!(hash_tor_password("password")? != hash_tor_password("password")?);
 
     return Ok(());
 }

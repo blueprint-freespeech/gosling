@@ -6,6 +6,8 @@ extern crate data_encoding;
 extern crate anyhow;
 extern crate paste;
 extern crate num_enum;
+extern crate rand;
+extern crate zeroize;
 
 mod ffi;
 mod tor_crypto;
