@@ -12,3 +12,4 @@ extern crate zeroize;
 mod ffi;
 mod tor_crypto;
 mod object_registry;
+mod work_manager;
