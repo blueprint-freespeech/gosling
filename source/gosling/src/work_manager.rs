@@ -4,8 +4,6 @@ use std::vec::Vec;
 use std::sync::*;
 use std::sync::atomic::*;
 use std::thread;
-use std::convert::TryInto;
-use std::option;
 
 // crates
 use anyhow::{bail, Result};
@@ -113,8 +111,8 @@ impl<const WORKER_COUNT: usize> WorkManager<WORKER_COUNT> {
                 self.suspend_handles[i].notify_one();
                 // wait for it to complete
                 match self.threads[i].take().unwrap().join() {
-                    _ => {},
-                    Err(err) => {
+                    Ok(_) => {},
+                    Err(_) => {
                         panic!("WorkManager::join(): Error when joining threads");
                     },
                 }
@@ -141,7 +139,7 @@ impl<const WORKER_COUNT: usize> WorkManager<WORKER_COUNT> {
             // run all our pending tasks
             for task in &consumer_queue {
                 match (*task.closure)() {
-                    _ => {},
+                    Ok(_) => {},
                     Err(err) => {
                         panic!("{}", err);
                     }
@@ -161,9 +159,9 @@ impl<const WORKER_COUNT: usize> WorkManager<WORKER_COUNT> {
             if producer_queue.len() == 0 {
                 if terminating.load(Ordering::Relaxed) {
                     // suspend for a 16ms rather than busy looping
-                    suspend_handle.wait_timeout(producer_queue, std::time::Duration::from_millis(16));
+                    let _ = suspend_handle.wait_timeout(producer_queue, std::time::Duration::from_millis(16)).unwrap();
                 } else {
-                    suspend_handle.wait(producer_queue);
+                    let _ = suspend_handle.wait(producer_queue).unwrap();
                 }
             } else {
                 // otherwise swap the queues and run the tasks

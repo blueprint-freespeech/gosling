@@ -138,7 +138,7 @@ fn translate_failures<R,F>(default: R, out_error: *mut *mut GoslingError, closur
             return default;
         },
         // handle panic
-        Err(err) => {
+        Err(_) => {
             if !out_error.is_null() {
                 // populate error with panic message
                 let key = error_registry().insert(Error::new("panic occurred"));

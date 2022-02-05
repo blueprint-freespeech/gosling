@@ -98,7 +98,7 @@ extern "C" fn crypto_digest_add_bytes(digest: *mut c_void, data: *const c_char, 
             let hasher = registry.get_mut(digest as usize).unwrap();
             hasher.input(unsafe {std::slice::from_raw_parts(data as *const u8, len)});
         },
-        _ => {
+        Ok(_) => {
             panic!("Received unexpected digest: {}", digest as usize);
         },
         Err(err) => {
@@ -126,7 +126,7 @@ extern "C" fn crypto_digest_get_digest(digest: *mut c_void, out: *mut c_char, ou
             assert!(out_len >= SHA512_BYTES);
             hasher.result(unsafe {std::slice::from_raw_parts_mut(out as *mut u8, out_len)});
         },
-        _ => {
+        Ok(_) => {
             panic!("Received unexpected digest: {}", digest as usize);
         },
         Err(err) => {
@@ -146,7 +146,7 @@ extern "C" fn crypto_digest_free_(digest: *mut c_void) -> () {
         Ok(ObjectTypes::Sha512) => {
             sha512_registry().remove(digest as usize);
         },
-        _ => {
+        Ok(_) => {
             panic!("Received unexpected digest: {}", digest as usize);
         },
         Err(err) => {
@@ -167,7 +167,7 @@ extern "C" fn crypto_digest512(digest: *mut c_char, m: *const c_char, len: usize
 
 #[no_mangle]
 extern "C" fn memwipe(mem: *mut c_void, byte: u8, sz: usize) -> () {
-    let mut mem_slice = unsafe {std::slice::from_raw_parts_mut(mem as *mut u8, sz)};
+    let mem_slice = unsafe {std::slice::from_raw_parts_mut(mem as *mut u8, sz)};
     mem_slice.zeroize();
     mem_slice.fill(byte);
 }
@@ -270,8 +270,6 @@ fn hash_tor_password_with_salt(salt: &[u8], password: &str) -> Result<String> {
 }
 
 pub fn hash_tor_password(password: &str) -> Result<String> {
-
-    let mut key = [0x00u8; DIGEST_LEN];
 
     let mut salt = [0x00u8; S2K_RFC2440_SPECIFIER_LEN];
     OsRng.fill_bytes(&mut salt);
