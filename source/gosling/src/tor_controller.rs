@@ -1,16 +1,21 @@
 use std::path::Path;
 use std::option::Option;
+use std::default::Default;
 use std::iter;
+use std::process;
 use std::process::*;
 use std::{thread, time};
+use std::collections::VecDeque;
 use std::fs;
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::{self, ErrorKind, Read, Write};
 use std::time::{Duration, Instant};
 use std::ops::Drop;
+use std::net::{TcpStream, IpAddr, Ipv4Addr, SocketAddr};
 use rand::Rng;
 use rand::rngs::OsRng;
 use rand::distributions::Alphanumeric;
+use regex::Regex;
 
 use anyhow::{bail, ensure, Result};
 use tor_crypto::*;
@@ -122,6 +127,8 @@ impl TorProcess {
             .arg("DataDirectory").arg(data_directory)
             .arg("ControlPort").arg("auto")
             .arg("ControlPortWriteToFile").arg(control_port_file.clone())
+            .arg("HashedControlPassword").arg(password_hash)
+            .arg("__OwningControllerProcess").arg(process::id().to_string())
             .spawn()?;
 
         let mut control_port = 0u16;
@@ -159,6 +166,126 @@ impl Drop for TorProcess {
     }
 }
 
+pub struct ControlStream {
+    stream: TcpStream,
+    pending_data: Vec<u8>,
+    pending_lines: VecDeque<String>,
+    pending_message: Vec<String>,
+}
+
+// regexes used to parse control port responses
+lazy_static! {
+    static ref DATA_REPLY_LINE: Regex = Regex::new(r"^\d\d\d+.*").unwrap();
+    static ref MID_REPLY_LINE: Regex  = Regex::new(r"^\d\d\d-.*").unwrap();
+    static ref END_REPLY_LINE: Regex  = Regex::new(r"^\d\d\d .*").unwrap();
+}
+
+impl ControlStream {
+    pub fn new(addr: &SocketAddr, read_timeout: Duration) -> Result<ControlStream> {
+
+        ensure!(read_timeout != Default::default(), "ControlStream::new(): read_timeout must not be zero");
+
+        let mut stream = TcpStream::connect(&addr)?;
+        stream.set_read_timeout(Some(read_timeout));
+	   // stream.set_read_timeout(Some(Duration::from_millis(1)));
+        // stream.set_write_timeout(None);
+
+        // pre-allocate a kilobyte for the read buffer
+        const READ_BUFFER_SIZE: usize = 1024;
+        let pending_data = Vec::with_capacity(READ_BUFFER_SIZE);
+
+        return Ok(ControlStream{
+            stream: stream,
+            pending_data: pending_data,
+            pending_lines: Default::default(),
+            pending_message: Default::default(),
+        });
+    }
+
+    fn read_line(&mut self) -> Result<Option<String>> {
+
+        // read pending bytes from stream until we have a line to return
+        while self.pending_lines.is_empty() {
+
+            let byte_count = self.pending_data.len();
+            match self.stream.read_to_end(&mut self.pending_data) {
+                Err(err) => if err.kind() == ErrorKind::WouldBlock {
+                    if (byte_count == self.pending_data.len()) {
+                        return Ok(None);
+                    }
+                } else {
+                    bail!(err);
+                },
+                _ => (),
+            }
+
+            // split our read buffer into individual lines
+            let mut begin = 0;
+            for index in 1..self.pending_data.len() {
+                if self.pending_data[index-1] == '\r' as u8 &&
+                   self.pending_data[index] == '\n' as u8 {
+
+                    let end = index - 1;
+                    // view into byte vec of just the found line
+                    let line_view: &[u8] = &self.pending_data[begin..end];
+                    // convert to string
+                    let line_string = std::str::from_utf8(&line_view)?.to_string();
+
+                    // save in pending list
+                    self.pending_lines.push_back(line_string);
+                    // update begin (and skip over \r\n)
+                    begin = end + 2;
+                }
+            }
+            // leave any leftover bytes in the buffer for the next call
+            self.pending_data = self.pending_data[begin..].to_vec();
+        }
+
+        return Ok(self.pending_lines.pop_front());
+    }
+
+    pub fn read_message(&mut self) -> Result<Option<String>> {
+
+        loop {
+            let current_line =  match self.read_line() {
+                Ok(Some(line)) => line,
+                Ok(None) => return Ok(None),
+                Err(err) => bail!(err),
+            };
+
+            if END_REPLY_LINE.is_match(&current_line) {
+                self.pending_message.push(current_line);
+                break;
+            } else if MID_REPLY_LINE.is_match(&current_line) ||
+                      DATA_REPLY_LINE.is_match(&current_line) ||
+                      current_line == "." {
+                self.pending_message.push(current_line);
+                continue;
+            } else if !self.pending_message.is_empty() {
+                let previous_line = self.pending_message.last().unwrap();
+                if DATA_REPLY_LINE.is_match(&previous_line) {
+                    self.pending_message.push(current_line);
+                    continue;
+                }
+            }
+
+            // if we got to this point, we have received lines from
+            // the control port in an unexpected order so either we
+            // have a bug (most likely) or tor has bug
+            bail!("ControlStream::read_message(): received control port responses in an unexpect order.\n\nMessage So Far:\n'{}'\nNext Line:\n'{}'", self.pending_message.join("\n"), current_line);
+        }
+
+        let message = self.pending_message.join("\n");
+        self.pending_message.clear();
+        return Ok(Some(message));
+    }
+
+    pub fn write_command(&mut self, cmd: &String) -> Result<()> {
+        write!(self.stream, "{}\r\n", cmd);
+        return Ok(());
+    }
+}
+
 pub struct TorController {
 
 }
@@ -184,6 +311,18 @@ impl TorSettings {
 #[test]
 fn test_tor_controller() -> Result<()> {
     let tor_process = TorProcess::new(Path::new("/tmp/tor_data_directory"))?;
+    let socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), tor_process.control_port);
+
+    let mut control_stream = ControlStream::new(&socket_addr, Duration::from_millis(16))?;
+
+    control_stream.write_command(&format!("authenticate \"{}\"", tor_process.password))?;
+
+    // todo just a finite number of times
+    for i in 0..30 {
+        if let Some(line) = control_stream.read_message()? {
+            println!("line: '{}'", line);
+        }
+    }
 
     return Ok(());
 }

@@ -8,6 +8,7 @@ extern crate paste;
 extern crate num_enum;
 extern crate rand;
 extern crate zeroize;
+extern crate regex;
 
 mod ffi;
 mod tor_crypto;
