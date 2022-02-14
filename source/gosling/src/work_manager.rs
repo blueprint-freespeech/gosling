@@ -6,23 +6,45 @@ use std::sync::atomic::*;
 use std::thread;
 
 // crates
-use anyhow::{bail, Result};
-
+use anyhow::{bail, ensure, Result};
 struct Task {
     // closure
-    closure : Box<dyn Fn() -> Result<()> + Send + 'static>,
+    closure: Box<dyn Fn() -> Result<()> + Send + 'static>,
 }
 
-pub struct WorkManager<const WORKER_COUNT: usize> {
+#[derive(Clone)]
+struct Worker {
+    worker_id: usize,
+    work_manager: Weak<WorkManager>,
+}
+
+impl Worker {
+    pub fn new(worker_id: usize, work_manager: &Arc<WorkManager>) -> Result<Worker> {
+        ensure!(work_manager.worker_count > worker_id, "Worker::new(): worker_id invalid for work_manager");
+        return Ok(Worker{worker_id: worker_id, work_manager: Arc::downgrade(work_manager)});
+    }
+
+    pub fn push<F: Fn() -> Result<()> + Send + 'static>(&self, closure: F) -> Result<()> {
+        if let Some(work_manager) = self.work_manager.upgrade() {
+            return work_manager.push(self.worker_id, closure);
+        }
+        bail!("Worker::push(): parent WorkManager no longer valid");
+    }
+}
+
+pub struct WorkManager {
+    // numberof workers owned by this work manager
+    worker_count: usize,
+
     // shared queues of tasks
-    producer_queues: [Arc<Mutex<Vec<Task>>>; WORKER_COUNT],
+    producer_queues: Vec<Arc<Mutex<Vec<Task>>>>,
 
     // worker thread handles
-    threads: [Option<thread::JoinHandle::<()>>; WORKER_COUNT],
+    threads: Mutex<Vec<thread::JoinHandle::<()>>>,
 
-    // condition varibales used to suspend worker threads when
+    // condition variables used to suspend worker threads when
     // they run out of work
-    suspend_handles: [Arc<Condvar>; WORKER_COUNT],
+    suspend_handles: Vec<Arc<Condvar>>,
 
     // set to true to indicate the worker threads need to finish up
     terminating: Arc<AtomicBool>,
@@ -31,60 +53,73 @@ pub struct WorkManager<const WORKER_COUNT: usize> {
     pending_tasks: Arc<AtomicUsize>,
 }
 
-impl<const WORKER_COUNT: usize> WorkManager<WORKER_COUNT> {
-    pub fn new() -> Result<Self> {
-        unsafe {
-            // default initialize our various arrays
-            let mut producer_queues: [Arc<Mutex<Vec<Task>>>; WORKER_COUNT] = std::mem::uninitialized();
-            let mut threads: [Option<thread::JoinHandle::<()>>; WORKER_COUNT] = std::mem::uninitialized();
-            let mut suspend_handles: [Arc<Condvar>; WORKER_COUNT] = std::mem::uninitialized();
+impl WorkManager {
+    pub fn new(worker_names: &[&str]) -> Result<Self> {
+        ensure!(worker_names.len() > 0, "WorkManager::new(): worker_names must not be empty");
 
-            for worker_id in 0..WORKER_COUNT {
-                std::ptr::write(&mut producer_queues[worker_id], Default::default());
-                std::ptr::write(&mut threads[worker_id], Default::default());
-                std::ptr::write(&mut suspend_handles[worker_id], Default::default());
-            }
+        // terminating signal is not set
+        let terminating = Arc::new(AtomicBool::new(false));
+        // start with no tasks
+        let pending_tasks = Arc::new(AtomicUsize::new(0));
 
-            // terminating signal is not set
-            let terminating = Arc::new(AtomicBool::new(false));
-            // start with no tasks
-            let pending_tasks = Arc::new(AtomicUsize::new(0));
 
-            return Ok(
-                WorkManager::<WORKER_COUNT>{
-                    producer_queues: producer_queues,
-                    threads: threads,
-                    suspend_handles: suspend_handles,
-                    terminating: terminating,
-                    pending_tasks: pending_tasks
-                });
+        let mut work_manager = WorkManager{
+                worker_count: worker_names.len(),
+                producer_queues: Default::default(),
+                threads: Default::default(),
+                suspend_handles: Default::default(),
+                terminating: terminating,
+                pending_tasks: pending_tasks,
+            };
+
+        // add and start our worker threads
+        for worker_name in worker_names {
+            work_manager.add_worker(worker_name);
         }
+        return Ok(work_manager);
     }
 
-    pub fn start(&mut self, worker_names: &[&str; WORKER_COUNT]) -> Result<()> {
-        for worker_id in 0..WORKER_COUNT {
-            let worker_name = worker_names[worker_id].to_string();
-            let producer_queue = self.producer_queues[worker_id].clone();
-            let suspend_handle = self.suspend_handles[worker_id].clone();
-            let terminating = self.terminating.clone();
-            let pending_tasks = self.pending_tasks.clone();
+    fn add_worker(&mut self, worker_name: &str) -> Result<()> {
 
-            let thread = thread::Builder::new()
-                .name(worker_name)
-                .spawn(move || {
-                    Self::worker_func(producer_queue, suspend_handle, terminating, pending_tasks);
-                })?;
+        let mut threads = self.threads.lock().unwrap();
 
-            self.threads[worker_id] = Some(thread);
-        }
+        self.producer_queues.push(Default::default());
+        self.suspend_handles.push(Default::default());
+
+        // pass in the shared state as weak references
+        let producer_queue = Arc::downgrade(self.producer_queues.last().unwrap());
+        let suspend_handle = Arc::downgrade(self.suspend_handles.last().unwrap());
+        let terminating = Arc::downgrade(&self.terminating);
+        let pending_tasks = Arc::downgrade(&self.pending_tasks);
+
+        let thread_handle = thread::Builder::new()
+            .name(worker_name.to_string())
+            .spawn(move || {
+                Self::worker_func(producer_queue, suspend_handle, terminating, pending_tasks);
+            })?;
+
+        threads.push(thread_handle);
 
         return Ok(());
     }
 
-    pub fn push<F: Fn() -> Result<()> + Send + 'static>(&mut self, worker_id: usize, closure: F) -> Result<()> {
+    fn accepting_tasks(&self) -> bool {
+        // we may only accept new tasks if we are not terminating and
+        // there are no pending tasks (the same conditions which signal
+        // to the worker threads to exit their loop)
+        if self.terminating.load(Ordering::Relaxed) &&
+           self.pending_tasks.load(Ordering::Relaxed) == 0 {
+            return false;
+        }
+        return true;
+    }
 
-        if worker_id >= WORKER_COUNT {
-            bail!("WorkManager::push(): worker_id must be less than '{}'; received '{}'", WORKER_COUNT, worker_id);
+    pub fn push<F: Fn() -> Result<()> + Send + 'static>(&self, worker_id: usize, closure: F) -> Result<()> {
+
+        if worker_id >= self.worker_count {
+            bail!("WorkManager::push(): worker_id must be less than '{}'; received '{}'", self.worker_count, worker_id);
+        } else if !self.accepting_tasks() {
+            bail!("WorkManager::push(): WorkManager has joined and is no longer accepting tasks");
         }
 
         // update the total pending task counter first
@@ -100,35 +135,32 @@ impl<const WORKER_COUNT: usize> WorkManager<WORKER_COUNT> {
         return Ok(());
     }
 
-    pub fn join(&mut self) -> Result<()> {
-        // signals to threads that they may now terminate
-        self.terminating.store(true, Ordering::Relaxed);
+    pub fn join(&self) -> Result<()> {
 
-        // wait for all of our threads to finish
-        for i in 0..WORKER_COUNT {
-            if self.threads[i].is_some() {
-                // wake up this thread
-                self.suspend_handles[i].notify_one();
-                // wait for it to complete
-                match self.threads[i].take().unwrap().join() {
-                    Ok(_) => {},
-                    Err(_) => {
-                        panic!("WorkManager::join(): Error when joining threads");
-                    },
-                }
-            }
+        // signals to threads that they may now terminate
+        ensure!(!self.terminating.swap(true, Ordering::Relaxed), "WorkManager::join(): already joined");
+
+        // wake up all the worker threads in case they are sleeping
+        for suspend_handle in &self.suspend_handles {
+            suspend_handle.notify_one();
+        }
+
+        // wait for each thread to join
+        let mut threads = self.threads.lock().unwrap();
+        while !threads.is_empty() {
+            threads.pop().unwrap().join();
         }
 
         return Ok(());
     }
 
-    fn worker_func(producer_queue: Arc<Mutex<Vec<Task>>>, suspend_handle: Arc<Condvar>, terminating: Arc<AtomicBool>, pending_tasks: Arc<AtomicUsize>) -> () {
+    fn worker_func(producer_queue_weak: Weak<Mutex<Vec<Task>>>, suspend_handle_weak: Weak<Condvar>, terminating_weak: Weak<AtomicBool>, pending_tasks_weak: Weak<AtomicUsize>) -> () {
         let mut consumer_queue = Vec::<Task>::new();
 
         let finished = || -> bool {
-            if !terminating.load(Ordering::Relaxed) {
+            if !terminating_weak.upgrade().unwrap().load(Ordering::Relaxed) {
                 return false;
-            } else if pending_tasks.load(Ordering::Relaxed) > 0 {
+            } else if pending_tasks_weak.upgrade().unwrap().load(Ordering::Relaxed) > 0 {
                 return false;
             }
             return true;
@@ -145,18 +177,22 @@ impl<const WORKER_COUNT: usize> WorkManager<WORKER_COUNT> {
                     }
                 }
             }
+
             // update pending_tasks counter
-            pending_tasks.fetch_sub(consumer_queue.len(), Ordering::Relaxed);
+            pending_tasks_weak.upgrade().unwrap().fetch_sub(consumer_queue.len(), Ordering::Relaxed);
 
             // empty out completed queue
             consumer_queue.clear();
 
             // finally swap out queues to get new tasks
+            let producer_queue = producer_queue_weak.upgrade().unwrap();
             let mut producer_queue = producer_queue.lock().unwrap();
 
             // suspend thread if producer queue is empty and we are not
             // terminating
             if producer_queue.len() == 0 {
+                let suspend_handle = suspend_handle_weak.upgrade().unwrap();
+                let terminating = terminating_weak.upgrade().unwrap();
                 if terminating.load(Ordering::Relaxed) {
                     // suspend for a 16ms rather than busy looping
                     let _ = suspend_handle.wait_timeout(producer_queue, std::time::Duration::from_millis(16)).unwrap();
@@ -171,28 +207,60 @@ impl<const WORKER_COUNT: usize> WorkManager<WORKER_COUNT> {
     }
 }
 
+impl Drop for WorkManager {
+    fn drop(&mut self) {
+        // we can ignore duplicate join
+        let _ = self.join();
+    }
+}
+
 #[test]
 fn test_work_manager() -> Result<()> {
 
-    let mut work_manager = WorkManager::<3>::new()?;
-    let worker_names = ["worker1", "worker2", "worker3"];
+    const WORKER_NAMES: [&str; 3] = ["worker1", "worker2", "worker3"];
+    const WORKER_COUNT: usize = WORKER_NAMES.len();
+    let work_manager: Arc<WorkManager> = Arc::<WorkManager>::new(WorkManager::new(&WORKER_NAMES)?);
 
-    work_manager.start(&worker_names)?;
+    let worker_0 = Worker::new(0, &work_manager)?;
 
-    work_manager.push(0, || Ok(thread::sleep(std::time::Duration::from_secs(5))))?;
+    worker_0.push(|| {
+        println!("Worker 0: sleeping for 5 seconds");
+        thread::sleep(std::time::Duration::from_secs(5));
+        return Ok(());
+    });
 
-    for i in 0..3 {
-        work_manager.push(i as usize, move || Ok(println!("Hello from Worker {}", i)))?;
+    let counter = Arc::new(AtomicUsize::new(0));
+    let begin = std::time::Instant::now();
+
+    for i in 0..WORKER_COUNT {
+        let worker = Worker::new(i, &work_manager)?;
+        let worker_0 = worker_0.clone();
+        let counter = counter.clone();
+        worker.push(
+            move || {
+                println!("Worker {}: hello!", i);
+                let counter = counter.clone();
+                worker_0.push(move || {
+                    println!("Worker 0: hello from nested task from Worker {}", i);
+                    counter.fetch_add(1, Ordering::Relaxed);
+                    return Ok(());
+                });
+                return Ok(());
+            })?;
     }
 
-    match work_manager.push(4, || Ok(())) {
-        Ok(result) => {
-            bail!("Expected work_manager.push(4,...) to fail");
-        },
+    match work_manager.push(WORKER_COUNT, || Ok(())) {
+        Ok(result) => bail!("Expected work_manager.push({},...) to fail", WORKER_COUNT),
         _ => ()
     };
 
     work_manager.join()?;
+    match work_manager.join() {
+        Ok(()) => bail!("Expected work_manager.join() to return error on second join"),
+        _ => ()
+    };
+
+    ensure!(counter.load(Ordering::Relaxed) == WORKER_COUNT, "Expecter counter to equal {}", WORKER_COUNT);
 
     return Ok(());
 }
