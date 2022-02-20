@@ -4,12 +4,57 @@ use std::vec::Vec;
 use std::sync::*;
 use std::sync::atomic::*;
 use std::thread;
+use std::any::{Any, type_name};
 
 // crates
 use anyhow::{bail, ensure, Result};
+
 struct Task {
     // closure
-    closure: Box<dyn Fn() -> Result<()> + Send + 'static>,
+    closure: Box<dyn Fn() -> Box<dyn Any + Send> + Send + 'static>,
+    // wait handle to notify
+    wait_handle: Weak<Condvar>,
+    // destination
+    result: Weak<Mutex<Option<Box<dyn Any + Send>>>>,
+}
+
+struct TaskResult {
+    wait_handle: Arc<Condvar>,
+    result: Arc<Mutex<Option<Box<dyn Any + Send>>>>,
+}
+
+impl TaskResult {
+
+    fn new() -> TaskResult {
+        return Self{wait_handle: Default::default(), result: Default::default()};
+    }
+
+    pub fn wait<T: Any>(&self) -> Result<T> {
+
+        loop {
+            // swap a None result with held result
+            let mut local: Option<Box<dyn Any + Send>> = None;
+            {
+                let mut guard: MutexGuard<Option<Box<dyn Any + Send>>> = self.result.lock().unwrap();
+                std::mem::swap::<Option<Box<dyn Any + Send>>>(&mut local, &mut guard);
+            }
+            // if some result was stored, attempt to cast and return
+            if let Some(result) = local {
+                // first try and cast to error type
+                match result.downcast::<anyhow::Error>() {
+                    Ok(err) => bail!(err),
+                    // otherwise try the requested cast
+                    Err(result) => match result.downcast::<T>() {
+                        Ok(result) => return Ok(*result),
+                        Err(err) => bail!("TaskResult::wait<T>(): could not cast result to type {}", type_name::<T>()),
+                    }
+                }
+            }
+
+            // suspend until notified
+            self.wait_handle.wait(self.result.lock().unwrap());
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -24,7 +69,7 @@ impl Worker {
         return Ok(Worker{worker_id: worker_id, work_manager: Arc::downgrade(work_manager)});
     }
 
-    pub fn push<F: Fn() -> Result<()> + Send + 'static>(&self, closure: F) -> Result<()> {
+    pub fn push<T: Send + 'static, F: Fn() -> Result<T> + Send + 'static>(&self, closure: F) -> Result<TaskResult> {
         if let Some(work_manager) = self.work_manager.upgrade() {
             return work_manager.push(self.worker_id, closure);
         }
@@ -114,7 +159,24 @@ impl WorkManager {
         return true;
     }
 
-    pub fn push<F: Fn() -> Result<()> + Send + 'static>(&self, worker_id: usize, closure: F) -> Result<()> {
+    pub fn push<T: Send + 'static, F: Fn() -> Result<T> + Send + 'static>(&self, worker_id: usize, closure: F) -> Result<TaskResult> {
+
+        // wrap the friendly closure into one which returns a Box'd result
+        // that can store a dyn Any
+        let closure = move || -> Box<dyn Any + Send> {
+            match closure() {
+                Ok(result) => {
+                    return Box::new(result);
+                },
+                Err(err) => {
+                    return Box::new(err);
+                }
+            }
+        };
+        return self.push_impl(worker_id, closure);
+    }
+
+    fn push_impl<F: Fn() -> Box<dyn Any + Send> + Send + 'static>(&self, worker_id: usize, closure: F) -> Result<TaskResult> {
 
         if worker_id >= self.worker_count {
             bail!("WorkManager::push(): worker_id must be less than '{}'; received '{}'", self.worker_count, worker_id);
@@ -126,13 +188,14 @@ impl WorkManager {
         self.pending_tasks.fetch_add(1, Ordering::Relaxed);
 
         // add task to work queue
-        let task = Task{closure: Box::new(closure)};
+        let task_result = TaskResult{wait_handle: Default::default(), result: Default::default()};
+        let task = Task{closure: Box::new(closure), wait_handle: Arc::downgrade(&task_result.wait_handle), result: Arc::downgrade(&task_result.result)};
         self.producer_queues[worker_id].lock().unwrap().push(task);
 
         // wake up worker thread
         self.suspend_handles[worker_id].notify_one();
 
-        return Ok(());
+        return Ok(task_result);
     }
 
     pub fn join(&self) -> Result<()> {
@@ -170,11 +233,23 @@ impl WorkManager {
         while !finished() {
             // run all our pending tasks
             for task in &consumer_queue {
-                match (*task.closure)() {
-                    Ok(_) => {},
-                    Err(err) => {
-                        panic!("{}", err);
-                    }
+                let closure_result = (*task.closure)();
+                let task_wait_handle = task.wait_handle.upgrade();
+                let task_result = task.result.upgrade();
+
+                // we only need to store the result if
+                // the caller has saved off the TaskResult
+                if task_wait_handle.is_some() &&
+                   task_result.is_some() {
+                    // box the closure result
+                    let mut retval = Some(closure_result);
+                    // swap in the result
+                    std::mem::swap::<Option<Box<dyn Any + Send>>>(
+                        &mut retval,
+                        &mut task_result.unwrap().lock().unwrap());
+
+                    // notify the task result
+                    task_wait_handle.unwrap().notify_one();
                 }
             }
 
@@ -223,11 +298,29 @@ fn test_work_manager() -> Result<()> {
 
     let worker_0 = Worker::new(0, &work_manager)?;
 
-    worker_0.push(|| {
+    // task should retur 41
+    let task_result = worker_0.push(|| {
         println!("Worker 0: sleeping for 5 seconds");
         thread::sleep(std::time::Duration::from_secs(5));
-        return Ok(());
-    });
+        return Ok(42u8);
+    })?;
+    ensure!(task_result.wait::<u8>()? == 42u8);
+
+    // task should return a string
+    let task_result = worker_0.push(|| {
+        println!("Worker 0: building a string");
+        return Ok(String::from("Hello There"));
+    })?;
+    ensure!(task_result.wait::<String>()? == "Hello There");
+
+    // this task should return a failure
+    let task_result = worker_0.push(|| -> Result<()> {
+        bail!("An error!");
+    })?;
+    match task_result.wait::<()>() {
+        Err(err) => ensure!(err.to_string() == "An error!"),
+        Ok(_) => bail!("Expected task to return an error"),
+    }
 
     let counter = Arc::new(AtomicUsize::new(0));
     let begin = std::time::Instant::now();
@@ -244,7 +337,7 @@ fn test_work_manager() -> Result<()> {
                     println!("Worker 0: hello from nested task from Worker {}", i);
                     counter.fetch_add(1, Ordering::Relaxed);
                     return Ok(());
-                });
+                })?;
                 return Ok(());
             })?;
     }
