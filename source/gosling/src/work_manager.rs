@@ -18,7 +18,7 @@ struct Task {
     result: Weak<Mutex<Option<Box<dyn Any + Send>>>>,
 }
 
-struct TaskResult {
+pub struct TaskResult {
     wait_handle: Arc<Condvar>,
     result: Arc<Mutex<Option<Box<dyn Any + Send>>>>,
 }
@@ -58,7 +58,7 @@ impl TaskResult {
 }
 
 #[derive(Clone)]
-struct Worker {
+pub struct Worker {
     worker_id: usize,
     work_manager: Weak<WorkManager>,
 }
