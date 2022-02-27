@@ -4,6 +4,7 @@ use std::vec::Vec;
 use std::sync::*;
 use std::sync::atomic::*;
 use std::thread;
+use std::thread::ThreadId;
 use std::any::{Any, type_name};
 
 // crates
@@ -75,7 +76,17 @@ impl Worker {
         }
         bail!("Worker::push(): parent WorkManager no longer valid");
     }
+
+    pub fn thread_id(&self) -> Result<ThreadId> {
+        let work_manager = self.work_manager.upgrade();
+        if let Some(work_manager) = work_manager {
+            return work_manager.thread_id(self.worker_id);
+        }
+        bail!("Worker::thread_id(): work_manager weak reference cannot be upgraded");
+    }
 }
+
+// unsafe impl std::marker::Send for Worker {}
 
 pub struct WorkManager {
     // numberof workers owned by this work manager
@@ -196,6 +207,18 @@ impl WorkManager {
         self.suspend_handles[worker_id].notify_one();
 
         return Ok(task_result);
+    }
+
+    pub fn thread_id(&self, worker_id: usize) -> Result<ThreadId> {
+
+        if worker_id >= self.worker_count {
+            bail!("WorkManager::push(): worker_id must be less than '{}'; received '{}'", self.worker_count, worker_id);
+        }
+
+        match self.threads.lock() {
+            Ok(threads) => return Ok(threads[worker_id].thread().id()),
+            Err(err) => bail!("WorkManager::thread_id(): cannot lock threads mutex"),
+        }
     }
 
     pub fn join(&self) -> Result<()> {
