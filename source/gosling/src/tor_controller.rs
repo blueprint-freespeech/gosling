@@ -1,24 +1,29 @@
+// standard
 use std::path::Path;
 use std::option::Option;
 use std::default::Default;
 use std::iter;
 use std::process;
 use std::process::*;
-use std::{thread, time};
 use std::collections::VecDeque;
 use std::fs;
 use std::fs::File;
-use std::io::{self, ErrorKind, Read, Write};
+use std::io::{ErrorKind, Read, Write};
 use std::time::{Duration, Instant};
 use std::ops::Drop;
-use std::net::{TcpStream, IpAddr, Ipv4Addr, SocketAddr};
+use std::net::*;
+use std::sync::*;
+
+// extern crates
+use anyhow::{bail, ensure, Result};
 use rand::Rng;
 use rand::rngs::OsRng;
 use rand::distributions::Alphanumeric;
 use regex::Regex;
 
-use anyhow::{bail, ensure, Result};
+// internal modules
 use tor_crypto::*;
+use work_manager::*;
 
 // get the name of our tor executable
 fn system_tor() -> &'static str {
@@ -71,7 +76,7 @@ fn read_control_port_file(control_port_file: &Path) -> Result<u16> {
 
 // Encapsulates the tor daemon process
 
-pub struct TorProcess {
+struct TorProcess {
     control_port: u16,
     process: Child,
     password: String,
@@ -122,12 +127,22 @@ impl TorProcess {
             .stdout(Stdio::null())
             .stdin(Stdio::null())
             .stderr(Stdio::null())
+            // point to our above written torrc file
             .arg("--defaults-torrc").arg(default_torrc)
+            // location of torrc
             .arg("--torrc-file").arg(torrc)
+            // root data directory
             .arg("DataDirectory").arg(data_directory)
+            // daemon will assign us a port, and we will
+            // read it from the control port file
             .arg("ControlPort").arg("auto")
+            // control port file destination
             .arg("ControlPortWriteToFile").arg(control_port_file.clone())
+            // use password authentication to prevent other apps
+            // from modifying our daemon's settings
             .arg("HashedControlPassword").arg(password_hash)
+            // tor process will shut down after this process shuts down
+            // to avoid orphaned tor daemon
             .arg("__OwningControllerProcess").arg(process::id().to_string())
             .spawn()?;
 
@@ -140,7 +155,7 @@ impl TorProcess {
         while control_port == 0 &&
               start.elapsed() < Duration::from_secs(5) {
             if control_port_file.exists() {
-                control_port = match(read_control_port_file(control_port_file.as_path())) {
+                control_port = match read_control_port_file(control_port_file.as_path()) {
                     Ok(port) => {
                         fs::remove_file(&control_port_file);
                         port
@@ -185,10 +200,8 @@ impl ControlStream {
 
         ensure!(read_timeout != Default::default(), "ControlStream::new(): read_timeout must not be zero");
 
-        let mut stream = TcpStream::connect(&addr)?;
+        let stream = TcpStream::connect(&addr)?;
         stream.set_read_timeout(Some(read_timeout));
-	   // stream.set_read_timeout(Some(Duration::from_millis(1)));
-        // stream.set_write_timeout(None);
 
         // pre-allocate a kilobyte for the read buffer
         const READ_BUFFER_SIZE: usize = 1024;
@@ -210,7 +223,7 @@ impl ControlStream {
             let byte_count = self.pending_data.len();
             match self.stream.read_to_end(&mut self.pending_data) {
                 Err(err) => if err.kind() == ErrorKind::WouldBlock {
-                    if (byte_count == self.pending_data.len()) {
+                    if byte_count == self.pending_data.len() {
                         return Ok(None);
                     }
                 } else {
@@ -244,7 +257,7 @@ impl ControlStream {
         return Ok(self.pending_lines.pop_front());
     }
 
-    pub fn read_message(&mut self) -> Result<Option<String>> {
+    pub fn read_message(&mut self) -> Result<Option<(u32,String)>> {
 
         loop {
             let current_line =  match self.read_line() {
@@ -277,22 +290,139 @@ impl ControlStream {
 
         let message = self.pending_message.join("\n");
         self.pending_message.clear();
-        return Ok(Some(message));
+
+        // parse out the response code for easier matching
+        let code: u32 = message[0..3].parse()?;
+        return Ok(Some((code,message)));
     }
 
-    pub fn write_command(&mut self, cmd: &String) -> Result<()> {
+    pub fn write(&mut self, cmd: &str) -> Result<()> {
         write!(self.stream, "{}\r\n", cmd);
         return Ok(());
     }
 }
 
-pub struct TorController {
+struct TorCommandResponse {
+    // notified on command complete
+    wait_handle: Arc<Condvar>,
+    // command response (code, string)
+    response: Arc<Mutex<(u32,String)>>,
+}
 
+// shared state of the TorController that we pass between workers
+struct TorControllerShared {
+    // underlying control stream
+    control_stream: ControlStream,
+    // buffer we save logs to
+    logs: Vec<String>,
+    // command entries
+    // TODO: given that the write will be blocked on
+    // the TorController's shared mutex, this probably only needs
+    // to be a single entry rather than a queue
+    command_entries: VecDeque<TorCommandResponse>,
+}
+
+pub struct TorController {
+    // worker we are using to schedule tasks
+    stream_worker: Worker,
+    // internal state of tor controller that is shared
+    // with workers
+    shared: Arc<Mutex<TorControllerShared>>,
 }
 
 impl TorController {
-    pub fn new(&self, address: &str) -> Result<TorController> {
-        return Ok(TorController{});
+    pub fn new(stream_worker: Worker, control_stream: ControlStream) -> Result<TorController> {
+        // construct our tor controller
+        let tor_controller =
+            TorController {
+                stream_worker: stream_worker.clone(),
+                shared: Arc::new(
+                    Mutex::new(
+                        TorControllerShared{
+                            control_stream: control_stream,
+                            logs: Default::default(),
+                            command_entries: Default::default(),
+                        })),
+            };
+
+        // and spin up the message read pump
+        let shared = Arc::downgrade(&tor_controller.shared);
+        stream_worker.clone().push(move || -> Result<()> {
+            TorController::read_message_task(stream_worker.clone(), shared.clone());
+            return Ok(());
+        });
+
+        return Ok(tor_controller);
+    }
+
+    fn read_message_task(
+        worker: Worker,
+        shared: Weak<Mutex<TorControllerShared>>) -> Result<()> {
+
+        // weak -> arc
+        if let Some(shared) = shared.upgrade() {
+            // acquire mutex
+            if let Ok(mut shared) = shared.lock() {
+                // read line
+                match shared.control_stream.read_message() {
+                    Ok(Some((code,message))) => {
+                        // async notifications go to logs
+                        match code {
+                            // async notificaiton
+                            650u32 => shared.logs.push(message),
+                            // all other responses to commands
+                            _ => match shared.command_entries.pop_front() {
+                                Some(response) => {
+                                    // save off the command response
+                                    *response.response.lock().unwrap() = (code,message);
+                                    // and notify the caller
+                                    response.wait_handle.notify_one();
+                                },
+                                None => panic!("TorController::read_message_task(): received response from tor daemon but no TorCommandResponse object available"),
+                            },
+                        }
+                    },
+                    Ok(None) => (),
+                    Err(err) => bail!(err),
+                }
+            }
+        } else {
+            // the shared data no longer exists, so the owner
+            // TorController must have been dropped so we should
+            // terminate this call chain
+            return Ok(());
+        }
+
+        // schedule next read task
+        worker.clone().push(move || -> Result<()> {
+            return Self::read_message_task(worker.clone(), shared.clone())
+        });
+
+        return Ok(());
+    }
+
+    fn write_command(&self, command: &str) -> Result<(u32, String)> {
+
+        ensure!(std::thread::current().id() != self.stream_worker.thread_id()?, "TorController::write_command(): must be called from a different thread than stream_worker's backing thread");
+
+        let wait_handle: Arc<Condvar> = Default::default();
+        // (response code, response contents)
+        let response: Arc<Mutex<(u32, String)>> = Default::default();
+
+        if let Ok(mut shared) = self.shared.lock() {
+            // push response dest to the queue
+            shared.command_entries.push_back(
+                TorCommandResponse{
+                    wait_handle: wait_handle.clone(),
+                    response: response.clone(),
+                });
+            // write the command to the control stream
+            shared.control_stream.write(command);
+        };
+
+        // wait until message pump receives response
+        let response = wait_handle.wait(response.lock().unwrap()).unwrap();
+        return Ok(response.clone());
     }
 
     pub fn bootstrap(&self) -> Result<()> {
@@ -313,16 +443,22 @@ fn test_tor_controller() -> Result<()> {
     let tor_process = TorProcess::new(Path::new("/tmp/tor_data_directory"))?;
     let socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), tor_process.control_port);
 
-    let mut control_stream = ControlStream::new(&socket_addr, Duration::from_millis(16))?;
+    let control_stream = ControlStream::new(&socket_addr, Duration::from_millis(16))?;
 
-    control_stream.write_command(&format!("authenticate \"{}\"", tor_process.password))?;
+    // create a worker thread to handle the control port reads
+    const WORKER_NAMES: [&str; 1] = ["tor_control"];
+    let work_manager = Arc::new(WorkManager::new(&WORKER_NAMES)?);
+    let worker = Worker::new(0, &work_manager)?;
 
-    // todo just a finite number of times
-    for i in 0..30 {
-        if let Some(line) = control_stream.read_message()? {
-            println!("line: '{}'", line);
-        }
+    // create a scope to ensure tor_controller is dropped
+    {
+        // create a tor controller and send authentication command
+        let tor_controller = TorController::new(worker, control_stream)?;
+        let response = tor_controller.write_command(&format!("authenticate \"{}\"", tor_process.password))?;
+        ensure!(response.0 == 250u32);
+        println!("response: {:?}", response.1);
     }
+    work_manager.join();
 
     return Ok(());
 }
