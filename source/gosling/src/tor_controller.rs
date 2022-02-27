@@ -13,6 +13,7 @@ use std::time::{Duration, Instant};
 use std::ops::Drop;
 use std::net::*;
 use std::sync::*;
+use std::ops::DerefMut;
 
 // extern crates
 use anyhow::{bail, ensure, Result};
@@ -302,11 +303,13 @@ impl ControlStream {
     }
 }
 
-struct TorCommandResponse {
+struct TorCommand {
+    // command string to send daemon
+    command: String,
     // notified on command complete
     wait_handle: Arc<Condvar>,
-    // command response (code, string)
-    response: Arc<Mutex<(u32,String)>>,
+    // command response (code, string), None on message pump failure
+    response: Arc<Mutex<Option<(u32,String)>>>,
 }
 
 // shared state of the TorController that we pass between workers
@@ -316,10 +319,7 @@ struct TorControllerShared {
     // buffer we save logs to
     logs: Vec<String>,
     // command entries
-    // TODO: given that the write will be blocked on
-    // the TorController's shared mutex, this probably only needs
-    // to be a single entry rather than a queue
-    command_entries: VecDeque<TorCommandResponse>,
+    command_entries: VecDeque<TorCommand>,
 }
 
 pub struct TorController {
@@ -330,6 +330,21 @@ pub struct TorController {
     shared: Arc<Mutex<TorControllerShared>>,
 }
 
+// TODO:
+// - go through Ricochet's tor manager and figure out which commands we need to encapsulate:
+//  - get conf
+//  - set conf
+//  - add onion
+//  - authenticate
+//  - protocol info
+// - add callback mechanism to respond to logs (rather than just sticking them in a Vec to be forgotten)
+// - implement a TorSocket (with Read+Write traits?); will need a SOCKS5 implementation
+// - review the Gosling grant spec
+//  - looks like we need to move this tor controller module out of Gosling
+//  - which means we need to move work manager out too (as Gosling and tor controller both depend)
+// - look into how async runtimes work, see if there are some standard traits for tasks/taskpools
+//   we should be using
+// - implement TorSetings object for setting proxy/firewall/bridge settings
 impl TorController {
     pub fn new(stream_worker: Worker, control_stream: ControlStream) -> Result<TorController> {
         // construct our tor controller
@@ -363,6 +378,8 @@ impl TorController {
         if let Some(shared) = shared.upgrade() {
             // acquire mutex
             if let Ok(mut shared) = shared.lock() {
+	    	// a mut ref so we acn access all members mutably
+                let shared = shared.deref_mut();
                 // read line
                 match shared.control_stream.read_message() {
                     Ok(Some((code,message))) => {
@@ -372,18 +389,31 @@ impl TorController {
                             650u32 => shared.logs.push(message),
                             // all other responses to commands
                             _ => match shared.command_entries.pop_front() {
-                                Some(response) => {
+                                Some(entry) => {
                                     // save off the command response
-                                    *response.response.lock().unwrap() = (code,message);
+                                    *entry.response.lock().unwrap() = Some((code,message));
                                     // and notify the caller
-                                    response.wait_handle.notify_one();
+                                    entry.wait_handle.notify_one();
+
+                                    // write next command in queue if there is one
+                                    if let Some(entry) = shared.command_entries.front() {
+                                        shared.control_stream.write(&entry.command);
+                                    }
                                 },
-                                None => panic!("TorController::read_message_task(): received response from tor daemon but no TorCommandResponse object available"),
+                                None => panic!("TorController::read_message_task(): received command response from tor daemon but we have no pending TorCommand object to receive it"),
                             },
                         }
                     },
+                    // do not yet have full message
                     Ok(None) => (),
-                    Err(err) => bail!(err),
+                    // some error, we need to notify all our waiting commands so calling threads wake up
+                    Err(err) => {
+                        for mut entry in shared.command_entries.iter_mut() {
+                            *entry.response.lock().unwrap() = None;
+                            entry.wait_handle.notify_one();
+                        }
+                        bail!(err);
+                    },
                 }
             }
         } else {
@@ -401,28 +431,43 @@ impl TorController {
         return Ok(());
     }
 
-    fn write_command(&self, command: &str) -> Result<(u32, String)> {
+    fn write_command(&self, command: String) -> Result<(u32, String)> {
 
+        // if write_command were to be called from the same thread as the worker
+        // handling the stream read/writes we would end up deadlock waiting
+        // for the request to complete
         ensure!(std::thread::current().id() != self.stream_worker.thread_id()?, "TorController::write_command(): must be called from a different thread than stream_worker's backing thread");
 
         let wait_handle: Arc<Condvar> = Default::default();
         // (response code, response contents)
-        let response: Arc<Mutex<(u32, String)>> = Default::default();
+        let response: Arc<Mutex<Option<(u32, String)>>> = Arc::new(Mutex::new(None));
 
-        if let Ok(mut shared) = self.shared.lock() {
-            // push response dest to the queue
-            shared.command_entries.push_back(
-                TorCommandResponse{
-                    wait_handle: wait_handle.clone(),
-                    response: response.clone(),
-                });
-            // write the command to the control stream
-            shared.control_stream.write(command);
+        match self.shared.lock() {
+            Ok(mut shared) => {
+                // only write next command to socket if we have no pending
+                // commands; if we have a queue of commands the message pump
+                // will send the next command after the previous one finishes
+                if shared.command_entries.is_empty() {
+                    shared.control_stream.write(&command)?;
+                }
+
+                // push response dest to the queue
+                // it is ok to push the entry after the write because the shared member
+                // is protected by mutex
+                shared.command_entries.push_back(
+                    TorCommand{
+                        command: command,
+                        wait_handle: wait_handle.clone(),
+                        response: response.clone(),
+                    });
+            },
+            Err(err) => bail!("TorController::write_command(): error received when trying to acquire shared lock: '{}'", err),
+        }
+
+        if let Some(response) = &*wait_handle.wait(response.lock().unwrap()).unwrap() {
+            return Ok(response.clone());
         };
-
-        // wait until message pump receives response
-        let response = wait_handle.wait(response.lock().unwrap()).unwrap();
-        return Ok(response.clone());
+        bail!("TorController::write_command(): command rejected");
     }
 
     pub fn bootstrap(&self) -> Result<()> {
@@ -454,7 +499,7 @@ fn test_tor_controller() -> Result<()> {
     {
         // create a tor controller and send authentication command
         let tor_controller = TorController::new(worker, control_stream)?;
-        let response = tor_controller.write_command(&format!("authenticate \"{}\"", tor_process.password))?;
+        let response = tor_controller.write_command(format!("authenticate \"{}\"", tor_process.password))?;
         ensure!(response.0 == 250u32);
         println!("response: {:?}", response.1);
     }
