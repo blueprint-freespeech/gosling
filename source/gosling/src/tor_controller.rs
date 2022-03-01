@@ -333,10 +333,11 @@ pub struct TorController {
 // TODO:
 // - go through Ricochet's tor manager and figure out which commands we need to encapsulate:
 //  - get conf
-//  - set conf
+//  - get info
+//  - save conf
 //  - add onion
+//  - delete onion
 //  - authenticate
-//  - protocol info
 // - add callback mechanism to respond to logs (rather than just sticking them in a Vec to be forgotten)
 // - implement a TorSocket (with Read+Write traits?); will need a SOCKS5 implementation
 // - review the Gosling grant spec
@@ -470,9 +471,42 @@ impl TorController {
         bail!("TorController::write_command(): command rejected");
     }
 
-    pub fn bootstrap(&self) -> Result<()> {
-        Ok(())
+    //
+    // Tor Commands
+    //
+    // The section where we can find the specificatiton in control-spec.txt
+    // for the underlying command is listed in parentheses
+
+    // AUTHENTICATE (3.5)
+    fn authenticate(&self, hashed_password: String) -> Result<(u32, String)> {
+        return Ok(Default::default());
     }
+
+    // GETINFO (3.9)
+    fn getinfo(&self, keyword: String) -> Result<(u32, String)> {
+        return Ok(Default::default());
+    }
+
+    // GETCONF (3.3)
+    fn getconf(&self, keyword: String) -> Result<(u32, String)> {
+        return Ok(Default::default());
+    }
+
+    // SAVECONF (3.6)
+    fn saveconf(&self) -> Result<(u32, String)> {
+        return Ok(Default::default());
+    }
+
+    // ADD_ONION (3.27)
+    fn add_onion(&self) -> Result<(u32, String)> {
+        return Ok(Default::default());
+    }
+
+    // DEL_ONION (3.38)
+    fn del_onion(&self, service_id: String) -> Result<(u32, String)> {
+        return Ok(Default::default());
+    }
+
 }
 
 pub struct TorSettings {
