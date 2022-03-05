@@ -230,7 +230,8 @@ impl ControlStream {
                 } else {
                     bail!(err);
                 },
-                _ => (),
+                Ok(0usize) => bail!("ControlStream::read_line(): stream closed by remote"),
+                Ok(count) => (),
             }
 
             // split our read buffer into individual lines
