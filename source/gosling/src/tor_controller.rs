@@ -184,6 +184,7 @@ impl Drop for TorProcess {
 
 pub struct ControlStream {
     stream: TcpStream,
+    closed_by_remote: bool,
     pending_data: Vec<u8>,
     pending_lines: VecDeque<String>,
     pending_message: Vec<String>,
@@ -210,10 +211,15 @@ impl ControlStream {
 
         return Ok(ControlStream{
             stream: stream,
+            closed_by_remote: false,
             pending_data: pending_data,
             pending_lines: Default::default(),
             pending_message: Default::default(),
         });
+    }
+
+    fn closed_by_remote(&mut self) -> bool {
+        return self.closed_by_remote;
     }
 
     fn read_line(&mut self) -> Result<Option<String>> {
@@ -230,7 +236,10 @@ impl ControlStream {
                 } else {
                     bail!(err);
                 },
-                Ok(0usize) => bail!("ControlStream::read_line(): stream closed by remote"),
+                Ok(0usize) => {
+                    self.closed_by_remote = true;
+                    bail!("ControlStream::read_line(): stream closed by remote")
+                },
                 Ok(count) => (),
             }
 
@@ -387,9 +396,9 @@ impl TorController {
                     Ok(Some((code,message))) => {
                         // async notifications go to logs
                         match code {
-                            // async notificaiton
+                            // async notification
                             650u32 => shared.logs.push(message),
-                            // all other responses to commands
+                            // all others are responses to commands
                             _ => match shared.command_entries.pop_front() {
                                 Some(entry) => {
                                     // save off the command response
@@ -446,6 +455,11 @@ impl TorController {
 
         match self.shared.lock() {
             Ok(mut shared) => {
+                // ensure the underlying is control stream is still open
+                if shared.control_stream.closed_by_remote() {
+                    bail!("TorController::write_command(): underlying tcp stream closed by remote");
+                }
+
                 // only write next command to socket if we have no pending
                 // commands; if we have a queue of commands the message pump
                 // will send the next command after the previous one finishes
@@ -475,21 +489,30 @@ impl TorController {
     //
     // Tor Commands
     //
-    // The section where we can find the specificatiton in control-spec.txt
+    // The section where we can find the specification in control-spec.txt
     // for the underlying command is listed in parentheses
+    //
+    // Each of these command wrapper methods block until completion
+    //
 
     // AUTHENTICATE (3.5)
-    fn authenticate(&self, hashed_password: String) -> Result<(u32, String)> {
-        return Ok(Default::default());
+    fn authenticate(&self, password: &str) -> Result<()> {
+        let command = format!("AUTHENTICATE \"{}\"", password);
+
+        match self.write_command(command) {
+            Ok((250u32, _)) => return Ok(()),
+            Ok((_, message)) => bail!(message),
+            Err(err) => bail!(err),
+        }
     }
 
     // GETINFO (3.9)
-    fn getinfo(&self, keyword: String) -> Result<(u32, String)> {
+    fn getinfo(&self, keyword: &str) -> Result<(u32, String)> {
         return Ok(Default::default());
     }
 
     // GETCONF (3.3)
-    fn getconf(&self, keyword: String) -> Result<(u32, String)> {
+    fn getconf(&self, keyword: &str) -> Result<(u32, String)> {
         return Ok(Default::default());
     }
 
@@ -534,11 +557,19 @@ fn test_tor_controller() -> Result<()> {
     {
         // create a tor controller and send authentication command
         let tor_controller = TorController::new(worker, control_stream)?;
-        let response = tor_controller.write_command(format!("authenticate \"{}\"", tor_process.password))?;
-        ensure!(response.0 == 250u32);
-        println!("response: {:?}", response.1);
+        tor_controller.authenticate(&tor_process.password)?;
+        match tor_controller.authenticate("invalid password") {
+            Ok(_) => bail!("Expected failure due to incorrect password"),
+            _ => (),
+        };
+        // tor controller should have shutdown the connection after failed authentication
+        match tor_controller.authenticate(&tor_process.password) {
+            Ok(_) => bail!("Expected failure due to closed connection"),
+            _ => (),
+        };
+        ensure!(tor_controller.shared.lock().unwrap().control_stream.closed_by_remote());
     }
-    work_manager.join();
+    work_manager.join()?;
 
     return Ok(());
 }
