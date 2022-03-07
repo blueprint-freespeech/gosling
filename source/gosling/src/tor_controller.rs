@@ -304,7 +304,7 @@ impl ControlStream {
             // multiline data
             } else {
                 ensure!(self.reading_multiline_value == true);
-                if (current_line == ".") {
+                if current_line == "." {
                     self.reading_multiline_value = false;
                 }
                 self.pending_message.push(current_line);
@@ -518,14 +518,20 @@ impl TorController {
 
         match self.write_command(command) {
             Ok((250u32, _)) => return Ok(()),
-            Ok((_, message)) => bail!(message),
+            Ok((_, response)) => bail!(response),
             Err(err) => bail!(err),
         }
     }
 
     // GETINFO (3.9)
-    fn getinfo(&self, keyword: &str) -> Result<(u32, String)> {
-        return Ok(Default::default());
+    fn getinfo(&self, keyword: &str) -> Result<String> {
+        let command = format!("GETINFO {}", keyword);
+
+        match self.write_command(command) {
+            Ok((250u32, response)) => return Ok(response),
+            Ok((_, response)) => bail!(response),
+            Err(err) => bail!(err),
+        }
     }
 
     // GETCONF (3.3)
@@ -563,7 +569,6 @@ fn test_tor_controller() -> Result<()> {
     let tor_process = TorProcess::new(Path::new("/tmp/tor_data_directory"))?;
     let socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), tor_process.control_port);
 
-    let control_stream = ControlStream::new(&socket_addr, Duration::from_millis(16))?;
 
     // create a worker thread to handle the control port reads
     const WORKER_NAMES: [&str; 1] = ["tor_control"];
@@ -572,8 +577,10 @@ fn test_tor_controller() -> Result<()> {
 
     // create a scope to ensure tor_controller is dropped
     {
+        let control_stream = ControlStream::new(&socket_addr, Duration::from_millis(16))?;
+
         // create a tor controller and send authentication command
-        let tor_controller = TorController::new(worker, control_stream)?;
+        let tor_controller = TorController::new(worker.clone(), control_stream)?;
         tor_controller.authenticate(&tor_process.password)?;
         match tor_controller.authenticate("invalid password") {
             Ok(_) => bail!("Expected failure due to incorrect password"),
@@ -586,6 +593,19 @@ fn test_tor_controller() -> Result<()> {
         };
         ensure!(tor_controller.shared.lock().unwrap().control_stream.closed_by_remote());
     }
+    // now create a second controller
+    {
+        let control_stream = ControlStream::new(&socket_addr, Duration::from_millis(16))?;
+
+        // create a tor controller and send authentication command
+        let tor_controller = TorController::new(worker, control_stream)?;
+        tor_controller.authenticate(&tor_process.password)?;
+
+        let version_regex = Regex::new(r"250-version=\d+\.\d+\.\d+\.\d+")?;
+        ensure!(version_regex.is_match(&tor_controller.getinfo("version")?));
+    }
+
+    // workers should all join properly
     work_manager.join()?;
 
     return Ok(());
