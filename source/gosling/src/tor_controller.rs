@@ -188,13 +188,14 @@ pub struct ControlStream {
     pending_data: Vec<u8>,
     pending_lines: VecDeque<String>,
     pending_message: Vec<String>,
+    reading_multiline_value: bool,
 }
 
 // regexes used to parse control port responses
 lazy_static! {
-    static ref DATA_REPLY_LINE: Regex = Regex::new(r"^\d\d\d+.*").unwrap();
-    static ref MID_REPLY_LINE: Regex  = Regex::new(r"^\d\d\d-.*").unwrap();
-    static ref END_REPLY_LINE: Regex  = Regex::new(r"^\d\d\d .*").unwrap();
+    static ref SINGLE_LINE_DATA: Regex = Regex::new(r"^\d\d\d-.*").unwrap();
+    static ref MULTI_LINE_DATA: Regex  = Regex::new(r"^\d\d\d+.*").unwrap();
+    static ref END_REPLY_LINE: Regex   = Regex::new(r"^\d\d\d .*").unwrap();
 }
 
 impl ControlStream {
@@ -215,6 +216,7 @@ impl ControlStream {
             pending_data: pending_data,
             pending_lines: Default::default(),
             pending_message: Default::default(),
+            reading_multiline_value: false,
         });
     }
 
@@ -277,26 +279,36 @@ impl ControlStream {
                 Err(err) => bail!(err),
             };
 
-            if END_REPLY_LINE.is_match(&current_line) {
-                self.pending_message.push(current_line);
-                break;
-            } else if MID_REPLY_LINE.is_match(&current_line) ||
-                      DATA_REPLY_LINE.is_match(&current_line) ||
-                      current_line == "." {
-                self.pending_message.push(current_line);
-                continue;
-            } else if !self.pending_message.is_empty() {
-                let previous_line = self.pending_message.last().unwrap();
-                if DATA_REPLY_LINE.is_match(&previous_line) {
-                    self.pending_message.push(current_line);
-                    continue;
+            // make sure the status code matches (if we are not in the
+            // midle of a multi-line read
+            if let Some(first_line) = self.pending_message.first() {
+                if !self.reading_multiline_value {
+                    ensure!(first_line[0..3] == current_line[0..3]);
                 }
             }
 
-            // if we got to this point, we have received lines from
-            // the control port in an unexpected order so either we
-            // have a bug (most likely) or tor has bug
-            bail!("ControlStream::read_message(): received control port responses in an unexpect order.\n\nMessage So Far:\n'{}'\nNext Line:\n'{}'", self.pending_message.join("\n"), current_line);
+            // end of a response
+            if END_REPLY_LINE.is_match(&current_line) {
+                ensure!(self.reading_multiline_value == false);
+                self.pending_message.push(current_line);
+                break;
+            // single line data from getinfo and friends
+            } else if SINGLE_LINE_DATA.is_match(&current_line) {
+                ensure!(self.reading_multiline_value == false);
+                self.pending_message.push(current_line);
+            // begin of multiline data from getinfo and friends
+            } else if MULTI_LINE_DATA.is_match(&current_line) {
+                ensure!(self.reading_multiline_value == false);
+                self.pending_message.push(current_line);
+                self.reading_multiline_value = true;
+            // multiline data
+            } else {
+                ensure!(self.reading_multiline_value == true);
+                if (current_line == ".") {
+                    self.reading_multiline_value = false;
+                }
+                self.pending_message.push(current_line);
+            }
         }
 
         let message = self.pending_message.join("\n");
@@ -374,8 +386,7 @@ impl TorController {
         // and spin up the message read pump
         let shared = Arc::downgrade(&tor_controller.shared);
         stream_worker.clone().push(move || -> Result<()> {
-            TorController::read_message_task(stream_worker.clone(), shared.clone());
-            return Ok(());
+            return TorController::read_message_task(stream_worker.clone(), shared.clone());
         });
 
         return Ok(tor_controller);
@@ -436,7 +447,13 @@ impl TorController {
 
         // schedule next read task
         worker.clone().push(move || -> Result<()> {
-            return Self::read_message_task(worker.clone(), shared.clone())
+            match Self::read_message_task(worker.clone(), shared.clone()) {
+                Ok(()) => return Ok(()),
+                Err(err) => {
+                    println!("TorController::read_message_task(): message read failure '{}'", err);
+                    bail!(err);
+                },
+            }
         });
 
         return Ok(());
