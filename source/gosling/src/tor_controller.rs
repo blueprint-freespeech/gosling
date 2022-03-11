@@ -514,28 +514,6 @@ impl TorController {
     // Each of these command wrapper methods block until completion
     //
 
-    // AUTHENTICATE (3.5)
-    fn authenticate(&self, password: &str) -> Result<()> {
-        let command = format!("AUTHENTICATE \"{}\"", password);
-
-        match self.write_command(command) {
-            Ok((250u32, _)) => return Ok(()),
-            Ok((_, response)) => bail!(response.join("\n")),
-            Err(err) => bail!(err),
-        }
-    }
-
-    // GETINFO (3.9)
-    fn getinfo(&self, keywords: &[&str]) -> Result<Vec<String>> {
-        let command = format!("GETINFO {}", keywords.join(" "));
-
-        match self.write_command(command) {
-            Ok((250u32, response)) => return Ok(response),
-            Ok((_, response)) => bail!(response.join("\n")),
-            Err(err) => bail!(err),
-        }
-    }
-
     // SETCONF (3.1)
     fn setconf(&self, key_values: &[(&str,&str)]) -> Result<Vec<String>> {
 
@@ -567,9 +545,31 @@ impl TorController {
         }
     }
 
+    // AUTHENTICATE (3.5)
+    fn authenticate(&self, password: &str) -> Result<()> {
+        let command = format!("AUTHENTICATE \"{}\"", password);
+
+        match self.write_command(command) {
+            Ok((250u32, _)) => return Ok(()),
+            Ok((_, response)) => bail!(response.join("\n")),
+            Err(err) => bail!(err),
+        }
+    }
+
     // SAVECONF (3.6)
     fn saveconf(&self) -> Result<Vec<String>> {
         bail!("TorController::saveconf(): not implemented");
+    }
+
+    // GETINFO (3.9)
+    fn getinfo(&self, keywords: &[&str]) -> Result<Vec<String>> {
+        let command = format!("GETINFO {}", keywords.join(" "));
+
+        match self.write_command(command) {
+            Ok((250u32, response)) => return Ok(response),
+            Ok((_, response)) => bail!(response.join("\n")),
+            Err(err) => bail!(err),
+        }
     }
 
     // ADD_ONION (3.27)
