@@ -278,6 +278,7 @@ impl ControlStream {
                 Ok(None) => return Ok(None),
                 Err(err) => bail!(err),
             };
+            println!(">>> {}", current_line);
 
             // make sure the status code matches (if we are not in the
             // middle of a multi-line read
@@ -320,6 +321,7 @@ impl ControlStream {
     }
 
     pub fn write(&mut self, cmd: &str) -> Result<()> {
+        println!("<<< {}", cmd);
         write!(self.stream, "{}\r\n", cmd);
         return Ok(());
     }
@@ -535,13 +537,28 @@ impl TorController {
     }
 
     // SETCONF (3.1)
-    fn setconf(&self, key_values: &[(String,String)]) -> Result<Vec<String>> {
-        return Ok(Default::default());
+    fn setconf(&self, key_values: &[(&str,&str)]) -> Result<Vec<String>> {
+
+        let mut command_buffer = vec!["SETCONF"];
+
+        for (key,value) in key_values.iter() {
+            command_buffer.push(" ");
+            command_buffer.push(key);
+            command_buffer.push("=");
+            command_buffer.push(value);
+        }
+        let command = command_buffer.join("");
+
+        match self.write_command(command) {
+            Ok((250u32, response)) => return Ok(response),
+            Ok((_, response)) => bail!(response.join("\n")),
+            Err(err) => bail!(err),
+        }
     }
 
     // GETCONF (3.3)
-    fn getconf(&self, keyword: &str) -> Result<Vec<String>> {
-        let command = format!("GETCONF {}", keyword);
+    fn getconf(&self, keywords: &[&str]) -> Result<Vec<String>> {
+        let command = format!("GETCONF {}", keywords.join(" "));
 
         match self.write_command(command) {
             Ok((250u32, response)) => return Ok(response),
@@ -615,7 +632,9 @@ fn test_tor_controller() -> Result<()> {
         let version_regex = Regex::new(r"250-version=\d+\.\d+\.\d+\.\d+")?;
         ensure!(version_regex.is_match(&tor_controller.getinfo(&["version"])?.first().unwrap()));
 
-        println!("{}", tor_controller.getinfo(&["version","config-file"])?.join("\n"));
+        tor_controller.getinfo(&["version","config-file"])?;
+        tor_controller.getconf(&["DisableNetwork"]);
+
     }
 
     // workers should all join properly
