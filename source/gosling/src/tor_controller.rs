@@ -270,7 +270,7 @@ impl ControlStream {
         return Ok(self.pending_lines.pop_front());
     }
 
-    pub fn read_message(&mut self) -> Result<Option<(u32,String)>> {
+    pub fn read_message(&mut self) -> Result<Option<(u32,Vec<String>)>> {
 
         loop {
             let current_line =  match self.read_line() {
@@ -280,7 +280,7 @@ impl ControlStream {
             };
 
             // make sure the status code matches (if we are not in the
-            // midle of a multi-line read
+            // middle of a multi-line read
             if let Some(first_line) = self.pending_message.first() {
                 if !self.reading_multiline_value {
                     ensure!(first_line[0..3] == current_line[0..3]);
@@ -311,11 +311,11 @@ impl ControlStream {
             }
         }
 
-        let message = self.pending_message.join("\n");
-        self.pending_message.clear();
+        let mut message: Vec<String> = Default::default();
+        std::mem::swap(&mut self.pending_message, &mut message);
 
         // parse out the response code for easier matching
-        let code: u32 = message[0..3].parse()?;
+        let code: u32 = message.first().unwrap()[0..3].parse()?;
         return Ok(Some((code,message)));
     }
 
@@ -331,7 +331,7 @@ struct TorCommand {
     // notified on command complete
     wait_handle: Arc<Condvar>,
     // command response (code, string), None on message pump failure
-    response: Arc<Mutex<Option<(u32,String)>>>,
+    response: Arc<Mutex<Option<(u32,Vec<String>)>>>,
 }
 
 // shared state of the TorController that we pass between workers
@@ -404,11 +404,11 @@ impl TorController {
                 let shared = shared.deref_mut();
                 // read line
                 match shared.control_stream.read_message() {
-                    Ok(Some((code,message))) => {
+                    Ok(Some((code,mut message))) => {
                         // async notifications go to logs
                         match code {
                             // async notification
-                            650u32 => shared.logs.push(message),
+                            650u32 => shared.logs.append(&mut message),
                             // all others are responses to commands
                             _ => match shared.command_entries.pop_front() {
                                 Some(entry) => {
@@ -459,7 +459,7 @@ impl TorController {
         return Ok(());
     }
 
-    fn write_command(&self, command: String) -> Result<(u32, String)> {
+    fn write_command(&self, command: String) -> Result<(u32, Vec<String>)> {
 
         // if write_command were to be called from the same thread as the worker
         // handling the stream read/writes we would end up deadlock waiting
@@ -468,7 +468,7 @@ impl TorController {
 
         let wait_handle: Arc<Condvar> = Default::default();
         // (response code, response contents)
-        let response: Arc<Mutex<Option<(u32, String)>>> = Arc::new(Mutex::new(None));
+        let response: Arc<Mutex<Option<(u32, Vec<String>)>>> = Arc::new(Mutex::new(None));
 
         match self.shared.lock() {
             Ok(mut shared) => {
@@ -518,25 +518,31 @@ impl TorController {
 
         match self.write_command(command) {
             Ok((250u32, _)) => return Ok(()),
-            Ok((_, response)) => bail!(response),
+            Ok((_, response)) => bail!(response.join("\n")),
             Err(err) => bail!(err),
         }
     }
 
     // GETINFO (3.9)
-    fn getinfo(&self, keyword: &str) -> Result<String> {
+    fn getinfo(&self, keyword: &str) -> Result<Vec<String>> {
         let command = format!("GETINFO {}", keyword);
 
         match self.write_command(command) {
             Ok((250u32, response)) => return Ok(response),
-            Ok((_, response)) => bail!(response),
+            Ok((_, response)) => bail!(response.join("\n")),
             Err(err) => bail!(err),
         }
     }
 
     // GETCONF (3.3)
-    fn getconf(&self, keyword: &str) -> Result<(u32, String)> {
-        return Ok(Default::default());
+    fn getconf(&self, keyword: &str) -> Result<(Vec<String>)> {
+        let command = format!("GETCONF {}", keyword);
+
+        match self.write_command(command) {
+            Ok((250u32, response)) => return Ok(response),
+            Ok((_, response)) => bail!(response.join("\n")),
+            Err(err) => bail!(err),
+        }
     }
 
     // SAVECONF (3.6)
@@ -602,7 +608,7 @@ fn test_tor_controller() -> Result<()> {
         tor_controller.authenticate(&tor_process.password)?;
 
         let version_regex = Regex::new(r"250-version=\d+\.\d+\.\d+\.\d+")?;
-        ensure!(version_regex.is_match(&tor_controller.getinfo("version")?));
+        ensure!(version_regex.is_match(&tor_controller.getinfo("version")?.first().unwrap()));
     }
 
     // workers should all join properly
