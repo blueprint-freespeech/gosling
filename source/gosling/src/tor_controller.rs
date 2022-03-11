@@ -545,6 +545,17 @@ impl TorController {
         }
     }
 
+    // SETEVENTS (3.4)
+    fn setevents(&self, event_codes: &[&str]) -> Result<Vec<String>> {
+        let command = format!("SETEVENTS {}", event_codes.join(" "));
+
+        match self.write_command(command) {
+            Ok((250u32, response)) => return Ok(response),
+            Ok((_, response)) => bail!(response.join("\n")),
+            Err(err) => bail!(err),
+        }
+    }
+
     // AUTHENTICATE (3.5)
     fn authenticate(&self, password: &str) -> Result<()> {
         let command = format!("AUTHENTICATE \"{}\"", password);
@@ -633,8 +644,12 @@ fn test_tor_controller() -> Result<()> {
         ensure!(version_regex.is_match(&tor_controller.getinfo(&["version"])?.first().unwrap()));
 
         tor_controller.getinfo(&["version","config-file"])?;
-        tor_controller.getconf(&["DisableNetwork"]);
+        tor_controller.getconf(&["DisableNetwork"])?;
 
+        tor_controller.setevents(&["STATUS_CLIENT"])?;
+        tor_controller.setconf(&[("DisableNetwork", "0")])?;
+
+        std::thread::sleep(std::time::Duration::from_secs(30));
     }
 
     // workers should all join properly
