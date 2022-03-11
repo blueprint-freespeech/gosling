@@ -524,8 +524,8 @@ impl TorController {
     }
 
     // GETINFO (3.9)
-    fn getinfo(&self, keyword: &str) -> Result<Vec<String>> {
-        let command = format!("GETINFO {}", keyword);
+    fn getinfo(&self, keywords: &[&str]) -> Result<Vec<String>> {
+        let command = format!("GETINFO {}", keywords.join(" "));
 
         match self.write_command(command) {
             Ok((250u32, response)) => return Ok(response),
@@ -534,8 +534,13 @@ impl TorController {
         }
     }
 
+    // SETCONF (3.1)
+    fn setconf(&self, key_values: &[(String,String)]) -> Result<Vec<String>> {
+        return Ok(Default::default());
+    }
+
     // GETCONF (3.3)
-    fn getconf(&self, keyword: &str) -> Result<(Vec<String>)> {
+    fn getconf(&self, keyword: &str) -> Result<Vec<String>> {
         let command = format!("GETCONF {}", keyword);
 
         match self.write_command(command) {
@@ -546,18 +551,18 @@ impl TorController {
     }
 
     // SAVECONF (3.6)
-    fn saveconf(&self) -> Result<(u32, String)> {
-        return Ok(Default::default());
+    fn saveconf(&self) -> Result<Vec<String>> {
+        bail!("TorController::saveconf(): not implemented");
     }
 
     // ADD_ONION (3.27)
-    fn add_onion(&self) -> Result<(u32, String)> {
-        return Ok(Default::default());
+    fn add_onion(&self) -> Result<Vec<String>> {
+        bail!("TorController::add_onion(): not implemented");
     }
 
     // DEL_ONION (3.38)
-    fn del_onion(&self, service_id: String) -> Result<(u32, String)> {
-        return Ok(Default::default());
+    fn del_onion(&self, service_id: String) -> Result<Vec<String>> {
+        bail!("TorController::del_onion(): not implemented");
     }
 
 }
@@ -608,7 +613,9 @@ fn test_tor_controller() -> Result<()> {
         tor_controller.authenticate(&tor_process.password)?;
 
         let version_regex = Regex::new(r"250-version=\d+\.\d+\.\d+\.\d+")?;
-        ensure!(version_regex.is_match(&tor_controller.getinfo("version")?.first().unwrap()));
+        ensure!(version_regex.is_match(&tor_controller.getinfo(&["version"])?.first().unwrap()));
+
+        println!("{}", tor_controller.getinfo(&["version","config-file"])?.join("\n"));
     }
 
     // workers should all join properly
