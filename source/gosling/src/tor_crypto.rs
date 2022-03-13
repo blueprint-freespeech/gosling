@@ -404,6 +404,10 @@ impl Ed25519PublicKey {
         return Ok(Ed25519PublicKey::from_raw(&public_key_data)?);
     }
 
+    pub fn to_base32(&self) -> String {
+        return BASE32.encode(&self.data).to_uppercase();
+    }
+
     pub fn get_data(&self) -> &[u8] {
         return &self.data;
     }
@@ -530,6 +534,7 @@ fn test_ed25519() -> Result<()> {
     let private_key_blob = "ED25519-V3:YE3GZtDmc+izGijWKgeVRabbXqK456JKKGONDBhV+kPBVKa2mHVQqnRTVuFXe3inU3YW6qvc7glYEwe9rK0LhQ==";
     let private_raw: [u8;ED25519_PRIVATE_KEY_SIZE] = [0x60u8,0x4du8,0xc6u8,0x66u8,0xd0u8,0xe6u8,0x73u8,0xe8u8,0xb3u8,0x1au8,0x28u8,0xd6u8,0x2au8,0x07u8,0x95u8,0x45u8,0xa6u8,0xdbu8,0x5eu8,0xa2u8,0xb8u8,0xe7u8,0xa2u8,0x4au8,0x28u8,0x63u8,0x8du8,0x0cu8,0x18u8,0x55u8,0xfau8,0x43u8,0xc1u8,0x54u8,0xa6u8,0xb6u8,0x98u8,0x75u8,0x50u8,0xaau8,0x74u8,0x53u8,0x56u8,0xe1u8,0x57u8,0x7bu8,0x78u8,0xa7u8,0x53u8,0x76u8,0x16u8,0xeau8,0xabu8,0xdcu8,0xeeu8,0x09u8,0x58u8,0x13u8,0x07u8,0xbdu8,0xacu8,0xadu8,0x0bu8,0x85u8];
     let public_raw: [u8;ED25519_PUBLIC_KEY_SIZE] = [0xf2u8,0xfdu8,0xa2u8,0xdbu8,0xf3u8,0x80u8,0xa6u8,0xbau8,0x74u8,0xa4u8,0x90u8,0xe1u8,0x45u8,0x55u8,0xeeu8,0xb9u8,0x32u8,0xa0u8,0x5cu8,0x39u8,0x5au8,0xe2u8,0x02u8,0x83u8,0x55u8,0x27u8,0x89u8,0x6au8,0x1fu8,0x2fu8,0x3du8,0xc5u8];
+    let public_base32 = "6L62FW7TQCTLU5FESDQUKVPOXEZKAXBZLLRAFA2VE6EWUHZPHXCQ====";
     let service_id_string = "6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd";
     assert!(V3OnionServiceId::is_valid(&service_id_string)?);
     let mut message = [0x00u8; 256];
@@ -550,6 +555,7 @@ fn test_ed25519() -> Result<()> {
     assert!(public_key == Ed25519PublicKey::from_service_id(&service_id)?);
     assert!(public_key == Ed25519PublicKey::from_private_key(&private_key)?);
     assert!(service_id == V3OnionServiceId::from_public_key(&public_key)?);
+    assert!(public_base32 == public_key.to_base32());
 
     let signature = private_key.sign_message(&message)?;
     assert!(signature == Ed25519Signature::from_raw(&signature_raw)?);
