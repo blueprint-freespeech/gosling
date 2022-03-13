@@ -337,13 +337,14 @@ struct TorCommand {
 }
 
 // shared state of the TorController that we pass between workers
+type EventsCallback = dyn Fn(Vec<String>) -> () + Send + 'static;
 struct TorControllerShared {
     // underlying control stream
     control_stream: ControlStream,
-    // buffer we save logs to
-    logs: Vec<String>,
     // command entries
     command_entries: VecDeque<TorCommand>,
+    // callback object for received async events
+    events_callback: Option<Box<EventsCallback>>,
 }
 
 pub struct TorController {
@@ -352,6 +353,23 @@ pub struct TorController {
     // internal state of tor controller that is shared
     // with workers
     shared: Arc<Mutex<TorControllerShared>>,
+}
+
+// Per-command data in namespaces
+mod add_onion {
+    #[derive(Default)]
+    pub (super) struct Flags {
+        pub discard_pk: bool,
+        pub detach: bool,
+        pub v3_auth: bool,
+        pub non_anonymous: bool,
+        pub max_streams_close_circuit: bool,
+    }
+
+    pub (super) enum Key {
+        New,
+        Ed25519v3(::tor_crypto::Ed25519PrivateKey),
+    }
 }
 
 // TODO:
@@ -371,7 +389,7 @@ pub struct TorController {
 //   we should be using
 // - implement TorSetings object for setting proxy/firewall/bridge settings
 impl TorController {
-    pub fn new(stream_worker: Worker, control_stream: ControlStream) -> Result<TorController> {
+    pub fn new(stream_worker: Worker, control_stream: ControlStream, events_callback: Option<Box<EventsCallback>>) -> Result<TorController> {
         // construct our tor controller
         let tor_controller =
             TorController {
@@ -380,8 +398,8 @@ impl TorController {
                     Mutex::new(
                         TorControllerShared{
                             control_stream: control_stream,
-                            logs: Default::default(),
                             command_entries: Default::default(),
+                            events_callback: events_callback,
                         })),
             };
 
@@ -410,7 +428,11 @@ impl TorController {
                         // async notifications go to logs
                         match code {
                             // async notification
-                            650u32 => shared.logs.append(&mut message),
+                            650u32 => {
+                                if let Some(callback) = &shared.events_callback {
+                                    (*callback)(message);
+                                }
+                            }
                             // all others are responses to commands
                             _ => match shared.command_entries.pop_front() {
                                 Some(entry) => {
@@ -517,15 +539,12 @@ impl TorController {
     // SETCONF (3.1)
     fn setconf(&self, key_values: &[(&str,&str)]) -> Result<Vec<String>> {
 
-        let mut command_buffer = vec!["SETCONF"];
+        let mut command_buffer = vec!["SETCONF".to_string()];
 
         for (key,value) in key_values.iter() {
-            command_buffer.push(" ");
-            command_buffer.push(key);
-            command_buffer.push("=");
-            command_buffer.push(value);
+            command_buffer.push(format!("{}={}", key, value));
         }
-        let command = command_buffer.join("");
+        let command = command_buffer.join(" ");
 
         match self.write_command(command) {
             Ok((250u32, response)) => return Ok(response),
@@ -567,11 +586,6 @@ impl TorController {
         }
     }
 
-    // SAVECONF (3.6)
-    fn saveconf(&self) -> Result<Vec<String>> {
-        bail!("TorController::saveconf(): not implemented");
-    }
-
     // GETINFO (3.9)
     fn getinfo(&self, keywords: &[&str]) -> Result<Vec<String>> {
         let command = format!("GETINFO {}", keywords.join(" "));
@@ -584,15 +598,80 @@ impl TorController {
     }
 
     // ADD_ONION (3.27)
-    fn add_onion(&self) -> Result<Vec<String>> {
-        bail!("TorController::add_onion(): not implemented");
+    fn add_onion(
+        &self,
+        key: add_onion::Key,
+        flags: Option<add_onion::Flags>,
+        max_streams: Option<u16>,
+        virt_port: u16,
+        target: Option<SocketAddr>,
+        client_auth: Option<&[Ed25519PublicKey]>,
+        ) -> Result<Vec<String>> {
+
+        let mut command_buffer = vec!["ADD_ONION".to_string()];
+
+        // set our key or request a new one
+        match key {
+            add_onion::Key::New => command_buffer.push("NEW:ED25519-V3".to_string()),
+            add_onion::Key::Ed25519v3(key) => command_buffer.push(key.to_key_blob()?),
+        }
+
+        // set our flags
+        if let Some(flags) = flags {
+            let mut flag_buffer: Vec<&str> = Default::default();
+            if flags.discard_pk {
+                flag_buffer.push("DiscardPK");
+            }
+            if flags.detach {
+                flag_buffer.push("Detach");
+            }
+            if flags.v3_auth {
+                flag_buffer.push("V3Auth");
+            }
+            if flags.non_anonymous {
+                flag_buffer.push("NonAnonymous");
+            }
+            if flags.max_streams_close_circuit {
+                flag_buffer.push("MaxStreamsCloseCircuit");
+            }
+
+            if !flag_buffer.is_empty() {
+                command_buffer.push(format!("Flags={}", flag_buffer.join(",")));
+            }
+        }
+
+        // set max concurrent streams
+        if let Some(max_streams) = max_streams {
+            command_buffer.push(format!("MaxStreams={}", max_streams));
+        }
+
+        // set our onion service target
+        if let Some(target) = target {
+            command_buffer.push(format!("Port={},{}", virt_port, target));
+        } else {
+            command_buffer.push(format!("Port={}", virt_port));
+        }
+        // setup client auth
+        if let Some(client_auth) = client_auth {
+            for key in client_auth.iter() {
+                command_buffer.push(format!("ClientAuthV3={}", key.to_base32()));
+            }
+        }
+
+        // finally send the command
+        let command = command_buffer.join(" ");
+
+        match self.write_command(command) {
+            Ok((250u32, response)) => return Ok(response),
+            Ok((_, response)) => bail!(response.join("\n")),
+            Err(err) => bail!(err),
+        }
     }
 
     // DEL_ONION (3.38)
     fn del_onion(&self, service_id: String) -> Result<Vec<String>> {
         bail!("TorController::del_onion(): not implemented");
     }
-
 }
 
 pub struct TorSettings {
@@ -608,7 +687,6 @@ fn test_tor_controller() -> Result<()> {
     let tor_process = TorProcess::new(Path::new("/tmp/tor_data_directory"))?;
     let socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), tor_process.control_port);
 
-
     // create a worker thread to handle the control port reads
     const WORKER_NAMES: [&str; 1] = ["tor_control"];
     let work_manager = Arc::new(WorkManager::new(&WORKER_NAMES)?);
@@ -619,7 +697,7 @@ fn test_tor_controller() -> Result<()> {
         let control_stream = ControlStream::new(&socket_addr, Duration::from_millis(16))?;
 
         // create a tor controller and send authentication command
-        let tor_controller = TorController::new(worker.clone(), control_stream)?;
+        let tor_controller = TorController::new(worker.clone(), control_stream, None)?;
         tor_controller.authenticate(&tor_process.password)?;
         match tor_controller.authenticate("invalid password") {
             Ok(_) => bail!("Expected failure due to incorrect password"),
@@ -637,7 +715,9 @@ fn test_tor_controller() -> Result<()> {
         let control_stream = ControlStream::new(&socket_addr, Duration::from_millis(16))?;
 
         // create a tor controller and send authentication command
-        let tor_controller = TorController::new(worker, control_stream)?;
+        let tor_controller = TorController::new(worker, control_stream, Some(Box::new(|lines: Vec<String>| -> () {
+            println!("{}", lines.join("\n"));
+        })))?;
         tor_controller.authenticate(&tor_process.password)?;
 
         let version_regex = Regex::new(r"250-version=\d+\.\d+\.\d+\.\d+")?;
@@ -648,6 +728,14 @@ fn test_tor_controller() -> Result<()> {
 
         tor_controller.setevents(&["STATUS_CLIENT"])?;
         tor_controller.setconf(&[("DisableNetwork", "0")])?;
+
+        tor_controller.add_onion(
+            add_onion::Key::New,
+            None,
+            None,
+            22,
+            None,
+            None)?;
 
         std::thread::sleep(std::time::Duration::from_secs(30));
     }
