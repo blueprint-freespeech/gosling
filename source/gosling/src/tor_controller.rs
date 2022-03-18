@@ -569,6 +569,7 @@ impl TorController {
 
     // GETCONF (3.3)
     fn getconf_cmd(&self, keywords: &[&str]) -> Result<Reply> {
+        ensure!(!keywords.is_empty());
         let command = format!("GETCONF {}", keywords.join(" "));
 
         return self.write_command(command);
@@ -576,6 +577,7 @@ impl TorController {
 
     // SETEVENTS (3.4)
     fn setevents_cmd(&self, event_codes: &[&str]) -> Result<Reply> {
+        ensure!(!event_codes.is_empty());
         let command = format!("SETEVENTS {}", event_codes.join(" "));
 
         return self.write_command(command);
@@ -590,6 +592,7 @@ impl TorController {
 
     // GETINFO (3.9)
     fn getinfo_cmd(&self, keywords: &[&str]) -> Result<Reply> {
+        ensure!(!keywords.is_empty());
         let command = format!("GETINFO {}", keywords.join(" "));
 
         return self.write_command(command);
@@ -716,6 +719,24 @@ impl TorController {
             code => bail!("{} {}", code, reply.reply_lines.join("\n")),
         }
     }
+
+    pub fn getinfo(&self, keywords: &[&str]) -> Result<Vec<(String,String)>> {
+        let reply = self.getinfo_cmd(keywords)?;
+
+        match reply.status_code {
+            250u32 => {
+                let mut key_values: Vec<(String,String)> = Default::default();
+                for line in reply.reply_lines {
+                    match line.find("=") {
+                        Some(index) => key_values.push((line[0..index].to_string(), line[index+1..].to_string())),
+                        None => if (line != "OK") { key_values.push((line, String::new())) },
+                    }
+                }
+                return Ok(key_values);
+            },
+            code => bail!("{} {}", code, reply.reply_lines.join("\n")),
+        }
+    }
 }
 
 pub struct TorSettings {
@@ -774,15 +795,19 @@ fn test_tor_controller() -> Result<()> {
             ensure!(value == expected);
         }
 
-        let version_regex = Regex::new(r"version=\d+\.\d+\.\d+\.\d+")?;
-        ensure!(version_regex.is_match(&tor_controller.getinfo_cmd(&["version"])?.reply_lines.first().unwrap()));
-
-        ensure!(tor_controller.getinfo_cmd(&["version","config-file", "config-text"])?.status_code == 250u32);
-        ensure!(tor_controller.getconf_cmd(&["DisableNetwork"])?.status_code == 250u32);
+        let vals = tor_controller.getinfo(&["version", "config-file", "config-text"])?;
+        for (key, value) in vals.iter() {
+            match key.as_str() {
+                "version" => ensure!(Regex::new(r"\d+\.\d+\.\d+\.\d+")?.is_match(&value)),
+                "config-file" => ensure!(value == "/tmp/tor_data_directory/torrc"),
+                "config-text" => ensure!(value == "\nControlPort auto\nControlPortWriteToFile /tmp/tor_data_directory/control_port\nDataDirectory /tmp/tor_data_directory"),
+                _ => bail!("Unexpected returned key: {}", key),
+            }
+        }
 
         tor_controller.setevents(&["STATUS_CLIENT"])?;
         // begin bootstrap
-        ensure!(tor_controller.setconf_cmd(&[("DisableNetwork", "0")])?.status_code == 250u32);
+        tor_controller.setconf(&[("DisableNetwork", "0")])?;
 
         // add an onoin service
         ensure!(tor_controller.add_onion_cmd(
