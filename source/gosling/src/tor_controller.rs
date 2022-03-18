@@ -187,7 +187,7 @@ pub struct ControlStream {
     closed_by_remote: bool,
     pending_data: Vec<u8>,
     pending_lines: VecDeque<String>,
-    pending_message: Vec<String>,
+    pending_reply: Vec<String>,
     reading_multiline_value: bool,
 }
 
@@ -196,6 +196,12 @@ lazy_static! {
     static ref SINGLE_LINE_DATA: Regex = Regex::new(r"^\d\d\d-.*").unwrap();
     static ref MULTI_LINE_DATA: Regex  = Regex::new(r"^\d\d\d+.*").unwrap();
     static ref END_REPLY_LINE: Regex   = Regex::new(r"^\d\d\d .*").unwrap();
+}
+
+#[derive(Clone)]
+pub struct Reply {
+    status_code: u32,
+    reply_lines: Vec<String>,
 }
 
 impl ControlStream {
@@ -215,7 +221,7 @@ impl ControlStream {
             closed_by_remote: false,
             pending_data: pending_data,
             pending_lines: Default::default(),
-            pending_message: Default::default(),
+            pending_reply: Default::default(),
             reading_multiline_value: false,
         });
     }
@@ -270,7 +276,7 @@ impl ControlStream {
         return Ok(self.pending_lines.pop_front());
     }
 
-    pub fn read_message(&mut self) -> Result<Option<(u32,Vec<String>)>> {
+    pub fn read_reply(&mut self) -> Result<Option<Reply>> {
 
         loop {
             let current_line =  match self.read_line() {
@@ -278,11 +284,10 @@ impl ControlStream {
                 Ok(None) => return Ok(None),
                 Err(err) => bail!(err),
             };
-            println!(">>> {}", current_line);
 
             // make sure the status code matches (if we are not in the
             // middle of a multi-line read
-            if let Some(first_line) = self.pending_message.first() {
+            if let Some(first_line) = self.pending_reply.first() {
                 if !self.reading_multiline_value {
                     ensure!(first_line[0..3] == current_line[0..3]);
                 }
@@ -291,33 +296,48 @@ impl ControlStream {
             // end of a response
             if END_REPLY_LINE.is_match(&current_line) {
                 ensure!(self.reading_multiline_value == false);
-                self.pending_message.push(current_line);
+                self.pending_reply.push(current_line);
                 break;
             // single line data from getinfo and friends
             } else if SINGLE_LINE_DATA.is_match(&current_line) {
                 ensure!(self.reading_multiline_value == false);
-                self.pending_message.push(current_line);
+                self.pending_reply.push(current_line);
             // begin of multiline data from getinfo and friends
             } else if MULTI_LINE_DATA.is_match(&current_line) {
                 ensure!(self.reading_multiline_value == false);
-                self.pending_message.push(current_line);
+                self.pending_reply.push(current_line);
                 self.reading_multiline_value = true;
-            // multiline data
+            // multiline data to be squashed to a single entry
             } else {
                 ensure!(self.reading_multiline_value == true);
+                // don't bother writing the end of multiline token
                 if current_line == "." {
                     self.reading_multiline_value = false;
+                } else {
+                    let multiline = self.pending_reply.last_mut().unwrap();
+                    multiline.push('\n');
+                    multiline.push_str(&current_line);
                 }
-                self.pending_message.push(current_line);
             }
         }
 
-        let mut message: Vec<String> = Default::default();
-        std::mem::swap(&mut self.pending_message, &mut message);
+        // take ownership of the reply lines
+        let mut reply_lines: Vec<String> = Default::default();
+        std::mem::swap(&mut self.pending_reply, &mut reply_lines);
 
         // parse out the response code for easier matching
-        let code: u32 = message.first().unwrap()[0..3].parse()?;
-        return Ok(Some((code,message)));
+        let status_code_string = reply_lines.first().unwrap()[0..3].to_string();
+        let status_code: u32 = status_code_string.parse()?;
+
+        // strip the redundant status code form start of lines
+        for mut line in reply_lines.iter_mut() {
+            println!(">>> {}", line);
+            if line.starts_with(&status_code_string) {
+                *line = line[4..].to_string();
+            }
+        }
+
+        return Ok(Some(Reply{status_code: status_code, reply_lines: reply_lines}));
     }
 
     pub fn write(&mut self, cmd: &str) -> Result<()> {
@@ -333,7 +353,7 @@ struct TorCommand {
     // notified on command complete
     wait_handle: Arc<Condvar>,
     // command response (code, string), None on message pump failure
-    response: Arc<Mutex<Option<(u32,Vec<String>)>>>,
+    response: Arc<Mutex<Option<Reply>>>,
 }
 
 // shared state of the TorController that we pass between workers
@@ -374,13 +394,7 @@ mod add_onion {
 
 // TODO:
 // - go through Ricochet's tor manager and figure out which commands we need to encapsulate:
-//  - get conf
-//  - get info
-//  - save conf
-//  - add onion
 //  - delete onion
-//  - authenticate
-// - add callback mechanism to respond to logs (rather than just sticking them in a Vec to be forgotten)
 // - implement a TorSocket (with Read+Write traits?); will need a SOCKS5 implementation
 // - review the Gosling grant spec
 //  - looks like we need to move this tor controller module out of Gosling
@@ -403,16 +417,16 @@ impl TorController {
                         })),
             };
 
-        // and spin up the message read pump
+        // and spin up the Reply read pump
         let shared = Arc::downgrade(&tor_controller.shared);
         stream_worker.clone().push(move || -> Result<()> {
-            return TorController::read_message_task(stream_worker.clone(), shared.clone());
+            return TorController::read_reply_task(stream_worker.clone(), shared.clone());
         });
 
         return Ok(tor_controller);
     }
 
-    fn read_message_task(
+    fn read_reply_task(
         worker: Worker,
         shared: Weak<Mutex<TorControllerShared>>) -> Result<()> {
 
@@ -423,21 +437,21 @@ impl TorController {
 	    	// a mut ref so we acn access all members mutably
                 let shared = shared.deref_mut();
                 // read line
-                match shared.control_stream.read_message() {
-                    Ok(Some((code,mut message))) => {
+                match shared.control_stream.read_reply() {
+                    Ok(Some(mut reply)) => {
                         // async notifications go to logs
-                        match code {
+                        match reply.status_code {
                             // async notification
                             650u32 => {
                                 if let Some(callback) = &shared.events_callback {
-                                    (*callback)(message);
+                                    (*callback)(reply.reply_lines);
                                 }
                             }
                             // all others are responses to commands
                             _ => match shared.command_entries.pop_front() {
                                 Some(entry) => {
                                     // save off the command response
-                                    *entry.response.lock().unwrap() = Some((code,message));
+                                    *entry.response.lock().unwrap() = Some(reply);
                                     // and notify the caller
                                     entry.wait_handle.notify_one();
 
@@ -446,11 +460,11 @@ impl TorController {
                                         shared.control_stream.write(&entry.command);
                                     }
                                 },
-                                None => panic!("TorController::read_message_task(): received command response from tor daemon but we have no pending TorCommand object to receive it"),
+                                None => panic!("TorController::read_reply_task(): received command response from tor daemon but we have no pending TorCommand object to receive it"),
                             },
                         }
                     },
-                    // do not yet have full message
+                    // do not yet have full Reply
                     Ok(None) => (),
                     // some error, we need to notify all our waiting commands so calling threads wake up
                     Err(err) => {
@@ -471,10 +485,10 @@ impl TorController {
 
         // schedule next read task
         worker.clone().push(move || -> Result<()> {
-            match Self::read_message_task(worker.clone(), shared.clone()) {
+            match Self::read_reply_task(worker.clone(), shared.clone()) {
                 Ok(()) => return Ok(()),
                 Err(err) => {
-                    println!("TorController::read_message_task(): message read failure '{}'", err);
+                    println!("TorController::read_reply_task(): Reply read failure '{}'", err);
                     bail!(err);
                 },
             }
@@ -483,7 +497,7 @@ impl TorController {
         return Ok(());
     }
 
-    fn write_command(&self, command: String) -> Result<(u32, Vec<String>)> {
+    fn write_command(&self, command: String) -> Result<Reply> {
 
         // if write_command were to be called from the same thread as the worker
         // handling the stream read/writes we would end up deadlock waiting
@@ -492,7 +506,7 @@ impl TorController {
 
         let wait_handle: Arc<Condvar> = Default::default();
         // (response code, response contents)
-        let response: Arc<Mutex<Option<(u32, Vec<String>)>>> = Arc::new(Mutex::new(None));
+        let response: Arc<Mutex<Option<Reply>>> = Arc::new(Mutex::new(None));
 
         match self.shared.lock() {
             Ok(mut shared) => {
@@ -502,7 +516,7 @@ impl TorController {
                 }
 
                 // only write next command to socket if we have no pending
-                // commands; if we have a queue of commands the message pump
+                // commands; if we have a queue of commands the Reply pump
                 // will send the next command after the previous one finishes
                 if shared.command_entries.is_empty() {
                     shared.control_stream.write(&command)?;
@@ -537,7 +551,7 @@ impl TorController {
     //
 
     // SETCONF (3.1)
-    fn setconf(&self, key_values: &[(&str,&str)]) -> Result<Vec<String>> {
+    fn setconf(&self, key_values: &[(&str,&str)]) -> Result<Reply> {
 
         let mut command_buffer = vec!["SETCONF".to_string()];
 
@@ -546,55 +560,35 @@ impl TorController {
         }
         let command = command_buffer.join(" ");
 
-        match self.write_command(command) {
-            Ok((250u32, response)) => return Ok(response),
-            Ok((_, response)) => bail!(response.join("\n")),
-            Err(err) => bail!(err),
-        }
+        return self.write_command(command);
     }
 
     // GETCONF (3.3)
-    fn getconf(&self, keywords: &[&str]) -> Result<Vec<String>> {
+    fn getconf(&self, keywords: &[&str]) -> Result<Reply> {
         let command = format!("GETCONF {}", keywords.join(" "));
 
-        match self.write_command(command) {
-            Ok((250u32, response)) => return Ok(response),
-            Ok((_, response)) => bail!(response.join("\n")),
-            Err(err) => bail!(err),
-        }
+        return self.write_command(command);
     }
 
     // SETEVENTS (3.4)
-    fn setevents(&self, event_codes: &[&str]) -> Result<Vec<String>> {
+    fn setevents(&self, event_codes: &[&str]) -> Result<Reply> {
         let command = format!("SETEVENTS {}", event_codes.join(" "));
 
-        match self.write_command(command) {
-            Ok((250u32, response)) => return Ok(response),
-            Ok((_, response)) => bail!(response.join("\n")),
-            Err(err) => bail!(err),
-        }
+        return self.write_command(command);
     }
 
     // AUTHENTICATE (3.5)
-    fn authenticate(&self, password: &str) -> Result<()> {
+    fn authenticate(&self, password: &str) -> Result<Reply> {
         let command = format!("AUTHENTICATE \"{}\"", password);
 
-        match self.write_command(command) {
-            Ok((250u32, _)) => return Ok(()),
-            Ok((_, response)) => bail!(response.join("\n")),
-            Err(err) => bail!(err),
-        }
+        return self.write_command(command);
     }
 
     // GETINFO (3.9)
-    fn getinfo(&self, keywords: &[&str]) -> Result<Vec<String>> {
+    fn getinfo(&self, keywords: &[&str]) -> Result<Reply> {
         let command = format!("GETINFO {}", keywords.join(" "));
 
-        match self.write_command(command) {
-            Ok((250u32, response)) => return Ok(response),
-            Ok((_, response)) => bail!(response.join("\n")),
-            Err(err) => bail!(err),
-        }
+        return self.write_command(command);
     }
 
     // ADD_ONION (3.27)
@@ -606,7 +600,7 @@ impl TorController {
         virt_port: u16,
         target: Option<SocketAddr>,
         client_auth: Option<&[Ed25519PublicKey]>,
-        ) -> Result<Vec<String>> {
+        ) -> Result<Reply> {
 
         let mut command_buffer = vec!["ADD_ONION".to_string()];
 
@@ -661,11 +655,7 @@ impl TorController {
         // finally send the command
         let command = command_buffer.join(" ");
 
-        match self.write_command(command) {
-            Ok((250u32, response)) => return Ok(response),
-            Ok((_, response)) => bail!(response.join("\n")),
-            Err(err) => bail!(err),
-        }
+        return self.write_command(command);
     }
 
     // DEL_ONION (3.38)
@@ -699,14 +689,12 @@ fn test_tor_controller() -> Result<()> {
         // create a tor controller and send authentication command
         let tor_controller = TorController::new(worker.clone(), control_stream, None)?;
         tor_controller.authenticate(&tor_process.password)?;
-        match tor_controller.authenticate("invalid password") {
-            Ok(_) => bail!("Expected failure due to incorrect password"),
-            _ => (),
-        };
+        ensure!(tor_controller.authenticate("invalid password")?.status_code == 515u32);
+
         // tor controller should have shutdown the connection after failed authentication
         match tor_controller.authenticate(&tor_process.password) {
-            Ok(_) => bail!("Expected failure due to closed connection"),
-            _ => (),
+            Ok(_)=> bail!("Expected failure due to closed connection"),
+            Err(_) => (),
         };
         ensure!(tor_controller.shared.lock().unwrap().control_stream.closed_by_remote());
     }
@@ -718,24 +706,24 @@ fn test_tor_controller() -> Result<()> {
         let tor_controller = TorController::new(worker, control_stream, Some(Box::new(|lines: Vec<String>| -> () {
             println!("{}", lines.join("\n"));
         })))?;
-        tor_controller.authenticate(&tor_process.password)?;
+        ensure!(tor_controller.authenticate(&tor_process.password)?.status_code == 250u32);
 
-        let version_regex = Regex::new(r"250-version=\d+\.\d+\.\d+\.\d+")?;
-        ensure!(version_regex.is_match(&tor_controller.getinfo(&["version"])?.first().unwrap()));
+        let version_regex = Regex::new(r"version=\d+\.\d+\.\d+\.\d+")?;
+        ensure!(version_regex.is_match(&tor_controller.getinfo(&["version"])?.reply_lines.first().unwrap()));
 
-        tor_controller.getinfo(&["version","config-file"])?;
-        tor_controller.getconf(&["DisableNetwork"])?;
+        ensure!(tor_controller.getinfo(&["version","config-file", "config-text"])?.status_code == 250u32);
+        ensure!(tor_controller.getconf(&["DisableNetwork"])?.status_code == 250u32);
 
-        tor_controller.setevents(&["STATUS_CLIENT"])?;
-        tor_controller.setconf(&[("DisableNetwork", "0")])?;
+        ensure!(tor_controller.setevents(&["STATUS_CLIENT"])?.status_code == 250u32);
+        ensure!(tor_controller.setconf(&[("DisableNetwork", "0")])?.status_code == 250u32);
 
-        tor_controller.add_onion(
+        ensure!(tor_controller.add_onion(
             add_onion::Key::New,
             None,
             None,
             22,
             None,
-            None)?;
+            None)?.status_code == 250u32);
 
         std::thread::sleep(std::time::Duration::from_secs(30));
     }
