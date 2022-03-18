@@ -707,6 +707,15 @@ impl TorController {
             code => bail!("{} {}", code, reply.reply_lines.join("\n")),
         }
     }
+
+    pub fn authenticate(&self, password: &str) -> Result<()> {
+        let reply = self.authenticate_cmd(password)?;
+
+        match reply.status_code {
+            250u32 => return Ok(()),
+            code => bail!("{} {}", code, reply.reply_lines.join("\n")),
+        }
+    }
 }
 
 pub struct TorSettings {
@@ -751,7 +760,7 @@ fn test_tor_controller() -> Result<()> {
         let tor_controller = TorController::new(worker, control_stream, Some(Box::new(|lines: Vec<String>| -> () {
             println!("{}", lines.join("\n"));
         })))?;
-        ensure!(tor_controller.authenticate_cmd(&tor_process.password)?.status_code == 250u32);
+        tor_controller.authenticate(&tor_process.password)?;
 
         // ensure everything is matching our default_torrc settings
         let vals = tor_controller.getconf(&["SocksPort", "AvoidDiskWrites", "DisableNetwork"])?;
