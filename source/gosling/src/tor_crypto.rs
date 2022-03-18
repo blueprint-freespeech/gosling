@@ -299,11 +299,9 @@ pub struct V3OnionServiceId {
 // Ed25519 Private Key
 
 impl Ed25519PrivateKey {
-    pub fn from_raw(raw: &[u8]) -> Result<Ed25519PrivateKey> {
-        if raw.len() != ED25519_PRIVATE_KEY_SIZE {
-            bail!("Ed25519PrivateKey::from_raw(): expects byte array of length '{}'; received array of length '{}'", ED25519_PRIVATE_KEY_SIZE, raw.len());
-        }
-        return Ok(Ed25519PrivateKey{data: raw.try_into()?});
+    // according to nickm, any 64 byte string here is allowed
+    pub fn from_raw(raw: &[u8; ED25519_PRIVATE_KEY_SIZE]) -> Result<Ed25519PrivateKey> {
+        return Ok(Ed25519PrivateKey{data: raw.clone()});
     }
 
     pub fn from_key_blob(key_blob: &str) -> Result<Ed25519PrivateKey> {
@@ -369,12 +367,9 @@ impl PartialEq for Ed25519PrivateKey {
 // Ed25519 Public Key
 
 impl Ed25519PublicKey {
-    pub fn from_raw(raw: &[u8]) -> Result<Ed25519PublicKey> {
-        if raw.len() != ED25519_PUBLIC_KEY_SIZE {
-            bail!("Ed25519PublicKey::from_raw(): expects byte array of length '{}'; received array of length '{}'", ED25519_PUBLIC_KEY_SIZE, raw.len());
-        }
+    pub fn from_raw(raw: &[u8; ED25519_PUBLIC_KEY_SIZE]) -> Result<Ed25519PublicKey> {
 
-        return Ok(Ed25519PublicKey{data: raw.try_into()?});
+        return Ok(Ed25519PublicKey{data: raw.clone()});
     }
 
     pub fn from_service_id(service_id: &V3OnionServiceId) -> Result<Ed25519PublicKey> {
@@ -422,11 +417,8 @@ impl PartialEq for Ed25519PublicKey {
 // Ed25519 Signature
 
 impl Ed25519Signature {
-    pub fn from_raw(raw: &[u8]) -> Result<Ed25519Signature> {
-        if raw.len() != ED25519_SIGNATURE_SIZE {
-            bail!("Ed25519Signature::from_raw input(): array has incorrect length {}; expected length {}", raw.len(), ED25519_SIGNATURE_SIZE);
-        }
-        return Ok(Ed25519Signature{data: raw.try_into()?});
+    pub fn from_raw(raw: &[u8; ED25519_SIGNATURE_SIZE]) -> Result<Ed25519Signature> {
+        return Ok(Ed25519Signature{data: raw.clone()});
     }
 
     pub fn verify(&self, message: &[u8], public_key: &Ed25519PublicKey) -> Result<bool> {
@@ -526,6 +518,16 @@ impl V3OnionServiceId {
 impl PartialEq for V3OnionServiceId {
     fn eq(&self, other: &Self) -> bool {
         return self.data.eq(&other.data);
+    }
+}
+
+impl ToString for V3OnionServiceId {
+    fn to_string(&self) -> String {
+        match str::from_utf8(&self.data) {
+            Ok(result) => return result.to_string(),
+            // this should really never ever happen but who knows
+            Err(err) => panic!(err),
+        }
     }
 }
 
