@@ -556,7 +556,7 @@ impl TorController {
 
     // SETCONF (3.1)
     fn setconf_cmd(&self, key_values: &[(&str,&str)]) -> Result<Reply> {
-
+        ensure!(!key_values.is_empty());
         let mut command_buffer = vec!["SETCONF".to_string()];
 
         for (key,value) in key_values.iter() {
@@ -663,12 +663,42 @@ impl TorController {
     }
 
     // DEL_ONION (3.38)
-    fn del_onion_cmd(&self, service_id: V3OnionServiceId) -> Result<Reply> {
+    fn del_onion_cmd(&self, service_id: &V3OnionServiceId) -> Result<Reply> {
 
         let command = format!("DEL_ONION {}", service_id.to_string());
 
         return self.write_command(command);
     }
+
+    // public high-level command methods
+
+    pub fn setconf(&self, key_values: &[(&str,&str)]) -> Result<()> {
+        let reply = self.setconf_cmd(key_values)?;
+
+        match reply.status_code {
+            250u32 => return Ok(()),
+            code => bail!("{} {}", code, reply.reply_lines.join("\n")),
+        };
+    }
+
+    pub fn getconf(&self, keywords: &[&str]) -> Result<Vec<(String,String)>> {
+        let reply = self.getconf_cmd(keywords)?;
+
+        match reply.status_code {
+            250u32 => {
+                let mut key_values: Vec<(String,String)> = Default::default();
+                for line in reply.reply_lines {
+                    match line.find("=") {
+                        Some(index) => key_values.push((line[0..index].to_string(), line[index+1..].to_string())),
+                        None => key_values.push((line, String::new())),
+                    }
+                }
+                return Ok(key_values);
+            },
+            code => bail!("{} {}", code, reply.reply_lines.join("\n")),
+        }
+   }
+
 }
 
 pub struct TorSettings {
@@ -715,6 +745,18 @@ fn test_tor_controller() -> Result<()> {
         })))?;
         ensure!(tor_controller.authenticate_cmd(&tor_process.password)?.status_code == 250u32);
 
+        // ensure everything is matching our default_torrc settings
+        let vals = tor_controller.getconf(&["SocksPort", "AvoidDiskWrites", "DisableNetwork"])?;
+        for (key, value) in vals.iter() {
+            let expected = match key.as_str() {
+                "SocksPort" => "auto",
+                "AvoidDiskWrites" => "1",
+                "DisableNetwork" => "1",
+                _ => bail!("Unexpected returned key: {}", key),
+            };
+            ensure!(value == expected);
+        }
+
         let version_regex = Regex::new(r"version=\d+\.\d+\.\d+\.\d+")?;
         ensure!(version_regex.is_match(&tor_controller.getinfo_cmd(&["version"])?.reply_lines.first().unwrap()));
 
@@ -735,7 +777,8 @@ fn test_tor_controller() -> Result<()> {
             None)?.status_code == 250u32);
 
         // should fail as this service has not been added
-        ensure!(tor_controller.del_onion_cmd(V3OnionServiceId::from_string("6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd")?)?.status_code == 552u32);
+        ensure!(tor_controller.del_onion_cmd(&V3OnionServiceId::from_string("6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd")?)?.status_code == 552u32);
+
 
         std::thread::sleep(std::time::Duration::from_secs(30));
     }
