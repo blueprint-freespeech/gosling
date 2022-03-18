@@ -198,7 +198,6 @@ lazy_static! {
     static ref END_REPLY_LINE: Regex   = Regex::new(r"^\d\d\d .*").unwrap();
 }
 
-#[derive(Clone)]
 pub struct Reply {
     status_code: u32,
     reply_lines: Vec<String>,
@@ -438,7 +437,7 @@ impl TorController {
                 let shared = shared.deref_mut();
                 // read line
                 match shared.control_stream.read_reply() {
-                    Ok(Some(mut reply)) => {
+                    Ok(Some(reply)) => {
                         // async notifications go to logs
                         match reply.status_code {
                             // async notification
@@ -468,7 +467,7 @@ impl TorController {
                     Ok(None) => (),
                     // some error, we need to notify all our waiting commands so calling threads wake up
                     Err(err) => {
-                        for mut entry in shared.command_entries.iter_mut() {
+                        for entry in shared.command_entries.iter_mut() {
                             *entry.response.lock().unwrap() = None;
                             entry.wait_handle.notify_one();
                         }
@@ -535,10 +534,15 @@ impl TorController {
             Err(err) => bail!("TorController::write_command(): error received when trying to acquire shared lock: '{}'", err),
         }
 
-        if let Some(response) = &*wait_handle.wait(response.lock().unwrap()).unwrap() {
-            return Ok(response.clone());
-        };
-        bail!("TorController::write_command(): command rejected");
+        // wait for response
+        let option_response = &mut *wait_handle.wait(response.lock().unwrap()).unwrap();
+        ensure!(option_response.is_some(), "TorController::write_command(): command rejected");
+
+        // extract response from mutex
+        let mut retval: Option<Reply> = None;
+        std::mem::swap(&mut retval, option_response);
+
+        return Ok(retval.unwrap());
     }
 
     //
@@ -551,7 +555,7 @@ impl TorController {
     //
 
     // SETCONF (3.1)
-    fn setconf(&self, key_values: &[(&str,&str)]) -> Result<Reply> {
+    fn setconf_cmd(&self, key_values: &[(&str,&str)]) -> Result<Reply> {
 
         let mut command_buffer = vec!["SETCONF".to_string()];
 
@@ -564,35 +568,35 @@ impl TorController {
     }
 
     // GETCONF (3.3)
-    fn getconf(&self, keywords: &[&str]) -> Result<Reply> {
+    fn getconf_cmd(&self, keywords: &[&str]) -> Result<Reply> {
         let command = format!("GETCONF {}", keywords.join(" "));
 
         return self.write_command(command);
     }
 
     // SETEVENTS (3.4)
-    fn setevents(&self, event_codes: &[&str]) -> Result<Reply> {
+    fn setevents_cmd(&self, event_codes: &[&str]) -> Result<Reply> {
         let command = format!("SETEVENTS {}", event_codes.join(" "));
 
         return self.write_command(command);
     }
 
     // AUTHENTICATE (3.5)
-    fn authenticate(&self, password: &str) -> Result<Reply> {
+    fn authenticate_cmd(&self, password: &str) -> Result<Reply> {
         let command = format!("AUTHENTICATE \"{}\"", password);
 
         return self.write_command(command);
     }
 
     // GETINFO (3.9)
-    fn getinfo(&self, keywords: &[&str]) -> Result<Reply> {
+    fn getinfo_cmd(&self, keywords: &[&str]) -> Result<Reply> {
         let command = format!("GETINFO {}", keywords.join(" "));
 
         return self.write_command(command);
     }
 
     // ADD_ONION (3.27)
-    fn add_onion(
+    fn add_onion_cmd(
         &self,
         key: add_onion::Key,
         flags: Option<add_onion::Flags>,
@@ -659,7 +663,7 @@ impl TorController {
     }
 
     // DEL_ONION (3.38)
-    fn del_onion(&self, service_id: V3OnionServiceId) -> Result<Reply> {
+    fn del_onion_cmd(&self, service_id: V3OnionServiceId) -> Result<Reply> {
 
         let command = format!("DEL_ONION {}", service_id.to_string());
 
@@ -691,11 +695,11 @@ fn test_tor_controller() -> Result<()> {
 
         // create a tor controller and send authentication command
         let tor_controller = TorController::new(worker.clone(), control_stream, None)?;
-        tor_controller.authenticate(&tor_process.password)?;
-        ensure!(tor_controller.authenticate("invalid password")?.status_code == 515u32);
+        tor_controller.authenticate_cmd(&tor_process.password)?;
+        ensure!(tor_controller.authenticate_cmd("invalid password")?.status_code == 515u32);
 
         // tor controller should have shutdown the connection after failed authentication
-        match tor_controller.authenticate(&tor_process.password) {
+        match tor_controller.authenticate_cmd(&tor_process.password) {
             Ok(_)=> bail!("Expected failure due to closed connection"),
             Err(_) => (),
         };
@@ -709,20 +713,20 @@ fn test_tor_controller() -> Result<()> {
         let tor_controller = TorController::new(worker, control_stream, Some(Box::new(|lines: Vec<String>| -> () {
             println!("{}", lines.join("\n"));
         })))?;
-        ensure!(tor_controller.authenticate(&tor_process.password)?.status_code == 250u32);
+        ensure!(tor_controller.authenticate_cmd(&tor_process.password)?.status_code == 250u32);
 
         let version_regex = Regex::new(r"version=\d+\.\d+\.\d+\.\d+")?;
-        ensure!(version_regex.is_match(&tor_controller.getinfo(&["version"])?.reply_lines.first().unwrap()));
+        ensure!(version_regex.is_match(&tor_controller.getinfo_cmd(&["version"])?.reply_lines.first().unwrap()));
 
-        ensure!(tor_controller.getinfo(&["version","config-file", "config-text"])?.status_code == 250u32);
-        ensure!(tor_controller.getconf(&["DisableNetwork"])?.status_code == 250u32);
+        ensure!(tor_controller.getinfo_cmd(&["version","config-file", "config-text"])?.status_code == 250u32);
+        ensure!(tor_controller.getconf_cmd(&["DisableNetwork"])?.status_code == 250u32);
 
-        ensure!(tor_controller.setevents(&["STATUS_CLIENT"])?.status_code == 250u32);
+        ensure!(tor_controller.setevents_cmd(&["STATUS_CLIENT"])?.status_code == 250u32);
         // begin bootstrap
-        ensure!(tor_controller.setconf(&[("DisableNetwork", "0")])?.status_code == 250u32);
+        ensure!(tor_controller.setconf_cmd(&[("DisableNetwork", "0")])?.status_code == 250u32);
 
         // add an onoin service
-        ensure!(tor_controller.add_onion(
+        ensure!(tor_controller.add_onion_cmd(
             add_onion::Key::New,
             None,
             None,
@@ -731,7 +735,7 @@ fn test_tor_controller() -> Result<()> {
             None)?.status_code == 250u32);
 
         // should fail as this service has not been added
-        ensure!(tor_controller.del_onion(V3OnionServiceId::from_string("6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd")?)?.status_code == 552u32);
+        ensure!(tor_controller.del_onion_cmd(V3OnionServiceId::from_string("6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd")?)?.status_code == 552u32);
 
         std::thread::sleep(std::time::Duration::from_secs(30));
     }
