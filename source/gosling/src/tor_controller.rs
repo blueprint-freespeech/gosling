@@ -697,8 +697,16 @@ impl TorController {
             },
             code => bail!("{} {}", code, reply.reply_lines.join("\n")),
         }
-   }
+    }
 
+    pub fn setevents(&self, events: &[&str]) -> Result<()> {
+        let reply = self.setevents_cmd(events)?;
+
+        match reply.status_code {
+            250u32 => return Ok(()),
+            code => bail!("{} {}", code, reply.reply_lines.join("\n")),
+        }
+    }
 }
 
 pub struct TorSettings {
@@ -763,7 +771,7 @@ fn test_tor_controller() -> Result<()> {
         ensure!(tor_controller.getinfo_cmd(&["version","config-file", "config-text"])?.status_code == 250u32);
         ensure!(tor_controller.getconf_cmd(&["DisableNetwork"])?.status_code == 250u32);
 
-        ensure!(tor_controller.setevents_cmd(&["STATUS_CLIENT"])?.status_code == 250u32);
+        tor_controller.setevents(&["STATUS_CLIENT"])?;
         // begin bootstrap
         ensure!(tor_controller.setconf_cmd(&[("DisableNetwork", "0")])?.status_code == 250u32);
 
