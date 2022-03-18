@@ -659,8 +659,11 @@ impl TorController {
     }
 
     // DEL_ONION (3.38)
-    fn del_onion(&self, service_id: String) -> Result<Vec<String>> {
-        bail!("TorController::del_onion(): not implemented");
+    fn del_onion(&self, service_id: V3OnionServiceId) -> Result<Reply> {
+
+        let command = format!("DEL_ONION {}", service_id.to_string());
+
+        return self.write_command(command);
     }
 }
 
@@ -715,8 +718,10 @@ fn test_tor_controller() -> Result<()> {
         ensure!(tor_controller.getconf(&["DisableNetwork"])?.status_code == 250u32);
 
         ensure!(tor_controller.setevents(&["STATUS_CLIENT"])?.status_code == 250u32);
+        // begin bootstrap
         ensure!(tor_controller.setconf(&[("DisableNetwork", "0")])?.status_code == 250u32);
 
+        // add an onoin service
         ensure!(tor_controller.add_onion(
             add_onion::Key::New,
             None,
@@ -724,6 +729,9 @@ fn test_tor_controller() -> Result<()> {
             22,
             None,
             None)?.status_code == 250u32);
+
+        // should fail as this service has not been added
+        ensure!(tor_controller.del_onion(V3OnionServiceId::from_string("6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd")?)?.status_code == 552u32);
 
         std::thread::sleep(std::time::Duration::from_secs(30));
     }
