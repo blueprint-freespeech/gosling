@@ -300,6 +300,6 @@ pub extern "C" fn gosling_string_is_valid_v3_onion_service_id(
         }
 
         let service_id_string_slice = unsafe { std::slice::from_raw_parts(service_id_string as *const u8, service_id_string_length) };
-        return V3OnionServiceId::is_valid(str::from_utf8(service_id_string_slice)?);
+        return Ok(V3OnionServiceId::is_valid(str::from_utf8(service_id_string_slice)?));
     })
 }

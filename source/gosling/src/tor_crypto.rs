@@ -47,6 +47,15 @@ const V3_ONION_SERVICE_ID_VERSION_OFFSET: usize = 34;
 /// The number of bytes in a v3 service id's truncated checksum
 const TRUNCATED_CHECKSUM_SIZE: usize = 2;
 
+// decoder for lowercase base32 (BASE32 object is upper-case)
+lazy_static! {
+    static ref ONION_BASE32: data_encoding::Encoding = {
+        let mut spec = data_encoding::Specification::new();
+        spec.symbols.push_str("abcdefghijklmnopqrstuvwxyz234567");
+        spec.padding = Some('=');
+        spec.encoding().unwrap()
+    };
+}
 
 /// imports from tor_crypto
 /// cbindgen:ignore
@@ -222,11 +231,7 @@ extern "C" fn tor_memeq(_a: *const c_void, _b: *const c_void, _sz: usize) -> c_i
 }
 
 // see https://github.com/torproject/torspec/blob/main/rend-spec-v3.txt#L2143
-fn calc_truncated_checksum(public_key: &[u8]) -> Result<[u8; TRUNCATED_CHECKSUM_SIZE]> {
-    if public_key.len() != ED25519_PUBLIC_KEY_SIZE {
-        bail!("calc_truncated_checksum(): expects byte array of length '{}'; received array of length '{}'", ED25519_PUBLIC_KEY_SIZE, public_key.len());
-    }
-
+fn calc_truncated_checksum(public_key: &[u8; ED25519_PUBLIC_KEY_SIZE]) -> [u8; TRUNCATED_CHECKSUM_SIZE] {
     // space for full checksum
     const SHA256_BYTES: usize = 256/8;
     let mut hash_bytes = [0u8; SHA256_BYTES];
@@ -236,11 +241,11 @@ fn calc_truncated_checksum(public_key: &[u8]) -> Result<[u8; TRUNCATED_CHECKSUM_
 
     // calculate checksum
     hasher.input(b".onion checksum");
-    hasher.input(&public_key);
+    hasher.input(public_key);
     hasher.input(&[0x03u8]);
     hasher.result(&mut hash_bytes);
 
-    return Ok([hash_bytes[0], hash_bytes[1]]);
+    return [hash_bytes[0], hash_bytes[1]];
 }
 
 // Free functions
@@ -353,7 +358,7 @@ impl Ed25519PrivateKey {
         return Ok(self.sign_message_ex(&public_key, &message)?);
     }
 
-    pub fn get_data(&self) -> &[u8] {
+    pub fn get_data(&self) -> &[u8; ED25519_PRIVATE_KEY_SIZE] {
         return &self.data;
     }
 }
@@ -375,7 +380,7 @@ impl Ed25519PublicKey {
     pub fn from_service_id(service_id: &V3OnionServiceId) -> Result<Ed25519PublicKey> {
         // decode base32 encoded service id
         let mut decoded_service_id = [0u8; V3_ONION_SERVICE_ID_RAW_SIZE];
-        let decoded_byte_count = BASE32.decode_mut(service_id.get_data(), &mut decoded_service_id).unwrap();
+        let decoded_byte_count = ONION_BASE32.decode_mut(service_id.get_data(), &mut decoded_service_id).unwrap();
         if decoded_byte_count != V3_ONION_SERVICE_ID_RAW_SIZE {
             bail!("Ed25519PublicKey::from_service_id(): decoded byte count is '{}', expected '{}'", decoded_byte_count, V3_ONION_SERVICE_ID_RAW_SIZE);
         }
@@ -400,10 +405,10 @@ impl Ed25519PublicKey {
     }
 
     pub fn to_base32(&self) -> String {
-        return BASE32.encode(&self.data).to_uppercase();
+        return BASE32.encode(&self.data);
     }
 
-    pub fn get_data(&self) -> &[u8] {
+    pub fn get_data(&self) -> &[u8; ED25519_PUBLIC_KEY_SIZE] {
         return &self.data;
     }
 }
@@ -452,10 +457,10 @@ impl PartialEq for Ed25519Signature {
 
 impl V3OnionServiceId {
     pub fn from_string(service_id: &str) -> Result<V3OnionServiceId> {
-        if !V3OnionServiceId::is_valid(&service_id)? {
+        if !V3OnionServiceId::is_valid(&service_id) {
             bail!("V3OnionServiceId::from_string(): '{}' is not a valid v3 onion service id", &service_id);
         }
-        return Ok(V3OnionServiceId{data: service_id.to_uppercase().as_bytes().try_into()?});
+        return Ok(V3OnionServiceId{data: service_id.as_bytes().try_into()?});
     }
 
     pub fn from_public_key(public_key: &Ed25519PublicKey) -> Result<V3OnionServiceId> {
@@ -464,50 +469,47 @@ impl V3OnionServiceId {
         for i in 0..ED25519_PUBLIC_KEY_SIZE {
             raw_service_id[i] = public_key.get_data()[i];
         }
-        let truncated_checksum = calc_truncated_checksum(public_key.get_data())?;
+        let truncated_checksum = calc_truncated_checksum(public_key.get_data());
         raw_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 0] = truncated_checksum[0];
         raw_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 1] = truncated_checksum[1];
         raw_service_id[V3_ONION_SERVICE_ID_VERSION_OFFSET] = 0x03u8;
 
-        let service_id = BASE32.encode(&raw_service_id).to_uppercase();
+        let service_id = ONION_BASE32.encode(&raw_service_id);
 
         return Ok(V3OnionServiceId{data:service_id.as_bytes().try_into()?});
     }
 
-    pub fn is_valid(service_id: &str) -> Result<bool> {
+    pub fn is_valid(service_id: &str) -> bool {
         if service_id.len() != V3_ONION_SERVICE_ID_LENGTH {
-            return Ok(false);
-        }
-
-        let normalized_service_id = service_id.to_uppercase();
-        let bytes = normalized_service_id.as_bytes();
-
-        // decode base32 encoded service id
-        let decoded_byte_count = BASE32.decode_len(bytes.len())?;
-        if decoded_byte_count != V3_ONION_SERVICE_ID_RAW_SIZE {
-            return Ok(false);
+            return false;
         }
 
         let mut decoded_service_id = [0u8; V3_ONION_SERVICE_ID_RAW_SIZE];
-        let decoded_byte_count = BASE32.decode_mut(&bytes, &mut decoded_service_id).unwrap();
-
-        // ensure right size
-        if decoded_byte_count != V3_ONION_SERVICE_ID_RAW_SIZE {
-            return Ok(false);
+        match ONION_BASE32.decode_mut(&service_id.as_bytes(), &mut decoded_service_id) {
+            Ok(decoded_byte_count) => {
+                // ensure right size
+                if decoded_byte_count != V3_ONION_SERVICE_ID_RAW_SIZE {
+                    return false;
+                }
+                // ensure correct version
+                if decoded_service_id[V3_ONION_SERVICE_ID_VERSION_OFFSET] != 0x03 {
+                    return false;
+                }
+                // copy public key into own buffer
+                let mut public_key = [0u8; ED25519_PUBLIC_KEY_SIZE];
+                for i in 0..ED25519_PUBLIC_KEY_SIZE {
+                    public_key[i] = decoded_service_id[i];
+                }
+                // ensure checksum is correct
+                let truncated_checksum = calc_truncated_checksum(&public_key);
+                if truncated_checksum[0] != decoded_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 0] ||
+                   truncated_checksum[1] != decoded_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 1] {
+                    return false;
+                }
+                return true;
+            },
+            Err(_) => return false,
         }
-        // ensure correct version
-        if decoded_service_id[V3_ONION_SERVICE_ID_VERSION_OFFSET] != 0x03 {
-            return Ok(false);
-        }
-
-        // ensure checksum is correct
-        let truncated_checksum = calc_truncated_checksum(&decoded_service_id[0..ED25519_PUBLIC_KEY_SIZE])?;
-        if truncated_checksum[0] != decoded_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 0] ||
-           truncated_checksum[1] != decoded_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 1] {
-            return Ok(false);
-        }
-
-        return Ok(true);
     }
 
     pub fn get_data(&self) -> &[u8] {
@@ -538,7 +540,8 @@ fn test_ed25519() -> Result<()> {
     let public_raw: [u8;ED25519_PUBLIC_KEY_SIZE] = [0xf2u8,0xfdu8,0xa2u8,0xdbu8,0xf3u8,0x80u8,0xa6u8,0xbau8,0x74u8,0xa4u8,0x90u8,0xe1u8,0x45u8,0x55u8,0xeeu8,0xb9u8,0x32u8,0xa0u8,0x5cu8,0x39u8,0x5au8,0xe2u8,0x02u8,0x83u8,0x55u8,0x27u8,0x89u8,0x6au8,0x1fu8,0x2fu8,0x3du8,0xc5u8];
     let public_base32 = "6L62FW7TQCTLU5FESDQUKVPOXEZKAXBZLLRAFA2VE6EWUHZPHXCQ====";
     let service_id_string = "6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd";
-    assert!(V3OnionServiceId::is_valid(&service_id_string)?);
+    assert!(V3OnionServiceId::is_valid(&service_id_string));
+
     let mut message = [0x00u8; 256];
     let null_message = [0x00u8; 256];
     for i in 0..256 {
@@ -565,8 +568,10 @@ fn test_ed25519() -> Result<()> {
     assert!(!signature.verify(&null_message, &public_key)?);
 
     // some invalid service ids
-    assert!(!V3OnionServiceId::is_valid("")?);
-    assert!(!V3OnionServiceId::is_valid("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")?);
+    assert!(!V3OnionServiceId::is_valid(""));
+    assert!(!V3OnionServiceId::is_valid("
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
+    assert!(!V3OnionServiceId::is_valid("6L62FW7TQCTLU5FESDQUKVPOXEZKAXBZLLRAFA2VE6EWUHZPHXCZSJYD"));
 
     return Ok(());
 }
