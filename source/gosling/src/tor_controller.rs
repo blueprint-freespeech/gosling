@@ -774,7 +774,14 @@ impl TorController {
         return Ok((private_key, service_id.unwrap()));
     }
 
+    pub fn del_onion(&self, service_id: &V3OnionServiceId) -> Result<()> {
+        let reply = self.del_onion_cmd(service_id)?;
 
+        match reply.status_code {
+            250u32 => return Ok(()),
+            code => bail!("{} {}", code, reply.reply_lines.join("\n")),
+        }
+    }
 }
 
 pub struct TorSettings {
@@ -853,8 +860,12 @@ fn test_tor_controller() -> Result<()> {
         println!("private_key: {}", private_key.unwrap().to_key_blob()?);
         println!("service_id: {}", service_id.to_string());
 
-        // should fail as this service id has not been added
-        ensure!(tor_controller.del_onion_cmd(&V3OnionServiceId::from_string("6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd")?)?.status_code == 552u32);
+        if let Ok(()) = tor_controller.del_onion(&V3OnionServiceId::from_string("6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd")?) {
+            bail!("Deleting unknown onion should have failed");
+        }
+
+        // delete our new onion
+        tor_controller.del_onion(&service_id)?;
 
         std::thread::sleep(std::time::Duration::from_secs(30));
     }
