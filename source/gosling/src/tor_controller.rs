@@ -375,20 +375,13 @@ pub struct TorController {
 }
 
 // Per-command data in namespaces
-mod add_onion {
-    #[derive(Default)]
-    pub (super) struct Flags {
-        pub discard_pk: bool,
-        pub detach: bool,
-        pub v3_auth: bool,
-        pub non_anonymous: bool,
-        pub max_streams_close_circuit: bool,
-    }
-
-    pub (super) enum Key {
-        New,
-        Ed25519v3(::tor_crypto::Ed25519PrivateKey),
-    }
+#[derive(Default)]
+pub struct AddOnionFlags {
+    pub discard_pk: bool,
+    pub detach: bool,
+    pub v3_auth: bool,
+    pub non_anonymous: bool,
+    pub max_streams_close_circuit: bool,
 }
 
 // TODO:
@@ -601,8 +594,8 @@ impl TorController {
     // ADD_ONION (3.27)
     fn add_onion_cmd(
         &self,
-        key: add_onion::Key,
-        flags: Option<add_onion::Flags>,
+        key: Option<Ed25519PrivateKey>,
+        flags: &AddOnionFlags,
         max_streams: Option<u16>,
         virt_port: u16,
         target: Option<SocketAddr>,
@@ -612,33 +605,32 @@ impl TorController {
         let mut command_buffer = vec!["ADD_ONION".to_string()];
 
         // set our key or request a new one
-        match key {
-            add_onion::Key::New => command_buffer.push("NEW:ED25519-V3".to_string()),
-            add_onion::Key::Ed25519v3(key) => command_buffer.push(key.to_key_blob()?),
+        if let Some(key) = key {
+            command_buffer.push(key.to_key_blob()?);
+        } else {
+            command_buffer.push("NEW:ED25519-V3".to_string());
         }
 
         // set our flags
-        if let Some(flags) = flags {
-            let mut flag_buffer: Vec<&str> = Default::default();
-            if flags.discard_pk {
-                flag_buffer.push("DiscardPK");
-            }
-            if flags.detach {
-                flag_buffer.push("Detach");
-            }
-            if flags.v3_auth {
-                flag_buffer.push("V3Auth");
-            }
-            if flags.non_anonymous {
-                flag_buffer.push("NonAnonymous");
-            }
-            if flags.max_streams_close_circuit {
-                flag_buffer.push("MaxStreamsCloseCircuit");
-            }
+        let mut flag_buffer: Vec<&str> = Default::default();
+        if flags.discard_pk {
+            flag_buffer.push("DiscardPK");
+        }
+        if flags.detach {
+            flag_buffer.push("Detach");
+        }
+        if flags.v3_auth {
+            flag_buffer.push("V3Auth");
+        }
+        if flags.non_anonymous {
+            flag_buffer.push("NonAnonymous");
+        }
+        if flags.max_streams_close_circuit {
+            flag_buffer.push("MaxStreamsCloseCircuit");
+        }
 
-            if !flag_buffer.is_empty() {
-                command_buffer.push(format!("Flags={}", flag_buffer.join(",")));
-            }
+        if !flag_buffer.is_empty() {
+            command_buffer.push(format!("Flags={}", flag_buffer.join(",")));
         }
 
         // set max concurrent streams
@@ -729,7 +721,7 @@ impl TorController {
                 for line in reply.reply_lines {
                     match line.find("=") {
                         Some(index) => key_values.push((line[0..index].to_string(), line[index+1..].to_string())),
-                        None => if (line != "OK") { key_values.push((line, String::new())) },
+                        None => if line != "OK" { key_values.push((line, String::new())) },
                     }
                 }
                 return Ok(key_values);
@@ -737,6 +729,52 @@ impl TorController {
             code => bail!("{} {}", code, reply.reply_lines.join("\n")),
         }
     }
+
+    pub fn add_onion(
+        &self,
+        key: Option<Ed25519PrivateKey>,
+        flags: &AddOnionFlags,
+        max_streams: Option<u16>,
+        virt_port: u16,
+        target: Option<SocketAddr>,
+        client_auth: Option<&[Ed25519PublicKey]>) -> Result<(Option<Ed25519PrivateKey>, V3OnionServiceId)> {
+        let reply = self.add_onion_cmd(key, flags, max_streams, virt_port, target, client_auth)?;
+
+        let mut private_key: Option<Ed25519PrivateKey> = None;
+        let mut service_id: Option<V3OnionServiceId> = None;
+
+        match reply.status_code {
+            250u32 => {
+                for line in reply.reply_lines {
+                    if let Some(mut index) = line.find("ServiceID=") {
+                        ensure!(service_id.is_none(), "TorController::add_onion(): received duplicate service ids");
+                        index = index + "ServiceId=".len();
+                        service_id = Some(V3OnionServiceId::from_string(&line[index..])?);
+                    } else if let Some(mut index) = line.find("PrivateKey=") {
+                        ensure!(private_key.is_none(), "TorController::add_onion(): received duplicate private keys");
+                        index = index + "PrivateKey=".len();
+                        private_key = Some(Ed25519PrivateKey::from_key_blob(&line[index..])?);
+                    } else if let Some(_) = line.find("ClientAuthV3=") {
+                        ensure!(client_auth.is_some() && client_auth.unwrap().len() > 0, "TorController::add_onion(): received unexpected ClientAuthV3 keys");
+                    } else if let None = line.find("OK") {
+                        bail!("TorController::add_onion(): received unexpected reply line: '{}'", line);
+                    }
+                }
+            },
+            code => bail!("{} {}", code, reply.reply_lines.join("\n")),
+        }
+
+        ensure!(service_id != None, "TorController::add_onion(): did not receive a service id");
+        if flags.discard_pk {
+            ensure!(private_key.is_none(), "TorController::add_onion(): private key should have been discarded");
+        } else {
+            ensure!(private_key.is_some(), "TorController::add_onion(): did not return private key");
+        }
+
+        return Ok((private_key, service_id.unwrap()));
+    }
+
+
 }
 
 pub struct TorSettings {
@@ -810,17 +848,13 @@ fn test_tor_controller() -> Result<()> {
         tor_controller.setconf(&[("DisableNetwork", "0")])?;
 
         // add an onoin service
-        ensure!(tor_controller.add_onion_cmd(
-            add_onion::Key::New,
-            None,
-            None,
-            22,
-            None,
-            None)?.status_code == 250u32);
+        let (private_key, service_id) = tor_controller.add_onion(None, &Default::default(), None, 22, None, None)?;
 
-        // should fail as this service has not been added
+        println!("private_key: {}", private_key.unwrap().to_key_blob()?);
+        println!("service_id: {}", service_id.to_string());
+
+        // should fail as this service id has not been added
         ensure!(tor_controller.del_onion_cmd(&V3OnionServiceId::from_string("6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd")?)?.status_code == 552u32);
-
 
         std::thread::sleep(std::time::Duration::from_secs(30));
     }
