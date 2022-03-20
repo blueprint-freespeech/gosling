@@ -63,6 +63,7 @@ extern "C" {
     // stdlib
     fn malloc(size: usize) -> *mut c_void;
     // ed25519 functions
+    fn ed25519_donna_seckey(sk: *mut c_uchar) -> c_int;
     fn ed25519_donna_pubkey(pk: *mut c_uchar, sk: *const c_uchar) -> c_int;
     fn ed25519_donna_sign(sig: *mut c_uchar, m: *const c_uchar, mlen: usize, sk: *const c_uchar, pk: *const c_uchar) -> c_int;
     fn ed25519_donna_open(signature: *const c_uchar, m: *const c_uchar, mlen: usize, pk: *const c_uchar) -> c_int;
@@ -182,8 +183,9 @@ extern "C" fn memwipe(mem: *mut c_void, byte: u8, sz: usize) -> () {
 }
 
 #[no_mangle]
-extern "C" fn crypto_strongest_rand(_out: *mut u8, _out_len: usize) -> () {
-    panic!("no-op crypto_strongest_rand called");
+extern "C" fn crypto_strongest_rand(out: *mut u8, out_len: usize) -> () {
+    let mut out = unsafe {std::slice::from_raw_parts_mut(out, out_len)};
+    OsRng.fill_bytes(&mut out);
 }
 
 #[no_mangle]
@@ -304,6 +306,14 @@ pub struct V3OnionServiceId {
 // Ed25519 Private Key
 
 impl Ed25519PrivateKey {
+
+    pub fn generate() -> Result<Ed25519PrivateKey> {
+        let mut secret_key= [0u8; ED25519_PRIVATE_KEY_SIZE];
+        let result = unsafe { ed25519_donna_seckey(secret_key.as_mut_ptr()) };
+
+        return Ok(Ed25519PrivateKey{data: secret_key});
+    }
+
     // according to nickm, any 64 byte string here is allowed
     pub fn from_raw(raw: &[u8; ED25519_PRIVATE_KEY_SIZE]) -> Result<Ed25519PrivateKey> {
         return Ok(Ed25519PrivateKey{data: raw.clone()});
@@ -572,6 +582,12 @@ fn test_ed25519() -> Result<()> {
     assert!(!V3OnionServiceId::is_valid("
         aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
     assert!(!V3OnionServiceId::is_valid("6L62FW7TQCTLU5FESDQUKVPOXEZKAXBZLLRAFA2VE6EWUHZPHXCZSJYD"));
+
+    // generate a new key, get the public key and sign/verify a message
+    let private_key = Ed25519PrivateKey::generate()?;
+    let public_key = Ed25519PublicKey::from_private_key(&private_key)?;
+    let signature = private_key.sign_message(&message)?;
+    assert!(signature.verify(&message, &public_key)?);
 
     return Ok(());
 }
