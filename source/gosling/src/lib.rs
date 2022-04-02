@@ -9,6 +9,8 @@ extern crate num_enum;
 extern crate rand;
 extern crate zeroize;
 extern crate regex;
+extern crate socks;
+extern crate url;
 
 mod ffi;
 mod tor_crypto;

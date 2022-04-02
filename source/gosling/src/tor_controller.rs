@@ -14,6 +14,7 @@ use std::ops::Drop;
 use std::net::*;
 use std::sync::*;
 use std::ops::DerefMut;
+use std::str::FromStr;
 
 // extern crates
 use anyhow::{bail, ensure, Result};
@@ -21,6 +22,8 @@ use rand::Rng;
 use rand::rngs::OsRng;
 use rand::distributions::Alphanumeric;
 use regex::Regex;
+use socks::*;
+use url::*;
 
 // internal modules
 use tor_crypto::*;
@@ -46,7 +49,7 @@ fn generate_password(length: usize) -> String {
     return password;
 }
 
-fn read_control_port_file(control_port_file: &Path) -> Result<u16> {
+fn read_control_port_file(control_port_file: &Path) -> Result<SocketAddr> {
     // open file
     let mut file = File::open(&control_port_file)?;
 
@@ -59,18 +62,8 @@ fn read_control_port_file(control_port_file: &Path) -> Result<u16> {
     file.read_to_string(&mut contents)?;
 
     if contents.starts_with("PORT=") {
-        match contents.rfind(':') {
-            Some(index) => {
-                let port_string = &contents.trim_end()[index+1..];
-                match port_string.parse::<u16>() {
-                    Ok(port) => {
-                        return Ok(port);
-                    },
-                    Err(_) => (),
-                };
-            },
-            None => (),
-        };
+        let addr_string = &contents.trim_end()["PORT=".len()..];
+        return Ok(SocketAddr::from_str(&addr_string)?);
     }
     bail!("read_control_port_file(): could not parse '{}' as control port file", control_port_file.display());
 }
@@ -78,7 +71,7 @@ fn read_control_port_file(control_port_file: &Path) -> Result<u16> {
 // Encapsulates the tor daemon process
 
 struct TorProcess {
-    control_port: u16,
+    control_addr: SocketAddr,
     process: Child,
     password: String,
 }
@@ -120,7 +113,8 @@ impl TorProcess {
             fs::remove_file(&control_port_file)?;
         }
 
-        let password = generate_password(32);
+        const CONTROL_PORT_PASSWORD_LENGTH: usize = 32usize;
+        let password = generate_password(CONTROL_PORT_PASSWORD_LENGTH);
         let password_hash = hash_tor_password(&password)?;
 
         let executable_path = system_tor();
@@ -147,32 +141,23 @@ impl TorProcess {
             .arg("__OwningControllerProcess").arg(process::id().to_string())
             .spawn()?;
 
-        let mut control_port = 0u16;
+        let mut control_addr = None;
         let start = Instant::now();
 
         // try and read the control port from the control port file
         // or abort after 5 seconds
         // TODO: make this timeout configurable?
-        while control_port == 0 &&
+        while control_addr == None &&
               start.elapsed() < Duration::from_secs(5) {
             if control_port_file.exists() {
-                control_port = match read_control_port_file(control_port_file.as_path()) {
-                    Ok(port) => {
-                        fs::remove_file(&control_port_file);
-                        port
-                    },
-                    Err(_) => 0u16,
-                };
+                control_addr = Some(read_control_port_file(control_port_file.as_path())?);
+                fs::remove_file(&control_port_file);
             }
         }
-        ensure!(control_port != 0u16, "TorProcess::new(): failed to read control port from '{}'", control_port_file.display());
+        ensure!(control_addr != None, "TorProcess::new(): failed to read control addr from '{}'", control_port_file.display());
 
 
-        return Ok(TorProcess{control_port: control_port, process: process, password: password});
-    }
-
-    pub fn control_port(&self) -> u16 {
-        return self.control_port;
+        return Ok(TorProcess{control_addr: control_addr.unwrap(), process: process, password: password});
     }
 }
 
@@ -385,15 +370,7 @@ pub struct AddOnionFlags {
 }
 
 // TODO:
-// - go through Ricochet's tor manager and figure out which commands we need to encapsulate:
-//  - delete onion
 // - implement a TorSocket (with Read+Write traits?); will need a SOCKS5 implementation
-// - review the Gosling grant spec
-//  - looks like we need to move this tor controller module out of Gosling
-//  - which means we need to move work manager out too (as Gosling and tor controller both depend)
-// - look into how async runtimes work, see if there are some standard traits for tasks/taskpools
-//   we should be using
-// - implement TorSetings object for setting proxy/firewall/bridge settings
 impl TorController {
     pub fn new(stream_worker: Worker, control_stream: ControlStream, events_callback: Option<Box<EventsCallback>>) -> Result<TorController> {
         // construct our tor controller
@@ -665,7 +642,7 @@ impl TorController {
         return self.write_command(command);
     }
 
-    // public high-level command methods
+    // public high-level command method wrappers
 
     pub fn setconf(&self, key_values: &[(&str,&str)]) -> Result<()> {
         let reply = self.setconf_cmd(key_values)?;
@@ -782,20 +759,35 @@ impl TorController {
             code => bail!("{} {}", code, reply.reply_lines.join("\n")),
         }
     }
-}
 
-pub struct TorSettings {
+    // more specific encapulsation of specific command invocations
 
-}
-
-impl TorSettings {
+    pub fn getinfo_net_listeners_socks(&self) -> Result<Vec<SocketAddr>> {
+        let response = self.getinfo(&["net/listeners/socks"])?;
+        for (key, value) in response.iter() {
+            match key.as_str() {
+                "net/listeners/socks" => {
+                    // get our list of double-quoated strings
+                    let listeners: Vec<&str> = value.split(' ').collect();
+                    let mut result: Vec<SocketAddr> = Default::default();
+                    for socket_addr in listeners.iter() {
+                        // remove leading/trailing double quote
+                        let stripped = &socket_addr[1..socket_addr.len() - 1];
+                        result.push(SocketAddr::from_str(&stripped)?);
+                    }
+                    return Ok(result);
+                },
+                _ => {},
+            }
+        }
+        bail!("TorController::getinfo_net_listeners_socks(): did not find a 'net/listeners/socks' key/value");
+    }
 
 }
 
 #[test]
 fn test_tor_controller() -> Result<()> {
     let tor_process = TorProcess::new(Path::new("/tmp/tor_data_directory"))?;
-    let socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), tor_process.control_port);
 
     // create a worker thread to handle the control port reads
     const WORKER_NAMES: [&str; 1] = ["tor_control"];
@@ -804,7 +796,7 @@ fn test_tor_controller() -> Result<()> {
 
     // create a scope to ensure tor_controller is dropped
     {
-        let control_stream = ControlStream::new(&socket_addr, Duration::from_millis(16))?;
+        let control_stream = ControlStream::new(&tor_process.control_addr, Duration::from_millis(16))?;
 
         // create a tor controller and send authentication command
         let tor_controller = TorController::new(worker.clone(), control_stream, None)?;
@@ -820,9 +812,10 @@ fn test_tor_controller() -> Result<()> {
     }
     // now create a second controller
     {
-        let control_stream = ControlStream::new(&socket_addr, Duration::from_millis(16))?;
+        let control_stream = ControlStream::new(&tor_process.control_addr, Duration::from_millis(16))?;
 
         // create a tor controller and send authentication command
+        // all async events are just printed to stdout
         let tor_controller = TorController::new(worker, control_stream, Some(Box::new(|lines: Vec<String>| -> () {
             println!("{}", lines.join("\n"));
         })))?;
@@ -866,6 +859,22 @@ fn test_tor_controller() -> Result<()> {
 
         // delete our new onion
         tor_controller.del_onion(&service_id)?;
+
+        if let Ok(listeners) = tor_controller.getinfo_net_listeners_socks() {
+            println!("listeners: ");
+            for sock_addr in listeners.iter() {
+                println!(" {}", sock_addr.to_string());
+            }
+        }
+
+        tor_controller.getinfo_net_listeners_socks()?;
+
+        // print our event names available to tor
+        if let Ok(names) = tor_controller.getinfo(&["events/names"]) {
+            for (key, value) in names.iter() {
+                println!("{} : {}", key, value);
+            }
+        }
 
         std::thread::sleep(std::time::Duration::from_secs(30));
     }

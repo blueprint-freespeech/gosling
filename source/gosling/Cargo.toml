@@ -18,7 +18,8 @@ data-encoding = "2.3.2"
 anyhow = "1.0"
 paste = "1.0"
 regex = "0.2"
-
+socks = "0.3.4"
+url = "2.2.2"
 
 [lib]
 name = "gosling"
