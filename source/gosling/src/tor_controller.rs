@@ -183,8 +183,9 @@ lazy_static! {
     static ref END_REPLY_LINE: Regex   = Regex::new(r"^\d\d\d .*").unwrap();
 }
 
+type StatusCode = u32;
 pub struct Reply {
-    status_code: u32,
+    status_code: StatusCode,
     reply_lines: Vec<String>,
 }
 
@@ -331,35 +332,7 @@ impl ControlStream {
     }
 }
 
-struct TorCommand {
-    // command string to send daemon
-    command: String,
-    // notified on command complete
-    wait_handle: Arc<Condvar>,
-    // command response (code, string), None on message pump failure
-    response: Arc<Mutex<Option<Reply>>>,
-}
-
-// shared state of the TorController that we pass between workers
-type EventsCallback = dyn Fn(Vec<String>) -> () + Send + 'static;
-struct TorControllerShared {
-    // underlying control stream
-    control_stream: ControlStream,
-    // command entries
-    command_entries: VecDeque<TorCommand>,
-    // callback object for received async events
-    events_callback: Option<Box<EventsCallback>>,
-}
-
-pub struct TorController {
-    // worker we are using to schedule tasks
-    stream_worker: Worker,
-    // internal state of tor controller that is shared
-    // with workers
-    shared: Arc<Mutex<TorControllerShared>>,
-}
-
-// Per-command data in namespaces
+// Per-command data
 #[derive(Default)]
 pub struct AddOnionFlags {
     pub discard_pk: bool,
@@ -368,151 +341,95 @@ pub struct AddOnionFlags {
     pub non_anonymous: bool,
     pub max_streams_close_circuit: bool,
 }
+type AsyncEventCallback = dyn Fn(Vec<String>) -> () + 'static;
 
-// TODO:
-// - implement a TorSocket (with Read+Write traits?); will need a SOCKS5 implementation
+struct TorController {
+    // underlying control stream
+    control_stream: ControlStream,
+    // list of async replies to be handled
+    async_replies: VecDeque<Reply>,
+    // callback object for async events
+    async_event_callback: Box<AsyncEventCallback>,
+}
+
 impl TorController {
-    pub fn new(stream_worker: Worker, control_stream: ControlStream, events_callback: Option<Box<EventsCallback>>) -> Result<TorController> {
-        // construct our tor controller
-        let tor_controller =
-            TorController {
-                stream_worker: stream_worker.clone(),
-                shared: Arc::new(
-                    Mutex::new(
-                        TorControllerShared{
-                            control_stream: control_stream,
-                            command_entries: Default::default(),
-                            events_callback: events_callback,
-                        })),
-            };
-
-        // and spin up the Reply read pump
-        let shared = Arc::downgrade(&tor_controller.shared);
-        stream_worker.clone().push(move || -> Result<()> {
-            return TorController::read_reply_task(stream_worker.clone(), shared.clone());
-        });
-
-        return Ok(tor_controller);
+    pub fn new(control_stream: ControlStream, async_event_callback: Box<AsyncEventCallback>) -> TorController {
+        return TorController{
+            control_stream: control_stream,
+            async_replies: Default::default(),
+            async_event_callback: async_event_callback,
+        };
     }
 
-    fn read_reply_task(
-        worker: Worker,
-        shared: Weak<Mutex<TorControllerShared>>) -> Result<()> {
-
-        // weak -> arc
-        if let Some(shared) = shared.upgrade() {
-            // acquire mutex
-            if let Ok(mut shared) = shared.lock() {
-	    	// a mut ref so we acn access all members mutably
-                let shared = shared.deref_mut();
-                // read line
-                match shared.control_stream.read_reply() {
-                    Ok(Some(reply)) => {
-                        // async notifications go to logs
-                        match reply.status_code {
-                            // async notification
-                            650u32 => {
-                                if let Some(callback) = &shared.events_callback {
-                                    (*callback)(reply.reply_lines);
-                                }
-                            }
-                            // all others are responses to commands
-                            _ => match shared.command_entries.pop_front() {
-                                Some(entry) => {
-                                    // save off the command response
-                                    *entry.response.lock().unwrap() = Some(reply);
-                                    // and notify the caller
-                                    entry.wait_handle.notify_one();
-
-                                    // write next command in queue if there is one
-                                    if let Some(entry) = shared.command_entries.front() {
-                                        shared.control_stream.write(&entry.command);
-                                    }
-                                },
-                                None => panic!("TorController::read_reply_task(): received command response from tor daemon but we have no pending TorCommand object to receive it"),
-                            },
-                        }
-                    },
-                    // do not yet have full Reply
-                    Ok(None) => (),
-                    // some error, we need to notify all our waiting commands so calling threads wake up
-                    Err(err) => {
-                        for entry in shared.command_entries.iter_mut() {
-                            *entry.response.lock().unwrap() = None;
-                            entry.wait_handle.notify_one();
-                        }
-                        bail!(err);
-                    },
-                }
-            }
-        } else {
-            // the shared data no longer exists, so the owner
-            // TorController must have been dropped so we should
-            // terminate this call chain
-            return Ok(());
+    fn handle_async_reply(&mut self, reply: Reply) -> Result<()> {
+        match reply.status_code {
+            650u32 => (*self.async_event_callback)(reply.reply_lines),
+            _ => bail!("Controller::handle_async_reply(): unexpected sync reply"),
         }
-
-        // schedule next read task
-        worker.clone().push(move || -> Result<()> {
-            match Self::read_reply_task(worker.clone(), shared.clone()) {
-                Ok(()) => return Ok(()),
-                Err(err) => {
-                    println!("TorController::read_reply_task(): Reply read failure '{}'", err);
-                    bail!(err);
-                },
-            }
-        });
-
         return Ok(());
     }
 
-    fn write_command(&self, command: String) -> Result<Reply> {
+    // wait until at least 1 reply is available, handle and return
+    pub fn wait_async_replies(&mut self) -> Result<()> {
+        let mut replies_handled: usize = 0usize;
 
-        // if write_command were to be called from the same thread as the worker
-        // handling the stream read/writes we would end up deadlock waiting
-        // for the request to complete
-        ensure!(std::thread::current().id() != self.stream_worker.thread_id()?, "TorController::write_command(): must be called from a different thread than stream_worker's backing thread");
-
-        let wait_handle: Arc<Condvar> = Default::default();
-        // (response code, response contents)
-        let response: Arc<Mutex<Option<Reply>>> = Arc::new(Mutex::new(None));
-
-        match self.shared.lock() {
-            Ok(mut shared) => {
-                // ensure the underlying is control stream is still open
-                if shared.control_stream.closed_by_remote() {
-                    bail!("TorController::write_command(): underlying tcp stream closed by remote");
-                }
-
-                // only write next command to socket if we have no pending
-                // commands; if we have a queue of commands the Reply pump
-                // will send the next command after the previous one finishes
-                if shared.command_entries.is_empty() {
-                    shared.control_stream.write(&command)?;
-                }
-
-                // push response dest to the queue
-                // it is ok to push the entry after the write because the shared member
-                // is protected by mutex
-                shared.command_entries.push_back(
-                    TorCommand{
-                        command: command,
-                        wait_handle: wait_handle.clone(),
-                        response: response.clone(),
-                    });
-            },
-            Err(err) => bail!("TorController::write_command(): error received when trying to acquire shared lock: '{}'", err),
+        // first empty our async reply queue
+        while let Some(mut reply) = self.async_replies.pop_front() {
+            self.handle_async_reply(reply);
+            replies_handled += 1;
         }
 
-        // wait for response
-        let option_response = &mut *wait_handle.wait(response.lock().unwrap()).unwrap();
-        ensure!(option_response.is_some(), "TorController::write_command(): command rejected");
+        // and keep consuming until none are available
+        loop {
+            if let Some(mut reply) = self.control_stream.read_reply()? {
+                self.handle_async_reply(reply);
+                replies_handled += 1;
+            } else if replies_handled > 0 {
+                // only return once at least 1 reply has been handled
+                return Ok(());
+            }
+        }
+    }
 
-        // extract response from mutex
-        let mut retval: Option<Reply> = None;
-        std::mem::swap(&mut retval, option_response);
+    // wait for at least timeout until at least 1 reply is available, handle and return
+    pub fn wait_async_replies_for(&mut self, timeout: Duration) -> Result<()> {
+        let stop_time = Instant::now() + timeout;
+        let mut replies_handled: usize = 0usize;
 
-        return Ok(retval.unwrap());
+        while let Some(mut reply) = self.async_replies.pop_front() {
+            self.handle_async_reply(reply);
+            replies_handled += 1;
+        }
+
+        while Instant::now() < stop_time {
+            if let Some(mut reply) = self.control_stream.read_reply()? {
+                self.handle_async_reply(reply);
+                replies_handled += 1;
+            } else if replies_handled > 0 {
+                // only return once at least 1 reply has been handled
+                return Ok(());
+            }
+        }
+        return Ok(());
+    }
+
+    // wait for a sync reply, save off async replies for later
+    fn wait_sync_reply(&mut self) -> Result<Reply> {
+
+        loop {
+            if let Some(mut reply) = self.control_stream.read_reply()? {
+                match reply.status_code {
+                    650u32 => self.async_replies.push_back(reply),
+                    _ => return Ok(reply),
+                }
+            }
+        }
+    }
+
+
+    fn write_command(&mut self, text: &String) -> Result<Reply> {
+        self.control_stream.write(text);
+        return self.wait_sync_reply();
     }
 
     //
@@ -525,7 +442,7 @@ impl TorController {
     //
 
     // SETCONF (3.1)
-    fn setconf_cmd(&self, key_values: &[(&str,&str)]) -> Result<Reply> {
+    fn setconf_cmd(&mut self, key_values: &[(&str,&str)]) -> Result<Reply> {
         ensure!(!key_values.is_empty());
         let mut command_buffer = vec!["SETCONF".to_string()];
 
@@ -534,43 +451,43 @@ impl TorController {
         }
         let command = command_buffer.join(" ");
 
-        return self.write_command(command);
+        return self.write_command(&command);
     }
 
     // GETCONF (3.3)
-    fn getconf_cmd(&self, keywords: &[&str]) -> Result<Reply> {
+    fn getconf_cmd(&mut self, keywords: &[&str]) -> Result<Reply> {
         ensure!(!keywords.is_empty());
         let command = format!("GETCONF {}", keywords.join(" "));
 
-        return self.write_command(command);
+        return self.write_command(&command);
     }
 
     // SETEVENTS (3.4)
-    fn setevents_cmd(&self, event_codes: &[&str]) -> Result<Reply> {
+    fn setevents_cmd(&mut self, event_codes: &[&str]) -> Result<Reply> {
         ensure!(!event_codes.is_empty());
         let command = format!("SETEVENTS {}", event_codes.join(" "));
 
-        return self.write_command(command);
+        return self.write_command(&command);
     }
 
     // AUTHENTICATE (3.5)
-    fn authenticate_cmd(&self, password: &str) -> Result<Reply> {
+    fn authenticate_cmd(&mut self, password: &str) -> Result<Reply> {
         let command = format!("AUTHENTICATE \"{}\"", password);
 
-        return self.write_command(command);
+        return self.write_command(&command);
     }
 
     // GETINFO (3.9)
-    fn getinfo_cmd(&self, keywords: &[&str]) -> Result<Reply> {
+    fn getinfo_cmd(&mut self, keywords: &[&str]) -> Result<Reply> {
         ensure!(!keywords.is_empty());
         let command = format!("GETINFO {}", keywords.join(" "));
 
-        return self.write_command(command);
+        return self.write_command(&command);
     }
 
     // ADD_ONION (3.27)
     fn add_onion_cmd(
-        &self,
+        &mut self,
         key: Option<Ed25519PrivateKey>,
         flags: &AddOnionFlags,
         max_streams: Option<u16>,
@@ -631,20 +548,22 @@ impl TorController {
         // finally send the command
         let command = command_buffer.join(" ");
 
-        return self.write_command(command);
+        return self.write_command(&command);
     }
 
     // DEL_ONION (3.38)
-    fn del_onion_cmd(&self, service_id: &V3OnionServiceId) -> Result<Reply> {
+    fn del_onion_cmd(&mut self, service_id: &V3OnionServiceId) -> Result<Reply> {
 
         let command = format!("DEL_ONION {}", service_id.to_string());
 
-        return self.write_command(command);
+        return self.write_command(&command);
     }
 
-    // public high-level command method wrappers
+    //
+    // Public high-levle typesafe command method wrappers
+    //
 
-    pub fn setconf(&self, key_values: &[(&str,&str)]) -> Result<()> {
+    pub fn setconf(&mut self, key_values: &[(&str,&str)]) -> Result<()> {
         let reply = self.setconf_cmd(key_values)?;
 
         match reply.status_code {
@@ -653,7 +572,7 @@ impl TorController {
         };
     }
 
-    pub fn getconf(&self, keywords: &[&str]) -> Result<Vec<(String,String)>> {
+    pub fn getconf(&mut self, keywords: &[&str]) -> Result<Vec<(String,String)>> {
         let reply = self.getconf_cmd(keywords)?;
 
         match reply.status_code {
@@ -671,7 +590,7 @@ impl TorController {
         }
     }
 
-    pub fn setevents(&self, events: &[&str]) -> Result<()> {
+    pub fn setevents(&mut self, events: &[&str]) -> Result<()> {
         let reply = self.setevents_cmd(events)?;
 
         match reply.status_code {
@@ -680,7 +599,7 @@ impl TorController {
         }
     }
 
-    pub fn authenticate(&self, password: &str) -> Result<()> {
+    pub fn authenticate(&mut self, password: &str) -> Result<()> {
         let reply = self.authenticate_cmd(password)?;
 
         match reply.status_code {
@@ -689,7 +608,7 @@ impl TorController {
         }
     }
 
-    pub fn getinfo(&self, keywords: &[&str]) -> Result<Vec<(String,String)>> {
+    pub fn getinfo(&mut self, keywords: &[&str]) -> Result<Vec<(String,String)>> {
         let reply = self.getinfo_cmd(keywords)?;
 
         match reply.status_code {
@@ -708,7 +627,7 @@ impl TorController {
     }
 
     pub fn add_onion(
-        &self,
+        &mut self,
         key: Option<Ed25519PrivateKey>,
         flags: &AddOnionFlags,
         max_streams: Option<u16>,
@@ -751,7 +670,7 @@ impl TorController {
         return Ok((private_key, service_id.unwrap()));
     }
 
-    pub fn del_onion(&self, service_id: &V3OnionServiceId) -> Result<()> {
+    pub fn del_onion(&mut self, service_id: &V3OnionServiceId) -> Result<()> {
         let reply = self.del_onion_cmd(service_id)?;
 
         match reply.status_code {
@@ -762,7 +681,7 @@ impl TorController {
 
     // more specific encapulsation of specific command invocations
 
-    pub fn getinfo_net_listeners_socks(&self) -> Result<Vec<SocketAddr>> {
+    pub fn getinfo_net_listeners_socks(&mut self) -> Result<Vec<SocketAddr>> {
         let response = self.getinfo(&["net/listeners/socks"])?;
         for (key, value) in response.iter() {
             match key.as_str() {
@@ -782,8 +701,8 @@ impl TorController {
         }
         bail!("TorController::getinfo_net_listeners_socks(): did not find a 'net/listeners/socks' key/value");
     }
-
 }
+
 
 pub struct TorCircuitToken {
     username: String,
@@ -818,12 +737,12 @@ impl TorManager {
         let control_stream = ControlStream::new(&daemon.control_addr, Duration::from_millis(16))?;
 
         // create a controler
-        let controller = TorController::new(stream_worker, control_stream, Some(Box::new(|lines: Vec<String>| -> () {
+        let mut controller = TorController::new(control_stream, Box::new(|lines: Vec<String>| -> () {
             println!("{}", lines.join("\n"));
-        })))?;
+        }));
 
         // authenticate
-        controller.authenticate_cmd(&daemon.password)?;
+        controller.authenticate(&daemon.password)?;
 
         //get our socks listener
         // let listeners = controller.getinfo_net_listeners_socks()?;
@@ -869,7 +788,9 @@ fn test_tor_controller() -> Result<()> {
         let control_stream = ControlStream::new(&tor_process.control_addr, Duration::from_millis(16))?;
 
         // create a tor controller and send authentication command
-        let tor_controller = TorController::new(worker.clone(), control_stream, None)?;
+        let mut tor_controller = TorController::new(control_stream, Box::new(|lines: Vec<String>| -> () {
+            println!("{}", lines.join("\n"));
+        }));
         tor_controller.authenticate_cmd(&tor_process.password)?;
         ensure!(tor_controller.authenticate_cmd("invalid password")?.status_code == 515u32);
 
@@ -878,7 +799,7 @@ fn test_tor_controller() -> Result<()> {
             Ok(_)=> bail!("Expected failure due to closed connection"),
             Err(_) => (),
         };
-        ensure!(tor_controller.shared.lock().unwrap().control_stream.closed_by_remote());
+        ensure!(tor_controller.control_stream.closed_by_remote());
     }
     // now create a second controller
     {
@@ -886,9 +807,9 @@ fn test_tor_controller() -> Result<()> {
 
         // create a tor controller and send authentication command
         // all async events are just printed to stdout
-        let tor_controller = TorController::new(worker, control_stream, Some(Box::new(|lines: Vec<String>| -> () {
+        let mut tor_controller = TorController::new(control_stream, Box::new(|lines: Vec<String>| -> () {
             println!("{}", lines.join("\n"));
-        })))?;
+        }));
         tor_controller.authenticate(&tor_process.password)?;
 
         // ensure everything is matching our default_torrc settings
@@ -946,7 +867,9 @@ fn test_tor_controller() -> Result<()> {
             }
         }
 
-        std::thread::sleep(std::time::Duration::from_secs(30));
+        tor_controller.wait_async_replies_for(std::time::Duration::from_secs(30));
+
+        // std::thread::sleep(std::time::Duration::from_secs(30));
     }
 
     // workers should all join properly
