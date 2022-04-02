@@ -767,7 +767,7 @@ impl TorController {
         for (key, value) in response.iter() {
             match key.as_str() {
                 "net/listeners/socks" => {
-                    // get our list of double-quoated strings
+                    // get our list of double-quoted strings
                     let listeners: Vec<&str> = value.split(' ').collect();
                     let mut result: Vec<SocketAddr> = Default::default();
                     for socket_addr in listeners.iter() {
@@ -785,9 +785,79 @@ impl TorController {
 
 }
 
+pub struct TorCircuitToken {
+    username: String,
+    password: String,
+}
+
+impl TorCircuitToken {
+    pub fn new(first_party: Host) -> TorCircuitToken {
+        const CIRCUIT_TOKEN_PASSWORD_LENGTH: usize = 32usize;
+        let username = first_party.to_string();
+        let password = generate_password(CIRCUIT_TOKEN_PASSWORD_LENGTH);
+
+        return TorCircuitToken{username: username, password: password};
+    }
+
+    pub fn catchall() -> TorCircuitToken {
+        return TorCircuitToken{username: String::new(), password: String::new()};
+    }
+}
+
+pub struct TorManager {
+    daemon: TorProcess,
+    controller: TorController,
+    socks_listener: Option<SocketAddr>,
+}
+
+impl TorManager {
+    pub fn new(data_directory: &Path, stream_worker: Worker) -> Result<TorManager> {
+        // launch tor
+        let daemon = TorProcess::new(data_directory)?;
+        // open a control stream
+        let control_stream = ControlStream::new(&daemon.control_addr, Duration::from_millis(16))?;
+
+        // create a controler
+        let controller = TorController::new(stream_worker, control_stream, Some(Box::new(|lines: Vec<String>| -> () {
+            println!("{}", lines.join("\n"));
+        })))?;
+
+        // authenticate
+        controller.authenticate_cmd(&daemon.password)?;
+
+        //get our socks listener
+        // let listeners = controller.getinfo_net_listeners_socks()?;
+        // let socks_listener = match listeners.first() {
+        //     None => bail!("TorManager::new() no available socks listeners"),
+        //     Some(val) => val.clone(),
+        // };
+
+        return Ok(
+            TorManager{
+                daemon: daemon,
+                controller: controller,
+                socks_listener: None,
+            });
+    }
+
+    // could take in a callback for bootstrap events
+    pub fn begin_bootstrap(&self) -> Result<()> {
+        Ok(())
+    }
+
+    pub fn open_connection(&self, target: TargetAddr) -> Result<()> {
+        return self.open_connection_on_circuit(target, TorCircuitToken::catchall());
+    }
+
+    pub fn open_connection_on_circuit(&self, target: TargetAddr, circuit_token: TorCircuitToken) -> Result<()> {
+
+        return Ok(());
+    }
+}
+
 #[test]
 fn test_tor_controller() -> Result<()> {
-    let tor_process = TorProcess::new(Path::new("/tmp/tor_data_directory"))?;
+    let tor_process = TorProcess::new(Path::new("/tmp/test_tor_controller"))?;
 
     // create a worker thread to handle the control port reads
     const WORKER_NAMES: [&str; 1] = ["tor_control"];
@@ -837,8 +907,8 @@ fn test_tor_controller() -> Result<()> {
         for (key, value) in vals.iter() {
             match key.as_str() {
                 "version" => ensure!(Regex::new(r"\d+\.\d+\.\d+\.\d+")?.is_match(&value)),
-                "config-file" => ensure!(value == "/tmp/tor_data_directory/torrc"),
-                "config-text" => ensure!(value == "\nControlPort auto\nControlPortWriteToFile /tmp/tor_data_directory/control_port\nDataDirectory /tmp/tor_data_directory"),
+                "config-file" => ensure!(value == "/tmp/test_tor_controller/torrc"),
+                "config-text" => ensure!(value == "\nControlPort auto\nControlPortWriteToFile /tmp/test_tor_controller/control_port\nDataDirectory /tmp/test_tor_controller"),
                 _ => bail!("Unexpected returned key: {}", key),
             }
         }
@@ -881,6 +951,19 @@ fn test_tor_controller() -> Result<()> {
 
     // workers should all join properly
     work_manager.join()?;
+
+    return Ok(());
+}
+
+#[test]
+fn test_tor_manager() -> Result<()>
+{
+    // create a worker thread to handle the control port reads
+    const WORKER_NAMES: [&str; 1] = ["tor_control"];
+    let work_manager = Arc::new(WorkManager::new(&WORKER_NAMES)?);
+    let worker = Worker::new(0, &work_manager)?;
+
+    let tor = TorManager::new(Path::new("/tmp/test_tor_manager"), worker)?;
 
     return Ok(());
 }
