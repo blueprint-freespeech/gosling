@@ -1,20 +1,21 @@
 // standard
-use std::path::Path;
-use std::option::Option;
-use std::default::Default;
-use std::iter;
-use std::process;
-use std::process::*;
+use std::cmp::Ordering;
 use std::collections::VecDeque;
-use std::fs;
+use std::default::Default;
 use std::fs::File;
+use std::fs;
 use std::io::{ErrorKind, Read, Write};
-use std::time::{Duration, Instant};
-use std::ops::Drop;
+use std::iter;
 use std::net::*;
-use std::sync::*;
-use std::ops::DerefMut;
+use std::ops::Drop;
+use std::option::Option;
+use std::path::Path;
+use std::process::*;
+use std::process;
 use std::str::FromStr;
+use std::string::ToString;
+use std::sync::*;
+use std::time::{Duration, Instant};
 
 // extern crates
 use anyhow::{bail, ensure, Result};
@@ -27,7 +28,6 @@ use url::*;
 
 // internal modules
 use tor_crypto::*;
-use work_manager::*;
 
 // get the name of our tor executable
 fn system_tor() -> &'static str {
@@ -184,7 +184,7 @@ lazy_static! {
 }
 
 type StatusCode = u32;
-pub struct Reply {
+struct Reply {
     status_code: StatusCode,
     reply_lines: Vec<String>,
 }
@@ -341,6 +341,142 @@ pub struct AddOnionFlags {
     pub non_anonymous: bool,
     pub max_streams_close_circuit: bool,
 }
+
+// see version-spec.txt
+pub struct Version {
+    pub major: u32,
+    pub minor: u32,
+    pub micro: u32,
+    pub patch_level: u32,
+    pub status_tag: Option<String>,
+}
+
+impl Version {
+    fn new(major: u32, minor: u32, micro: u32, patch_level: Option<u32>, status_tag: Option<&str>) -> Result<Version> {
+
+        lazy_static! {
+            static ref STATUS_TAG_PATTERN: Regex = Regex::new(r"^[^\s]+$").unwrap();
+        }
+
+        let status_tag = if let Some(status_tag) = status_tag {
+            ensure!(STATUS_TAG_PATTERN.is_match(status_tag));
+            Some(status_tag.to_string())
+        } else {
+            None
+        };
+
+        return Ok(Version{
+            major: major,
+            minor: minor,
+            micro: micro,
+            patch_level: patch_level.unwrap_or(0u32),
+            status_tag: status_tag,
+        });
+    }
+}
+
+impl FromStr for Version {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Version> {
+
+        lazy_static! {
+            static ref TOR_VERSION_PATTERN: Regex = Regex::new(r"^(?P<major>\d+)\.(?P<minor>\d+)\.(?P<micro>\d+)(?P<patch_level>\.\d+){0,1}(?P<status_tag>-[^\s]+){0,1}( \([^\s]+\))*$").unwrap();
+        }
+
+        if let Some(caps) = TOR_VERSION_PATTERN.captures(&s) {
+           let major = caps.name("major");
+            ensure!(major.is_some());
+            let major: u32 = major.unwrap().as_str().parse()?;
+
+            let minor = caps.name("minor");
+            ensure!(minor.is_some());
+            let minor: u32 = minor.unwrap().as_str().parse()?;
+
+            let micro = caps.name("micro");
+            ensure!(micro.is_some());
+            let micro: u32 = micro.unwrap().as_str().parse()?;
+
+            let patch_level = caps.name("patch_level");
+            let patch_level: u32 = match patch_level {
+                Some(patch_level) => patch_level.as_str()[1..].parse()?,
+                None => 0u32,
+            };
+
+            let status_tag = caps.name("status_tag");
+            let status_tag: Option<String> = match status_tag {
+                Some(status_tag) => Some(status_tag.as_str()[1..].to_string()),
+                None => None,
+            };
+
+            return Ok(Version{major: major, minor: minor, micro: micro, patch_level: patch_level, status_tag: status_tag});
+        }
+        bail!("Version::from_str(): failed to parse '{}' as Version", s);
+    }
+}
+
+impl ToString for Version {
+    fn to_string(&self) -> String {
+        match &self.status_tag {
+            Some(status_tag) => return format!("{}.{}.{}.{}-{}", self.major, self.minor, self.micro, self.patch_level, status_tag),
+            None => return format!("{}.{}.{}.{}", self.major, self.minor, self.micro, self.patch_level),
+        }
+    }
+}
+
+impl PartialEq for Version {
+    fn eq(&self, other: &Self) -> bool {
+        return self.major == other.major &&
+               self.minor == other.minor &&
+               self.micro == other.micro &&
+               self.patch_level == other.patch_level &&
+               self.status_tag == other.status_tag;
+    }
+}
+
+impl PartialOrd for Version {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+
+        if let Some(order) = self.major.partial_cmp(&other.major) {
+            if order != Ordering::Equal {
+                return Some(order);
+            }
+        }
+
+        if let Some(order) = self.minor.partial_cmp(&other.minor) {
+            if order != Ordering::Equal {
+                return Some(order);
+            }
+        }
+
+        if let Some(order) = self.micro.partial_cmp(&other.micro) {
+            if order != Ordering::Equal {
+                return Some(order);
+            }
+        }
+
+        if let Some(order) = self.patch_level.partial_cmp(&other.patch_level) {
+            if order != Ordering::Equal {
+                return Some(order);
+            }
+        }
+
+        // version-spect.txt *does* say that we should compare tags lexicgraphically
+        // if all of the version numbers are the same when comparing, but we are
+        // going to diverge here and say we can only compare tags for equality.
+        //
+        // In practice we will be comparing tor daemon tags against tagless (stable)
+        // versions so this shouldn't be an issue
+
+        if self.status_tag == other.status_tag {
+            return Some(Ordering::Equal);
+        }
+
+        return None;
+    }
+}
+
+
 type AsyncEventCallback = dyn Fn(Vec<String>) -> () + 'static;
 
 struct TorController {
@@ -560,7 +696,7 @@ impl TorController {
     }
 
     //
-    // Public high-levle typesafe command method wrappers
+    // Public high-level typesafe command method wrappers
     //
 
     pub fn setconf(&mut self, key_values: &[(&str,&str)]) -> Result<()> {
@@ -701,6 +837,17 @@ impl TorController {
         }
         bail!("TorController::getinfo_net_listeners_socks(): did not find a 'net/listeners/socks' key/value");
     }
+
+    pub fn getinfo_version(&mut self) -> Result<Version> {
+        let response = self.getinfo(&["version"])?;
+        for (key, value) in response.iter() {
+            match key.as_str() {
+                "version" => return Version::from_str(&value),
+                _ => {},
+            }
+        }
+        bail!("TorController::getinfo_version(): did not find a 'version' key/value");
+    }
 }
 
 
@@ -730,7 +877,7 @@ pub struct TorManager {
 }
 
 impl TorManager {
-    pub fn new(data_directory: &Path, stream_worker: Worker) -> Result<TorManager> {
+    pub fn new(data_directory: &Path) -> Result<TorManager> {
         // launch tor
         let daemon = TorProcess::new(data_directory)?;
         // open a control stream
@@ -759,6 +906,10 @@ impl TorManager {
             });
     }
 
+    pub fn version(&mut self) -> Result<Version> {
+        return self.controller.getinfo_version();
+    }
+
     // could take in a callback for bootstrap events
     pub fn begin_bootstrap(&self) -> Result<()> {
         Ok(())
@@ -777,11 +928,6 @@ impl TorManager {
 #[test]
 fn test_tor_controller() -> Result<()> {
     let tor_process = TorProcess::new(Path::new("/tmp/test_tor_controller"))?;
-
-    // create a worker thread to handle the control port reads
-    const WORKER_NAMES: [&str; 1] = ["tor_control"];
-    let work_manager = Arc::new(WorkManager::new(&WORKER_NAMES)?);
-    let worker = Worker::new(0, &work_manager)?;
 
     // create a scope to ensure tor_controller is dropped
     {
@@ -868,12 +1014,77 @@ fn test_tor_controller() -> Result<()> {
         }
 
         tor_controller.wait_async_replies_for(std::time::Duration::from_secs(30));
-
-        // std::thread::sleep(std::time::Duration::from_secs(30));
     }
 
-    // workers should all join properly
-    work_manager.join()?;
+    return Ok(());
+}
+
+#[test]
+fn test_version() -> Result<()>
+{
+    ensure!(Version::from_str("1.2.3")? == Version::new(1,2,3,None,None)?);
+    ensure!(Version::from_str("1.2.3.4")? == Version::new(1,2,3,Some(4),None)?);
+    ensure!(Version::from_str("1.2.3-test")? == Version::new(1,2,3,None,Some("test"))?);
+    ensure!(Version::from_str("1.2.3.4-test")? == Version::new(1,2,3,Some(4),Some("test"))?);
+    ensure!(Version::from_str("1.2.3 (extra_info)")? == Version::new(1,2,3,None,None)?);
+    ensure!(Version::from_str("1.2.3.4 (extra_info)")? == Version::new(1,2,3,Some(4),None)?);
+    ensure!(Version::from_str("1.2.3.4-tag (extra_info)")? == Version::new(1,2,3,Some(4),Some("tag"))?);
+
+    ensure!(Version::from_str("1.2.3.4-tag (extra_info) (extra_info)")? == Version::new(1,2,3,Some(4),Some("tag"))?);
+
+    match Version::new(1,2,3,Some(4),Some("spaced tag")) {
+        Ok(_) => bail!("expected failure"),
+        Err(err) => println!("{}", err),
+    }
+
+    match Version::new(1,2,3,Some(4),Some("" /* empty tag */)) {
+        Ok(_) => bail!("expected failure"),
+        Err(err) => println!("{}", err),
+    }
+
+    match Version::from_str("") {
+        Ok(_) => bail!("expected failure"),
+        Err(err) => println!("{}", err),
+    }
+
+    match Version::from_str("1.2") {
+        Ok(_) => bail!("expected failure"),
+        Err(err) => println!("{}", err),
+    }
+
+    match Version::from_str("1.2-foo") {
+        Ok(_) => bail!("expected failure"),
+        Err(err) => println!("{}", err),
+    }
+
+    match Version::from_str("1.2.3.4-foo bar") {
+        Ok(_) => bail!("expected failure"),
+        Err(err) => println!("{}", err),
+    }
+
+    match Version::from_str("1.2.3.4-foo bar (extra_info)") {
+        Ok(_) => bail!("expected failure"),
+        Err(err) => println!("{}", err),
+    }
+
+    match Version::from_str("1.2.3.4-foo (extra_info) badtext") {
+        Ok(_) => bail!("expected failure"),
+        Err(err) => println!("{}", err),
+    }
+
+    ensure!(Version::new(0,0,0,Some(0),None)? < Version::new(1,0,0,Some(0),None)?);
+    ensure!(Version::new(0,0,0,Some(0),None)? < Version::new(0,1,0,Some(0),None)?);
+    ensure!(Version::new(0,0,0,Some(0),None)? < Version::new(0,0,1,Some(0),None)?);
+
+    // ensure status tags make comparison between equal versions (apart from
+    // tags) unknowable
+    let zero_version = Version::new(0,0,0,Some(0),None)?;
+    let zero_version_tag = Version::new(0,0,0,Some(0),Some("tag"))?;
+
+    ensure!(!(zero_version < zero_version_tag));
+    ensure!(!(zero_version <= zero_version_tag));
+    ensure!(!(zero_version > zero_version_tag));
+    ensure!(!(zero_version >= zero_version_tag));
 
     return Ok(());
 }
@@ -881,12 +1092,8 @@ fn test_tor_controller() -> Result<()> {
 #[test]
 fn test_tor_manager() -> Result<()>
 {
-    // create a worker thread to handle the control port reads
-    const WORKER_NAMES: [&str; 1] = ["tor_control"];
-    let work_manager = Arc::new(WorkManager::new(&WORKER_NAMES)?);
-    let worker = Worker::new(0, &work_manager)?;
-
-    let tor = TorManager::new(Path::new("/tmp/test_tor_manager"), worker)?;
+    let mut tor = TorManager::new(Path::new("/tmp/test_tor_manager"))?;
+    println!("version : {}", tor.version()?.to_string());
 
     return Ok(());
 }
