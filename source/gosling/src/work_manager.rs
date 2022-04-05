@@ -26,10 +26,6 @@ pub struct TaskResult {
 
 impl TaskResult {
 
-    fn new() -> TaskResult {
-        return Self{wait_handle: Default::default(), result: Default::default()};
-    }
-
     pub fn wait<T: Any>(&self) -> Result<T> {
 
         loop {
@@ -47,13 +43,15 @@ impl TaskResult {
                     // otherwise try the requested cast
                     Err(result) => match result.downcast::<T>() {
                         Ok(result) => return Ok(*result),
-                        Err(err) => bail!("TaskResult::wait<T>(): could not cast result to type {}", type_name::<T>()),
+                        Err(_) => bail!("TaskResult::wait<T>(): could not cast result to type {}", type_name::<T>()),
                     }
                 }
             }
 
             // suspend until notified
-            self.wait_handle.wait(self.result.lock().unwrap());
+            if let Err(err) = self.wait_handle.wait(self.result.lock().unwrap()) {
+                bail!("{}", err);
+            }
         }
     }
 }
@@ -130,7 +128,7 @@ impl WorkManager {
 
         // add and start our worker threads
         for worker_name in worker_names {
-            work_manager.add_worker(worker_name);
+            work_manager.add_worker(worker_name)?;
         }
         return Ok(work_manager);
     }
@@ -155,7 +153,6 @@ impl WorkManager {
             })?;
 
         threads.push(thread_handle);
-
         return Ok(());
     }
 
@@ -217,7 +214,7 @@ impl WorkManager {
 
         match self.threads.lock() {
             Ok(threads) => return Ok(threads[worker_id].thread().id()),
-            Err(err) => bail!("WorkManager::thread_id(): cannot lock threads mutex"),
+            Err(_) => bail!("WorkManager::thread_id(): cannot lock threads mutex"),
         }
     }
 
@@ -233,8 +230,10 @@ impl WorkManager {
 
         // wait for each thread to join
         let mut threads = self.threads.lock().unwrap();
-        while !threads.is_empty() {
-            threads.pop().unwrap().join();
+        while let Some(handle) = threads.pop() {
+            if let Err(err) = handle.join() {
+                std::panic::resume_unwind(err);
+            }
         }
 
         return Ok(());
@@ -346,7 +345,6 @@ fn test_work_manager() -> Result<()> {
     }
 
     let counter = Arc::new(AtomicUsize::new(0));
-    let begin = std::time::Instant::now();
 
     for i in 0..WORKER_COUNT {
         let worker = Worker::new(i, &work_manager)?;
@@ -366,7 +364,7 @@ fn test_work_manager() -> Result<()> {
     }
 
     match work_manager.push(WORKER_COUNT, || Ok(())) {
-        Ok(result) => bail!("Expected work_manager.push({},...) to fail", WORKER_COUNT),
+        Ok(_) => bail!("Expected work_manager.push({},...) to fail", WORKER_COUNT),
         _ => ()
     };
 
