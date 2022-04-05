@@ -12,7 +12,7 @@ use rand::RngCore;
 use rand::rngs::OsRng;
 use zeroize::Zeroize;
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Result, ensure};
 
 use object_registry::*;
 use define_registry;
@@ -310,6 +310,7 @@ impl Ed25519PrivateKey {
     pub fn generate() -> Result<Ed25519PrivateKey> {
         let mut secret_key= [0u8; ED25519_PRIVATE_KEY_SIZE];
         let result = unsafe { ed25519_donna_seckey(secret_key.as_mut_ptr()) };
+        ensure!(result == 0 as c_int);
 
         return Ok(Ed25519PrivateKey{data: secret_key});
     }
@@ -538,7 +539,7 @@ impl ToString for V3OnionServiceId {
         match str::from_utf8(&self.data) {
             Ok(result) => return result.to_string(),
             // this should really never ever happen but who knows
-            Err(err) => panic!(err),
+            Err(err) => panic!("{}", err),
         }
     }
 }

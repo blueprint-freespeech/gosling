@@ -14,7 +14,6 @@ use std::process::*;
 use std::process;
 use std::str::FromStr;
 use std::string::ToString;
-use std::sync::*;
 use std::time::{Duration, Instant};
 
 // extern crates
@@ -151,7 +150,7 @@ impl TorProcess {
               start.elapsed() < Duration::from_secs(5) {
             if control_port_file.exists() {
                 control_addr = Some(read_control_port_file(control_port_file.as_path())?);
-                fs::remove_file(&control_port_file);
+                fs::remove_file(&control_port_file)?;
             }
         }
         ensure!(control_addr != None, "TorProcess::new(): failed to read control addr from '{}'", control_port_file.display());
@@ -163,7 +162,7 @@ impl TorProcess {
 
 impl Drop for TorProcess {
     fn drop(&mut self) -> () {
-        self.process.kill();
+        let _ = self.process.kill();
     }
 }
 
@@ -195,7 +194,7 @@ impl ControlStream {
         ensure!(read_timeout != Default::default(), "ControlStream::new(): read_timeout must not be zero");
 
         let stream = TcpStream::connect(&addr)?;
-        stream.set_read_timeout(Some(read_timeout));
+        stream.set_read_timeout(Some(read_timeout))?;
 
         // pre-allocate a kilobyte for the read buffer
         const READ_BUFFER_SIZE: usize = 1024;
@@ -233,7 +232,7 @@ impl ControlStream {
                     self.closed_by_remote = true;
                     bail!("ControlStream::read_line(): stream closed by remote")
                 },
-                Ok(count) => (),
+                Ok(_count) => (),
             }
 
             // split our read buffer into individual lines
@@ -261,7 +260,7 @@ impl ControlStream {
         return Ok(self.pending_lines.pop_front());
     }
 
-    pub fn read_reply(&mut self) -> Result<Option<Reply>> {
+    fn read_reply(&mut self) -> Result<Option<Reply>> {
 
         loop {
             let current_line =  match self.read_line() {
@@ -315,7 +314,7 @@ impl ControlStream {
         let status_code: u32 = status_code_string.parse()?;
 
         // strip the redundant status code form start of lines
-        for mut line in reply_lines.iter_mut() {
+        for line in reply_lines.iter_mut() {
             println!(">>> {}", line);
             if line.starts_with(&status_code_string) {
                 *line = line[4..].to_string();
@@ -327,7 +326,10 @@ impl ControlStream {
 
     pub fn write(&mut self, cmd: &str) -> Result<()> {
         println!("<<< {}", cmd);
-        write!(self.stream, "{}\r\n", cmd);
+        if let Err(err) = write!(self.stream, "{}\r\n", cmd) {
+            self.closed_by_remote = true;
+            bail!(err);
+        }
         return Ok(());
     }
 }
@@ -510,15 +512,15 @@ impl TorController {
         let mut replies_handled: usize = 0usize;
 
         // first empty our async reply queue
-        while let Some(mut reply) = self.async_replies.pop_front() {
-            self.handle_async_reply(reply);
+        while let Some(reply) = self.async_replies.pop_front() {
+            self.handle_async_reply(reply)?;
             replies_handled += 1;
         }
 
         // and keep consuming until none are available
         loop {
-            if let Some(mut reply) = self.control_stream.read_reply()? {
-                self.handle_async_reply(reply);
+            if let Some(reply) = self.control_stream.read_reply()? {
+                self.handle_async_reply(reply)?;
                 replies_handled += 1;
             } else if replies_handled > 0 {
                 // only return once at least 1 reply has been handled
@@ -532,14 +534,14 @@ impl TorController {
         let stop_time = Instant::now() + timeout;
         let mut replies_handled: usize = 0usize;
 
-        while let Some(mut reply) = self.async_replies.pop_front() {
-            self.handle_async_reply(reply);
+        while let Some(reply) = self.async_replies.pop_front() {
+            self.handle_async_reply(reply)?;
             replies_handled += 1;
         }
 
         while Instant::now() < stop_time {
-            if let Some(mut reply) = self.control_stream.read_reply()? {
-                self.handle_async_reply(reply);
+            if let Some(reply) = self.control_stream.read_reply()? {
+                self.handle_async_reply(reply)?;
                 replies_handled += 1;
             } else if replies_handled > 0 {
                 // only return once at least 1 reply has been handled
@@ -553,7 +555,7 @@ impl TorController {
     fn wait_sync_reply(&mut self) -> Result<Reply> {
 
         loop {
-            if let Some(mut reply) = self.control_stream.read_reply()? {
+            if let Some(reply) = self.control_stream.read_reply()? {
                 match reply.status_code {
                     650u32 => self.async_replies.push_back(reply),
                     _ => return Ok(reply),
@@ -564,7 +566,7 @@ impl TorController {
 
 
     fn write_command(&mut self, text: &String) -> Result<Reply> {
-        self.control_stream.write(text);
+        self.control_stream.write(text)?;
         return self.wait_sync_reply();
     }
 
@@ -919,7 +921,7 @@ impl TorManager {
         return self.open_connection_on_circuit(target, TorCircuitToken::catchall());
     }
 
-    pub fn open_connection_on_circuit(&self, target: TargetAddr, circuit_token: TorCircuitToken) -> Result<()> {
+    pub fn open_connection_on_circuit(&self, _target: TargetAddr, _circuit_token: TorCircuitToken) -> Result<()> {
 
         return Ok(());
     }
@@ -1013,7 +1015,7 @@ fn test_tor_controller() -> Result<()> {
             }
         }
 
-        tor_controller.wait_async_replies_for(std::time::Duration::from_secs(30));
+        tor_controller.wait_async_replies_for(std::time::Duration::from_secs(30))?;
     }
 
     return Ok(());
