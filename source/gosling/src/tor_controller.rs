@@ -23,7 +23,7 @@ use rand::rngs::OsRng;
 use rand::distributions::Alphanumeric;
 use regex::Regex;
 use socks::*;
-use url::*;
+use url::Host;
 
 // internal modules
 use tor_crypto::*;
@@ -91,9 +91,12 @@ impl TorProcess {
         let control_port_file = data_directory.join("control_port");
 
         // construct default torrc
+        //  - daemon determines socks port and only allows clients to connect to onion services
+        //  - minimize writes to disk
+        //  - start with network disabled by default
         if !default_torrc.exists() {
             const DEFAULT_TORRC_CONTENT: &str =
-           "SocksPort auto\n\
+           "SocksPort auto OnionTrafficOnly\n\
             AvoidDiskWrites 1\n\
             DisableNetwork 1\n\n";
 
@@ -387,7 +390,7 @@ impl FromStr for Version {
         }
 
         if let Some(caps) = TOR_VERSION_PATTERN.captures(&s) {
-           let major = caps.name("major");
+            let major = caps.name("major");
             ensure!(major.is_some());
             let major: u32 = major.unwrap().as_str().parse()?;
 
@@ -478,77 +481,100 @@ impl PartialOrd for Version {
     }
 }
 
-
-type AsyncEventCallback = dyn Fn(Vec<String>) -> () + 'static;
+enum AsyncEvent {
+    Unknown{lines: Vec<String>},
+    StatusClient{severity: String, action: String, arguments: Vec<(String,String)>},
+}
 
 struct TorController {
     // underlying control stream
     control_stream: ControlStream,
     // list of async replies to be handled
-    async_replies: VecDeque<Reply>,
-    // callback object for async events
-    async_event_callback: Box<AsyncEventCallback>,
+    async_replies: Vec<Reply>,
 }
 
 impl TorController {
-    pub fn new(control_stream: ControlStream, async_event_callback: Box<AsyncEventCallback>) -> TorController {
+    pub fn new(control_stream: ControlStream) -> TorController {
         return TorController{
             control_stream: control_stream,
             async_replies: Default::default(),
-            async_event_callback: async_event_callback,
         };
     }
 
-    fn handle_async_reply(&mut self, reply: Reply) -> Result<()> {
-        match reply.status_code {
-            650u32 => (*self.async_event_callback)(reply.reply_lines),
-            _ => bail!("Controller::handle_async_reply(): unexpected sync reply"),
-        }
-        return Ok(());
-    }
+    // return curently available events, does not block waiting
+    // for an event
+    fn wait_async_replies(&mut self) -> Result<Vec<Reply>> {
 
-    // wait until at least 1 reply is available, handle and return
-    pub fn wait_async_replies(&mut self) -> Result<()> {
-        let mut replies_handled: usize = 0usize;
-
-        // first empty our async reply queue
-        while let Some(reply) = self.async_replies.pop_front() {
-            self.handle_async_reply(reply)?;
-            replies_handled += 1;
-        }
+        let mut replies: Vec<Reply> = Default::default();
+        // take any previously received async replies
+        std::mem::swap(&mut self.async_replies, &mut replies);
 
         // and keep consuming until none are available
         loop {
             if let Some(reply) = self.control_stream.read_reply()? {
-                self.handle_async_reply(reply)?;
-                replies_handled += 1;
-            } else if replies_handled > 0 {
-                // only return once at least 1 reply has been handled
-                return Ok(());
+                replies.push(reply);
+            } else {
+                // no more replies immediately available so return
+                return Ok(replies);
             }
         }
     }
 
-    // wait for at least timeout until at least 1 reply is available, handle and return
-    pub fn wait_async_replies_for(&mut self, timeout: Duration) -> Result<()> {
-        let stop_time = Instant::now() + timeout;
-        let mut replies_handled: usize = 0usize;
+    fn reply_to_event(reply: &mut Reply) -> Result<AsyncEvent> {
+        ensure!(reply.status_code == 650u32, "TorController::reply_to_event(): received unexpected synchrynous reply");
 
-        while let Some(reply) = self.async_replies.pop_front() {
-            self.handle_async_reply(reply)?;
-            replies_handled += 1;
+        lazy_static! {
+
+            // STATUS_EVENT replies
+            static ref STATUS_EVENT_PATTERN: Regex = Regex::new(r#"^STATUS_CLIENT (?P<severity>NOTICE|WARN|ERR) (?P<action>[A-Za-z]+)"#).unwrap();
+            static ref STATUS_EVENT_ARGUMENT_PATTERN: Regex = Regex::new(r#"(?P<key>[A-Z]+)=(?P<value>[A-Za-z0-9_]+|"[^"]+")"#).unwrap();
         }
 
-        while Instant::now() < stop_time {
-            if let Some(reply) = self.control_stream.read_reply()? {
-                self.handle_async_reply(reply)?;
-                replies_handled += 1;
-            } else if replies_handled > 0 {
-                // only return once at least 1 reply has been handled
-                return Ok(());
+        // not sure this is what we want but yolo
+        let reply_text = reply.reply_lines.join(" ");
+        if let Some(caps) = STATUS_EVENT_PATTERN.captures(&reply_text) {
+            let severity = caps.name("severity").unwrap().as_str();
+            let action = caps.name("action").unwrap().as_str();
+
+            let mut arguments: Vec<(String,String)> = Default::default();
+            for caps in STATUS_EVENT_ARGUMENT_PATTERN.captures_iter(&reply_text) {
+                let key = caps.name("key").unwrap().as_str().to_string();
+                let value = {
+                    let value = caps.name("value").unwrap().as_str();
+                    if value.starts_with("\"") && value.ends_with("\"") {
+                        value[1..value.len()-1].to_string()
+                    } else {
+                        value.to_string()
+                    }
+                };
+                arguments.push((key, value));
             }
+
+            return Ok(AsyncEvent::StatusClient{
+                severity: severity.to_string(),
+                action: action.to_string(),
+                arguments: arguments
+            });
         }
-        return Ok(());
+
+        // no luck parsing reply, just return full text
+        let mut reply_lines: Vec<String> = Default::default();
+        std::mem::swap(&mut reply_lines, &mut reply.reply_lines);
+
+        return Ok(AsyncEvent::Unknown{
+            lines: reply_lines,
+        });
+    }
+
+    pub fn wait_async_events(&mut self) -> Result<Vec<AsyncEvent>> {
+        let mut async_replies = self.wait_async_replies()?;
+        let mut async_events: Vec<AsyncEvent> = Default::default();
+
+        for mut reply in async_replies.iter_mut() {
+            async_events.push(TorController::reply_to_event(&mut reply)?);
+        }
+
+        return Ok(async_events);
     }
 
     // wait for a sync reply, save off async replies for later
@@ -557,13 +583,12 @@ impl TorController {
         loop {
             if let Some(reply) = self.control_stream.read_reply()? {
                 match reply.status_code {
-                    650u32 => self.async_replies.push_back(reply),
+                    650u32 => self.async_replies.push(reply),
                     _ => return Ok(reply),
                 }
             }
         }
     }
-
 
     fn write_command(&mut self, text: &String) -> Result<Reply> {
         self.control_stream.write(text)?;
@@ -853,28 +878,40 @@ impl TorController {
 }
 
 
-pub struct TorCircuitToken {
+pub struct CircuitToken {
     username: String,
     password: String,
 }
 
-impl TorCircuitToken {
-    pub fn new(first_party: Host) -> TorCircuitToken {
+impl CircuitToken {
+    pub fn new(first_party: Host) -> CircuitToken {
         const CIRCUIT_TOKEN_PASSWORD_LENGTH: usize = 32usize;
         let username = first_party.to_string();
         let password = generate_password(CIRCUIT_TOKEN_PASSWORD_LENGTH);
 
-        return TorCircuitToken{username: username, password: password};
+        return CircuitToken{username: username, password: password};
     }
 
-    pub fn catchall() -> TorCircuitToken {
-        return TorCircuitToken{username: String::new(), password: String::new()};
+    pub fn catchall() -> CircuitToken {
+        return CircuitToken{username: String::new(), password: String::new()};
     }
 }
+
+enum Event {
+    BootstrapStatus{progress: u32, tag: String, summary: String },
+    BootstrapComplete,
+}
+
+// TODO:
+//  when bootstrap completes we should set our socks listener
+//  enable open a Socks5Stream to a V3OnionService with a given CircuitToken
+//  enable opening a TcpListener using a Ed25519PrivateKey to start on onion service
+//  onion echo server test!
 
 pub struct TorManager {
     daemon: TorProcess,
     controller: TorController,
+    events: VecDeque<Event>,
     socks_listener: Option<SocketAddr>,
 }
 
@@ -886,12 +923,13 @@ impl TorManager {
         let control_stream = ControlStream::new(&daemon.control_addr, Duration::from_millis(16))?;
 
         // create a controler
-        let mut controller = TorController::new(control_stream, Box::new(|lines: Vec<String>| -> () {
-            println!("{}", lines.join("\n"));
-        }));
+        let mut controller = TorController::new(control_stream);
 
         // authenticate
         controller.authenticate(&daemon.password)?;
+
+        // register for STATUS_CLIENT async events
+        controller.setevents(&["STATUS_CLIENT"])?;
 
         //get our socks listener
         // let listeners = controller.getinfo_net_listeners_socks()?;
@@ -904,24 +942,33 @@ impl TorManager {
             TorManager{
                 daemon: daemon,
                 controller: controller,
+                events: Default::default(),
                 socks_listener: None,
             });
+    }
+
+
+    pub fn wait_for_event(&mut self) -> Result<Option<Event>> {
+        if let Some(event) = self.events.pop_front() {
+            return Ok(Some(event));
+        }
+
+        bail!("");
     }
 
     pub fn version(&mut self) -> Result<Version> {
         return self.controller.getinfo_version();
     }
 
-    // could take in a callback for bootstrap events
-    pub fn begin_bootstrap(&self) -> Result<()> {
-        Ok(())
+    pub fn begin_bootstrap(&mut self) -> Result<()> {
+        return self.controller.setconf(&[("DisableNetwork", "0")]);
     }
 
     pub fn open_connection(&self, target: TargetAddr) -> Result<()> {
-        return self.open_connection_on_circuit(target, TorCircuitToken::catchall());
+        return self.open_connection_on_circuit(target, CircuitToken::catchall());
     }
 
-    pub fn open_connection_on_circuit(&self, _target: TargetAddr, _circuit_token: TorCircuitToken) -> Result<()> {
+    pub fn open_connection_on_circuit(&self, _target: TargetAddr, _circuit_token: CircuitToken) -> Result<()> {
 
         return Ok(());
     }
@@ -936,9 +983,7 @@ fn test_tor_controller() -> Result<()> {
         let control_stream = ControlStream::new(&tor_process.control_addr, Duration::from_millis(16))?;
 
         // create a tor controller and send authentication command
-        let mut tor_controller = TorController::new(control_stream, Box::new(|lines: Vec<String>| -> () {
-            println!("{}", lines.join("\n"));
-        }));
+        let mut tor_controller = TorController::new(control_stream);
         tor_controller.authenticate_cmd(&tor_process.password)?;
         ensure!(tor_controller.authenticate_cmd("invalid password")?.status_code == 515u32);
 
@@ -955,16 +1000,14 @@ fn test_tor_controller() -> Result<()> {
 
         // create a tor controller and send authentication command
         // all async events are just printed to stdout
-        let mut tor_controller = TorController::new(control_stream, Box::new(|lines: Vec<String>| -> () {
-            println!("{}", lines.join("\n"));
-        }));
+        let mut tor_controller = TorController::new(control_stream);
         tor_controller.authenticate(&tor_process.password)?;
 
         // ensure everything is matching our default_torrc settings
         let vals = tor_controller.getconf(&["SocksPort", "AvoidDiskWrites", "DisableNetwork"])?;
         for (key, value) in vals.iter() {
             let expected = match key.as_str() {
-                "SocksPort" => "auto",
+                "SocksPort" => "auto OnionTrafficOnly",
                 "AvoidDiskWrites" => "1",
                 "DisableNetwork" => "1",
                 _ => bail!("Unexpected returned key: {}", key),
@@ -1015,7 +1058,22 @@ fn test_tor_controller() -> Result<()> {
             }
         }
 
-        tor_controller.wait_async_replies_for(std::time::Duration::from_secs(30))?;
+        let stop_time = Instant::now() + std::time::Duration::from_secs(5);
+        while stop_time > Instant::now() {
+            for async_event in tor_controller.wait_async_events()?.iter() {
+                match async_event {
+                    AsyncEvent::Unknown{lines} => {
+                        println!("Unknown: {}", lines.join("\n"));
+                    }
+                    AsyncEvent::StatusClient{severity,action,arguments} => {
+                        println!("STATUS_CLIENT severity={}, action={}", severity, action);
+                        for (key,value) in arguments.iter() {
+                            println!(" {}='{}'", key, value);
+                        }
+                    },
+                }
+            }
+        }
     }
 
     return Ok(());
@@ -1096,6 +1154,7 @@ fn test_tor_manager() -> Result<()>
 {
     let mut tor = TorManager::new(Path::new("/tmp/test_tor_manager"))?;
     println!("version : {}", tor.version()?.to_string());
+    tor.begin_bootstrap()?;
 
     return Ok(());
 }
