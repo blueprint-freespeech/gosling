@@ -90,6 +90,8 @@ impl TorProcess {
         let torrc = data_directory.join("torrc");
         let control_port_file = data_directory.join("control_port");
 
+        // TODO: should we nuke the existing torrc between runs? Do we want
+        // users setting custom nonsense in there?
         // construct default torrc
         //  - daemon determines socks port and only allows clients to connect to onion services
         //  - minimize writes to disk
@@ -948,12 +950,41 @@ impl TorManager {
     }
 
 
-    pub fn wait_for_event(&mut self) -> Result<Option<Event>> {
+    pub fn wait_event(&mut self) -> Result<Option<Event>> {
+
+        for async_event in self.controller.wait_async_events()?.iter() {
+            match async_event {
+                AsyncEvent::StatusClient{severity,action,arguments} => {
+                    if severity == "NOTICE" && action == "BOOTSTRAP" {
+                        let mut progress: u32 = 0;
+                        let mut tag: String = Default::default();
+                        let mut summary: String = Default::default();
+                        for (key,val) in arguments.iter() {
+                            match key.as_str() {
+                                "PROGRESS" => progress = val.parse()?,
+                                "TAG" => tag = val.to_string(),
+                                "SUMMARY" => summary = val.to_string(),
+                                _ => {}, // ignore unexpected arguments
+                            }
+                        }
+                        self.events.push_back(Event::BootstrapStatus{
+                            progress: progress,
+                            tag: tag,
+                            summary: summary,
+                        });
+                        if progress == 100u32 {
+                            self.events.push_back(Event::BootstrapComplete);
+                        }
+                    }
+                },
+                _ => {},
+            }
+        }
+
         if let Some(event) = self.events.pop_front() {
             return Ok(Some(event));
         }
-
-        bail!("");
+        return Ok(None)
     }
 
     pub fn version(&mut self) -> Result<Version> {
@@ -1150,11 +1181,26 @@ fn test_version() -> Result<()>
 }
 
 #[test]
-fn test_tor_manager() -> Result<()>
-{
+fn test_tor_manager() -> Result<()> {
     let mut tor = TorManager::new(Path::new("/tmp/test_tor_manager"))?;
     println!("version : {}", tor.version()?.to_string());
     tor.begin_bootstrap()?;
+
+    // for 30secs for bootstrap
+    let stop_time = Instant::now() + std::time::Duration::from_secs(30);
+    while stop_time > Instant::now() {
+        if let Some(event) = tor.wait_event()? {
+            match event {
+                Event::BootstrapStatus{progress,tag,summary} => println!("BootstrapStatus: {{ progress: {}, tag: {}, summary: '{}' }}", progress, tag, summary),
+                Event::BootstrapComplete =>     {
+                    println!("Bootstrap Complete!");
+                    return Ok(());
+                }
+            }
+        }
+    }
+
+    // let boo
 
     return Ok(());
 }
