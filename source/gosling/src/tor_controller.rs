@@ -1,5 +1,6 @@
 // standard
 use std::cmp::Ordering;
+use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::default::Default;
 use std::fs::File;
@@ -654,7 +655,7 @@ impl TorController {
     // ADD_ONION (3.27)
     fn add_onion_cmd(
         &mut self,
-        key: Option<Ed25519PrivateKey>,
+        key: Option<&Ed25519PrivateKey>,
         flags: &AddOnionFlags,
         max_streams: Option<u16>,
         virt_port: u16,
@@ -794,7 +795,7 @@ impl TorController {
 
     pub fn add_onion(
         &mut self,
-        key: Option<Ed25519PrivateKey>,
+        key: Option<&Ed25519PrivateKey>,
         flags: &AddOnionFlags,
         max_streams: Option<u16>,
         virt_port: u16,
@@ -852,10 +853,14 @@ impl TorController {
         for (key, value) in response.iter() {
             match key.as_str() {
                 "net/listeners/socks" => {
+                    if value.len() == 0 {
+                        return Ok(Default::default());
+                    }
                     // get our list of double-quoted strings
                     let listeners: Vec<&str> = value.split(' ').collect();
                     let mut result: Vec<SocketAddr> = Default::default();
                     for socket_addr in listeners.iter() {
+                        // TODO: add check that we have a double-quoted string here
                         // remove leading/trailing double quote
                         let stripped = &socket_addr[1..socket_addr.len() - 1];
                         result.push(SocketAddr::from_str(&stripped)?);
@@ -895,8 +900,72 @@ impl CircuitToken {
         return CircuitToken{username: username, password: password};
     }
 
-    pub fn catchall() -> CircuitToken {
-        return CircuitToken{username: String::new(), password: String::new()};
+}
+
+trait ReadWrite: std::io::Read + std::io::Write {}
+impl ReadWrite for TcpStream {}
+impl ReadWrite for Socks5Stream {}
+
+// wrapper around either a TcpStream or a Socks5Stream
+pub struct OnionStream {
+    circuit: Option<CircuitToken>,  // only present for outgoing connections
+    stream: Box<dyn ReadWrite>,
+}
+
+// TODO: implement wrappers around timeouts, etc of underlying TcpStreams
+impl OnionStream {}
+
+// pass-through to underlying Read stream
+impl Read for OnionStream {
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize, std::io::Error> {
+        return self.stream.read(buf);
+    }
+}
+
+// pass-through to underlying Write stream
+impl Write for OnionStream {
+    fn write(&mut self, buf: &[u8]) -> Result<usize, std::io::Error> {
+        return self.stream.write(buf);
+    }
+
+    fn flush(&mut self) -> Result<(), std::io::Error> {
+        return self.stream.flush();
+    }
+}
+
+pub struct OnionListener {
+    listener: TcpListener,
+    service_id: V3OnionServiceId,
+    controller: Weak<RefCell<TorController>>,
+}
+
+impl OnionListener {
+    //
+    pub fn set_nonblocking(&self, nonblocking: bool) -> Result<()> {
+        self.listener.set_nonblocking(nonblocking)?;
+        return Ok(());
+    }
+
+    pub fn accept(&self) -> Result<Option<OnionStream>> {
+        match self.listener.accept() {
+            Ok((stream, _socket_addr)) => {
+                return Ok(Some(OnionStream{circuit: None, stream: Box::new(stream)}));
+            },
+            Err(err) => if err.kind() == ErrorKind::WouldBlock {
+                return Ok(None);
+            } else {
+	    	bail!(err);
+            },
+        }
+    }
+}
+
+impl Drop for OnionListener {
+    fn drop(&mut self) -> () {
+        // on destruction tear down the onion service
+        if let Some(controller) = self.controller.upgrade() {
+            controller.borrow_mut().del_onion(&self.service_id);
+        }
     }
 }
 
@@ -905,15 +974,9 @@ enum Event {
     BootstrapComplete,
 }
 
-// TODO:
-//  when bootstrap completes we should set our socks listener
-//  enable open a Socks5Stream to a V3OnionService with a given CircuitToken
-//  enable opening a TcpListener using a Ed25519PrivateKey to start on onion service
-//  onion echo server test!
-
 pub struct TorManager {
     daemon: TorProcess,
-    controller: TorController,
+    controller: Rc<RefCell<TorController>>,
     events: VecDeque<Event>,
     socks_listener: Option<SocketAddr>,
 }
@@ -937,16 +1000,14 @@ impl TorManager {
         return Ok(
             TorManager{
                 daemon: daemon,
-                controller: controller,
+                controller: Rc::new(RefCell::new(controller)),
                 events: Default::default(),
                 socks_listener: None,
             });
     }
 
-
     pub fn wait_event(&mut self) -> Result<Option<Event>> {
-
-        for async_event in self.controller.wait_async_events()?.iter() {
+        for async_event in self.controller.borrow_mut().wait_async_events()?.iter() {
             match async_event {
                 AsyncEvent::StatusClient{severity,action,arguments} => {
                     if severity == "NOTICE" && action == "BOOTSTRAP" {
@@ -975,99 +1036,59 @@ impl TorManager {
             }
         }
 
-        if let Some(event) = self.events.pop_front() {
-            return Ok(Some(event));
-        }
-        return Ok(None)
+        return Ok(self.events.pop_front());
     }
 
     pub fn version(&mut self) -> Result<Version> {
-        return self.controller.getinfo_version();
+        return self.controller.borrow_mut().getinfo_version();
     }
 
     pub fn bootstrap(&mut self) -> Result<()> {
-        return self.controller.setconf(&[("DisableNetwork", "0")]);
+        return self.controller.borrow_mut().setconf(&[("DisableNetwork", "0")]);
     }
 
-    fn socks_listener(&mut self) -> Result<Option<SocketAddr>> {
-        //get our socks listener
-        let listeners = self.controller.getinfo_net_listeners_socks()?;
-        let socks_listener = match listeners.first() {
-            None => None,
-            Some(val) => Some(val.clone()),
+    // connect to an onion service and returns OnionStream
+    pub fn connect(&mut self, service_id: &V3OnionServiceId, virt_port: u16, circuit: Option<CircuitToken>, client_auth: Option<Ed25519PrivateKey>) -> Result<OnionStream> {
+
+        if let None = self.socks_listener {
+            let mut listeners = self.controller.borrow_mut().getinfo_net_listeners_socks()?;
+            ensure!(!listeners.is_empty(), "TorManager::connect(): no available socks listener to connect through");
+            self.socks_listener = Some(listeners.swap_remove(0));
+        }
+
+        if let Some(client_auth) = client_auth {
+            // TODO: tell tor daemon our client auth key
+        }
+
+        // our onion domain
+        let target = socks::TargetAddr::Domain(format!("{}.onion", service_id.to_string()), virt_port);
+        // readwrite stream
+        let stream = match &circuit {
+            None => Socks5Stream::connect(self.socks_listener.unwrap(), target)?,
+            Some(circuit) => Socks5Stream::connect_with_password(self.socks_listener.unwrap(), target, &circuit.username, &circuit.password)?,
         };
-        return Ok(socks_listener);
+
+        return Ok(OnionStream{circuit: circuit, stream: Box::new(stream)});
     }
 
-    pub fn open_connection(&self, target: TargetAddr) -> Result<()> {
-        return self.open_connection_on_circuit(target, CircuitToken::catchall());
-    }
+    // stand up an onion service and return an OnionListener
+    pub fn listener(&mut self, private_key: &Ed25519PrivateKey, virt_port: u16, authorized_clients: Option<&[Ed25519PublicKey]>) -> Result<OnionListener> {
 
-    pub fn open_connection_on_circuit(&self, _target: TargetAddr, _circuit_token: CircuitToken) -> Result<()> {
+        // try to bind to a local address, let OS pick our port
+        let socket_addr = SocketAddr::from(([127,0,0,1],0u16));
+        let mut listener = TcpListener::bind(socket_addr)?;
+        let socket_addr = listener.local_addr()?;
 
-        return Ok(());
-    }
-}
+        let mut flags: AddOnionFlags = Default::default();
+        flags.discard_pk = true;
 
-trait ReadWrite: std::io::Read + std::io::Write {}
-impl ReadWrite for TcpStream {}
+        // start onion service
+        let (_, service_id) = self.controller.borrow_mut().add_onion(Some(private_key), &flags, None, virt_port, Some(socket_addr), authorized_clients)?;
 
-pub struct OnionStream {
-    circuit: Option<CircuitToken>,  // only present for outgoing connections
-    stream: Box<dyn ReadWrite>,
-}
-
-impl OnionStream {
-    fn connect(socks5_address: SocketAddr, service_id: &V3OnionServiceId, port: u16, circuit: CircuitToken) -> Result<OnionStream> {
-        bail!("");
-    }
-
-    fn accept(stream: TcpStream) -> Result<OnionStream> {
-        bail!("");
+        return Ok(OnionListener{listener: listener, service_id: service_id, controller: Rc::downgrade(&self.controller)});
     }
 }
 
-// pass-through to underlying Read stream
-impl Read for OnionStream {
-    fn read(&mut self, buf: &mut [u8]) -> Result<usize, std::io::Error> {
-        return self.stream.read(buf);
-    }
-}
-
-// pass-through to underlying Write stream
-impl Write for OnionStream {
-    fn write(&mut self, buf: &[u8]) -> Result<usize, std::io::Error> {
-        return self.stream.write(buf);
-    }
-
-    fn flush(&mut self) -> Result<(), std::io::Error> {
-        return self.stream.flush();
-    }
-}
-
-pub struct OnionListener {
-    listener: Socks5Listener,
-    controller: Weak<TorController>,
-}
-
-impl OnionListener {
-
-    // create an OnionListener for the given onion service and port
-    fn bind(controller: Weak<TorController>, key: &Ed25519PrivateKey, port: u16, authenticated_users: Option<Vec<Ed25519PublicKey>>) -> Result<OnionListener> {
-        bail!("");
-    }
-
-    //
-    pub fn accept(&self) -> Result<OnionStream> {
-        bail!("");
-    }
-}
-
-impl Drop for OnionListener {
-    fn drop(&mut self) -> () {
-        // tear down the OnionService
-    }
-}
 
 #[test]
 fn test_tor_controller() -> Result<()> {
@@ -1262,6 +1283,60 @@ fn test_tor_manager() -> Result<()> {
                 }
             }
         }
+    }
+
+    return Ok(());
+}
+
+#[test]
+fn test_onion_service() -> Result<()> {
+    let mut tor = TorManager::new(Path::new("/tmp/test_onion_service"))?;
+
+    // for 30secs for bootstrap
+    tor.bootstrap()?;
+
+    let mut bootstrap_complete = false;
+    let stop_time = Instant::now() + std::time::Duration::from_secs(30);
+    while stop_time > Instant::now() {
+        if let Some(event) = tor.wait_event()? {
+            match event {
+                Event::BootstrapStatus{progress,tag,summary} => println!("BootstrapStatus: {{ progress: {}, tag: {}, summary: '{}' }}", progress, tag, summary),
+                Event::BootstrapComplete =>     {
+                    println!("Bootstrap Complete!");
+                    bootstrap_complete = true;
+                }
+            }
+        }
+    }
+
+    // create an onion service for this test
+    let private_key = Ed25519PrivateKey::generate()?;
+    let public_key = Ed25519PublicKey::from_private_key(&private_key)?;
+    let service_id = V3OnionServiceId::from_public_key(&public_key)?;
+
+    println!("Starting and listening to onion service");
+    const VIRT_PORT: u16 = 42069u16;
+    let listener = tor.listener(&private_key, VIRT_PORT, None)?;
+
+    const MESSAGE: &str = "Hello World!";
+
+    {
+        println!("Connecting to onion service");
+        let mut client = tor.connect(&service_id, VIRT_PORT, None, None)?;
+        println!("Client writing message: '{}'", MESSAGE);
+        client.write(MESSAGE.as_bytes())?;
+    }
+
+    if let Some(mut server) = listener.accept()? {
+        let mut msg: String = Default::default();
+        println!("Server reading message");
+        let bytes_read = server.read_to_string(&mut msg)?;
+
+        ensure!(MESSAGE == msg);
+        println!("Message received: '{}'", msg);
+
+    } else {
+        bail!("No listener?");
     }
 
     return Ok(());
