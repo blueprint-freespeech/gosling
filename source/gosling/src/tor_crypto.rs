@@ -287,18 +287,22 @@ pub fn hash_tor_password(password: &str) -> Result<String> {
 
 // Struct deinitions
 
+#[derive(Clone)]
 pub struct Ed25519PrivateKey {
     data: [u8; ED25519_PRIVATE_KEY_SIZE],
 }
 
+#[derive(Clone)]
 pub struct Ed25519PublicKey {
     data: [u8; ED25519_PUBLIC_KEY_SIZE],
 }
 
+#[derive(Clone)]
 pub struct Ed25519Signature {
     data: [u8; ED25519_SIGNATURE_SIZE],
 }
 
+#[derive(Clone)]
 pub struct V3OnionServiceId {
     data: [u8; V3_ONION_SERVICE_ID_LENGTH],
 }
