@@ -860,7 +860,8 @@ impl TorController {
                     let listeners: Vec<&str> = value.split(' ').collect();
                     let mut result: Vec<SocketAddr> = Default::default();
                     for socket_addr in listeners.iter() {
-                        // TODO: add check that we have a double-quoted string here
+                        ensure!(socket_addr.starts_with("\"") && socket_addr.ends_with("\""));
+
                         // remove leading/trailing double quote
                         let stripped = &socket_addr[1..socket_addr.len() - 1];
                         result.push(SocketAddr::from_str(&stripped)?);
@@ -902,34 +903,87 @@ impl CircuitToken {
 
 }
 
-trait ReadWrite: std::io::Read + std::io::Write {}
-impl ReadWrite for TcpStream {}
-impl ReadWrite for Socks5Stream {}
-
-// wrapper around either a TcpStream or a Socks5Stream
-pub struct OnionStream {
-    circuit: Option<CircuitToken>,  // only present for outgoing connections
-    stream: Box<dyn ReadWrite>,
+pub enum OnionStream {
+    Client(Socks5Stream, V3OnionServiceId),
+    Server(TcpStream),
 }
 
-// TODO: implement wrappers around timeouts, etc of underlying TcpStreams
-impl OnionStream {}
+impl OnionStream {
+    fn tcp_stream(&self) -> &TcpStream {
+        match self {
+            OnionStream::Client(stream, _) => return stream.get_ref(),
+            OnionStream::Server(stream) => return stream,
+        }
+    }
+
+    pub fn nodelay(&self) -> Result<bool, std::io::Error> {
+        return self.tcp_stream().nodelay();
+    }
+
+    pub fn peer_addr(&self) -> Option<V3OnionServiceId> {
+        match self {
+            OnionStream::Client(_stream, service_id) => return Some(service_id.clone()),
+            OnionStream::Server(_stream) => return None,
+        }
+    }
+
+    pub fn read_timeout(&self) -> Result<Option<Duration>, std::io::Error> {
+        return self.tcp_stream().read_timeout();
+    }
+
+    pub fn set_nodelay(&self, nodelay: bool) -> Result<(), std::io::Error> {
+        return self.tcp_stream().set_nodelay(nodelay);
+    }
+
+    pub fn set_nonblocking(&self, nonblocking: bool) -> Result<(), std::io::Error> {
+        return self.tcp_stream().set_nonblocking(nonblocking);
+    }
+
+    pub fn set_read_timeout(&self, dur: Option<Duration>) -> Result<(), std::io::Error> {
+        return self.tcp_stream().set_read_timeout(dur);
+    }
+
+    pub fn set_write_timeout(&self, dur: Option<Duration>) -> Result<(), std::io::Error> {
+        return self.tcp_stream().set_write_timeout(dur);
+    }
+
+    pub fn shutdown(&self, how: std::net::Shutdown) -> Result<(), std::io::Error> {
+        return self.tcp_stream().shutdown(how);
+    }
+
+    pub fn take_error(&self) -> Result<Option<std::io::Error>, std::io::Error> {
+        return self.tcp_stream().take_error();
+    }
+
+    pub fn write_timeout(&self) -> Result<Option<Duration>, std::io::Error> {
+        return self.tcp_stream().write_timeout();
+    }
+}
 
 // pass-through to underlying Read stream
 impl Read for OnionStream {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize, std::io::Error> {
-        return self.stream.read(buf);
+        match self {
+            OnionStream::Client(stream, _) => return stream.read(buf),
+            OnionStream::Server(stream) => return stream.read(buf),
+        }
     }
 }
 
 // pass-through to underlying Write stream
 impl Write for OnionStream {
     fn write(&mut self, buf: &[u8]) -> Result<usize, std::io::Error> {
-        return self.stream.write(buf);
+        match self {
+            OnionStream::Client(stream, _) => return stream.write(buf),
+            OnionStream::Server(stream) => return stream.write(buf),
+        }
     }
 
     fn flush(&mut self) -> Result<(), std::io::Error> {
-        return self.stream.flush();
+        match self {
+            OnionStream::Client(stream, _) => return stream.flush(),
+            OnionStream::Server(stream) => return stream.flush(),
+        }
     }
 }
 
@@ -949,12 +1003,12 @@ impl OnionListener {
     pub fn accept(&self) -> Result<Option<OnionStream>> {
         match self.listener.accept() {
             Ok((stream, _socket_addr)) => {
-                return Ok(Some(OnionStream{circuit: None, stream: Box::new(stream)}));
+                return Ok(Some(OnionStream::Server(stream)));
             },
             Err(err) => if err.kind() == ErrorKind::WouldBlock {
                 return Ok(None);
             } else {
-	    	bail!(err);
+                bail!(err);
             },
         }
     }
@@ -964,7 +1018,7 @@ impl Drop for OnionListener {
     fn drop(&mut self) -> () {
         // on destruction tear down the onion service
         if let Some(controller) = self.controller.upgrade() {
-            controller.borrow_mut().del_onion(&self.service_id);
+            let _err = controller.borrow_mut().del_onion(&self.service_id);
         }
     }
 }
@@ -1068,7 +1122,7 @@ impl TorManager {
             Some(circuit) => Socks5Stream::connect_with_password(self.socks_listener.unwrap(), target, &circuit.username, &circuit.password)?,
         };
 
-        return Ok(OnionStream{circuit: circuit, stream: Box::new(stream)});
+        return Ok(OnionStream::Client(stream, service_id.clone()));
     }
 
     // stand up an onion service and return an OnionListener
@@ -1304,10 +1358,12 @@ fn test_onion_service() -> Result<()> {
                 Event::BootstrapComplete =>     {
                     println!("Bootstrap Complete!");
                     bootstrap_complete = true;
+                    break;
                 }
             }
         }
     }
+    ensure!(bootstrap_complete);
 
     // create an onion service for this test
     let private_key = Ed25519PrivateKey::generate()?;
