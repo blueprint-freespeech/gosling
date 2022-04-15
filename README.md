@@ -10,7 +10,7 @@ It is meant to generalize (and improve upon) the authentication scheme used by [
 
 Libgosling currently has the following dependencies:
 
-- rust
+- rust >= 1.60.0
 - cmake >= 3.16.6
 
 ## Building
