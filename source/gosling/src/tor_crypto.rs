@@ -7,10 +7,12 @@ use crypto::digest::Digest;
 use crypto::sha1::Sha1;
 use crypto::sha3::Sha3;
 use crypto::sha2::Sha512;
-use data_encoding::{HEXUPPER, BASE32, BASE64};
+use data_encoding::{HEXUPPER, BASE32, BASE32_NOPAD, BASE64};
 use rand::RngCore;
 use rand::rngs::OsRng;
 use zeroize::Zeroize;
+use tor_llcrypto::*;
+use tor_llcrypto::util::rand_compat::RngCompatExt;
 
 use anyhow::{bail, Result, ensure};
 
@@ -27,18 +29,17 @@ pub const ED25519_SIGNATURE_SIZE: usize = 64;
 pub const V3_ONION_SERVICE_ID_LENGTH: usize = 56;
 /// The number of bytes needed to store onion service id as an ASCII c-string (including null-terminator)
 pub const V3_ONION_SERVICE_ID_SIZE: usize = V3_ONION_SERVICE_ID_LENGTH + 1;
-/// The number of bytes needed to store ed25519 private key
-pub const ED25519_KEYBLOB_BASE64_LENGTH: usize = 88;
+/// The number of bytes needed to store base64 encoded ed25519 private key as an ASCII c-string (not including null-terminator)
+pub const ED25519_PRIVATE_KEYBLOB_BASE64_LENGTH: usize = 88;
 /// key klob header string
-const ED25519_KEYBLOB_HEADER: &str = "ED25519-V3:";
+const ED25519_PRIVATE_KEYBLOB_HEADER: &str = "ED25519-V3:";
 /// The number of bytes needed to store the keyblob header
-pub const ED25519_KEYBLOB_HEADER_LENGTH: usize = 11;
+pub const ED25519_PRIVATE_KEYBLOB_HEADER_LENGTH: usize = 11;
 /// The number of bytes needed to store ed25519 private keyblob as an ASCII c-string (not including a null terminator)
-///
-pub const ED25519_KEYBLOB_LENGTH: usize = ED25519_KEYBLOB_HEADER_LENGTH + ED25519_KEYBLOB_BASE64_LENGTH;
+pub const ED25519_KEYBLOB_LENGTH: usize = ED25519_PRIVATE_KEYBLOB_HEADER_LENGTH + ED25519_PRIVATE_KEYBLOB_BASE64_LENGTH;
 /// The number of bytes needed to store ed25519 private keyblob as an ASCII c-string (including a null terminator)
 pub const ED25519_KEYBLOB_SIZE: usize = ED25519_KEYBLOB_LENGTH + 1;
-// number of bytes in an onion service idea after base32 decode
+// number of bytes in an onion service id after base32 decode
 const V3_ONION_SERVICE_ID_RAW_SIZE: usize = 35;
 // byte index of the start of the public key checksum
 const V3_ONION_SERVICE_ID_CHECKSUM_OFFSET: usize = 32;
@@ -46,6 +47,14 @@ const V3_ONION_SERVICE_ID_CHECKSUM_OFFSET: usize = 32;
 const V3_ONION_SERVICE_ID_VERSION_OFFSET: usize = 34;
 /// The number of bytes in a v3 service id's truncated checksum
 const TRUNCATED_CHECKSUM_SIZE: usize = 2;
+/// The number of bytes in an x25519 private key
+pub const X25519_PRIVATE_KEY_SIZE: usize = 32;
+/// The number of bytes in an x25519 publickey
+pub const X25519_PUBLIC_KEY_SIZE: usize = 32;
+/// The number of bytes needed to store base64 encoded x25519 private key as an ASCII c-string (not including null-terminator)
+pub const X25519_PRIVATE_KEYBLOB_BASE64_LENGTH: usize = 44;
+/// The number of bytes needed to store base32 encoded x25519 public key as an ASCII c-string (not including null-terminator)
+pub const X25519_PUBLIC_KEYBLOB_BASE32_LENGTH: usize = 52;
 
 // decoder for lowercase base32 (BASE32 object is upper-case)
 lazy_static! {
@@ -303,6 +312,16 @@ pub struct Ed25519Signature {
 }
 
 #[derive(Clone)]
+pub struct X25519PrivateKey {
+    secret_key: pk::curve25519::StaticSecret,
+}
+
+#[derive(Clone)]
+pub struct X25519PublicKey {
+    public_key: pk::curve25519::PublicKey,
+}
+
+#[derive(Clone)]
 pub struct V3OnionServiceId {
     data: [u8; V3_ONION_SERVICE_ID_LENGTH],
 }
@@ -326,14 +345,14 @@ impl Ed25519PrivateKey {
 
     pub fn from_key_blob(key_blob: &str) -> Result<Ed25519PrivateKey> {
         if key_blob.len() != ED25519_KEYBLOB_LENGTH {
-            bail!("Ed25519PrivateKey::from_key_blob(): expects string of length '{}'; received '{}' with length '{}'", ED25519_KEYBLOB_LENGTH, &key_blob, key_blob.len());
+            bail!("Ed25519PrivateKey::from_key_blob(): expects string of length '{}'; received string with length '{}'", ED25519_KEYBLOB_LENGTH, key_blob.len());
         }
 
-        if !key_blob.starts_with(&ED25519_KEYBLOB_HEADER) {
-            bail!("Ed25519PrivateKey::from_key_blob(): expects string that begins with '{}'; received '{}'", &ED25519_KEYBLOB_HEADER, &key_blob);
+        if !key_blob.starts_with(&ED25519_PRIVATE_KEYBLOB_HEADER) {
+            bail!("Ed25519PrivateKey::from_key_blob(): expects string that begins with '{}'; received '{}'", &ED25519_PRIVATE_KEYBLOB_HEADER, &key_blob);
         }
 
-        let base64_key:&str = &key_blob[ED25519_KEYBLOB_HEADER.len()..];
+        let base64_key:&str = &key_blob[ED25519_PRIVATE_KEYBLOB_HEADER.len()..];
         let private_key_data = BASE64.decode(base64_key.as_bytes())?;
 
         if private_key_data.len() != ED25519_PRIVATE_KEY_SIZE {
@@ -344,7 +363,7 @@ impl Ed25519PrivateKey {
     }
 
     pub fn to_key_blob(&self) -> Result<String> {
-        let mut key_blob = ED25519_KEYBLOB_HEADER.to_string();
+        let mut key_blob = ED25519_PRIVATE_KEYBLOB_HEADER.to_string();
         key_blob.push_str(&BASE64.encode(&self.data));
 
         return Ok(key_blob);
@@ -465,6 +484,76 @@ impl Ed25519Signature {
 impl PartialEq for Ed25519Signature {
     fn eq(&self, other: &Self) -> bool {
         return self.data.eq(&other.data);
+    }
+}
+
+// X25519 Private Key
+
+impl X25519PrivateKey {
+    pub fn generate() -> X25519PrivateKey {
+        return X25519PrivateKey{
+            secret_key: pk::curve25519::StaticSecret::new(rand_core::OsRng.rng_compat()),
+        };
+    }
+
+    pub fn from_raw(raw: &[u8; X25519_PRIVATE_KEY_SIZE]) -> X25519PrivateKey {
+        return X25519PrivateKey{
+            secret_key: pk::curve25519::StaticSecret::from(raw.clone()),
+        };
+    }
+
+    // a base64 encoded keyblob
+    pub fn from_base64(base64: &str) -> Result<X25519PrivateKey> {
+        ensure!(base64.len() == X25519_PRIVATE_KEYBLOB_BASE64_LENGTH,
+            "X25519PrivateKey::from_base64(): expects string of length '{}'; received string with length '{}'", X25519_PRIVATE_KEYBLOB_BASE64_LENGTH, base64.len());
+
+        let private_key_data = BASE64.decode(base64.as_bytes())?;
+        ensure!(private_key_data.len() == X25519_PRIVATE_KEY_SIZE,
+            "X25519PrivateKey::from_base64(): expects decoded private key length '{}'; actual '{}'", X25519_PRIVATE_KEY_SIZE, private_key_data.len());
+
+        let private_key_data: [u8; X25519_PRIVATE_KEY_SIZE] = private_key_data.try_into().unwrap();
+
+        return Ok(X25519PrivateKey{
+            secret_key: pk::curve25519::StaticSecret::from(private_key_data),
+        });
+    }
+
+    pub fn to_base64(&self) -> String {
+        return BASE64.encode(&self.secret_key.to_bytes());
+    }
+}
+
+// X25519 Public Key
+impl X25519PublicKey {
+    pub fn from_private_key(private_key: &X25519PrivateKey) -> X25519PublicKey {
+        return X25519PublicKey{
+            public_key: pk::curve25519::PublicKey::from(&private_key.secret_key),
+        };
+    }
+
+    pub fn from_raw(raw: &[u8; X25519_PUBLIC_KEY_SIZE]) -> X25519PublicKey {
+        return X25519PublicKey{
+            public_key: pk::curve25519::PublicKey::from(raw.clone()),
+        };
+    }
+
+    pub fn from_base32(base32: &str) -> Result<X25519PublicKey> {
+        ensure!(base32.len() == X25519_PUBLIC_KEYBLOB_BASE32_LENGTH,
+            "X25519PublicKey::from_base32(): expects string of length '{}'; received '{}' with length '{}'", X25519_PUBLIC_KEYBLOB_BASE32_LENGTH, base32, base32.len());
+
+        let public_key_data = BASE32_NOPAD.decode(base32.as_bytes())?;
+        ensure!(public_key_data.len() == X25519_PUBLIC_KEY_SIZE,
+            "X25519PublicKey::from_base32(): expects decoded public key length '{}'; actual '{}'", X25519_PUBLIC_KEY_SIZE, public_key_data.len());
+
+        let public_key_data: [u8; X25519_PUBLIC_KEY_SIZE] = public_key_data.try_into().unwrap();
+
+        return Ok(X25519PublicKey{
+            public_key: pk::curve25519::PublicKey::from(public_key_data),
+        });
+    }
+
+    pub fn to_base32(&self) -> String {
+        return BASE32_NOPAD.encode(&self.public_key.to_bytes());
     }
 }
 
@@ -609,6 +698,30 @@ fn test_password_hash() -> Result<()> {
 
     // ensure same password is hashed to different things
     assert!(hash_tor_password("password")? != hash_tor_password("password")?);
+
+    return Ok(());
+}
+
+#[test]
+fn test_x25519() -> Result<()> {
+    // private/public key pair
+    const secret_base64: &str = "0GeSReJXdNcgvWRQdnDXhJGdu5UiwP2fefgT93/oqn0=";
+    const secret_raw: [u8; X25519_PRIVATE_KEY_SIZE] = [0xd0u8, 0x67u8, 0x92u8, 0x45u8, 0xe2u8, 0x57u8, 0x74u8, 0xd7u8, 0x20u8, 0xbdu8, 0x64u8, 0x50u8, 0x76u8, 0x70u8, 0xd7u8, 0x84u8, 0x91u8, 0x9du8, 0xbbu8, 0x95u8, 0x22u8, 0xc0u8, 0xfdu8, 0x9fu8, 0x79u8, 0xf8u8, 0x13u8, 0xf7u8, 0x7fu8, 0xe8u8, 0xaau8, 0x7du8];
+    const public_base32: &str = "AEXCBCEDJ5KU34YGGMZ7PVHVDEA7D7YB7VQAPJTMTZGRJLN3JASA";
+    const public_raw: [u8; X25519_PUBLIC_KEY_SIZE] = [0x01u8, 0x2eu8, 0x20u8, 0x88u8, 0x83u8, 0x4fu8, 0x55u8, 0x4du8, 0xf3u8, 0x06u8, 0x33u8, 0x33u8, 0xf7u8, 0xd4u8, 0xf5u8, 0x19u8, 0x01u8, 0xf1u8, 0xffu8, 0x01u8, 0xfdu8, 0x60u8, 0x07u8, 0xa6u8, 0x6cu8, 0x9eu8, 0x4du8, 0x14u8, 0xadu8, 0xbbu8, 0x48u8, 0x24u8];
+
+    // ensure we can convert from raw as expected
+    ensure!(&X25519PrivateKey::from_raw(&secret_raw).to_base64() == secret_base64);
+    ensure!(&X25519PublicKey::from_raw(&public_raw).to_base32() == public_base32);
+
+    // ensure we can round-trip as expected
+    ensure!(&X25519PrivateKey::from_base64(&secret_base64)?.to_base64() == secret_base64);
+    ensure!(&X25519PublicKey::from_base32(&public_base32)?.to_base32() == public_base32);
+
+    // ensure we generate the expected public key from private key
+    let private_key = X25519PrivateKey::from_base64(&secret_base64)?;
+    let public_key = X25519PublicKey::from_private_key(&private_key);
+    ensure!(public_key.to_base32() == public_base32);
 
     return Ok(());
 }
