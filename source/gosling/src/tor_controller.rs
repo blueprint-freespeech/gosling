@@ -198,7 +198,7 @@ struct Reply {
 impl ControlStream {
     pub fn new(addr: &SocketAddr, read_timeout: Duration) -> Result<ControlStream> {
 
-        ensure!(read_timeout != Default::default(), "ControlStream::new(): read_timeout must not be zero");
+        ensure!(read_timeout != Duration::ZERO, "ControlStream::new(): read_timeout must not be zero");
 
         let stream = TcpStream::connect(&addr)?;
         stream.set_read_timeout(Some(read_timeout))?;
@@ -1376,17 +1376,21 @@ fn test_onion_service() -> Result<()> {
 
     const MESSAGE: &str = "Hello World!";
 
+    println!("Connecting to onion service");
     {
-        println!("Connecting to onion service");
         let mut client = tor.connect(&service_id, VIRT_PORT, None, None)?;
         println!("Client writing message: '{}'", MESSAGE);
         client.write(MESSAGE.as_bytes())?;
+        client.flush()?;
+        println!("End of client scope");
     }
 
     if let Some(mut server) = listener.accept()? {
         let mut msg: String = Default::default();
         println!("Server reading message");
-        let bytes_read = server.read_to_string(&mut msg)?;
+        let mut buffer = Vec::new();
+        server.read_to_end(&mut buffer)?;
+        let msg = String::from_utf8(buffer)?;
 
         ensure!(MESSAGE == msg);
         println!("Message received: '{}'", msg);

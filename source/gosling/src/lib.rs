@@ -11,6 +11,7 @@ extern crate zeroize;
 extern crate regex;
 extern crate socks;
 extern crate url;
+extern crate tor_llcrypto;
 
 mod ffi;
 mod tor_crypto;
