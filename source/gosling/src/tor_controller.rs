@@ -20,12 +20,14 @@ use std::time::{Duration, Instant};
 
 // extern crates
 use anyhow::{bail, ensure, Result};
+use ntest::timeout;
 use rand::Rng;
 use rand::rngs::OsRng;
 use rand::distributions::Alphanumeric;
 use regex::Regex;
 use socks::*;
 use url::Host;
+
 
 // internal modules
 use tor_crypto::*;
@@ -1343,6 +1345,7 @@ fn test_tor_manager() -> Result<()> {
 }
 
 #[test]
+#[timeout(60000)]
 fn test_onion_service() -> Result<()> {
     let mut tor = TorManager::new(Path::new("/tmp/test_onion_service"))?;
 
@@ -1394,7 +1397,6 @@ fn test_onion_service() -> Result<()> {
 
         ensure!(MESSAGE == msg);
         println!("Message received: '{}'", msg);
-
     } else {
         bail!("No listener?");
     }
