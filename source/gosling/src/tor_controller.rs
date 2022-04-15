@@ -353,6 +353,11 @@ pub struct AddOnionFlags {
     pub max_streams_close_circuit: bool,
 }
 
+#[derive(Default)]
+pub struct OnionClientAuthAddFlags {
+    pub permanent: bool,
+}
+
 // see version-spec.txt
 pub struct Version {
     pub major: u32,
@@ -662,7 +667,7 @@ impl TorController {
         max_streams: Option<u16>,
         virt_port: u16,
         target: Option<SocketAddr>,
-        client_auth: Option<&[Ed25519PublicKey]>,
+        client_auth: Option<&[X25519PublicKey]>,
         ) -> Result<Reply> {
 
         let mut command_buffer = vec!["ADD_ONION".to_string()];
@@ -724,6 +729,30 @@ impl TorController {
     fn del_onion_cmd(&mut self, service_id: &V3OnionServiceId) -> Result<Reply> {
 
         let command = format!("DEL_ONION {}", service_id.to_string());
+
+        return self.write_command(&command);
+    }
+
+    // ONION_CLIENT_AUTH_ADD (3.30)
+    fn onion_client_auth_add_cmd(&mut self, service_id: &V3OnionServiceId, private_key: &X25519PrivateKey, client_name: Option<String>, flags: &OnionClientAuthAddFlags) -> Result<Reply> {
+        let mut command_buffer = vec!["ONION_CLIENT_AUTH_ADD".to_string()];
+
+        // set the onion service id
+        command_buffer.push(service_id.to_string());
+
+        // set our client's private key
+        command_buffer.push(format!("x25519:{}", private_key.to_base64()));
+
+        if let Some(client_name) = client_name {
+            command_buffer.push(format!("ClientName={}", client_name));
+        }
+
+        if flags.permanent {
+            command_buffer.push("Flags=Permanent".to_string());
+        }
+
+        // finally send command
+        let command = command_buffer.join(" ");
 
         return self.write_command(&command);
     }
@@ -802,7 +831,7 @@ impl TorController {
         max_streams: Option<u16>,
         virt_port: u16,
         target: Option<SocketAddr>,
-        client_auth: Option<&[Ed25519PublicKey]>) -> Result<(Option<Ed25519PrivateKey>, V3OnionServiceId)> {
+        client_auth: Option<&[X25519PublicKey]>) -> Result<(Option<Ed25519PrivateKey>, V3OnionServiceId)> {
         let reply = self.add_onion_cmd(key, flags, max_streams, virt_port, target, client_auth)?;
 
         let mut private_key: Option<Ed25519PrivateKey> = None;
@@ -885,6 +914,15 @@ impl TorController {
             }
         }
         bail!("TorController::getinfo_version(): did not find a 'version' key/value");
+    }
+
+    pub fn onion_client_auth_add(&mut self, service_id: &V3OnionServiceId, private_key: &X25519PrivateKey, client_name: Option<String>, flags: &OnionClientAuthAddFlags) -> Result<()> {
+        let reply = self.onion_client_auth_add_cmd(service_id, private_key, client_name, flags)?;
+
+        match reply.status_code {
+            250u32..=252u32 => return Ok(()),
+            code => bail!("{} {}", code, reply.reply_lines.join("\n")),
+        }
     }
 }
 
@@ -1104,7 +1142,7 @@ impl TorManager {
     }
 
     // connect to an onion service and returns OnionStream
-    pub fn connect(&mut self, service_id: &V3OnionServiceId, virt_port: u16, circuit: Option<CircuitToken>, client_auth: Option<Ed25519PrivateKey>) -> Result<OnionStream> {
+    pub fn connect(&mut self, service_id: &V3OnionServiceId, virt_port: u16, circuit: Option<CircuitToken>, client_auth: Option<&X25519PrivateKey>) -> Result<OnionStream> {
 
         if let None = self.socks_listener {
             let mut listeners = self.controller.borrow_mut().getinfo_net_listeners_socks()?;
@@ -1113,7 +1151,11 @@ impl TorManager {
         }
 
         if let Some(client_auth) = client_auth {
-            // TODO: tell tor daemon our client auth key
+            // TODO: so this technically isn't right, we need to keep track of when to add
+            // the client auth in the manager, and remove them once the last connection
+            // has dropped; for now this is fine as we are not persisting onion auth, so
+            // the auth keys are dropped when the daemon process is dropped
+            self.controller.borrow_mut().onion_client_auth_add(&service_id, &client_auth, None, &Default::default())?;
         }
 
         // our onion domain
@@ -1128,7 +1170,7 @@ impl TorManager {
     }
 
     // stand up an onion service and return an OnionListener
-    pub fn listener(&mut self, private_key: &Ed25519PrivateKey, virt_port: u16, authorized_clients: Option<&[Ed25519PublicKey]>) -> Result<OnionListener> {
+    pub fn listener(&mut self, private_key: &Ed25519PrivateKey, virt_port: u16, authorized_clients: Option<&[X25519PublicKey]>) -> Result<OnionListener> {
 
         // try to bind to a local address, let OS pick our port
         let socket_addr = SocketAddr::from(([127,0,0,1],0u16));
@@ -1137,6 +1179,9 @@ impl TorManager {
 
         let mut flags: AddOnionFlags = Default::default();
         flags.discard_pk = true;
+        if authorized_clients.is_some() {
+            flags.v3_auth = true;
+        }
 
         // start onion service
         let (_, service_id) = self.controller.borrow_mut().add_onion(Some(private_key), &flags, None, virt_port, Some(socket_addr), authorized_clients)?;
@@ -1352,53 +1397,97 @@ fn test_onion_service() -> Result<()> {
     // for 30secs for bootstrap
     tor.bootstrap()?;
 
-    let mut bootstrap_complete = false;
-    let stop_time = Instant::now() + std::time::Duration::from_secs(30);
-    while stop_time > Instant::now() {
+    loop {
         if let Some(event) = tor.wait_event()? {
             match event {
                 Event::BootstrapStatus{progress,tag,summary} => println!("BootstrapStatus: {{ progress: {}, tag: {}, summary: '{}' }}", progress, tag, summary),
                 Event::BootstrapComplete =>     {
                     println!("Bootstrap Complete!");
-                    bootstrap_complete = true;
                     break;
                 }
             }
         }
     }
-    ensure!(bootstrap_complete);
 
-    // create an onion service for this test
-    let private_key = Ed25519PrivateKey::generate()?;
-    let public_key = Ed25519PublicKey::from_private_key(&private_key)?;
-    let service_id = V3OnionServiceId::from_public_key(&public_key)?;
-
-    println!("Starting and listening to onion service");
-    const VIRT_PORT: u16 = 42069u16;
-    let listener = tor.listener(&private_key, VIRT_PORT, None)?;
-
-    const MESSAGE: &str = "Hello World!";
-
-    println!("Connecting to onion service");
+    // vanilla V3 onion service
     {
-        let mut client = tor.connect(&service_id, VIRT_PORT, None, None)?;
-        println!("Client writing message: '{}'", MESSAGE);
-        client.write(MESSAGE.as_bytes())?;
-        client.flush()?;
-        println!("End of client scope");
+        // create an onion service for this test
+        let private_key = Ed25519PrivateKey::generate()?;
+        let public_key = Ed25519PublicKey::from_private_key(&private_key)?;
+        let service_id = V3OnionServiceId::from_public_key(&public_key)?;
+
+        println!("Starting and listening to onion service");
+        const VIRT_PORT: u16 = 42069u16;
+        let listener = tor.listener(&private_key, VIRT_PORT, None)?;
+
+        const MESSAGE: &str = "Hello World!";
+
+        {
+            println!("Connecting to onion service");
+            let mut client = tor.connect(&service_id, VIRT_PORT, None, None)?;
+            println!("Client writing message: '{}'", MESSAGE);
+            client.write(MESSAGE.as_bytes())?;
+            client.flush()?;
+            println!("End of client scope");
+        }
+
+        if let Some(mut server) = listener.accept()? {
+            println!("Server reading message");
+            let mut buffer = Vec::new();
+            server.read_to_end(&mut buffer)?;
+            let msg = String::from_utf8(buffer)?;
+
+            ensure!(MESSAGE == msg);
+            println!("Message received: '{}'", msg);
+        } else {
+            bail!("No listener?");
+        }
     }
 
-    if let Some(mut server) = listener.accept()? {
-        let mut msg: String = Default::default();
-        println!("Server reading message");
-        let mut buffer = Vec::new();
-        server.read_to_end(&mut buffer)?;
-        let msg = String::from_utf8(buffer)?;
+    // authenticated onion service
+    {
+        // create an onion service for this test
+        let private_key = Ed25519PrivateKey::generate()?;
+        let public_key = Ed25519PublicKey::from_private_key(&private_key)?;
+        let service_id = V3OnionServiceId::from_public_key(&public_key)?;
 
-        ensure!(MESSAGE == msg);
-        println!("Message received: '{}'", msg);
-    } else {
-        bail!("No listener?");
+        let private_auth_key = X25519PrivateKey::generate();
+        let public_auth_key = X25519PublicKey::from_private_key(&private_auth_key);
+
+        println!("Starting and listening to onion service");
+        const VIRT_PORT: u16 = 42069u16;
+        let listener = tor.listener(&private_key, VIRT_PORT, Some(&[public_auth_key]))?;
+
+        const MESSAGE: &str = "Hello World!";
+
+        {
+            println!("Connecting to onion service (should fail)");
+            match tor.connect(&service_id, VIRT_PORT, None, None) {
+                Ok(_) => bail!("Should not able to connect to an authenticated onion service without auth key"),
+                Err(_) => {},
+            }
+
+            println!("Connecting to onion service with authentication");
+            let mut client = tor.connect(&service_id, VIRT_PORT, None, Some(&private_auth_key))?;
+
+            println!("Client writing message: '{}'", MESSAGE);
+            client.write(MESSAGE.as_bytes())?;
+            client.flush()?;
+            println!("End of client scope");
+        }
+
+        if let Some(mut server) = listener.accept()? {
+            let mut msg: String = Default::default();
+            println!("Server reading message");
+            let mut buffer = Vec::new();
+            server.read_to_end(&mut buffer)?;
+            let msg = String::from_utf8(buffer)?;
+
+            ensure!(MESSAGE == msg);
+            println!("Message received: '{}'", msg);
+        } else {
+            bail!("No listener?");
+        }
     }
 
     return Ok(());
