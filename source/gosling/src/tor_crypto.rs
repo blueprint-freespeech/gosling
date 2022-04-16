@@ -1,18 +1,19 @@
-use std::convert::TryInto;
-use std::str;
-use std::ptr;
-use std::os::raw::*;
-use std::sync::Mutex;
 use crypto::digest::Digest;
 use crypto::sha1::Sha1;
-use crypto::sha3::Sha3;
 use crypto::sha2::Sha512;
+use crypto::sha3::Sha3;
 use data_encoding::{HEXUPPER, BASE32, BASE32_NOPAD, BASE64};
 use rand::RngCore;
 use rand::rngs::OsRng;
-use zeroize::Zeroize;
+use signature:: Verifier;
+use std::convert::TryInto;
+use std::os::raw::*;
+use std::ptr;
+use std::str;
+use std::sync::Mutex;
 use tor_llcrypto::*;
 use tor_llcrypto::util::rand_compat::RngCompatExt;
+use zeroize::Zeroize;
 
 use anyhow::{bail, Result, ensure};
 
@@ -296,19 +297,19 @@ pub fn hash_tor_password(password: &str) -> Result<String> {
 
 // Struct deinitions
 
-#[derive(Clone)]
+// #[derive(Clone)]
 pub struct Ed25519PrivateKey {
-    data: [u8; ED25519_PRIVATE_KEY_SIZE],
+    expanded_secret_key: pk::ed25519::ExpandedSecretKey,
 }
 
 #[derive(Clone)]
 pub struct Ed25519PublicKey {
-    data: [u8; ED25519_PUBLIC_KEY_SIZE],
+    public_key: pk::ed25519::PublicKey,
 }
 
 #[derive(Clone)]
 pub struct Ed25519Signature {
-    data: [u8; ED25519_SIGNATURE_SIZE],
+    signature: pk::ed25519::Signature,
 }
 
 #[derive(Clone)]
@@ -331,16 +332,18 @@ pub struct V3OnionServiceId {
 impl Ed25519PrivateKey {
 
     pub fn generate() -> Result<Ed25519PrivateKey> {
-        let mut secret_key= [0u8; ED25519_PRIVATE_KEY_SIZE];
-        let result = unsafe { ed25519_donna_seckey(secret_key.as_mut_ptr()) };
-        ensure!(result == 0 as c_int);
+        let secret_key = pk::ed25519::SecretKey::generate(&mut rand_core::OsRng.rng_compat());
 
-        return Ok(Ed25519PrivateKey{data: secret_key});
+        return Ok(Ed25519PrivateKey{
+            expanded_secret_key: pk::ed25519::ExpandedSecretKey::from(&secret_key),
+        });
     }
 
     // according to nickm, any 64 byte string here is allowed
     pub fn from_raw(raw: &[u8; ED25519_PRIVATE_KEY_SIZE]) -> Result<Ed25519PrivateKey> {
-        return Ok(Ed25519PrivateKey{data: raw.clone()});
+        return Ok(Ed25519PrivateKey{
+            expanded_secret_key: pk::ed25519::ExpandedSecretKey::from_bytes(raw)?,
+        });
     }
 
     pub fn from_key_blob(key_blob: &str) -> Result<Ed25519PrivateKey> {
@@ -358,33 +361,22 @@ impl Ed25519PrivateKey {
         if private_key_data.len() != ED25519_PRIVATE_KEY_SIZE {
             bail!("Ed25519PrivateKey::from_key_blob(): expects decoded private key length '{}'; actual '{}'", ED25519_PRIVATE_KEY_SIZE, private_key_data.len());
         }
+        let private_key_data: [u8; ED25519_PRIVATE_KEY_SIZE] = private_key_data.try_into().unwrap();
 
-        return Ok(Ed25519PrivateKey{data: private_key_data.as_slice().try_into()? });
+        return Ed25519PrivateKey::from_raw(&private_key_data);
     }
 
     pub fn to_key_blob(&self) -> Result<String> {
         let mut key_blob = ED25519_PRIVATE_KEYBLOB_HEADER.to_string();
-        key_blob.push_str(&BASE64.encode(&self.data));
+        key_blob.push_str(&BASE64.encode(&self.expanded_secret_key.to_bytes()));
 
         return Ok(key_blob);
     }
 
     pub fn sign_message_ex(&self, public_key: &Ed25519PublicKey, message: &[u8]) -> Result<Ed25519Signature> {
-        let mut signature_data = [0u8; ED25519_SIGNATURE_SIZE];
-        let result = unsafe {
-            ed25519_donna_sign(
-                signature_data.as_mut_ptr() as *mut c_uchar,
-                message.as_ptr() as *const c_uchar,
-                message.len(),
-                self.data.as_ptr() as *const c_uchar,
-                public_key.get_data().as_ptr() as *const c_uchar)
-        };
 
-        if result != (0 as c_int) {
-            bail!("Ed25519PrivateKey::sign_message_ex(): call to ed25519_donna_sign() returned unexpected value '{}', expected '0'", result);
-        }
-
-        return Ed25519Signature::from_raw(&signature_data);
+        let signature = self.expanded_secret_key.sign(&message, &public_key.public_key);
+        return Ok(Ed25519Signature{signature: signature});
     }
 
     pub fn sign_message(&self, message: &[u8]) -> Result<Ed25519Signature> {
@@ -392,14 +384,14 @@ impl Ed25519PrivateKey {
         return Ok(self.sign_message_ex(&public_key, &message)?);
     }
 
-    pub fn get_data(&self) -> &[u8; ED25519_PRIVATE_KEY_SIZE] {
-        return &self.data;
+    pub fn get_data(&self) -> [u8; ED25519_PRIVATE_KEY_SIZE] {
+        return self.expanded_secret_key.to_bytes();
     }
 }
 
 impl PartialEq for Ed25519PrivateKey {
     fn eq(&self, other:&Self) -> bool {
-        return self.data.eq(&other.data);
+        return self.get_data().eq(&other.get_data());
     }
 }
 
@@ -407,8 +399,9 @@ impl PartialEq for Ed25519PrivateKey {
 
 impl Ed25519PublicKey {
     pub fn from_raw(raw: &[u8; ED25519_PUBLIC_KEY_SIZE]) -> Result<Ed25519PublicKey> {
-
-        return Ok(Ed25519PublicKey{data: raw.clone()});
+        return Ok(Ed25519PublicKey{
+            public_key: pk::ed25519::PublicKey::from_bytes(raw)?,
+        });
     }
 
     pub fn from_service_id(service_id: &V3OnionServiceId) -> Result<Ed25519PublicKey> {
@@ -419,37 +412,29 @@ impl Ed25519PublicKey {
             bail!("Ed25519PublicKey::from_service_id(): decoded byte count is '{}', expected '{}'", decoded_byte_count, V3_ONION_SERVICE_ID_RAW_SIZE);
         }
 
-        let public_key = &decoded_service_id[0..ED25519_PUBLIC_KEY_SIZE];
-
-        return Ok(Ed25519PublicKey{data: public_key.try_into()?});
+        return Ok(Ed25519PublicKey{
+            public_key: pk::ed25519::PublicKey::from_bytes(&decoded_service_id[0..ED25519_PUBLIC_KEY_SIZE])?,
+        });
     }
 
     pub fn from_private_key(private_key: &Ed25519PrivateKey) -> Result<Ed25519PublicKey> {
-        let mut public_key_data = [0u8; ED25519_PUBLIC_KEY_SIZE];
-        let result = unsafe {
-            ed25519_donna_pubkey(
-                public_key_data.as_mut_ptr() as *mut c_uchar,
-                private_key.get_data().as_ptr() as *const c_uchar)
-        };
-        if result != (0 as c_int) {
-            bail!("Ed25519PublicKey::from_private_key(): call to ed25519_donna_pubkey() returned unexpected value '{}', expected '0'", result);
-        }
-
-        return Ok(Ed25519PublicKey::from_raw(&public_key_data)?);
+        return Ok(Ed25519PublicKey{
+            public_key: pk::ed25519::PublicKey::from(&private_key.expanded_secret_key),
+        });
     }
 
     pub fn to_base32(&self) -> String {
-        return BASE32.encode(&self.data);
+        return BASE32.encode(&self.get_data());
     }
 
-    pub fn get_data(&self) -> &[u8; ED25519_PUBLIC_KEY_SIZE] {
-        return &self.data;
+    pub fn get_data(&self) -> [u8; ED25519_PUBLIC_KEY_SIZE] {
+        return self.public_key.as_bytes().clone();
     }
 }
 
 impl PartialEq for Ed25519PublicKey {
     fn eq(&self, other: &Self) -> bool {
-        return self.data.eq(&other.data);
+        return self.get_data().eq(&other.get_data());
     }
 }
 
@@ -457,33 +442,26 @@ impl PartialEq for Ed25519PublicKey {
 
 impl Ed25519Signature {
     pub fn from_raw(raw: &[u8; ED25519_SIGNATURE_SIZE]) -> Result<Ed25519Signature> {
-        return Ok(Ed25519Signature{data: raw.clone()});
+        return Ok(Ed25519Signature{
+            signature: pk::ed25519::Signature::from_bytes(raw)?,
+        });
     }
 
     pub fn verify(&self, message: &[u8], public_key: &Ed25519PublicKey) -> Result<bool> {
-        let result = unsafe {
-            ed25519_donna_open(
-                self.data.as_ptr() as *const c_uchar,
-                message.as_ptr() as *const c_uchar,
-                message.len(),
-                public_key.get_data().as_ptr() as *const c_uchar)
-        };
-
-        match result {
-            0 => Ok(true),
-            -1 => Ok(false),
-            _ => bail!("Ed25519Signature::verify(): call to ed25519_donna_open() returned unexpected value '{}', expected '0' or '-1'", result),
+        if let Ok(()) = public_key.public_key.verify(&message, &self.signature) {
+            return Ok(true);
         }
+        return Ok(false);
     }
 
-    pub fn get_data(&self) -> &[u8] {
-        return &self.data;
+    pub fn get_data(&self) -> [u8; ED25519_SIGNATURE_SIZE] {
+        return self.signature.to_bytes();
     }
 }
 
 impl PartialEq for Ed25519Signature {
     fn eq(&self, other: &Self) -> bool {
-        return self.data.eq(&other.data);
+        return self.get_data().eq(&other.get_data());
     }
 }
 
@@ -573,7 +551,7 @@ impl V3OnionServiceId {
         for i in 0..ED25519_PUBLIC_KEY_SIZE {
             raw_service_id[i] = public_key.get_data()[i];
         }
-        let truncated_checksum = calc_truncated_checksum(public_key.get_data());
+        let truncated_checksum = calc_truncated_checksum(&public_key.get_data());
         raw_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 0] = truncated_checksum[0];
         raw_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 1] = truncated_checksum[1];
         raw_service_id[V3_ONION_SERVICE_ID_VERSION_OFFSET] = 0x03u8;
