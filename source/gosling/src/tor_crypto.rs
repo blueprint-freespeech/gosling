@@ -262,25 +262,44 @@ fn calc_truncated_checksum(public_key: &[u8; ED25519_PUBLIC_KEY_SIZE]) -> [u8; T
 
 // Free functions
 
-fn hash_tor_password_with_salt(salt: &[u8], password: &str) -> Result<String> {
-
-    if salt.len() != S2K_RFC2440_SPECIFIER_LEN {
-        bail!("hash_tor_password_with_salt(): salt must be array with length '{}', received length '{}'", S2K_RFC2440_SPECIFIER_LEN, salt.len());
-    }
+fn hash_tor_password_with_salt(salt: &[u8; S2K_RFC2440_SPECIFIER_LEN], password: &str) -> Result<String> {
 
     if salt[S2K_RFC2440_SPECIFIER_LEN - 1] != 0x60 {
         bail!("hash_tor_password_with_salt(): last byte in salt must be '0x60', received '{:#02X}'", salt[S2K_RFC2440_SPECIFIER_LEN - 1]);
     }
 
-    let mut key = [0x00u8; DIGEST_LEN];
+    // tor-specific rfc 2440 constants
+    const EXPBIAS: u8 = 6u8;
+    const C: u8 = 0x60; // salt[S2K_RFC2440_SPECIFIER_LEN - 1]
+    const COUNT: usize = (16usize + ((C & 15u8) as usize)) << ((C >> 4)  + EXPBIAS);
 
-    unsafe {
-        secret_to_key_rfc2440(key.as_mut_ptr() as *mut c_char, DIGEST_LEN,
-                              password.as_ptr() as *const c_char, password.len(), salt.as_ptr() as *const c_char);
+    // squash together our hash input
+    let mut input: Vec<u8> = Default::default();
+    // append salt (sans the 'C' constant')
+    input.extend_from_slice(&salt[0..S2K_RFC2440_SPECIFIER_LEN-1]);
+    // append password bytes
+    input.extend_from_slice(password.as_bytes());
+
+    let input = input.as_slice();
+    let input_len = input.len();
+
+    let mut sha1 = Sha1::new();
+    let mut count = COUNT;
+    while count > 0 {
+        if count > input_len {
+            sha1.input(input);
+            count = count - input_len;
+        } else {
+            sha1.input(&input[0..count]);
+            break;
+        }
     }
 
+    let mut key = [0u8; SHA1_BYTES];
+    sha1.result(key.as_mut_slice());
+
     let mut hash = "16:".to_string();
-    HEXUPPER.encode_append(&salt, &mut hash);
+    HEXUPPER.encode_append(salt, &mut hash);
     HEXUPPER.encode_append(&key, &mut hash);
 
     return Ok(hash);
