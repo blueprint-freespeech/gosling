@@ -8,6 +8,7 @@ extern crate paste;
 extern crate num_enum;
 extern crate rand;
 extern crate rand_core;
+extern crate signature;
 extern crate zeroize;
 extern crate regex;
 extern crate socks;
