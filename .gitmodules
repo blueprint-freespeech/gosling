@@ -1,6 +1,3 @@
-[submodule "source/tor_crypto/tor"]
-	path = source/tor_crypto/tor
-	url = https://git.torproject.org/tor.git
 [submodule "source/Catch2"]
 	path = source/Catch2
 	url = https://github.com/catchorg/Catch2.git

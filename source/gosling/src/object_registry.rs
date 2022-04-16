@@ -9,8 +9,6 @@ use anyhow::Result;
 #[derive(Debug, Eq, PartialEq, TryFromPrimitive)]
 #[repr(u8)]
 pub enum ObjectTypes {
-    Sha1,
-    Sha512,
     Error,
     Ed25519PrivateKey,
     Ed25519PublicKey,

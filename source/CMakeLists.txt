@@ -15,7 +15,6 @@ project(gosling)
 # toggle to enable debug spew
 set(CMAKE_VERBOSE_MAKEFILE on)
 
-add_subdirectory(tor_crypto)
 add_subdirectory(gosling)
 add_subdirectory(Catch2)
 add_subdirectory(test)
