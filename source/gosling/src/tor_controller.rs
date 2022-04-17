@@ -757,6 +757,14 @@ impl TorController {
         return self.write_command(&command);
     }
 
+    // ONION_CLIENT_AUTH_REMOVE (3.31)
+    fn onion_client_auth_remove_cmd(&mut self, service_id: &V3OnionServiceId) -> Result<Reply> {
+
+        let command = format!("ONION_CLIENT_AUTH_REMOVE {}", service_id.to_string());
+
+        return self.write_command(&command);
+    }
+
     //
     // Public high-level typesafe command method wrappers
     //
@@ -921,6 +929,15 @@ impl TorController {
 
         match reply.status_code {
             250u32..=252u32 => return Ok(()),
+            code => bail!("{} {}", code, reply.reply_lines.join("\n")),
+        }
+    }
+
+    pub fn onion_client_auth_remove(&mut self, service_id: &V3OnionServiceId) -> Result<()> {
+        let reply = self.onion_client_auth_remove_cmd(service_id)?;
+
+        match reply.status_code {
+            250u32..=251u32 => return Ok(()),
             code => bail!("{} {}", code, reply.reply_lines.join("\n")),
         }
     }
@@ -1141,21 +1158,21 @@ impl TorManager {
         return self.controller.borrow_mut().setconf(&[("DisableNetwork", "0")]);
     }
 
+    pub fn add_client_auth(&mut self, service_id: &V3OnionServiceId, client_auth: &X25519PrivateKey) -> Result<()> {
+        return self.controller.borrow_mut().onion_client_auth_add(service_id, client_auth, None, &Default::default());
+    }
+
+    pub fn remove_client_auth(&mut self, service_id: &V3OnionServiceId) -> Result<()> {
+        return self.controller.borrow_mut().onion_client_auth_remove(service_id);
+    }
+
     // connect to an onion service and returns OnionStream
-    pub fn connect(&mut self, service_id: &V3OnionServiceId, virt_port: u16, circuit: Option<CircuitToken>, client_auth: Option<&X25519PrivateKey>) -> Result<OnionStream> {
+    pub fn connect(&mut self, service_id: &V3OnionServiceId, virt_port: u16, circuit: Option<CircuitToken>) -> Result<OnionStream> {
 
         if let None = self.socks_listener {
             let mut listeners = self.controller.borrow_mut().getinfo_net_listeners_socks()?;
             ensure!(!listeners.is_empty(), "TorManager::connect(): no available socks listener to connect through");
             self.socks_listener = Some(listeners.swap_remove(0));
-        }
-
-        if let Some(client_auth) = client_auth {
-            // TODO: so this technically isn't right, we need to keep track of when to add
-            // the client auth in the manager, and remove them once the last connection
-            // has dropped; for now this is fine as we are not persisting onion auth, so
-            // the auth keys are dropped when the daemon process is dropped
-            self.controller.borrow_mut().onion_client_auth_add(&service_id, &client_auth, None, &Default::default())?;
         }
 
         // our onion domain
@@ -1424,7 +1441,7 @@ fn test_onion_service() -> Result<()> {
 
         {
             println!("Connecting to onion service");
-            let mut client = tor.connect(&service_id, VIRT_PORT, None, None)?;
+            let mut client = tor.connect(&service_id, VIRT_PORT, None)?;
             println!("Client writing message: '{}'", MESSAGE);
             client.write(MESSAGE.as_bytes())?;
             client.flush()?;
@@ -1462,18 +1479,24 @@ fn test_onion_service() -> Result<()> {
 
         {
             println!("Connecting to onion service (should fail)");
-            match tor.connect(&service_id, VIRT_PORT, None, None) {
+            match tor.connect(&service_id, VIRT_PORT, None) {
                 Ok(_) => bail!("Should not able to connect to an authenticated onion service without auth key"),
                 Err(_) => {},
             }
 
+            println!("Add auth key for onion service");
+            tor.add_client_auth(&service_id, &private_auth_key)?;
+
             println!("Connecting to onion service with authentication");
-            let mut client = tor.connect(&service_id, VIRT_PORT, None, Some(&private_auth_key))?;
+            let mut client = tor.connect(&service_id, VIRT_PORT, None)?;
 
             println!("Client writing message: '{}'", MESSAGE);
             client.write(MESSAGE.as_bytes())?;
             client.flush()?;
             println!("End of client scope");
+
+            println!("Remove auth key for onion service");
+            tor.remove_client_auth(&service_id);
         }
 
         if let Some(mut server) = listener.accept()? {
