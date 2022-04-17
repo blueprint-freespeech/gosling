@@ -52,13 +52,13 @@ note over Client,Server: RPC session handed over to application
 
 @enduml
 
-PlantUML version 1.2018.13(Mon Nov 26 18:11:51 CET 2018)
+PlantUML version 1.2018.13(Mon Nov 26 17:11:51 UTC 2018)
 (GPL source distribution)
 Java Runtime: OpenJDK Runtime Environment
 JVM: OpenJDK 64-Bit Server VM
-Java Version: 11.0.11+9-Ubuntu-0ubuntu2.20.04
+Java Version: 11.0.14.1+1-Ubuntu-0ubuntu1.20.04
 Operating System: Linux
-OS Version: 5.11.0-27-generic
+OS Version: 5.13.0-39-generic
 Default Encoding: UTF-8
 Language: en
 Country: US

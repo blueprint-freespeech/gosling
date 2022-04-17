@@ -36,7 +36,7 @@ Client->Server: send_client_proof()
 
 Server->Client: return
 
-Client->Server: request_endpoint
+Client->Server: request_endpoint()
 
     alt Client Not Authenticated
         Client<-Server: error
@@ -64,8 +64,8 @@ Client->Server: request_endpoint
     Client<-Server: return
 
     note over Server
-        Maintains connection to allow
-        client to make more requests
+        Maintains connection to allow client
+        to make more endpoint requests
     endnote
 
     note over Client: Close Connection
