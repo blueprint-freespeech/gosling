@@ -5,17 +5,18 @@ use std::collections::VecDeque;
 use std::default::Default;
 use std::fs::File;
 use std::fs;
-use std::io::{ErrorKind, Read, Write};
+use std::io::{ErrorKind, BufReader, BufRead, Read, Write};
 use std::iter;
-use std::net::*;
+use std::net::{SocketAddr, TcpStream, TcpListener};
 use std::ops::Drop;
 use std::option::Option;
 use std::path::Path;
-use std::process::*;
+use std::process::{Command, Child, ChildStdout, Stdio};
 use std::process;
-use std::rc::{Rc, Weak};
+use std::rc::{Rc};
 use std::str::FromStr;
 use std::string::ToString;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 // extern crates
@@ -25,12 +26,13 @@ use rand::Rng;
 use rand::rngs::OsRng;
 use rand::distributions::Alphanumeric;
 use regex::Regex;
-use socks::*;
+use socks::Socks5Stream;
 use url::Host;
 
 
 // internal modules
 use tor_crypto::*;
+use work_manager::*;
 
 // get the name of our tor executable
 fn system_tor() -> &'static str {
@@ -72,15 +74,17 @@ fn read_control_port_file(control_port_file: &Path) -> Result<SocketAddr> {
 }
 
 // Encapsulates the tor daemon process
-
 struct TorProcess {
     control_addr: SocketAddr,
     process: Child,
     password: String,
+    // stdout data
+    stdout: Arc<Mutex<BufReader<ChildStdout>>>,
+    stdout_lines: Arc<Mutex<Vec<String>>>
 }
 
 impl TorProcess {
-    pub fn new(data_directory: &Path) -> Result<TorProcess> {
+    pub fn new(data_directory: &Path, stdout_worker: &Worker) -> Result<TorProcess> {
 
         // create data directory if it doesn't exist
         if !data_directory.exists() {
@@ -126,8 +130,8 @@ impl TorProcess {
         let password_hash = hash_tor_password(&password)?;
 
         let executable_path = system_tor();
-        let process = Command::new(executable_path)
-            .stdout(Stdio::null())
+        let mut process = Command::new(executable_path)
+            .stdout(Stdio::piped())
             .stdin(Stdio::null())
             .stderr(Stdio::null())
             // point to our above written torrc file
@@ -164,8 +168,64 @@ impl TorProcess {
         }
         ensure!(control_addr != None, "TorProcess::new(): failed to read control addr from '{}'", control_port_file.display());
 
+        let stdout_lines: Arc<Mutex<Vec<String>>> = Default::default();
+        let stdout = Arc::new(Mutex::new(BufReader::new(process.stdout.take().unwrap())));
 
-        return Ok(TorProcess{control_addr: control_addr.unwrap(), process: process, password: password});
+        // start reading daemon's stdout
+        stdout_worker.push({
+            let worker = stdout_worker.clone();
+            let stdout_lines = Arc::downgrade(&stdout_lines);
+            let stdout = Arc::downgrade(&stdout);
+            move || {
+                TorProcess::read_stdout_task(&worker,&stdout_lines, &stdout)
+            }
+        })?;
+
+        return Ok(TorProcess{
+            control_addr: control_addr.unwrap(),
+            process: process,
+            password: password,
+            stdout_lines: stdout_lines,
+            stdout: stdout,
+        });
+    }
+
+    fn read_stdout_task(worker: &Worker, stdout_lines: &std::sync::Weak<Mutex<Vec<String>>>, stdout: &std::sync::Weak<Mutex<BufReader<ChildStdout>>>) -> Result<()> {
+
+        if let Some(stdout) = stdout.upgrade() {
+            if let Some(stdout_lines) = stdout_lines.upgrade() {
+                let mut line = String::default();
+                let mut stdout = stdout.lock().unwrap();
+                // read line
+                if let Ok(_) = stdout.read_line(&mut line) {
+                    // remove trailing '\n'
+                    line.pop();
+                    // then acquire the lock on the line buffer
+                    let mut stdout_lines = stdout_lines.lock().unwrap();
+                    stdout_lines.push(line);
+                }
+            }
+        } else {
+            // stdout is gone so this task can stop
+            return Ok(());
+        }
+
+        // enqueue next read request
+        worker.push({
+            let worker = worker.clone();
+            let stdout_lines = stdout_lines.clone();
+            let stdout = stdout.clone();
+            move || {
+                TorProcess::read_stdout_task(&worker,&stdout_lines, &stdout)
+            }
+        })?;
+
+        return Ok(());
+    }
+
+    fn wait_log_lines(&mut self) -> Vec<String> {
+        let mut lines = self.stdout_lines.lock().unwrap();
+        return std::mem::take(&mut lines);
     }
 }
 
@@ -1047,7 +1107,7 @@ impl Write for OnionStream {
 pub struct OnionListener {
     listener: TcpListener,
     service_id: V3OnionServiceId,
-    controller: Weak<RefCell<TorController>>,
+    controller: std::rc::Weak<RefCell<TorController>>,
 }
 
 impl OnionListener {
@@ -1083,6 +1143,7 @@ impl Drop for OnionListener {
 enum Event {
     BootstrapStatus{progress: u32, tag: String, summary: String },
     BootstrapComplete,
+    LogReceived{line: String},
 }
 
 pub struct TorManager {
@@ -1093,9 +1154,9 @@ pub struct TorManager {
 }
 
 impl TorManager {
-    pub fn new(data_directory: &Path) -> Result<TorManager> {
+    pub fn new(data_directory: &Path, stdout_worker: &Worker) -> Result<TorManager> {
         // launch tor
-        let daemon = TorProcess::new(data_directory)?;
+        let daemon = TorProcess::new(data_directory, stdout_worker)?;
         // open a control stream
         let control_stream = ControlStream::new(&daemon.control_addr, Duration::from_millis(16))?;
 
@@ -1145,6 +1206,10 @@ impl TorManager {
                 },
                 _ => {},
             }
+        }
+
+        for mut log_line in self.daemon.wait_log_lines().iter_mut() {
+            self.events.push_back(Event::LogReceived{line: std::mem::take(&mut log_line)});
         }
 
         return Ok(self.events.pop_front());
@@ -1210,7 +1275,12 @@ impl TorManager {
 
 #[test]
 fn test_tor_controller() -> Result<()> {
-    let tor_process = TorProcess::new(Path::new("/tmp/test_tor_controller"))?;
+    const WORKER_NAMES: [&str; 1] = ["tor_stdout"];
+    const WORKER_COUNT: usize = WORKER_NAMES.len();
+    let work_manager: Arc<WorkManager> = Arc::<WorkManager>::new(WorkManager::new(&WORKER_NAMES)?);
+    let worker = Worker::new(0, &work_manager)?;
+
+    let tor_process = TorProcess::new(Path::new("/tmp/test_tor_controller"), &worker)?;
 
     // create a scope to ensure tor_controller is dropped
     {
@@ -1384,32 +1454,48 @@ fn test_version() -> Result<()>
 }
 
 #[test]
+#[timeout(30000)]
 fn test_tor_manager() -> Result<()> {
-    let mut tor = TorManager::new(Path::new("/tmp/test_tor_manager"))?;
+    const WORKER_NAMES: [&str; 1] = ["tor_stdout"];
+    const WORKER_COUNT: usize = WORKER_NAMES.len();
+    let work_manager: Arc<WorkManager> = Arc::<WorkManager>::new(WorkManager::new(&WORKER_NAMES)?);
+    let worker = Worker::new(0, &work_manager)?;
+
+    let mut tor = TorManager::new(Path::new("/tmp/test_tor_manager"), &worker)?;
     println!("version : {}", tor.version()?.to_string());
     tor.bootstrap()?;
 
-    // for 30secs for bootstrap
-    let stop_time = Instant::now() + std::time::Duration::from_secs(30);
-    while stop_time > Instant::now() {
+    let mut received_log: bool = false;
+    loop {
         if let Some(event) = tor.wait_event()? {
             match event {
                 Event::BootstrapStatus{progress,tag,summary} => println!("BootstrapStatus: {{ progress: {}, tag: {}, summary: '{}' }}", progress, tag, summary),
                 Event::BootstrapComplete =>     {
                     println!("Bootstrap Complete!");
-                    return Ok(());
+                    break;
+                }
+                Event::LogReceived{line} => {
+                    received_log = true;
+                    println!("--- {}", line);
                 }
             }
         }
     }
+    ensure!(received_log, "should have received a log line from tor daemon");
 
     return Ok(());
 }
 
 #[test]
-#[timeout(60000)]
+#[timeout(90000)]
 fn test_onion_service() -> Result<()> {
-    let mut tor = TorManager::new(Path::new("/tmp/test_onion_service"))?;
+
+    const WORKER_NAMES: [&str; 1] = ["tor_stdout"];
+    const WORKER_COUNT: usize = WORKER_NAMES.len();
+    let work_manager: Arc<WorkManager> = Arc::<WorkManager>::new(WorkManager::new(&WORKER_NAMES)?);
+    let worker = Worker::new(0, &work_manager)?;
+
+    let mut tor = TorManager::new(Path::new("/tmp/test_onion_service"), &worker)?;
 
     // for 30secs for bootstrap
     tor.bootstrap()?;
@@ -1421,6 +1507,9 @@ fn test_onion_service() -> Result<()> {
                 Event::BootstrapComplete =>     {
                     println!("Bootstrap Complete!");
                     break;
+                }
+                Event::LogReceived{line} => {
+                    println!("--- {}", line);
                 }
             }
         }
@@ -1500,7 +1589,6 @@ fn test_onion_service() -> Result<()> {
         }
 
         if let Some(mut server) = listener.accept()? {
-            let mut msg: String = Default::default();
             println!("Server reading message");
             let mut buffer = Vec::new();
             server.read_to_end(&mut buffer)?;
@@ -1512,6 +1600,5 @@ fn test_onion_service() -> Result<()> {
             bail!("No listener?");
         }
     }
-
     return Ok(());
 }
