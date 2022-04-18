@@ -1167,6 +1167,12 @@ impl TorManager {
         // authenticate
         controller.authenticate(&daemon.password)?;
 
+        let min_required_version: Version = Version::new(0u32, 4u32, 6u32, Some(1u32), None)?;
+
+        let version = controller.getinfo_version()?;
+
+        ensure!(version >= min_required_version, "TorManager::new(): tor daemon not new enough; must be at least version {}", min_required_version.to_string());
+
         // register for STATUS_CLIENT async events
         controller.setevents(&["STATUS_CLIENT"])?;
 
