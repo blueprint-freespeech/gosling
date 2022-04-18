@@ -192,6 +192,7 @@ impl TorProcess {
 
     fn read_stdout_task(worker: &Worker, stdout_lines: &std::sync::Weak<Mutex<Vec<String>>>, stdout: &std::sync::Weak<Mutex<BufReader<ChildStdout>>>) -> Result<()> {
 
+
         if let Some(stdout) = stdout.upgrade() {
             if let Some(stdout_lines) = stdout_lines.upgrade() {
                 let mut line = String::default();
@@ -290,7 +291,7 @@ impl ControlStream {
 
             let byte_count = self.pending_data.len();
             match self.stream.read_to_end(&mut self.pending_data) {
-                Err(err) => if err.kind() == ErrorKind::WouldBlock {
+                Err(err) => if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut {
                     if byte_count == self.pending_data.len() {
                         return Ok(None);
                     }
@@ -323,7 +324,7 @@ impl ControlStream {
                 }
             }
             // leave any leftover bytes in the buffer for the next call
-            self.pending_data = self.pending_data[begin..].to_vec();
+            self.pending_data.drain(0..begin);
         }
 
         return Ok(self.pending_lines.pop_front());
