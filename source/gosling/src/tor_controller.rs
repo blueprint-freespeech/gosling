@@ -1067,6 +1067,14 @@ impl OnionStream {
     pub fn write_timeout(&self) -> Result<Option<Duration>, std::io::Error> {
         return self.stream.write_timeout();
     }
+
+    pub fn try_clone(&self) -> Result<OnionStream> {
+        return Ok(
+            OnionStream{
+                stream: self.stream.try_clone()?,
+                peer_addr: self.peer_addr.clone()
+            });
+    }
 }
 
 // pass-through to underlying Read stream
