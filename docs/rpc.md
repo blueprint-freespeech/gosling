@@ -90,7 +90,7 @@ document error_section {
     // human-readable message associated with this error
     [[optional]] string message;
     // primitive or structured debug data associated with with this error
-    [[optional]] document data;
+    [[optional]] element data;
 }
 ```
 #### Request Section

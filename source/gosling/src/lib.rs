@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate lazy_static;
 extern crate static_assertions;
+extern crate bson;
 extern crate crypto;
 extern crate data_encoding;
 extern crate anyhow;
@@ -21,5 +22,6 @@ mod tor_crypto;
 mod object_registry;
 mod work_manager;
 mod tor_controller;
+mod honk_rpc;
 #[cfg(test)]
 mod test_utils;
