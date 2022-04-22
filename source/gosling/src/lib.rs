@@ -21,3 +21,5 @@ mod tor_crypto;
 mod object_registry;
 mod work_manager;
 mod tor_controller;
+#[cfg(test)]
+mod test_utils;
