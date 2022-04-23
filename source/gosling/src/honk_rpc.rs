@@ -2,55 +2,57 @@
 use std::cell::RefCell;
 use std::collections::{BTreeMap,HashMap};
 use std::convert::{From, TryFrom, Into};
+use std::fmt::Debug;
 use std::io::{Cursor, ErrorKind, Read, Write};
 use std::option::Option;
 use std::rc::{Rc};
+
 
 
 // extern crates
 use anyhow::{bail, ensure, Result};
 use num_enum::TryFromPrimitive;
 
-#[derive(Debug, Eq, PartialEq, TryFromPrimitive)]
-#[repr(i32)]
-enum ProtocolError {
-    BsonParseFailed = -1,
-    MessageTooBig = -2,
-    MessageParseFailed = -3,
-    MessageVersionIncompatible = -4,
-
-    SectionIdUnknown = -5,
-    SectionParseFailed = -6,
-
-    RequestCookieInvalid = -7,
-    RequestNamespaceInvalid = -8,
-    RequestFunctionInvalid = -9,
-    RequestVersionInvalid = -10,
-
-    ResponseCookieInvalid = -11,
-    ResponseStateInvalid = -12,
-}
-
-#[repr(i32)]
+#[derive(Debug, Eq, PartialEq)]
 enum ErrorCode {
-    Protocol(ProtocolError),
-    Success,
+    // Protoocl Errors
+    BsonParseFailed,
+    MessageTooBig,
+    MessageParseFailed,
+    MessageVersionIncompatible,
+    SectionIdUnknown,
+    SectionParseFailed,
+    RequestCookieInvalid,
+    RequestNamespaceInvalid,
+    RequestFunctionInvalid,
+    RequestVersionInvalid,
+    ResponseCookieInvalid,
+    ResponseStateInvalid,
+
     Runtime(i32),
     Unknown(i32),
 }
 
 impl From<i32> for ErrorCode {
     fn from(value: i32) -> ErrorCode {
-        if value < 0 {
-            if let Ok(value) = ProtocolError::try_from(value) {
-                return ErrorCode::Protocol(value);
+        match value {
+            -1i32 => ErrorCode::BsonParseFailed,
+            -2i32 => ErrorCode::MessageTooBig,
+            -3i32 => ErrorCode::MessageParseFailed,
+            -4i32 => ErrorCode::MessageVersionIncompatible,
+            -5i32 => ErrorCode::SectionIdUnknown,
+            -6i32 => ErrorCode::SectionParseFailed,
+            -7i32 => ErrorCode::RequestCookieInvalid,
+            -8i32 => ErrorCode::RequestNamespaceInvalid,
+            -9i32 => ErrorCode::RequestFunctionInvalid,
+            -10i32 => ErrorCode::RequestVersionInvalid,
+            -11i32 => ErrorCode::ResponseCookieInvalid,
+            -12i32 => ErrorCode::ResponseStateInvalid,
+            value => if value > 0 {
+                ErrorCode::Runtime(value)
             } else {
-                return ErrorCode::Unknown(value);
-            }
-        } else if value == 0 {
-            return ErrorCode::Success;
-        } else {
-            return ErrorCode::Runtime(value);
+                ErrorCode::Unknown(value)
+            },
         }
     }
 }
@@ -58,11 +60,59 @@ impl From<i32> for ErrorCode {
 impl Into<i32> for ErrorCode {
     fn into(self) -> i32 {
         return match self {
-            ErrorCode::Protocol(protocol_error) => protocol_error as i32,
-            ErrorCode::Success => 0i32,
+            ErrorCode::BsonParseFailed => -1i32,
+            ErrorCode::MessageTooBig => -2i32,
+            ErrorCode::MessageParseFailed => -3i32,
+            ErrorCode::MessageVersionIncompatible => -4i32,
+            ErrorCode::SectionIdUnknown => -5i32,
+            ErrorCode::SectionParseFailed => -6i32,
+            ErrorCode::RequestCookieInvalid => -7i32,
+            ErrorCode::RequestNamespaceInvalid => -8i32,
+            ErrorCode::RequestFunctionInvalid => -9i32,
+            ErrorCode::RequestVersionInvalid => -10i32,
+            ErrorCode::ResponseCookieInvalid => -11i32,
+            ErrorCode::ResponseStateInvalid => -12i32,
             ErrorCode::Runtime(val) => val,
             ErrorCode::Unknown(val) => val,
         };
+    }
+}
+
+impl std::fmt::Display for ErrorCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    match self {
+            ErrorCode::BsonParseFailed => write!(f, "ProtocolError: failed to parse BSON object"),
+            ErrorCode::MessageTooBig => write!(f, "ProtocolError: received document too large"),
+            ErrorCode::MessageParseFailed => write!(f, "ProtocolError: received message has invalid schema"),
+            ErrorCode::MessageVersionIncompatible => write!(f, "ProtocolError: received message has incompatible version"),
+            ErrorCode::SectionIdUnknown => write!(f, "ProtocolError: received message contains section of unknown type"),
+            ErrorCode::SectionParseFailed => write!(f, "ProtocolError: recevied message contains section with invalid schema"),
+            ErrorCode::RequestCookieInvalid => write!(f, "ProtocolError: request cookie already in use"),
+            ErrorCode::RequestNamespaceInvalid => write!(f, "ProtocolError: request function does not exist in requested namespace"),
+            ErrorCode::RequestFunctionInvalid => write!(f, "ProtocolError: request function does not exist"),
+            ErrorCode::RequestVersionInvalid => write!(f, "ProtocolError: request function version does not exist"),
+            ErrorCode::ResponseCookieInvalid => write!(f, "ProtocolError: response cookie is not recognized"),
+            ErrorCode::ResponseStateInvalid => write!(f, "ProtocolError: response state not valid"),
+            ErrorCode::Runtime(code) => write!(f, "RuntimeError: runtime error {}", code),
+            ErrorCode::Unknown(code) => write!(f, "UnknownError: unknown error code {}", code),
+        }
+    }
+}
+
+#[derive(Debug)]
+enum Error {
+    IoError(std::io::Error),
+    ErrorCode(ErrorCode),
+}
+
+impl std::error::Error for Error {}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Error::IoError(err) => std::fmt::Display::fmt(&self, f),
+            Error::ErrorCode(err) => std::fmt::Display::fmt(&self, f),
+        }
     }
 }
 
@@ -73,10 +123,10 @@ struct Message {
 }
 
 impl TryFrom<bson::document::Document> for Message {
-    type Error = ErrorCode;
+    type Error = Error;
 
     fn try_from(value: bson::document::Document) -> Result<Self, Self::Error> {
-        return Err(ErrorCode::Unknown(0));
+        return Err(Error::ErrorCode(ErrorCode::Unknown(0)));
     }
 }
 
@@ -92,14 +142,14 @@ enum RequestState {
     Complete = 1u8,
 }
 
-struct Error {
+struct ErrorSection {
     cookie: Option<RequestCookie>,
     code: ErrorCode,
     message: Option<String>,
     data: Option<bson::Bson>,
 }
 
-struct Request{
+struct RequestSection{
     cookie: Option<RequestCookie>,
     namespace: String,
     function: String,
@@ -107,16 +157,16 @@ struct Request{
     arguments: bson::document::Document,
 }
 
-struct Response{
+struct ResponseSection{
     cookie: RequestCookie,
     state: RequestState,
     result: Option<bson::Bson>,
 }
 
 enum Section {
-    Error(Error),
-    Request(Request),
-    Response(Response),
+    Error(ErrorSection),
+    Request(RequestSection),
+    Response(ResponseSection),
 }
 
 // RpcFunction takes a single args object, returns
@@ -160,12 +210,7 @@ impl Client {
                             self.pending_data = cursor.into_inner();
                             self.pending_data.clear();
 
-                            if let Ok(message) = Message::try_from(bson) {
-                                return Ok(Some(message));
-                            } else {
-                                bail!("failed to parse message");
-                                // handle error
-                            }
+                            return Ok(Some(Message::try_from(bson)?));
                         } else {
                             bail!("failed to deserialize bson");
                             // handle error
@@ -212,15 +257,15 @@ impl Client {
         bail!("not implemented");
     }
 
-    fn send_error(&mut self, error: Error) -> Result<()> {
+    fn send_error(&mut self, error: ErrorSection) -> Result<()> {
         bail!("not implemented");
     }
 
-    fn send_request(&mut self, request: Request) -> Result<()> {
+    fn send_request(&mut self, request: RequestSection) -> Result<()> {
         bail!("not implemented");
     }
 
-    fn send_response(&mut self, response: Response) -> Result<()> {
+    fn send_response(&mut self, response: ResponseSection) -> Result<()> {
         bail!("not implemented");
     }
 
