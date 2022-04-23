@@ -17,11 +17,7 @@ All `message` objects have the following format.
 ```c++
 document message {
     // the Honk RPC version number
-    [[required]] byte honk_rpc;
-    // if true, error sections sent as a response to this message may also
-    // return human-readable errors or additional debug data; when not
-    // present assumed to be false
-    [[optional]] boolean verbose;
+    [[required]] int32_t honk_rpc;
     // an array of BSON documents, each document containing a message section
     // multiple sections can therefore be sent in a single message
     [[required]] document sections[];
@@ -35,7 +31,7 @@ Each section contains the following in-line header:
 ```c++
 {
     // the id is used to determine which type of section this document is
-    [[required]] byte id;
+    [[required]] int32_t id;
 }
 ```
 
@@ -85,10 +81,10 @@ typedef enum class error_code : int32_t {
 
 document error_section {
     // id for error_section
-    [[required]] byte id = 0x00;
+    [[required]] int32_t id = 0;
     // request cookie associated with a previous request; only present for
     // errors that can be associated with a previous request
-    [[optional]] uint64_t cookie;
+    [[optional]] int64_t cookie;
     // the error code
     [[required]] error_code_t code;
     // human-readable message associated with this error
@@ -104,20 +100,20 @@ Remote procedure calls are made by submitting a message with a `request_section`
 ```c++
 document request_section {
     // id for request_section
-    [[required]] byte id = 0x01;
+    [[required]] int32_t id = 1;
     // request cookie used to associate a future response to this request. If a
     // cookie is not provided, the receiver must not return a response section.
     // It is up to the requestor to avoid cookie collisions (cookies are scoped
     // by session, so concurrent requests from multiple requestors may use
     // identical cookies without issue).
-    [[optional]] uint64_t cookie;
+    [[optional]] int64_t cookie;
     // function namespace; if not provided assumed to the global/empty ""
     // namespace
     [[optional]] string namespace;
-    // name of function to call
+    // name of function to call; must not be empty string
     [[required]] string function;
     // the version of the function to call; if not provided assumed to be 0
-    [[optional]] byte version;
+    [[optional]] int32_t version;
     // a document containing arguments for the function; not required for a
     // function which has no arguments
     [[optional]] document arguments;
@@ -131,7 +127,7 @@ After receiving a message with a `request_section`, a message with a `response_s
 In the event of a runtime (non-protocol) error, a `response_section` is not returned and an `error_section` is instead.
 
 ```c++
-typedef enum class request_state : byte {
+typedef enum class request_state : int32_t {
     // request started and result is pending
     pending = 0,
     // request is complete
@@ -140,10 +136,10 @@ typedef enum class request_state : byte {
 
 document response_section {
     // id for request_section
-    [[required]] byte id = 0x02;
+    [[required]] int32_t id = 2;
     // the cookie associated with a previous request this response document
     // refers to
-    [[required]] uint64_t cookie;
+    [[required]] int64_t cookie;
     // the current state of function execution
     [[required]] request_state_t state;
     // the primitive or structured return from the request associated with
@@ -158,44 +154,47 @@ Honk RPC defines its own `honk_rpc` namespace for the following built-in functio
 
 ```c++
 namespace honk_rpc {
-    // Gets the maximum size message the receiver will accept
+    // Gets the maximum size message the receiver will accept. This value is a
+    // signed integer because BSON document sizes are limited to 32-bit signed
+    // integer representation.
     //
     // returns: Largest message receiver will accept in bytes; a value
     // of 0 indicates no maximum size
-    get_maximum_message_size() -> uint32_t;
+    get_maximum_message_size() -> int32_t;
 
     // Try and set the maximum message size
     //
     // params:
-    // - uint32_t size: proposed maximum number of bytes a sent message can be;
-    //   a value of 0 indicates no maximum size
+    // - int32_t size: proposed maximum number of bytes a sent message can be;
+    //   a value of 0 indicates no maximum size; negative values are an error
     //
     // returns: largest message receiver will accept in bytes
-    try_set_maximum_message_size(uint32_t size) -> uint32_t;
+    try_set_maximum_message_size(int32_t size) -> int32_t;
 
     // Gets the amount of time in milliseconds the receiver is willing
     // to wait between function calls before closing the connection
     //
     // returns: timeout period in milliseconds; a value of 0 indicates no
     // timeout
-    get_timeout_period() -> uint32_t;
+    get_timeout_period() -> int32_t;
 
     // Try and set the maximum amount of time the receiver is willing
     // to wait between function calls  before closing the connection;
     //
     // params:
-    // - uint32_t period: the number of milliseconds to wait before closing
-    //   the underlying a transport. A value of 0 indicates no timeout.
+    // - int32_t period: the number of milliseconds to wait before closing
+    //   the underlying a transport; a value of 0 indicates no timeout;
+    //   negative values are an error
     //
     // returns: timeout period in milliseconds; a value of 0 indicates no
     // timeout
-    try_set_timeout_period(uint32_t period) -> uint32_t;
+    try_set_timeout_period(int32_t period) -> int32_t;
 
     // A no-op function which solely resets the receivers wait timer
     //
     // returns: the number of milliseconds since the last time the
     // the connection's wait timer was reset
-    keep_alive() -> uint32_t;
+    keep_alive() -> int32_t;
 }
 ```
 
