@@ -72,6 +72,18 @@ struct Message {
     sections: Vec<Section>,
 }
 
+impl TryFrom<bson::document::Document> for Message {
+    type Error = ErrorCode;
+
+    fn try_from(value: bson::document::Document) -> Result<Self, Self::Error> {
+        return Err(ErrorCode::Unknown(0));
+    }
+}
+
+impl Message {
+
+}
+
 type RequestCookie = u64;
 
 #[repr(u8)]
@@ -116,15 +128,84 @@ struct Client {
     writer: Box<dyn std::io::Write>,
     // registry of functions exposed to remote clients
     function_registry: HashMap<(String,String), Box<RpcFunction>>,
-    // pending requests
-    pending_requests: BTreeMap<RequestCookie, Request>,
+
+    // remaining number of bytes to read
+    remaining_byte_count: Option<usize>,
+    // data we've read but not yet a full Message object
+    pending_data: Vec<u8>,
 }
 
 
 impl Client {
 
-    pub fn wait_for_message() -> Result<Option<Message>> {
-        bail!("not implemented");
+    pub fn wait_for_message(&mut self) -> Result<Option<Message>> {
+        // read data of bson document
+        if let Some(remaining) = self.remaining_byte_count {
+            let mut buffer = vec![0u8; remaining];
+            match self.reader.read(&mut buffer) {
+                Err(err) => if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut {
+                        return Ok(None);
+                    } else {
+                        bail!(err);
+                    }
+                Ok(0) => bail!("Client::wait_for_message(): no more available bytes"),
+                Ok(count) => {
+                    self.pending_data.extend_from_slice(&buffer[0..count]);
+                    if remaining == count {
+                        self.remaining_byte_count = None;
+
+                        let mut cursor = Cursor::new(std::mem::take(&mut self.pending_data));
+                        // data read, build bson doc
+                        if let Ok(bson) = bson::document::Document::from_reader(&mut cursor) {
+                            self.pending_data = cursor.into_inner();
+                            self.pending_data.clear();
+
+                            if let Ok(message) = Message::try_from(bson) {
+                                return Ok(Some(message));
+                            } else {
+                                bail!("failed to parse message");
+                                // handle error
+                            }
+                        } else {
+                            bail!("failed to deserialize bson");
+                            // handle error
+                        }
+                    } else {
+                        self.remaining_byte_count = Some(remaining - count);
+                        return Ok(None);
+                    }
+                },
+            }
+        // read size of the bson document
+        } else {
+            // read number of bytes remaining to read the i32 in a bson header
+            let mut buffer = [0u8; std::mem::size_of::<i32>()];
+            let bytes_needed = std::mem::size_of::<i32>() - self.pending_data.len();
+            ensure!(bytes_needed >= 0 && bytes_needed <= std::mem::size_of::<i32>());
+            let mut buffer = &mut buffer[0..bytes_needed];
+            match self.reader.read(&mut buffer) {
+                Err(err) => if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut {
+                        return Ok(None);
+                    } else {
+                        bail!(err);
+                    }
+                Ok(0) => bail!("Client::wait_for_message(): no more available bytes"),
+                Ok(count) => {
+                    self.pending_data.extend_from_slice(&buffer);
+                    // all bytes required for i32 have been read
+                    if self.pending_data.len() == std::mem::size_of::<i32>() {
+                        // bson document size is a little-endian byte ordered i32
+                        let buffer = &self.pending_data.as_slice();
+                        let size: i32 = ((buffer[0] as i32) << 0) + ((buffer[1] as i32) << 8) + ((buffer[2] as i32) << 16) + ((buffer[3] as i32) << 24);
+
+                        ensure!(size > 0);
+                        self.remaining_byte_count = Some(size as usize);
+                        // next call to wait_for_message() will begin reading the actual message
+                    }
+                    return Ok(None);
+                },
+            }
+        }
     }
 
     fn send_message(&mut self, message: Message) -> Result<()> {
@@ -197,7 +278,7 @@ impl Client {
         bail!("not implemented");
     }
 
-    pub fn call_try_set_maximum_message_size(size: u32) -> Result<RequestCookie> {
+    pub fn call_try_set_maximum_message_size(size: i32) -> Result<RequestCookie> {
         bail!("not implemented");
     }
 
