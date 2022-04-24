@@ -7,11 +7,10 @@ use std::io::{Cursor, ErrorKind, Read, Write};
 use std::option::Option;
 use std::rc::{Rc};
 
-
-
 // extern crates
 use anyhow::{bail, ensure, Result};
 use num_enum::TryFromPrimitive;
+use bson::document::{ValueAccessError};
 
 #[derive(Debug, Eq, PartialEq)]
 enum ErrorCode {
@@ -117,8 +116,7 @@ impl std::fmt::Display for Error {
 }
 
 struct Message {
-    honk_rpc: u8,
-    verbose: bool,
+    honk_rpc: i32,
     sections: Vec<Section>,
 }
 
@@ -126,20 +124,39 @@ impl TryFrom<bson::document::Document> for Message {
     type Error = Error;
 
     fn try_from(value: bson::document::Document) -> Result<Self, Self::Error> {
-        return Err(Error::ErrorCode(ErrorCode::Unknown(0)));
+        let mut value = value;
+
+        // verify version
+        const HONK_RPC: i32 = 1i32;
+        if let Ok(honk_rpc) = value.get_i32("honk_rpc") {
+            if honk_rpc != HONK_RPC {
+                return Err(Error::ErrorCode(ErrorCode::MessageVersionIncompatible));
+            }
+        } else {
+            return Err(Error::ErrorCode(ErrorCode::MessageParseFailed));
+        }
+
+        if let Ok(sections) = value.get_array_mut("sections") {
+            let mut message = Message{honk_rpc: HONK_RPC, sections: Default::default()};
+            for section in sections.iter_mut() {
+                if let bson::Bson::Document(section) = std::mem::take(section) {
+                    message.sections.push(Section::try_from(section)?);
+                }
+                return Err(Error::ErrorCode(ErrorCode::SectionParseFailed));
+            }
+            return Ok(message);
+        } else {
+            return Err(Error::ErrorCode(ErrorCode::MessageParseFailed));
+        }
     }
 }
 
-impl Message {
+type RequestCookie = i64;
 
-}
-
-type RequestCookie = u64;
-
-#[repr(u8)]
-enum RequestState {
-    Pending = 0u8,
-    Complete = 1u8,
+enum Section {
+    Error(ErrorSection),
+    Request(RequestSection),
+    Response(ResponseSection),
 }
 
 struct ErrorSection {
@@ -153,8 +170,13 @@ struct RequestSection{
     cookie: Option<RequestCookie>,
     namespace: String,
     function: String,
-    version: u8,
+    version: i32,
     arguments: bson::document::Document,
+}
+
+enum RequestState {
+    Pending,
+    Complete,
 }
 
 struct ResponseSection{
@@ -163,10 +185,137 @@ struct ResponseSection{
     result: Option<bson::Bson>,
 }
 
-enum Section {
-    Error(ErrorSection),
-    Request(RequestSection),
-    Response(ResponseSection),
+impl TryFrom<bson::document::Document> for Section {
+    type Error = Error;
+
+    fn try_from(value: bson::document::Document) -> Result<Self, <Self as TryFrom<bson::document::Document>>::Error> {
+        const ERROR_SECTION_ID: i32 = 0i32;
+        const REQUEST_SECTION_ID: i32 = 1i32;
+        const RESPONSE_SECTION_ID: i32 = 2i32;
+
+        return match value.get_i32("id") {
+            Ok(ERROR_SECTION_ID) => Ok(Section::Error(ErrorSection::try_from(value)?)),
+            Ok(REQUEST_SECTION_ID) => Ok(Section::Request(RequestSection::try_from(value)?)),
+            Ok(RESPONSE_SECTION_ID) => Ok(Section::Response(ResponseSection::try_from(value)?)),
+            Ok(_) => Err(Error::ErrorCode(ErrorCode::SectionIdUnknown)),
+            Err(_) => Err(Error::ErrorCode(ErrorCode::SectionParseFailed)),
+        }
+    }
+}
+
+impl TryFrom<bson::document::Document> for ErrorSection {
+    type Error = Error;
+
+    fn try_from(value: bson::document::Document) -> Result<Self, Self::Error> {
+        let mut value = value;
+
+        let cookie = match value.get_i64("cookie") {
+            Ok(cookie) => Some(cookie),
+            Err(ValueAccessError::NotPresent) => None,
+            Err(_) => return Err(Error::ErrorCode(ErrorCode::SectionParseFailed)),
+        };
+
+        let code = match value.get_i32("code") {
+            Ok(code) => ErrorCode::from(code),
+            Err(_) => return Err(Error::ErrorCode(ErrorCode::SectionParseFailed)),
+        };
+
+        let message = match value.get_str("message") {
+            Ok(message) => Some(message.to_string()),
+            Err(ValueAccessError::NotPresent) => None,
+            Err(_) => return Err(Error::ErrorCode(ErrorCode::SectionParseFailed)),
+        };
+
+        let data = match value.get_mut("data") {
+            Some(data) => Some(std::mem::take(data)),
+            None => None,
+        };
+
+        return Ok(ErrorSection{
+            cookie: cookie,
+            code: code,
+            message: message,
+            data: data});
+    }
+}
+
+impl TryFrom<bson::document::Document> for RequestSection {
+    type Error = Error;
+
+    fn try_from(value: bson::document::Document) -> Result<Self, Self::Error> {
+        let mut value = value;
+
+        let cookie = match value.get_i64("cookie") {
+            Ok(cookie) => Some(cookie),
+            Err(ValueAccessError::NotPresent) => None,
+            Err(_) => return Err(Error::ErrorCode(ErrorCode::SectionParseFailed)),
+        };
+
+        let namespace = match value.get_str("namespace") {
+            Ok(namespace) => namespace.to_string(),
+            Err(ValueAccessError::NotPresent) => String::default(),
+            Err(_) => return Err(Error::ErrorCode(ErrorCode::SectionParseFailed)),
+        };
+
+        let function = match value.get_str("function") {
+            Ok(function) => if function.is_empty() {
+                return Err(Error::ErrorCode(ErrorCode::RequestFunctionInvalid));
+            } else {
+                function.to_string()
+            },
+            Err(_) => return Err(Error::ErrorCode(ErrorCode::SectionParseFailed)),
+        };
+
+        let version = match value.get_i32("version") {
+            Ok(version) => version,
+            Err(ValueAccessError::NotPresent) => 0i32,
+            Err(_) => return Err(Error::ErrorCode(ErrorCode::SectionParseFailed)),
+        };
+
+        let arguments = match value.get_document_mut("arguments") {
+            Ok(arguments) => std::mem::take(arguments),
+            Err(ValueAccessError::NotPresent) => bson::document::Document::new(),
+            Err(_) => return Err(Error::ErrorCode(ErrorCode::SectionParseFailed)),
+        };
+
+        return Ok(RequestSection{
+            cookie: cookie,
+            namespace: namespace,
+            function: function,
+            version: version,
+            arguments: arguments,
+        });
+    }
+}
+
+impl TryFrom<bson::document::Document> for ResponseSection {
+    type Error = Error;
+
+    fn try_from(value: bson::document::Document) -> Result<Self, Self::Error> {
+        let mut value = value;
+        let cookie =  match value.get_i64("cookie") {
+            Ok(cookie) => cookie,
+            Err(_) => return Err(Error::ErrorCode(ErrorCode::SectionParseFailed)),
+        };
+
+        let state = match value.get_i32("state") {
+            Ok(0i32) => RequestState::Pending,
+            Ok(1i32) => RequestState::Complete,
+            Ok(_) => return Err(Error::ErrorCode(ErrorCode::ResponseStateInvalid)),
+            Err(_) => return Err(Error::ErrorCode(ErrorCode::SectionParseFailed)),
+        };
+
+        let result = match value.get_mut("result") {
+            Some(result) => Some(std::mem::take(result)),
+            None => None,
+        };
+
+        return Ok(ResponseSection{
+            cookie: cookie,
+            state: state,
+            result: result,
+        });
+    }
 }
 
 // RpcFunction takes a single args object, returns
@@ -184,7 +333,6 @@ struct Client {
     // data we've read but not yet a full Message object
     pending_data: Vec<u8>,
 }
-
 
 impl Client {
 
@@ -225,8 +373,8 @@ impl Client {
         } else {
             // read number of bytes remaining to read the i32 in a bson header
             let mut buffer = [0u8; std::mem::size_of::<i32>()];
+            ensure!(self.pending_data.len() < std::mem::size_of::<i32>());
             let bytes_needed = std::mem::size_of::<i32>() - self.pending_data.len();
-            ensure!(bytes_needed >= 0 && bytes_needed <= std::mem::size_of::<i32>());
             let mut buffer = &mut buffer[0..bytes_needed];
             match self.reader.read(&mut buffer) {
                 Err(err) => if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut {
