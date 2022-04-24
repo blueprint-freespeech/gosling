@@ -115,6 +115,8 @@ impl std::fmt::Display for Error {
     }
 }
 
+const HONK_RPC_VERSION: i32 = 1i32;
+
 struct Message {
     honk_rpc: i32,
     sections: Vec<Section>,
@@ -127,9 +129,8 @@ impl TryFrom<bson::document::Document> for Message {
         let mut value = value;
 
         // verify version
-        const HONK_RPC: i32 = 1i32;
         if let Ok(honk_rpc) = value.get_i32("honk_rpc") {
-            if honk_rpc != HONK_RPC {
+            if honk_rpc != HONK_RPC_VERSION {
                 return Err(Error::ErrorCode(ErrorCode::MessageVersionIncompatible));
             }
         } else {
@@ -137,7 +138,7 @@ impl TryFrom<bson::document::Document> for Message {
         }
 
         if let Ok(sections) = value.get_array_mut("sections") {
-            let mut message = Message{honk_rpc: HONK_RPC, sections: Default::default()};
+            let mut message = Message{honk_rpc: HONK_RPC_VERSION, sections: Default::default()};
             for section in sections.iter_mut() {
                 if let bson::Bson::Document(section) = std::mem::take(section) {
                     message.sections.push(Section::try_from(section)?);
@@ -148,6 +149,22 @@ impl TryFrom<bson::document::Document> for Message {
         } else {
             return Err(Error::ErrorCode(ErrorCode::MessageParseFailed));
         }
+    }
+}
+
+impl From<Message> for bson::document::Document {
+    fn from(value: Message) -> bson::document::Document {
+        let mut value = value;
+        let mut message = bson::document::Document::new();
+        message.insert("honk_rpc", HONK_RPC_VERSION as i32);
+
+        let mut sections = bson::Array::new();
+        for section in value.sections.drain(0..) {
+            sections.push(bson::Bson::Document(bson::document::Document::from(section)));
+        }
+        message.insert("sections", sections);
+
+        return message;
     }
 }
 
