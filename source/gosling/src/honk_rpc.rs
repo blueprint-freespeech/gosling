@@ -153,6 +153,10 @@ impl TryFrom<bson::document::Document> for Message {
 
 type RequestCookie = i64;
 
+const ERROR_SECTION_ID: i32 = 0i32;
+const REQUEST_SECTION_ID: i32 = 1i32;
+const RESPONSE_SECTION_ID: i32 = 2i32;
+
 enum Section {
     Error(ErrorSection),
     Request(RequestSection),
@@ -174,9 +178,10 @@ struct RequestSection{
     arguments: bson::document::Document,
 }
 
+#[repr(i32)]
 enum RequestState {
-    Pending,
-    Complete,
+    Pending = 0i32,
+    Complete = 1i32,
 }
 
 struct ResponseSection{
@@ -189,16 +194,22 @@ impl TryFrom<bson::document::Document> for Section {
     type Error = Error;
 
     fn try_from(value: bson::document::Document) -> Result<Self, <Self as TryFrom<bson::document::Document>>::Error> {
-        const ERROR_SECTION_ID: i32 = 0i32;
-        const REQUEST_SECTION_ID: i32 = 1i32;
-        const RESPONSE_SECTION_ID: i32 = 2i32;
-
         return match value.get_i32("id") {
             Ok(ERROR_SECTION_ID) => Ok(Section::Error(ErrorSection::try_from(value)?)),
             Ok(REQUEST_SECTION_ID) => Ok(Section::Request(RequestSection::try_from(value)?)),
             Ok(RESPONSE_SECTION_ID) => Ok(Section::Response(ResponseSection::try_from(value)?)),
             Ok(_) => Err(Error::ErrorCode(ErrorCode::SectionIdUnknown)),
             Err(_) => Err(Error::ErrorCode(ErrorCode::SectionParseFailed)),
+        }
+    }
+}
+
+impl From<Section> for bson::document::Document {
+    fn from(value: Section) -> bson::document::Document {
+        match value {
+            Section::Error(section) => bson::document::Document::from(section),
+            Section::Request(section) => bson::document::Document::from(section),
+            Section::Response(section) => bson::document::Document::from(section),
         }
     }
 }
@@ -236,6 +247,29 @@ impl TryFrom<bson::document::Document> for ErrorSection {
             code: code,
             message: message,
             data: data});
+    }
+}
+
+impl From<ErrorSection> for bson::document::Document {
+    fn from(value: ErrorSection) -> bson::document::Document {
+        let mut error_section = bson::document::Document::new();
+        error_section.insert("id", ERROR_SECTION_ID as i32);
+
+        if let Some(cookie) = value.cookie {
+            error_section.insert("cookie", cookie as i64);
+        }
+
+        error_section.insert("code", Into::<i32>::into(value.code));
+
+        if let Some(message) = value.message {
+            error_section.insert("message", message);
+        }
+
+        if let Some(data) = value.data {
+            error_section.insert("data", data);
+        }
+
+        return error_section;
     }
 }
 
@@ -288,6 +322,31 @@ impl TryFrom<bson::document::Document> for RequestSection {
     }
 }
 
+impl From<RequestSection> for bson::document::Document {
+    fn from(value: RequestSection) -> bson::document::Document {
+        let mut request_section = bson::document::Document::new();
+        request_section.insert("id", REQUEST_SECTION_ID as i32);
+
+        if let Some(cookie) = value.cookie {
+            request_section.insert("cookie", cookie as i64);
+        }
+
+        if !value.namespace.is_empty() {
+            request_section.insert("namespace", value.namespace);
+        }
+
+        request_section.insert("function", value.function);
+
+        if value.version != 0i32 {
+            request_section.insert("version", value.version);
+        }
+
+        request_section.insert("arguments", value.arguments);
+
+        return request_section;
+    }
+}
+
 impl TryFrom<bson::document::Document> for ResponseSection {
     type Error = Error;
 
@@ -315,6 +374,22 @@ impl TryFrom<bson::document::Document> for ResponseSection {
             state: state,
             result: result,
         });
+    }
+}
+
+impl From<ResponseSection> for bson::document::Document {
+    fn from(value: ResponseSection) -> bson::document::Document {
+        let mut response_section = bson::document::Document::new();
+        response_section.insert("id", RESPONSE_SECTION_ID as i32);
+
+        response_section.insert("cookie", value.cookie as i64);
+        response_section.insert("state", value.state as i32);
+
+        if let Some(result) = value.result {
+            response_section.insert("result", result);
+        }
+
+        return response_section;
     }
 }
 
