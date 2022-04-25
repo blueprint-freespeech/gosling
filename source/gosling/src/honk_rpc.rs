@@ -12,6 +12,11 @@ use anyhow::{bail, ensure, Result};
 use num_enum::TryFromPrimitive;
 use bson::document::{ValueAccessError};
 
+// internal crates
+#[cfg(test)]
+use test_utils::MemoryStream;
+
+
 #[derive(Debug, Eq, PartialEq)]
 enum ErrorCode {
     // Protoocl Errors
@@ -428,6 +433,16 @@ struct Client {
 
 impl Client {
 
+    pub fn new<R, W>(reader: R, writer: W) -> Client where R : std::io::Read + 'static, W : std::io::Write + 'static {
+        return Client{
+            reader: Box::new(reader),
+            writer: Box::new(writer),
+            function_registry: Default::default(),
+            remaining_byte_count: None,
+            pending_data: Default::default(),
+        };
+    }
+
     pub fn wait_for_message(&mut self) -> Result<Option<Message>> {
         // read data of bson document
         if let Some(remaining) = self.remaining_byte_count {
@@ -447,8 +462,11 @@ impl Client {
                         let mut cursor = Cursor::new(std::mem::take(&mut self.pending_data));
                         // data read, build bson doc
                         if let Ok(bson) = bson::document::Document::from_reader(&mut cursor) {
+                            // take back our allocated vec and clear it
                             self.pending_data = cursor.into_inner();
                             self.pending_data.clear();
+
+                            println!("received message:\n{}", bson);
 
                             return Ok(Some(Message::try_from(bson)?));
                         } else {
@@ -463,6 +481,7 @@ impl Client {
             }
         // read size of the bson document
         } else {
+
             // read number of bytes remaining to read the i32 in a bson header
             let mut buffer = [0u8; std::mem::size_of::<i32>()];
             ensure!(self.pending_data.len() < std::mem::size_of::<i32>());
@@ -481,11 +500,13 @@ impl Client {
                     if self.pending_data.len() == std::mem::size_of::<i32>() {
                         // bson document size is a little-endian byte ordered i32
                         let buffer = &self.pending_data.as_slice();
-                        let size: i32 = ((buffer[0] as i32) << 0) + ((buffer[1] as i32) << 8) + ((buffer[2] as i32) << 16) + ((buffer[3] as i32) << 24);
+                        let mut size: i32 = ((buffer[0] as i32) << 0) + ((buffer[1] as i32) << 8) + ((buffer[2] as i32) << 16) + ((buffer[3] as i32) << 24);
 
-                        ensure!(size > 0);
+                        ensure!(size > std::mem::size_of::<i32>() as i32);
+                        size = size - std::mem::size_of::<i32>() as i32;
                         self.remaining_byte_count = Some(size as usize);
                         // next call to wait_for_message() will begin reading the actual message
+                        return self.wait_for_message();
                     }
                     return Ok(None);
                 },
@@ -494,7 +515,11 @@ impl Client {
     }
 
     fn send_message(&mut self, message: Message) -> Result<()> {
-        bail!("not implemented");
+        let bson = bson::document::Document::from(message);
+
+        bson.to_writer(&mut self.writer)?;
+
+        return Ok(());
     }
 
     fn send_error(&mut self, error: ErrorSection) -> Result<()> {
@@ -578,4 +603,68 @@ impl Client {
     pub fn call_keep_alive() -> Result<RequestCookie> {
         bail!("not implemented");
     }
+}
+
+#[test]
+fn test_honk_client() -> Result<()> {
+
+    let stream1 = MemoryStream::new();
+    let stream2 = MemoryStream::new();
+
+    let mut alice = Client::new(stream1.clone(), stream2.clone());
+    let mut pat = Client::new(stream2.clone(), stream1.clone());
+
+    let empty_message = Message{
+        honk_rpc: HONK_RPC_VERSION,
+        sections: Default::default(),
+    };
+
+    // no message sent yet
+    ensure!(pat.wait_for_message().unwrap().is_none());
+
+    // send an empty message
+    alice.send_message(empty_message);
+
+    // ensure we got it
+    match pat.wait_for_message() {
+        Ok(Some(msg)) => {
+            ensure!(msg.sections.len() == 0);
+        },
+        Ok(None) => bail!("expected empty message"),
+        Err(err) => bail!(err),
+    }
+
+    const CUSTOM_ERROR: &str = "Custom Error!";
+
+    let error_mssage = Message{
+        honk_rpc: HONK_RPC_VERSION,
+        sections: vec![
+            Section::Error(ErrorSection{
+                cookie: Some(42069),
+                code: ErrorCode::Runtime(1),
+                message: Some(CUSTOM_ERROR.to_string()),
+                data: None,
+            }),
+        ],
+    };
+
+    pat.send_message(error_mssage);
+
+    match alice.wait_for_message() {
+        Ok(Some(mut msg)) => {
+            ensure!(msg.sections.len() == 1);
+            match msg.sections.pop() {
+                Some(Section::Error(section)) => {
+                    ensure!(section.cookie.is_some() && section.cookie.unwrap() == 42069);
+                    ensure!(section.code == ErrorCode::Runtime(1));
+                    ensure!(section.message.is_some() && section.message.unwrap() == CUSTOM_ERROR);
+                },
+                Some(_) => bail!("Was expecting an Error section"),
+                None => bail!("We should have a message"),
+            }
+        },
+        _ => (),
+    }
+
+    return Ok(());
 }
