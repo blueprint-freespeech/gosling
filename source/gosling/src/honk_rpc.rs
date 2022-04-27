@@ -1,6 +1,6 @@
 // standard
 use std::cell::RefCell;
-use std::collections::{BTreeMap,HashMap};
+use std::collections::{BTreeMap,HashMap,VecDeque};
 use std::convert::{From, TryFrom, Into};
 use std::fmt::Debug;
 use std::io::{Cursor, ErrorKind, Read, Write};
@@ -11,6 +11,7 @@ use std::rc::{Rc};
 use anyhow::{bail, ensure, Result};
 use num_enum::TryFromPrimitive;
 use bson::document::{ValueAccessError};
+use bson::doc;
 
 // internal crates
 #[cfg(test)]
@@ -90,7 +91,7 @@ impl std::fmt::Display for ErrorCode {
             ErrorCode::MessageParseFailed => write!(f, "ProtocolError: received message has invalid schema"),
             ErrorCode::MessageVersionIncompatible => write!(f, "ProtocolError: received message has incompatible version"),
             ErrorCode::SectionIdUnknown => write!(f, "ProtocolError: received message contains section of unknown type"),
-            ErrorCode::SectionParseFailed => write!(f, "ProtocolError: recevied message contains section with invalid schema"),
+            ErrorCode::SectionParseFailed => write!(f, "ProtocolError: received message contains section with invalid schema"),
             ErrorCode::RequestCookieInvalid => write!(f, "ProtocolError: request cookie already in use"),
             ErrorCode::RequestNamespaceInvalid => write!(f, "ProtocolError: request function does not exist in requested namespace"),
             ErrorCode::RequestFunctionInvalid => write!(f, "ProtocolError: request function does not exist"),
@@ -114,8 +115,8 @@ impl std::error::Error for Error {}
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Error::IoError(err) => std::fmt::Display::fmt(&self, f),
-            Error::ErrorCode(err) => std::fmt::Display::fmt(&self, f),
+            Error::IoError(err) => std::fmt::Display::fmt(err, f),
+            Error::ErrorCode(err) => std::fmt::Display::fmt(err, f),
         }
     }
 }
@@ -147,8 +148,9 @@ impl TryFrom<bson::document::Document> for Message {
             for section in sections.iter_mut() {
                 if let bson::Bson::Document(section) = std::mem::take(section) {
                     message.sections.push(Section::try_from(section)?);
+                } else {
+                    return Err(Error::ErrorCode(ErrorCode::SectionParseFailed));
                 }
-                return Err(Error::ErrorCode(ErrorCode::SectionParseFailed));
             }
             return Ok(message);
         } else {
@@ -429,6 +431,9 @@ struct Client {
     remaining_byte_count: Option<usize>,
     // data we've read but not yet a full Message object
     pending_data: Vec<u8>,
+
+    // sections
+    pending_sections: VecDeque<Section>,
 }
 
 impl Client {
@@ -440,10 +445,11 @@ impl Client {
             function_registry: Default::default(),
             remaining_byte_count: None,
             pending_data: Default::default(),
+            pending_sections: Default::default(),
         };
     }
 
-    pub fn wait_for_message(&mut self) -> Result<Option<Message>> {
+    fn wait_for_message(&mut self) -> Result<Option<Message>> {
         // read data of bson document
         if let Some(remaining) = self.remaining_byte_count {
             let mut buffer = vec![0u8; remaining];
@@ -512,6 +518,18 @@ impl Client {
                 },
             }
         }
+    }
+
+    fn wait_section(&mut self) -> Result<Option<Section>> {
+        if self.pending_sections.is_empty() {
+            if let Some(mut message) = self.wait_for_message()? {
+                for section in message.sections.drain(0..) {
+                    self.pending_sections.push_back(section);
+                }
+            }
+        }
+
+        return Ok(self.pending_sections.pop_front());
     }
 
     fn send_message(&mut self, message: Message) -> Result<()> {
@@ -664,6 +682,40 @@ fn test_honk_client() -> Result<()> {
             }
         },
         _ => (),
+    }
+
+    let multi_message = Message{
+        honk_rpc: HONK_RPC_VERSION,
+        sections: vec![
+            Section::Error(ErrorSection{
+                cookie: Some(42069),
+                code: ErrorCode::Runtime(2),
+                message: Some(CUSTOM_ERROR.to_string()),
+                data: None,
+            }),
+            Section::Request(RequestSection{
+                cookie: None,
+                namespace: "std".to_string(),
+                function: "print".to_string(),
+                version: 0,
+                arguments: doc!{"message": "hello!"},
+            }),
+            Section::Response(ResponseSection{
+                cookie: 123456,
+                state: RequestState::Pending,
+                result: None,
+            }),
+        ]
+    };
+
+    alice.send_message(multi_message);
+
+    while let Some(section) = pat.wait_section()? {
+        match section {
+            Section::Error(section) => ensure!(section.code == ErrorCode::Runtime(2)),
+            Section::Request(section) => ensure!(section.namespace == "std" && section.function == "print"),
+            Section::Response(section) => ensure!(section.cookie == 123456),
+        }
     }
 
     return Ok(());
