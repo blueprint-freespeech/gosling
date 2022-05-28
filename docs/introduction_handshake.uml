@@ -18,14 +18,9 @@ Client->Server: begin_handshake()
         note over Server: Close Connection
     end
 
-Client<-Server: return
+Client<-Server: return server cookie
 
 Client->Server: send_client_proof()
-
-    alt Handshake Not Begun
-        Client<-Server: error
-        note over Server: Close Connection
-    end
 
     note over Server: Evaluate Client Proof
 
@@ -36,37 +31,39 @@ Client->Server: send_client_proof()
 
 Server->Client: return
 
-Client->Server: request_endpoint()
+loop
+    Client->Server: request_endpoint_challenge()
 
-    alt Client Not Authenticated
-        Client<-Server: error
-        note over Server: Close Connection
-    end
+        note over Server: Evaluate Endpoint String
+        alt Invalid Endpoint
+            Client<-Server: error
+            note over Server: Close Connection
+        end
 
-    note over Server: Evaluate Endpoint
-    alt Invalid Endpoint
-        Client<-Server: return
-    end
+        note over Server: Evaluate Allow-List
+        alt Existing Contact
+            Client<-Server: return
+        end
 
-    note over Server: Evaluate Friend-List
-    alt Existing Friend
-        Client<-Server: return
-    end
+        Client<-Server: return challenge
 
-    note over Client, Server: Some time may pass as the Server considers request
+    Client->Server: send_endpoint_challenge_response()
 
-    alt Server Rejects Request
-        Client<-Server: error
-    end
+        note over Client, Server: Some time may pass as the Server processes request
 
-    note over Server: Adds the Client to Friend-List
+        alt Server Rejects Request
+            Client<-Server: error
+            note over Server: Close Connection
+        end
 
-    Client<-Server: return
+        note over Server: Adds the Client to Allow-List
+
+        Client<-Server: return service id
 
     note over Server
         Maintains connection to allow client
         to make more endpoint requests
     endnote
-
-    note over Client: Close Connection
+end
+        note over Client: Close Connection
 @enduml

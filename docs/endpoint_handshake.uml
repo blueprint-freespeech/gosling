@@ -18,7 +18,7 @@ Client->Server: begin_handshake()
         note over Server: Close Connection
     end
 
-Client<-Server: return
+Client<-Server: return server cookie
 
 Client->Server: send_client_proof()
 
@@ -47,6 +47,9 @@ Client->Server: open_endpoint()
 
     Client<-Server: return
 
-note over Client,Server: RPC session handed over to application
+note over Client, Server
+    RPC session ends and TCP stream
+    control given to application
+endnote
 
 @enduml

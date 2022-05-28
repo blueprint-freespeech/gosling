@@ -1,36 +1,88 @@
 # Gosling Protocol v0.0.1
 
-The Gosling protocol allows for the creation of onion-service based peer-to-peer (onion-to-onion) applications. Initial inspiration came from the Ricochet instant messenger's peer-to-peer onion service architecture. Improvements have been made and some privacy issues have been addressed and fixed.
+The Gosling protocol allows for the creation of Tor onion-service based peer-to-peer (onion-to-onion) applications. Initial inspiration came from the Ricochet instant messenger's peer-to-peer onion service architecture. Improvements have been made and some privacy issues have been addressed and fixed.
+
+It is assumed that the reader is familiar with onion routing[^1], Tor[^2], and onion services (aka hidden services)[^3]. For the purposes of this document, Ricochet and Ricochet Refresh are used interchangeably when referring to properties or guarantees common to both applications.
+
+## Overview
 
 The purpose of Gosling is to standardize a privacy-preserving architecture for peer-to-peer applications on the Tor network between **nodes**.
 
 - **Node** - A peer in a service-specific Gosling peer-to-peer network.
 
-Each node has three components: a **client**, an **introduction server**, and a set of at least one **endpoint server**. A node can simultaneously have all three components running at the same time, or each component could be split across multiple real computers on the tor network. A node is primarily identified by the onion-service id of its introduction server.
+Each node has three components: a **client**, an **introduction server**, and at least one **endpoint server**. A node can simultaneously have all three components running at the same time on a single computer, or each component could be split across multiple real computers on the tor network. A node is primarily identified by the onion-service id of its introduction server.
 
-- **Client**  - A node's component making an outgoing connection to another node
-- **Introduction Server** - A node's onion-service which listens for requests coming from clients who have never connected before that wish to become 'friends'. The introduction server and a client perform a handshake and exchange information required to reach the introduction server's endpoint server(s)[^1]. An introduction server may serve as the introduction server for mutltiple endpoint applications.
-- **Endpoint Server** - A node's onion-service(s) which listen for connections coming from authenticated clients. The route to this server is protected with tor client authentication[^2]. A node may have multiple simultaneous endpoint servers (each with a different onion-service id), as tor only supports a finite number of authenticated clients per onion service.
+  - **Client**  - A **node's** component making an outgoing connection to another *node*
+  - **Introduction Server** - A **node's** onion-service which listens for requests coming from **clients** who have never connected before that wish to become 'friends'. The **introduction server** and a **client** perform a handshake and exchange information required to reach the **node's** **endpoint server(s)**. An **introduction server** may serve multiple endpoint applications.
+  - **Endpoint Server** - A **node's** onion-service(s) which listen for connections coming from **clients**. The route to this server is protected with onion service client authentication[^4], so only trusted Gosling **clients** are able to connect. A **node** may have multiple simultaneous **endpoint servers** (each with a different onion-service id), as tor only supports a finite number of authenticated clients per onion service.
 
-Nodes communicate with each other using a BSON-based RPC protocol[^3]. After a client connects and successfully authenticates with an endpoint server, we exit the Gosling handshake state machine and control over the RPC session is handed over to the endpoint's application. The endpoint application may then optionally end the RPC session and communicate over the underlying TCP socket directly.
+  For some applications, it may make sense to provide each authenticated client their own onion service while for others, it may make more sense to batch clients together on a single onion service.
 
-# Gosling Handshakes
+For the rest of this document we'll use instant messenger term **contact**.
 
-All types used in these RPC calls are BSON[^4] types.
+- **Contact** - a Gosling **node** that has successfully completed the authentication handshake with another **node's** **introduction server** and is allowed to connect to said **node's** **endpoint server**.
 
-## Introduction
+### Background
 
-### Sequence Diagram
+The above architecture is informed by our experience with and the limitations of Ricochet's architecture.
+
+Ricochet only uses a single onion service. The service id of this onion service is used as your Ricochet ID for connecting to and chatting with other Ricochet users.
+
+This simple architecture has some drawbacks:
+
+#### Poor visibility control to contacts
+
+Though not supported by the Ricochet front-end, in theory if one wanted to appear 'offline' while still being able to chat to your friends, they could disable their onion service and only make outgoing connections their friends. However, this must be done for *all* friends at once.
+
+**Gosling's Solution:** Gosling allows finer-grained visibility controls:
+
+- If a **node** does not wish to receive new contact requests, they can simply not run their **introduction server**. Your existing allowed contacts are still be able to connect to the user's **endpoint server(s)** which are not publicly advertised.
+
+- If a user wishes to appear offline to *all* **contacts**, they can disable their **endpoint server(s)**. A user may still selectively connect to their **contacts** by acting solely as a **client**.
+
+#### Cyber-stalking
+
+As a side-effect of Ricochet's usage of a single onion service and the poor visibility controls, anybody who knows
+your Ricochet ID can secretly track a your online status. This is because the onion service is necessarily public to receive new friend requests.
+
+All a malicious actor needs to do is attempt to open a connection to the target's Ricochet onion service.
+Periodically pinging a Ricochet user's advertised service id will give a nearly perfect profile for when the are and are not using Ricochet.
+
+This has some serious privacy implications. If a user uses Ricochet as they would any other IM application (always on in the background), this will give a perfect profile of the target's computer+internet usage.
+
+**Gosling's Solution:** Because of the above described visibility controls, users can control when they are visible to to unauthorized users by selectively running their **introduction server**.
+
+One could also imagine applications which forego using the **introduction server** entirely, and instead allow users to exchange client authorization keys and endpoint servers offline (via QR codes for example).
+
+**Note:** A Gosling node may still be cyber-stalked by a *previously* authenticated user if the node is configured to group together multiple **clients** in a single **endpoint server** (rather than handing out a unique **endpoint server** to each client).
+
+## Gosling Handshakes
+
+**Nodes** communicate with each other using a BSON-based RPC protocol[^5]. As described above, each **node** has two server components: an **introduction server** and at least one **endpoint server**.
+
+A **client** initially connects to an **introduction server** to complete the introduction handshake and exchange credentials to access a **node's** **endpoint server**.
+
+After a **client** connects to and successfully authenticates with an **endpoint server**, we exit the Gosling handshake state machine and the underlying TCP stream is handed off to the endpoint application.
+
+All types used in these RPC calls are BSON[^6] types.
+
+Calling these functions out of order must result in an error being returned and the connection being closed.
+
+### Introduction Server
+
+
+
+#### Sequence Diagram
 
 ![introduction handshake](introduction_handshake.svg)
 
-The client may optionally add the introduction server's onion service id to its own allow list to short-cut the friend request when client/server roles are reversed.
+The **client** may optionally add the **introduction server's** onion service id to its own allow list to short-cut the contact request when the client and server roles are reversed.
 
-### Introduction Server RPC API
+#### Introduction Server RPC API
 
 ```c++
 namespace gosling_introduction {
-  // Starts an introduction handshake session
+  // Begins an introduction handshake session.
   //
   // params:
   // - string version: the requested version of the Gosling protocol to use
@@ -53,38 +105,54 @@ namespace gosling_introduction {
   send_client_proof(binary client_cookie,
                     binary client_proof) -> document;
 
-  // Request the v3 onion service id of a given endpoint service. If this
-  // function is called before the client is authorized, an error is raised.
+
+  // Request the challenge for the given endpoint service. If this function
+  // is called before the client proof has ben verified, an error is raised.
   //
   // parameters:
   // - string endpoint: the application endpoint we wish to access
-  // - document request_blob: an endpoint-specific object for the introduction
-  //   server to evaluate
+  //
+  // return: a document object containing any data the client needs to
+  // calculate the endpoint challenge response. The contents of this document
+  // are deliberately unspecified and are application-specific. However, if
+  // this document is empty it is assumed the requestor has already been
+  // granted access previously and may send an empty challenge response.
+  request_endpoint_challenge(string endpoint) -> document;
+
+  // Send the challenge response for the previously requested endpoint. If
+  // this function is called before the endpoint challenge has been requested,
+  // an error is raised.
+  //
+  // parameters:
+  // - document challenge_response: the calculated challenge response to the
+  //   previous endpoint challenge request. The contents of this document are
+  //   deliberately unspecified and are application-specific. If the endpoint
+  //   challenge object was empty, this response object may also be empty.
   // - binary client_authentication_key: a 32-byte x25519 public key used to encrypt
   //   the onion service descriptor
   //
-  // return: a document object with the following members on success, otherwise
-  // an error is raised
-  // - string endpoint_onion: the v3 onion service id of the endpoint server;
-  //   the endpoint's onion service descriptor will be encrypted with the
-  //   client's provided client authentication key
-  request_endpoint(string endpoint,
-                   document request_blob,
-                   binary client_authenticatation_key) -> document;
+  // return: on success, a string containing the v3 onion service id of the
+  // endpoint server (otherwise an error is raised); the endpoint's onion
+  // service descriptor will be encrypted with the client's provided client
+  // authentication key
+  send_endpoint_challenge_response(document challenge_response,
+                                   binary client_authentication_key) -> string;
 }
 ```
 
-## Endpoint
+### Endpoint Server
 
-### Sequence Diagram
+A **client** may connect an **endpoint server** multiple times by specifying different channel names. For example, a chat application may have concurrent 'messaging' and 'file transfer' channels.
+
+#### Sequence Diagram
 
 ![endpoint handshake](endpoint_handshake.svg)
 
-### Endpoint Server RPC API
+#### Endpoint Server RPC API
 
 ```c++
 namespace gosling_endpoint {
-  // Starts an endpoint handshake session
+  // Begins an endpoint handshake session.
   //
   // params:
   // - string version: the requested version of the Gosling protocol to use
@@ -96,7 +164,8 @@ namespace gosling_endpoint {
   begin_handshake(string version,
                   string client_identity) -> document
 
-  // Submits the client proof to the server for verification.
+  // Submits the client proof to the server for verification. If this function
+  // is called before the handshake session has begun, an error raisd.
   //
   // parameters:
   // - binary client_cookie: 32 byte cookie randomly generated by the client
@@ -108,12 +177,21 @@ namespace gosling_endpoint {
 
   // Opens an endpoint session on this connection with the given channel
   // name. If the client already has an open endpoint session with the
-  // given channel name, the existing session is terminated.
+  // given channel name, the existing session is terminated. If this function
+  // is called before the client proof has been sent, then an error is raised.
+  //
+  // parameters:
+  // - string endpoint: the endpoint service we wish to connect to
+  // - string channel: the channel on that endpoint to connect to; if this
+  //   client is already connected to the requested channel on this endpoint
+  //   the old channel connection is  closed.
+  //
+  // return: an empty document on success, otherwise an error is raised
   open_endpoint(string endpoint, string channel) -> document;
 }
 ```
 
-## Proof Calculation and Verification
+### Proof Calculation and Verification
 
 The proof signed by client is calculated as:
 
@@ -133,14 +211,17 @@ The **'+'** operator here indicates concatenation. The parameters are defined as
 - **client_cookie** : cryptographically-randomly generated 32 byte client cookie
 - **server_cookie** : cryptographically-randomly generated 32 byte server cookie
 
-A client authenticates itself to a gosling server (both introduction or endpoint) by signing the above proof with the associated ed25519 private key of its own introduction server.
+A **client** authenticates itself to a gosling server (both **introduction** or **endpoint**) by signing the above proof with the associated ed25519 private key of its own **introduction server**.
 
 ---
+[^1]: see [Onion routing](https://en.wikipedia.org/wiki/Onion_routing)
 
-[^1]: in practice either node may or may not have endpoint servers running
+[^2]: see [About Tor](https://support.torproject.org/about/)
 
-[^2]: onion service client authentication: https://community.torproject.org/onion-services/advanced/client-auth/
+[^3]: see [Onion Sevices](https://support.torproject.org/onionservices/)
 
-[^3]: see [rpc.md](./rpc.md)
+[^4]: onion service client authentication: https://community.torproject.org/onion-services/advanced/client-auth/
 
-[^4]: see [BSON spec](https://bsonspec.org/spec.html)
+[^5]: see [rpc.md](./rpc.md)
+
+[^6]: see [BSON spec](https://bsonspec.org/spec.html)
