@@ -1,24 +1,16 @@
 use crypto::digest::Digest;
 use crypto::sha1::Sha1;
-use crypto::sha2::Sha512;
 use crypto::sha3::Sha3;
 use data_encoding::{HEXUPPER, BASE32, BASE32_NOPAD, BASE64};
 use rand::RngCore;
 use rand::rngs::OsRng;
 use signature:: Verifier;
 use std::convert::TryInto;
-use std::os::raw::*;
-use std::ptr;
 use std::str;
-use std::sync::Mutex;
 use tor_llcrypto::*;
 use tor_llcrypto::util::rand_compat::RngCompatExt;
-use zeroize::Zeroize;
 
 use anyhow::{bail, Result, ensure};
-
-use object_registry::*;
-use define_registry;
 
 /// The number of bytes in an ed25519 secret key
 pub const ED25519_PRIVATE_KEY_SIZE: usize = 64;
