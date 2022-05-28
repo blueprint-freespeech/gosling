@@ -1,15 +1,12 @@
 // standard
-use std::cell::RefCell;
-use std::collections::{BTreeMap,HashMap,VecDeque};
+use std::collections::{HashMap,VecDeque};
 use std::convert::{From, TryFrom, Into};
 use std::fmt::Debug;
-use std::io::{Cursor, ErrorKind, Read, Write};
+use std::io::{Cursor, ErrorKind};
 use std::option::Option;
-use std::rc::{Rc};
 
 // extern crates
 use anyhow::{bail, ensure, Result};
-use num_enum::TryFromPrimitive;
 use bson::document::{ValueAccessError};
 use bson::doc;
 
@@ -203,6 +200,7 @@ struct RequestSection{
 }
 
 #[repr(i32)]
+#[derive(PartialEq)]
 enum RequestState {
     Pending = 0i32,
     Complete = 1i32,
@@ -708,13 +706,30 @@ fn test_honk_client() -> Result<()> {
         ]
     };
 
+    // send a multi-section mesage
     alice.send_message(multi_message);
 
     while let Some(section) = pat.wait_section()? {
         match section {
-            Section::Error(section) => ensure!(section.code == ErrorCode::Runtime(2)),
-            Section::Request(section) => ensure!(section.namespace == "std" && section.function == "print"),
-            Section::Response(section) => ensure!(section.cookie == 123456),
+            Section::Error(section) => {
+                ensure!(
+                    section.cookie == Some(42069) &&
+                    section.code == ErrorCode::Runtime(2) &&
+                    section.message == Some(CUSTOM_ERROR.to_string()) &&
+                    section.data == None);
+            },
+            Section::Request(section) => {
+                ensure!(
+                    section.cookie == None &&
+                    section.namespace == "std" &&
+                    section.function == "print");
+            },
+            Section::Response(section) => {
+                ensure!(
+                    section.cookie == 123456 &&
+                    section.state == RequestState::Pending &&
+                    section.result == None);
+            },
         }
     }
 
