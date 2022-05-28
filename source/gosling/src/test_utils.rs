@@ -1,11 +1,8 @@
 // standard
 use std::cell::RefCell;
-use std::collections::{BTreeMap,HashMap};
-use std::convert::{From, TryFrom, Into};
-use std::fmt::Debug;
-use std::io::{Cursor, ErrorKind, Read, Write};
-use std::option::Option;
-use std::rc::{Rc};
+use std::convert::From;
+use std::io::{ErrorKind, Read, Write};
+use std::rc::Rc;
 
 // extern crates
 use anyhow::{bail, ensure, Result};
