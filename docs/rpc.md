@@ -143,7 +143,8 @@ document response_section {
     // the current state of function execution
     [[required]] request_state_t state;
     // the primitive or structured return from the request associated with
-    // 'cookie'
+    // 'cookie'; must be present if state is complete, must not be present
+    // if state is pending
     [[optional]] element result;
 }
 ```

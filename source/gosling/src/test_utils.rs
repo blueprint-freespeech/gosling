@@ -8,14 +8,14 @@ use std::rc::Rc;
 use anyhow::{bail, ensure, Result};
 
 // a test-only mock TcpStream
-#[cfg(test)]
+// #[cfg(test)]
 #[derive(Clone)]
 pub struct MemoryStream {
     stream: Rc<RefCell<Vec<u8>>>,
     read_head: usize,
 }
 
-#[cfg(test)]
+// #[cfg(test)]
 impl MemoryStream {
     pub fn new() -> Self {
         return Self{
@@ -25,7 +25,7 @@ impl MemoryStream {
     }
 }
 
-#[cfg(test)]
+// #[cfg(test)]
 impl Read for MemoryStream {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize, std::io::Error> {
         let read_buf = self.stream.borrow();
@@ -58,7 +58,7 @@ impl Read for MemoryStream {
     }
 }
 
-#[cfg(test)]
+// #[cfg(test)]
 impl Write for MemoryStream where {
     fn write(&mut self, buf: &[u8]) -> Result<usize, std::io::Error> {
         self.stream.borrow_mut().extend_from_slice(buf);
