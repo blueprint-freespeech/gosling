@@ -21,6 +21,7 @@ use std::time::{Duration, Instant};
 
 // extern crates
 use anyhow::{bail, ensure, Result};
+#[cfg(test)]
 use ntest::timeout;
 use rand::Rng;
 use rand::rngs::OsRng;

@@ -15,6 +15,7 @@ extern crate regex;
 extern crate socks;
 extern crate url;
 extern crate tor_llcrypto;
+#[cfg(test)]
 extern crate ntest;
 
 mod ffi;
