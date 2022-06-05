@@ -838,8 +838,8 @@ impl Client {
     // call a remote client's function
     pub fn call(
         &mut self,
-        namespace: Option<&str>,
-        name: &str,
+        namespace: &str,
+        function: &str,
         version: i32,
         args: bson::document::Document,
     ) -> Result<RequestCookie> {
@@ -852,11 +852,8 @@ impl Client {
             context.borrow_mut().outbound_sections.push(
                 Section::Request(RequestSection{
                     cookie: Some(cookie),
-                    namespace: match namespace {
-                        None => String::default(),
-                        Some(val) => val.to_string(),
-                    },
-                    function: name.to_string(),
+                    namespace: namespace.to_string(),
+                    function: function.to_string(),
                     version: version,
                     arguments: args,
                 }));
@@ -1095,7 +1092,7 @@ fn test_honk_client_apiset() -> Result<()> {
 
     // Pat calls remote test::echo_0 call
     //
-    let sent_cookie = pat.client().call(Some("test"), "echo", 0, doc!{"val" : "Hello Alice!"})?;
+    let sent_cookie = pat.client().call("test", "echo", 0, doc!{"val" : "Hello Alice!"})?;
     pat.update()?;
 
     // alice receives and handles request
@@ -1125,7 +1122,7 @@ fn test_honk_client_apiset() -> Result<()> {
     //
     // Pat calls remote test::echo_0 call (with wrong arg)
     //
-    let sent_cookie = pat.client().call(Some("test"), "echo", 0, doc!{"string" : "Hello Alice!"})?;
+    let sent_cookie = pat.client().call("test", "echo", 0, doc!{"string" : "Hello Alice!"})?;
     pat.update()?;
 
     // alice receives and handles request
@@ -1154,7 +1151,7 @@ fn test_honk_client_apiset() -> Result<()> {
     //
     // Pat calls v2 remote test::echo_1 call (which is not implemented)
     //
-    let sent_cookie = pat.client().call(Some("test"), "echo", 1, doc!{"val" : "Hello Again!"})?;
+    let sent_cookie = pat.client().call("test", "echo", 1, doc!{"val" : "Hello Again!"})?;
     pat.update()?;
 
     // alice receives and handles request
@@ -1182,7 +1179,7 @@ fn test_honk_client_apiset() -> Result<()> {
     //
     // Pat calls test::delay_echo_0 which goes through the async machinery
     //
-    let sent_cookie = pat.client().call(Some("test"), "delay_echo", 0, doc!{"val" : "Hello Delayed?"})?;
+    let sent_cookie = pat.client().call("test", "delay_echo", 0, doc!{"val" : "Hello Delayed?"})?;
     pat.update()?;
 
     // alice receives and handles request
@@ -1228,13 +1225,13 @@ fn test_honk_client_apiset() -> Result<()> {
     let data = vec![0u8; DEFAULT_MAX_MESSAGE_SIZE / 2];
     args.insert("data", bson::Bson::Binary(bson::Binary{subtype: bson::spec::BinarySubtype::Generic, bytes: data}));
 
-    let cookie1 = pat.client().call(Some("test"), "sha256", 0, args)?;
+    let cookie1 = pat.client().call("test", "sha256", 0, args)?;
 
     let mut args : bson::document::Document = Default::default();
     let data = vec![0xFFu8; DEFAULT_MAX_MESSAGE_SIZE / 2];
     args.insert("data", bson::Bson::Binary(bson::Binary{subtype: bson::spec::BinarySubtype::Generic, bytes: data}));
 
-    let cookie2 = pat.client().call(Some("test"), "sha256", 0, args)?;
+    let cookie2 = pat.client().call("test", "sha256", 0, args)?;
     pat.update()?;
 
     // alice handle requests
