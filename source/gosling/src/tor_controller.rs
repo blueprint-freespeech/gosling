@@ -30,7 +30,6 @@ use regex::Regex;
 use socks::Socks5Stream;
 use url::Host;
 
-
 // internal modules
 use tor_crypto::*;
 use work_manager::*;

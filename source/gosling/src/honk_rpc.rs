@@ -167,7 +167,7 @@ impl From<Message> for bson::document::Document {
     }
 }
 
-type RequestCookie = i64;
+pub type RequestCookie = i64;
 
 const ERROR_SECTION_ID: i32 = 0i32;
 const REQUEST_SECTION_ID: i32 = 1i32;

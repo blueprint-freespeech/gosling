@@ -24,5 +24,6 @@ mod object_registry;
 mod work_manager;
 mod tor_controller;
 mod honk_rpc;
+mod gosling;
 #[cfg(test)]
 mod test_utils;
