@@ -12,7 +12,7 @@ use anyhow::{bail, ensure, Result};
 
 struct Task {
     // closure
-    closure: Box<dyn Fn() -> Box<dyn Any + Send> + Send + 'static>,
+    closure: Box<dyn FnOnce() -> Box<dyn Any + Send> + Send + 'static>,
     // wait handle to notify
     wait_handle: Weak<Condvar>,
     // destination
@@ -68,7 +68,7 @@ impl Worker {
         return Ok(Worker{worker_id: worker_id, work_manager: Arc::downgrade(work_manager)});
     }
 
-    pub fn push<T: Send + 'static, F: Fn() -> Result<T> + Send + 'static>(&self, closure: F) -> Result<TaskResult> {
+    pub fn push<T: Send + 'static, F: FnOnce() -> Result<T> + Send + 'static>(&self, closure: F) -> Result<TaskResult> {
         if let Some(work_manager) = self.work_manager.upgrade() {
             return work_manager.push(self.worker_id, closure);
         }
@@ -167,7 +167,7 @@ impl WorkManager {
         return true;
     }
 
-    pub fn push<T: Send + 'static, F: Fn() -> Result<T> + Send + 'static>(&self, worker_id: usize, closure: F) -> Result<TaskResult> {
+    pub fn push<T: Send + 'static, F: FnOnce() -> Result<T> + Send + 'static>(&self, worker_id: usize, closure: F) -> Result<TaskResult> {
 
         // wrap the friendly closure into one which returns a Box'd result
         // that can store a dyn Any
@@ -184,7 +184,7 @@ impl WorkManager {
         return self.push_impl(worker_id, closure);
     }
 
-    fn push_impl<F: Fn() -> Box<dyn Any + Send> + Send + 'static>(&self, worker_id: usize, closure: F) -> Result<TaskResult> {
+    fn push_impl<F: FnOnce() -> Box<dyn Any + Send> + Send + 'static>(&self, worker_id: usize, closure: F) -> Result<TaskResult> {
 
         if worker_id >= self.worker_count {
             bail!("WorkManager::push(): worker_id must be less than '{}'; received '{}'", self.worker_count, worker_id);
@@ -253,9 +253,10 @@ impl WorkManager {
 
         // spin until WorkManager has no more tasks
         while !finished() {
+            let queue_len = consumer_queue.len();
             // run all our pending tasks
-            for task in &consumer_queue {
-                let closure_result = (*task.closure)();
+            for task in consumer_queue.drain(..) {
+                let closure_result = (task.closure)();
                 let task_wait_handle = task.wait_handle.upgrade();
                 let task_result = task.result.upgrade();
 
@@ -276,10 +277,7 @@ impl WorkManager {
             }
 
             // update pending_tasks counter
-            pending_tasks_weak.upgrade().unwrap().fetch_sub(consumer_queue.len(), Ordering::Relaxed);
-
-            // empty out completed queue
-            consumer_queue.clear();
+            pending_tasks_weak.upgrade().unwrap().fetch_sub(queue_len, Ordering::Relaxed);
 
             // finally swap out queues to get new tasks
             let producer_queue = producer_queue_weak.upgrade().unwrap();
