@@ -286,11 +286,11 @@ impl Ed25519Signature {
         });
     }
 
-    pub fn verify(&self, message: &[u8], public_key: &Ed25519PublicKey) -> Result<bool> {
+    pub fn verify(&self, message: &[u8], public_key: &Ed25519PublicKey) -> bool {
         if let Ok(()) = public_key.public_key.verify(&message, &self.signature) {
-            return Ok(true);
+            return true;
         }
-        return Ok(false);
+        return false;
     }
 
     pub fn get_data(&self) -> [u8; ED25519_SIGNATURE_SIZE] {
@@ -485,8 +485,8 @@ fn test_ed25519() -> Result<()> {
 
     let signature = private_key.sign_message(&message)?;
     assert!(signature == Ed25519Signature::from_raw(&signature_raw)?);
-    assert!(signature.verify(&message, &public_key)?);
-    assert!(!signature.verify(&null_message, &public_key)?);
+    assert!(signature.verify(&message, &public_key));
+    assert!(!signature.verify(&null_message, &public_key));
 
     // some invalid service ids
     assert!(!V3OnionServiceId::is_valid(""));
@@ -498,7 +498,7 @@ fn test_ed25519() -> Result<()> {
     let private_key = Ed25519PrivateKey::generate()?;
     let public_key = Ed25519PublicKey::from_private_key(&private_key)?;
     let signature = private_key.sign_message(&message)?;
-    assert!(signature.verify(&message, &public_key)?);
+    assert!(signature.verify(&message, &public_key));
 
     return Ok(());
 }
