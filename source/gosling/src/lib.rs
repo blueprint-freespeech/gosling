@@ -30,7 +30,6 @@
 #![allow(clippy::clone_on_copy)]
 #![allow(clippy::from_over_into)]
 #![allow(clippy::single_char_pattern)]
-#![allow(clippy::unused_io_amount)]
 #![allow(private_in_public)]
 #![allow(unused_must_use)]
 

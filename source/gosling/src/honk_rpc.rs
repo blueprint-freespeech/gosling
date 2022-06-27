@@ -654,7 +654,7 @@ impl Session {
             self.send_message_impl(&mut left)?;
             self.send_message_impl(&mut right)?;
         } else {
-            self.writer.write(&self.message_write_buffer)?;
+            self.writer.write_all(&self.message_write_buffer)?;
         }
         return Ok(());
     }

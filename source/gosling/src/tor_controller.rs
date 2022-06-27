@@ -111,7 +111,7 @@ impl TorProcess {
             DisableNetwork 1\n\n";
 
             let mut default_torrc_file = File::create(&default_torrc)?;
-            default_torrc_file.write(DEFAULT_TORRC_CONTENT.as_bytes())?;
+            default_torrc_file.write_all(DEFAULT_TORRC_CONTENT.as_bytes())?;
         }
 
         // create empty torrc for user
