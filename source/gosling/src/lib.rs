@@ -1,3 +1,40 @@
+// TODO: We should remove all of these "allows" eventually.  This one
+// is something to be expected on work-in-progress code...
+#![allow(dead_code)]
+// These are bad style at best and can conceal problems.
+#![allow(unused_imports)]
+#![allow(unused_mut)]
+#![allow(unused_variables)]
+#![allow(clippy::assign_op_pattern)]
+#![allow(clippy::char_lit_as_u8)]
+#![allow(clippy::field_reassign_with_default)]
+#![allow(clippy::identity_op)]
+#![allow(clippy::if_same_then_else)]
+#![allow(clippy::len_zero)]
+#![allow(clippy::manual_map)]
+#![allow(clippy::needless_borrow)]
+#![allow(clippy::needless_question_mark)]
+#![allow(clippy::needless_return)]
+#![allow(clippy::nonminimal_bool)]
+#![allow(clippy::redundant_field_names)]
+#![allow(clippy::redundant_pattern_matching)]
+#![allow(clippy::single_match)]
+#![allow(clippy::unnecessary_unwrap)]
+#![allow(clippy::unused_unit)]
+
+// These are probably bad and may represent real problems.
+#![allow(clippy::manual_memcpy)]
+#![allow(clippy::ptr_arg)]
+
+// These represent real problems whenever they occur.
+#![allow(clippy::clone_on_copy)]
+#![allow(clippy::from_over_into)]
+#![allow(clippy::let_underscore_lock)]
+#![allow(clippy::single_char_pattern)]
+#![allow(clippy::unused_io_amount)]
+#![allow(private_in_public)]
+#![allow(unused_must_use)]
+
 #[macro_use]
 extern crate lazy_static;
 extern crate static_assertions;
