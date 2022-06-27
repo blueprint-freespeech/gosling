@@ -288,11 +288,14 @@ impl WorkManager {
             if producer_queue.len() == 0 {
                 let suspend_handle = suspend_handle_weak.upgrade().unwrap();
                 let terminating = terminating_weak.upgrade().unwrap();
+                // TODO: Note that this code is a little problematic, since
+                // we get the lock and immediately drop it. Consider
+                // replacing this whole implementation with crossbeam. (#27.)
                 if terminating.load(Ordering::Relaxed) {
                     // suspend for a 16ms rather than busy looping
-                    let _ = suspend_handle.wait_timeout(producer_queue, std::time::Duration::from_millis(16)).unwrap();
+                    let _ignore = suspend_handle.wait_timeout(producer_queue, std::time::Duration::from_millis(16)).unwrap();
                 } else {
-                    let _ = suspend_handle.wait(producer_queue).unwrap();
+                    let _ignore = suspend_handle.wait(producer_queue).unwrap();
                 }
             } else {
                 // otherwise swap the queues and run the tasks
