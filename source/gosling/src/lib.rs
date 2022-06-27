@@ -28,7 +28,6 @@
 
 // These represent real problems whenever they occur.
 #![allow(clippy::clone_on_copy)]
-#![allow(clippy::from_over_into)]
 #![allow(private_in_public)]
 #![allow(unused_must_use)]
 

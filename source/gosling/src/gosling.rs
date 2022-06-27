@@ -112,9 +112,9 @@ enum DomainSeparator {
     GoslingEndpoint,
 }
 
-impl Into<&[u8]> for DomainSeparator {
-    fn into(self) -> &'static [u8] {
-        match self {
+impl From<DomainSeparator> for &[u8] {
+    fn from(sep: DomainSeparator) -> &'static [u8] {
+        match sep {
             DomainSeparator::GoslingIntroduction => return b"gosling-introduction",
             DomainSeparator::GoslingEndpoint => return b"gosling-endpoint",
         }
