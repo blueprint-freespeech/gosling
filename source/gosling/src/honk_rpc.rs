@@ -890,7 +890,7 @@ fn test_honk_client_read_write() -> Result<()> {
     let stream2 = MemoryStream::new();
 
     let mut alice = Session::new(stream1.clone(), stream2.clone());
-    let mut pat = Session::new(stream2.clone(), stream1.clone());
+    let mut pat = Session::new(stream2, stream1);
 
     // no message sent yet
     ensure!(pat.read_message()?.is_none());
@@ -1085,10 +1085,10 @@ fn test_honk_client_apiset() -> Result<()> {
     let stream2 = MemoryStream::new();
 
     let mut alice = Session::new(stream1.clone(), stream2.clone());
-    let mut pat = Session::new(stream2.clone(), stream1.clone());
+    let mut pat = Session::new(stream2, stream1);
 
-    let testApiSet: TestApiSet = Default::default();
-    alice.server().register_apiset(testApiSet);
+    let test_api_set: TestApiSet = Default::default();
+    alice.server().register_apiset(test_api_set)?;
 
     // Pat calls remote test::echo_0 call
     //
@@ -1155,7 +1155,7 @@ fn test_honk_client_apiset() -> Result<()> {
     pat.update()?;
 
     // alice receives and handles request
-    alice.update();
+    alice.update()?;
 
     // pat recieves and handles alices response
     pat.update()?;
