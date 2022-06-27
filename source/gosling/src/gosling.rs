@@ -230,7 +230,7 @@ impl<H> IntroductionServerApiSet<H> where H : IntroductionServerHandshake + Defa
         OsRng.fill_bytes(&mut server_cookie);
 
         // save a copy for proof varification
-        self.server_cookie = server_cookie.clone();
+        self.server_cookie = server_cookie;
 
         return Ok(server_cookie);
     }

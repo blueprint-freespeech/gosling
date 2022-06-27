@@ -27,7 +27,6 @@
 #![allow(clippy::ptr_arg)]
 
 // These represent real problems whenever they occur.
-#![allow(clippy::clone_on_copy)]
 #![allow(private_in_public)]
 #![allow(unused_must_use)]
 
