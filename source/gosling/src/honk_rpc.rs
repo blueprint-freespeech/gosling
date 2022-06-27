@@ -18,7 +18,7 @@ use crypto::digest::Digest;
 
 // internal crates
 #[cfg(test)]
-use test_utils::MemoryStream;
+use crate::test_utils::MemoryStream;
 
 
 #[derive(Debug, Eq, PartialEq)]

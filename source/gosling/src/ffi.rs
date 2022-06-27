@@ -6,9 +6,9 @@ use std::os::raw::c_char;
 use std::sync::Mutex;
 use anyhow::{Result, bail};
 
-use object_registry::*;
-use define_registry;
-use tor_crypto::*;
+use crate::object_registry::*;
+use crate::define_registry;
+use crate::tor_crypto::*;
 
 
 /// Error Handling
