@@ -613,7 +613,7 @@ impl TorController {
                 let key = caps.name("key").unwrap().as_str().to_string();
                 let value = {
                     let value = caps.name("value").unwrap().as_str();
-                    if value.starts_with("\"") && value.ends_with("\"") {
+                    if value.starts_with('\"') && value.ends_with('\"') {
                         value[1..value.len()-1].to_string()
                     } else {
                         value.to_string()
@@ -846,7 +846,7 @@ impl TorController {
             250u32 => {
                 let mut key_values: Vec<(String,String)> = Default::default();
                 for line in reply.reply_lines {
-                    match line.find("=") {
+                    match line.find('=') {
                         Some(index) => key_values.push((line[0..index].to_string(), line[index+1..].to_string())),
                         None => key_values.push((line, String::new())),
                     }
@@ -882,7 +882,7 @@ impl TorController {
             250u32 => {
                 let mut key_values: Vec<(String,String)> = Default::default();
                 for line in reply.reply_lines {
-                    match line.find("=") {
+                    match line.find('=') {
                         Some(index) => key_values.push((line[0..index].to_string(), line[index+1..].to_string())),
                         None => if line != "OK" { key_values.push((line, String::new())) },
                     }
@@ -960,7 +960,7 @@ impl TorController {
                     let listeners: Vec<&str> = value.split(' ').collect();
                     let mut result: Vec<SocketAddr> = Default::default();
                     for socket_addr in listeners.iter() {
-                        ensure!(socket_addr.starts_with("\"") && socket_addr.ends_with("\""));
+                        ensure!(socket_addr.starts_with('\"') && socket_addr.ends_with('\"'));
 
                         // remove leading/trailing double quote
                         let stripped = &socket_addr[1..socket_addr.len() - 1];
