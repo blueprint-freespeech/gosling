@@ -67,9 +67,9 @@ impl From<i32> for ErrorCode {
     }
 }
 
-impl Into<i32> for ErrorCode {
-    fn into(self) -> i32 {
-        return match self {
+impl From<ErrorCode> for i32 {
+    fn from(err: ErrorCode) -> Self {
+        return match err {
             ErrorCode::BsonParseFailed => -1i32,
             ErrorCode::MessageTooBig => -2i32,
             ErrorCode::MessageParseFailed => -3i32,
