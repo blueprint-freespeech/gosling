@@ -267,7 +267,7 @@ impl Ed25519PublicKey {
     }
 
     pub fn get_data(&self) -> [u8; ED25519_PUBLIC_KEY_SIZE] {
-        return self.public_key.as_bytes().clone();
+        *self.public_key.as_bytes()
     }
 }
 
@@ -315,7 +315,7 @@ impl X25519PrivateKey {
 
     pub fn from_raw(raw: &[u8; X25519_PRIVATE_KEY_SIZE]) -> X25519PrivateKey {
         return X25519PrivateKey{
-            secret_key: pk::curve25519::StaticSecret::from(raw.clone()),
+            secret_key: pk::curve25519::StaticSecret::from(*raw),
         };
     }
 
@@ -350,7 +350,7 @@ impl X25519PublicKey {
 
     pub fn from_raw(raw: &[u8; X25519_PUBLIC_KEY_SIZE]) -> X25519PublicKey {
         return X25519PublicKey{
-            public_key: pk::curve25519::PublicKey::from(raw.clone()),
+            public_key: pk::curve25519::PublicKey::from(*raw),
         };
     }
 
