@@ -1345,7 +1345,7 @@ fn test_tor_controller() -> Result<()> {
         if let Ok(listeners) = tor_controller.getinfo_net_listeners_socks() {
             println!("listeners: ");
             for sock_addr in listeners.iter() {
-                println!(" {}", sock_addr.to_string());
+                println!(" {}", sock_addr);
             }
         }
 
@@ -1528,7 +1528,7 @@ fn test_onion_service() -> Result<()> {
             println!("Connecting to onion service");
             let mut client = tor.connect(&service_id, VIRT_PORT, None)?;
             println!("Client writing message: '{}'", MESSAGE);
-            client.write(MESSAGE.as_bytes())?;
+            client.write_all(MESSAGE.as_bytes())?;
             client.flush()?;
             println!("End of client scope");
         }
@@ -1576,12 +1576,12 @@ fn test_onion_service() -> Result<()> {
             let mut client = tor.connect(&service_id, VIRT_PORT, None)?;
 
             println!("Client writing message: '{}'", MESSAGE);
-            client.write(MESSAGE.as_bytes())?;
+            client.write_all(MESSAGE.as_bytes())?;
             client.flush()?;
             println!("End of client scope");
 
             println!("Remove auth key for onion service");
-            tor.remove_client_auth(&service_id);
+            tor.remove_client_auth(&service_id)?;
         }
 
         if let Some(mut server) = listener.accept()? {

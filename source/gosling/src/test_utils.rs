@@ -78,7 +78,7 @@ fn test_memory_stream() -> Result<()> {
 
     const MESSAGE: &str = "hello_world!";
 
-    stream1.write(MESSAGE.as_bytes())?;
+    stream1.write_all(MESSAGE.as_bytes())?;
     let mut msg_buff: Vec<u8> = Default::default();
     ensure!(stream2.read_to_end(&mut msg_buff)? == MESSAGE.len());
 
