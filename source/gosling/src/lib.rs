@@ -29,7 +29,6 @@
 // These represent real problems whenever they occur.
 #![allow(clippy::clone_on_copy)]
 #![allow(clippy::from_over_into)]
-#![allow(clippy::let_underscore_lock)]
 #![allow(clippy::single_char_pattern)]
 #![allow(clippy::unused_io_amount)]
 #![allow(private_in_public)]
