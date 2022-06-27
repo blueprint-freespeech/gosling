@@ -26,9 +26,6 @@
 #![allow(clippy::manual_memcpy)]
 #![allow(clippy::ptr_arg)]
 
-// These represent real problems whenever they occur.
-#![allow(private_in_public)]
-
 #[macro_use]
 extern crate lazy_static;
 extern crate static_assertions;

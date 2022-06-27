@@ -1130,7 +1130,7 @@ impl Drop for OnionListener {
     }
 }
 
-enum Event {
+pub enum Event {
     BootstrapStatus{progress: u32, tag: String, summary: String },
     BootstrapComplete,
     LogReceived{line: String},
