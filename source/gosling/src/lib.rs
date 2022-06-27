@@ -28,7 +28,6 @@
 
 // These represent real problems whenever they occur.
 #![allow(private_in_public)]
-#![allow(unused_must_use)]
 
 #[macro_use]
 extern crate lazy_static;
