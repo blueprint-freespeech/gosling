@@ -31,8 +31,8 @@ use socks::Socks5Stream;
 use url::Host;
 
 // internal modules
-use tor_crypto::*;
-use work_manager::*;
+use crate::tor_crypto::*;
+use crate::work_manager::*;
 
 // get the name of our tor executable
 fn system_tor() -> &'static str {

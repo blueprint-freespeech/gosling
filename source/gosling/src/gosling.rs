@@ -14,10 +14,10 @@ use rand::RngCore;
 use rand::rngs::OsRng;
 
 // internal modules
-use honk_rpc::*;
-use tor_crypto::*;
-use tor_controller::*;
-use work_manager::*;
+use crate::honk_rpc::*;
+use crate::tor_crypto::*;
+use crate::tor_controller::*;
+use crate::work_manager::*;
 
 #[derive(Debug, Eq, PartialEq, TryFromPrimitive)]
 #[repr(i32)]
