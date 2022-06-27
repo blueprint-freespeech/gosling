@@ -540,7 +540,7 @@ impl<H> IntroductionServer<H> where H : IntroductionServerHandshake + Default + 
                 let apiset = IntroductionServerApiSet::<H>::new(
                         &self.service_id,
                     );
-                session.server().register_apiset(apiset);
+                session.server().register_apiset(apiset)?;
                 self.rpc.push(session);
             },
             Ok(None) => {},
