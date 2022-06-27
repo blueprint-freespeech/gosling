@@ -1,14 +1,17 @@
 extern crate cbindgen;
 
-use std::path::Path;
+use std::path::{Path,PathBuf};
 
 fn main() {
     // set by cargo
     let crate_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-    let target_dir = std::env::var("CARGO_TARGET_DIR").unwrap();
+    // Set by the user or by cmake.
+    let target_dir = match std::env::var("CARGO_TARGET_DIR") {
+        Ok(target) => PathBuf::from(target),
+        Err(_) => Path::new(&crate_dir).join("target"),
+    };
 
-
-    let header_file_path = Path::new(&target_dir)
+    let header_file_path = target_dir
         .join("include")
         .join("libgosling.h");
 
