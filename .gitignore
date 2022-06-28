@@ -1,6 +1,6 @@
 source/gosling/Cargo.lock
+source/gosling/target
 out/Debug
 out/Release
 out/RelWithDebInfo
 out/MinSizeRel
-specs/*.png
