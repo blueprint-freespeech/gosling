@@ -214,13 +214,13 @@ impl Ed25519PrivateKey {
 
     pub fn sign_message_ex(&self, public_key: &Ed25519PublicKey, message: &[u8]) -> Result<Ed25519Signature> {
 
-        let signature = self.expanded_secret_key.sign(&message, &public_key.public_key);
+        let signature = self.expanded_secret_key.sign(message, &public_key.public_key);
         Ok(Ed25519Signature{signature: signature})
     }
 
     pub fn sign_message(&self, message: &[u8]) -> Result<Ed25519Signature> {
-        let public_key = Ed25519PublicKey::from_private_key(&self)?;
-        Ok(self.sign_message_ex(&public_key, &message)?)
+        let public_key = Ed25519PublicKey::from_private_key(self)?;
+        Ok(self.sign_message_ex(&public_key, message)?)
     }
 
     pub fn get_data(&self) -> [u8; ED25519_PRIVATE_KEY_SIZE] {
@@ -287,7 +287,7 @@ impl Ed25519Signature {
     }
 
     pub fn verify(&self, message: &[u8], public_key: &Ed25519PublicKey) -> bool {
-        if let Ok(()) = public_key.public_key.verify(&message, &self.signature) {
+        if let Ok(()) = public_key.public_key.verify(message, &self.signature) {
             return true;
         }
         false
@@ -378,7 +378,7 @@ impl X25519PublicKey {
 
 impl V3OnionServiceId {
     pub fn from_string(service_id: &str) -> Result<V3OnionServiceId> {
-        if !V3OnionServiceId::is_valid(&service_id) {
+        if !V3OnionServiceId::is_valid(service_id) {
             bail!("V3OnionServiceId::from_string(): '{}' is not a valid v3 onion service id", &service_id);
         }
         Ok(V3OnionServiceId{data: service_id.as_bytes().try_into()?})
@@ -404,7 +404,7 @@ impl V3OnionServiceId {
         }
 
         let mut decoded_service_id = [0u8; V3_ONION_SERVICE_ID_RAW_SIZE];
-        match ONION_BASE32.decode_mut(&service_id.as_bytes(), &mut decoded_service_id) {
+        match ONION_BASE32.decode_mut(service_id.as_bytes(), &mut decoded_service_id) {
             Ok(decoded_byte_count) => {
                 // ensure right size
                 if decoded_byte_count != V3_ONION_SERVICE_ID_RAW_SIZE {

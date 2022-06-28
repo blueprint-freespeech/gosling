@@ -554,7 +554,7 @@ impl Session {
             ensure!(self.pending_data.len() < std::mem::size_of::<i32>());
             let bytes_needed = std::mem::size_of::<i32>() - self.pending_data.len();
             let mut buffer = &mut buffer[0..bytes_needed];
-            match self.reader.read(&mut buffer) {
+            match self.reader.read(buffer) {
                 Err(err) => if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut {
                         Ok(None)
                     } else {
@@ -651,7 +651,7 @@ impl Session {
             };
             let mut left = message;
 
-            self.send_message_impl(&mut left)?;
+            self.send_message_impl(left)?;
             self.send_message_impl(&mut right)?;
         } else {
             self.writer.write_all(&self.message_write_buffer)?;

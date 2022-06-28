@@ -68,7 +68,7 @@ fn read_control_port_file(control_port_file: &Path) -> Result<SocketAddr> {
 
     if contents.starts_with("PORT=") {
         let addr_string = &contents.trim_end()["PORT=".len()..];
-        return Ok(SocketAddr::from_str(&addr_string)?);
+        return Ok(SocketAddr::from_str(addr_string)?);
     }
     bail!("read_control_port_file(): could not parse '{}' as control port file", control_port_file.display());
 }
@@ -315,7 +315,7 @@ impl ControlStream {
                     // view into byte vec of just the found line
                     let line_view: &[u8] = &self.pending_data[begin..end];
                     // convert to string
-                    let line_string = std::str::from_utf8(&line_view)?.to_string();
+                    let line_string = std::str::from_utf8(line_view)?.to_string();
 
                     // save in pending list
                     self.pending_lines.push_back(line_string);
@@ -461,7 +461,7 @@ impl FromStr for Version {
             static ref TOR_VERSION_PATTERN: Regex = Regex::new(r"^(?P<major>\d+)\.(?P<minor>\d+)\.(?P<micro>\d+)(?P<patch_level>\.\d+){0,1}(?P<status_tag>-[^\s]+){0,1}( \([^\s]+\))*$").unwrap();
         }
 
-        if let Some(caps) = TOR_VERSION_PATTERN.captures(&s) {
+        if let Some(caps) = TOR_VERSION_PATTERN.captures(s) {
             let major = caps.name("major");
             ensure!(major.is_some());
             let major: u32 = major.unwrap().as_str().parse()?;
@@ -643,7 +643,7 @@ impl TorController {
         let mut async_events: Vec<AsyncEvent> = Default::default();
 
         for mut reply in async_replies.iter_mut() {
-            async_events.push(TorController::reply_to_event(&mut reply)?);
+            async_events.push(TorController::reply_to_event(reply)?);
         }
 
         Ok(async_events)
@@ -964,7 +964,7 @@ impl TorController {
 
                         // remove leading/trailing double quote
                         let stripped = &socket_addr[1..socket_addr.len() - 1];
-                        result.push(SocketAddr::from_str(&stripped)?);
+                        result.push(SocketAddr::from_str(stripped)?);
                     }
                     return Ok(result);
                 },
@@ -978,7 +978,7 @@ impl TorController {
         let response = self.getinfo(&["version"])?;
         for (key, value) in response.iter() {
             match key.as_str() {
-                "version" => return Version::from_str(&value),
+                "version" => return Version::from_str(value),
                 _ => {},
             }
         }
@@ -1205,7 +1205,7 @@ impl TorManager {
         }
 
         for mut log_line in self.daemon.wait_log_lines().iter_mut() {
-            self.events.push_back(Event::LogReceived{line: std::mem::take(&mut log_line)});
+            self.events.push_back(Event::LogReceived{line: std::mem::take(log_line)});
         }
 
         Ok(self.events.pop_front())

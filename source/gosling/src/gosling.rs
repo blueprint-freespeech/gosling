@@ -248,7 +248,7 @@ impl<H> IntroductionServerApiSet<H> where H : IntroductionServerHandshake + Defa
                 &self.server_cookie);
 
             // verify proof signature
-            if client_proof_signature.verify(&client_proof, &client_public_key) {
+            if client_proof_signature.verify(&client_proof, client_public_key) {
                 return Ok(());
             } else {
                 return Err(GoslingError::InvalidClientProof);
@@ -287,7 +287,7 @@ impl<H> IntroductionServerApiSet<H> where H : IntroductionServerHandshake + Defa
             _ => return Err(GoslingError::Failure),
         };
 
-        match self.handshake.verify_challenge_response(&endpoint, &challenge, &challenge_response) {
+        match self.handshake.verify_challenge_response(endpoint, challenge, &challenge_response) {
             Some(true) => Ok(self.handshake.get_endpoint_server()),
             Some(false) => Err(GoslingError::InvalidChallengeResponse),
             None => Ok(None),
@@ -323,13 +323,13 @@ impl<H> ApiSet for IntroductionServerApiSet<H> where H : IntroductionServerHands
                 };
 
                 // validate args
-                let client_identity = match V3OnionServiceId::from_string(&client_identity) {
+                let client_identity = match V3OnionServiceId::from_string(client_identity) {
                     Ok(client_identity) => client_identity,
                     Err(_) => return Err(ErrorCode::Runtime(GoslingError::InvalidArgument as i32))
                 };
 
                 // route call
-                let server_cookie = match self.begin_handshake(&version, client_identity) {
+                let server_cookie = match self.begin_handshake(version, client_identity) {
                     // immediate
                     Ok(server_cookie) => server_cookie,
                     // error
