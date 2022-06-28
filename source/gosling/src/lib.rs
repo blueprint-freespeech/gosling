@@ -23,10 +23,6 @@
 #![allow(clippy::unnecessary_unwrap)]
 #![allow(clippy::unused_unit)]
 
-// These are probably bad and may represent real problems.
-#![allow(clippy::manual_memcpy)]
-#![allow(clippy::ptr_arg)]
-
 #[macro_use]
 extern crate lazy_static;
 
