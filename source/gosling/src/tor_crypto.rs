@@ -220,7 +220,7 @@ impl Ed25519PrivateKey {
 
     pub fn sign_message(&self, message: &[u8]) -> Result<Ed25519Signature> {
         let public_key = Ed25519PublicKey::from_private_key(self)?;
-        Ok(self.sign_message_ex(&public_key, message)?)
+        self.sign_message_ex(&public_key, message)
     }
 
     pub fn get_data(&self) -> [u8; ED25519_PRIVATE_KEY_SIZE] {
