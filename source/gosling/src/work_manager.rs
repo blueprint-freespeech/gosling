@@ -258,17 +258,16 @@ impl WorkManager {
 
                 // we only need to store the result if
                 // the caller has saved off the TaskResult
-                if task_wait_handle.is_some() &&
-                   task_result.is_some() {
+                if let (Some(twait_handle), Some(tresult)) = (task_wait_handle, task_result) {
                     // box the closure result
                     let mut retval = Some(closure_result);
                     // swap in the result
                     std::mem::swap::<Option<Box<dyn Any + Send>>>(
                         &mut retval,
-                        &mut task_result.unwrap().lock().unwrap());
+                        &mut tresult.lock().unwrap());
 
                     // notify the task result
-                    task_wait_handle.unwrap().notify_one();
+                    twait_handle.notify_one();
                 }
             }
 

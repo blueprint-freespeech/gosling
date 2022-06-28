@@ -12,13 +12,11 @@
 #![allow(clippy::if_same_then_else)]
 #![allow(clippy::len_zero)]
 #![allow(clippy::manual_map)]
-#![allow(clippy::needless_question_mark)]
 #![allow(clippy::neg_cmp_op_on_partial_ord)]
 #![allow(clippy::nonminimal_bool)]
 #![allow(clippy::redundant_field_names)]
 #![allow(clippy::redundant_pattern_matching)]
 #![allow(clippy::single_match)]
-#![allow(clippy::unnecessary_unwrap)]
 #![allow(clippy::unused_unit)]
 
 #[macro_use]
