@@ -115,8 +115,8 @@ enum DomainSeparator {
 impl From<DomainSeparator> for &[u8] {
     fn from(sep: DomainSeparator) -> &'static [u8] {
         match sep {
-            DomainSeparator::GoslingIntroduction => return b"gosling-introduction",
-            DomainSeparator::GoslingEndpoint => return b"gosling-endpoint",
+            DomainSeparator::GoslingIntroduction => b"gosling-introduction",
+            DomainSeparator::GoslingEndpoint => b"gosling-endpoint",
         }
     }
 }
@@ -140,7 +140,7 @@ fn build_client_proof(
     let mut client_proof : ClientProof = Default::default();
     hasher.result(&mut client_proof);
 
-    return client_proof;
+    client_proof
 }
 
 //
@@ -154,7 +154,7 @@ struct IntroductionClient<H> {
 
 impl<H> IntroductionClient<H> where H : IntroductionClientHandshake {
     fn build_challenge_response(&self, endpoint: &str, challenge: &bson::document::Document) -> bson::document::Document {
-        return self.handshake.build_challenge_response(endpoint, challenge);
+        self.handshake.build_challenge_response(endpoint, challenge)
     }
 }
 
@@ -194,8 +194,7 @@ pub struct IntroductionServerApiSet<H> {
 impl<H> IntroductionServerApiSet<H> where H : IntroductionServerHandshake + Default {
 
     fn new(server_identity: &V3OnionServiceId) -> IntroductionServerApiSet<H> {
-
-        return IntroductionServerApiSet{
+        IntroductionServerApiSet{
             next_intro_function: NextIntroFunction::BeginHandshake,
             handshake: Default::default(),
             client_identity: None,
@@ -207,7 +206,7 @@ impl<H> IntroductionServerApiSet<H> where H : IntroductionServerHandshake + Defa
             endpoint_challenge: None,
             request_endpoint_challenge_cookie: Default::default(),
             send_endpoint_challenge_response_cookie: Default::default(),
-        };
+        }
     }
 
     fn begin_handshake(&mut self, version: &str, client_identity: V3OnionServiceId)-> Result<ServerCookie, GoslingError> {
@@ -232,7 +231,7 @@ impl<H> IntroductionServerApiSet<H> where H : IntroductionServerHandshake + Defa
         // save a copy for proof varification
         self.server_cookie = server_cookie;
 
-        return Ok(server_cookie);
+        Ok(server_cookie)
     }
 
     fn send_client_proof(&mut self, client_cookie: &ClientCookie, client_proof_signature: &Ed25519Signature) -> Result<(), GoslingError> {
@@ -256,7 +255,7 @@ impl<H> IntroductionServerApiSet<H> where H : IntroductionServerHandshake + Defa
             }
         }
         // invalid state, no prvious call to begin_handshake
-        return Err(GoslingError::Failure);
+        Err(GoslingError::Failure)
     }
 
     fn request_endpoint_challenge(&mut self, endpoint: String) -> Result<Option<bson::document::Document>, GoslingError> {
@@ -278,7 +277,7 @@ impl<H> IntroductionServerApiSet<H> where H : IntroductionServerHandshake + Defa
         // save off copy of challenge for future verification
         self.endpoint_challenge = Some(challenge.clone());
 
-        return Ok(Some(challenge));
+        Ok(Some(challenge))
     }
 
     fn send_endpoint_challenge_response(&mut self, challenge_response: bson::document::Document, client_authentication_key: X25519PublicKey) -> Result<Option<V3OnionServiceId>, GoslingError> {
@@ -289,9 +288,9 @@ impl<H> IntroductionServerApiSet<H> where H : IntroductionServerHandshake + Defa
         };
 
         match self.handshake.verify_challenge_response(&endpoint, &challenge, &challenge_response) {
-            Some(true) => return Ok(self.handshake.get_endpoint_server()),
-            Some(false) => return Err(GoslingError::InvalidChallengeResponse),
-            None => return Ok(None),
+            Some(true) => Ok(self.handshake.get_endpoint_server()),
+            Some(false) => Err(GoslingError::InvalidChallengeResponse),
+            None => Ok(None),
         }
     }
 }
@@ -299,7 +298,7 @@ impl<H> IntroductionServerApiSet<H> where H : IntroductionServerHandshake + Defa
 // ApiSet implementation for the introduction rpc server
 impl<H> ApiSet for IntroductionServerApiSet<H> where H : IntroductionServerHandshake + Default {
     fn namespace(&self) -> &str {
-        return "gosling_introduction";
+        "gosling_introduction"
     }
 
     fn exec_function(&mut self, name: &str, version: i32, mut args: bson::document::Document, request_cookie: Option<RequestCookie>) -> Result<Option<bson::Bson>, ErrorCode> {
@@ -342,7 +341,7 @@ impl<H> ApiSet for IntroductionServerApiSet<H> where H : IntroductionServerHands
                     "server_cookie" : bson::Bson::Binary(bson::Binary{subtype: bson::spec::BinarySubtype::Generic, bytes: server_cookie.to_vec()})};
 
                 self.next_intro_function = NextIntroFunction::SendClientProof;
-                return Ok(Some(bson::Bson::Document(result)));
+                Ok(Some(bson::Bson::Document(result)))
             },
             ("send_client_proof", 0) => {
                 // ensure in right state
@@ -386,7 +385,7 @@ impl<H> ApiSet for IntroductionServerApiSet<H> where H : IntroductionServerHands
                 }
 
                 self.next_intro_function = NextIntroFunction::RequestEndpointChallenge;
-                return Ok(Some(bson::Bson::Document(Default::default())));
+                Ok(Some(bson::Bson::Document(Default::default())))
             },
             ("request_endpoint_challenge", 0) => {
                 // ensure in right state
@@ -416,7 +415,7 @@ impl<H> ApiSet for IntroductionServerApiSet<H> where H : IntroductionServerHands
                 };
 
                 self.next_intro_function = NextIntroFunction::SendEndpointChallengeResponse;
-                return Ok(Some(bson::Bson::Document(result)));
+                Ok(Some(bson::Bson::Document(result)))
             },
             ("send_endpoint_challenge_response", 0) => {
                 // ensure in right state
@@ -457,9 +456,9 @@ impl<H> ApiSet for IntroductionServerApiSet<H> where H : IntroductionServerHands
                 self.next_intro_function = NextIntroFunction::RequestEndpointChallenge;
                 self.requested_endpoint = None;
                 self.endpoint_challenge = None;
-                return Ok(Some(bson::Bson::String(result.to_string())));
+                Ok(Some(bson::Bson::String(result.to_string())))
             },
-            (_, _) => return Err(ErrorCode::RequestFunctionInvalid),
+            (_, _) => Err(ErrorCode::RequestFunctionInvalid),
         }
     }
 
@@ -477,15 +476,15 @@ impl<H> ApiSet for IntroductionServerApiSet<H> where H : IntroductionServerHands
                 // save off copy of challenge for future verification
                 self.endpoint_challenge = Some(challenge.clone());
                 self.next_intro_function = NextIntroFunction::SendEndpointChallengeResponse;
-                return Some((self.request_endpoint_challenge_cookie.take().unwrap(), Some(bson::Bson::Document(challenge)), ErrorCode::Success));
+                Some((self.request_endpoint_challenge_cookie.take().unwrap(), Some(bson::Bson::Document(challenge)), ErrorCode::Success))
             },
             Some(IntroductionHandshakeResult::EndpointIsValid(false)) => {
-                return Some((self.request_endpoint_challenge_cookie.unwrap(), None, ErrorCode::Runtime(GoslingError::InvalidArgument as i32)));
+                Some((self.request_endpoint_challenge_cookie.unwrap(), None, ErrorCode::Runtime(GoslingError::InvalidArgument as i32)))
             },
             Some(IntroductionHandshakeResult::BuildChallenge(challenge)) => {
                 self.endpoint_challenge = Some(challenge.clone());
                 self.next_intro_function = NextIntroFunction::SendEndpointChallengeResponse;
-                return Some((self.request_endpoint_challenge_cookie.take().unwrap(), Some(bson::Bson::Document(challenge)), ErrorCode::Success));
+                Some((self.request_endpoint_challenge_cookie.take().unwrap(), Some(bson::Bson::Document(challenge)), ErrorCode::Success))
             },
             Some(IntroductionHandshakeResult::VerifyChallengeResponse(true)) => {
                 let endpoint_server = match self.handshake.get_endpoint_server() {
@@ -493,18 +492,18 @@ impl<H> ApiSet for IntroductionServerApiSet<H> where H : IntroductionServerHands
                     None => return None,
                 };
                 self.next_intro_function = NextIntroFunction::RequestEndpointChallenge;
-                return Some((self.send_endpoint_challenge_response_cookie.take().unwrap(), Some(bson::Bson::String(endpoint_server.to_string())), ErrorCode::Success));
+                Some((self.send_endpoint_challenge_response_cookie.take().unwrap(), Some(bson::Bson::String(endpoint_server.to_string())), ErrorCode::Success))
             },
             Some(IntroductionHandshakeResult::VerifyChallengeResponse(false)) => {
-                return Some((self.request_endpoint_challenge_cookie.take().unwrap(), None, ErrorCode::Runtime(GoslingError::InvalidChallengeResponse as i32)));
+                Some((self.request_endpoint_challenge_cookie.take().unwrap(), None, ErrorCode::Runtime(GoslingError::InvalidChallengeResponse as i32)))
             },
             Some(IntroductionHandshakeResult::GetEndpointServer(endpoint_server)) => {
                 self.next_intro_function = NextIntroFunction::RequestEndpointChallenge;
                 self.requested_endpoint = None;
                 self.endpoint_challenge = None;
-                return Some((self.send_endpoint_challenge_response_cookie.take().unwrap(), Some(bson::Bson::String(endpoint_server.to_string())), ErrorCode::Success));
+                Some((self.send_endpoint_challenge_response_cookie.take().unwrap(), Some(bson::Bson::String(endpoint_server.to_string())), ErrorCode::Success))
             },
-            None => return None,
+            None => None,
         }
     }
 }
@@ -526,7 +525,7 @@ impl<H> IntroductionServer<H> where H : IntroductionServerHandshake + Default + 
     fn update(&mut self) -> Result<()> {
         // update our sessions but remove if update fails
         self.rpc.retain_mut(|session| -> bool {
-            return session.update().is_ok();
+            session.update().is_ok()
         });
 
         // handle new incoming connections
@@ -547,7 +546,7 @@ impl<H> IntroductionServer<H> where H : IntroductionServerHandshake + Default + 
             Err(err) => return Err(err),
         }
 
-        return Ok(());
+        Ok(())
     }
 }
 
@@ -577,21 +576,21 @@ struct EndpointServerApiSet {
 
 impl EndpointServerApiSet {
     fn begin_handshake(&mut self, version: &str, client_identity: &V3OnionServiceId)-> Result<Vec<u8>, GoslingError> {
-        return Err(GoslingError::NotImplemented);
+        Err(GoslingError::NotImplemented)
     }
 
     fn send_client_proof(&mut self, client_cookie: &[u8], client_proof: &[u8]) -> Result<(), GoslingError> {
-        return Ok(());
+        Ok(())
     }
 
     fn open_endpoint(&mut self, endpoint: &str, channel: &str) -> Result<(), GoslingError> {
-        return Ok(());
+        Ok(())
     }
 }
 
 impl ApiSet for EndpointServerApiSet {
     fn namespace(&self) -> &str {
-        return "gosling_endpoint";
+        "gosling_endpoint"
     }
 
     fn exec_function(
@@ -612,11 +611,11 @@ impl ApiSet for EndpointServerApiSet {
             },
             (_, _) => return Err(ErrorCode::RequestFunctionInvalid),
         }
-        return Ok(None);
+        Ok(None)
     }
 
     fn next_result(&mut self) -> Option<(RequestCookie, Option<bson::Bson>, ErrorCode)> {
-        return None;
+        None
     }
 }
 

@@ -69,7 +69,7 @@ impl From<i32> for ErrorCode {
 
 impl From<ErrorCode> for i32 {
     fn from(err: ErrorCode) -> Self {
-        return match err {
+        match err {
             ErrorCode::BsonParseFailed => -1i32,
             ErrorCode::MessageTooBig => -2i32,
             ErrorCode::MessageParseFailed => -3i32,
@@ -85,7 +85,7 @@ impl From<ErrorCode> for i32 {
             ErrorCode::Success => 0i32,
             ErrorCode::Runtime(val) => val,
             ErrorCode::Unknown(val) => val,
-        };
+        }
     }
 }
 
@@ -144,9 +144,9 @@ impl TryFrom<bson::document::Document> for Message {
                     return Err(ErrorCode::SectionParseFailed);
                 }
             }
-            return Ok(message);
+            Ok(message)
         } else {
-            return Err(ErrorCode::MessageParseFailed);
+            Err(ErrorCode::MessageParseFailed)
         }
     }
 }
@@ -163,7 +163,7 @@ impl From<Message> for bson::document::Document {
         }
         message.insert("sections", sections);
 
-        return message;
+        message
     }
 }
 
@@ -211,7 +211,7 @@ impl TryFrom<bson::document::Document> for Section {
     type Error = ErrorCode;
 
     fn try_from(value: bson::document::Document) -> Result<Self, <Self as TryFrom<bson::document::Document>>::Error> {
-        return match value.get_i32("id") {
+        match value.get_i32("id") {
             Ok(ERROR_SECTION_ID) => Ok(Section::Error(ErrorSection::try_from(value)?)),
             Ok(REQUEST_SECTION_ID) => Ok(Section::Request(RequestSection::try_from(value)?)),
             Ok(RESPONSE_SECTION_ID) => Ok(Section::Response(ResponseSection::try_from(value)?)),
@@ -259,11 +259,11 @@ impl TryFrom<bson::document::Document> for ErrorSection {
             None => None,
         };
 
-        return Ok(ErrorSection{
+        Ok(ErrorSection{
             cookie: cookie,
             code: code,
             message: message,
-            data: data});
+            data: data})
     }
 }
 
@@ -286,7 +286,7 @@ impl From<ErrorSection> for bson::document::Document {
             error_section.insert("data", data);
         }
 
-        return error_section;
+        error_section
     }
 }
 
@@ -329,13 +329,13 @@ impl TryFrom<bson::document::Document> for RequestSection {
             Err(_) => return Err(ErrorCode::SectionParseFailed),
         };
 
-        return Ok(RequestSection{
+        Ok(RequestSection{
             cookie: cookie,
             namespace: namespace,
             function: function,
             version: version,
             arguments: arguments,
-        });
+        })
     }
 }
 
@@ -360,7 +360,7 @@ impl From<RequestSection> for bson::document::Document {
 
         request_section.insert("arguments", value.arguments);
 
-        return request_section;
+        request_section
     }
 }
 
@@ -396,11 +396,11 @@ impl TryFrom<bson::document::Document> for ResponseSection {
             return Err(ErrorCode::SectionParseFailed);
         }
 
-        return Ok(ResponseSection{
+        Ok(ResponseSection{
             cookie: cookie,
             state: state,
             result: result,
-        });
+        })
     }
 }
 
@@ -416,7 +416,7 @@ impl From<ResponseSection> for bson::document::Document {
             response_section.insert("result", result);
         }
 
-        return response_section;
+        response_section
     }
 }
 
@@ -451,12 +451,12 @@ struct Context {
 
 impl Default for Context {
     fn default() -> Self {
-        return Context{
+        Context{
             inbound_requests: Default::default(),
             inbound_responses: Default::default(),
             outbound_sections: Default::default(),
             max_message_size: DEFAULT_MAX_MESSAGE_SIZE,
-        };
+        }
     }
 }
 
@@ -498,7 +498,7 @@ impl Session {
         let mut message_write_buffer: Vec<u8> = Default::default();
         message_write_buffer.reserve(DEFAULT_MAX_MESSAGE_SIZE);
 
-        return Session{
+        Session{
             server: Server::new(Rc::downgrade(&context)),
             client: Client::new(Rc::downgrade(&context)),
             context: context,
@@ -508,7 +508,7 @@ impl Session {
             pending_data: Default::default(),
             pending_sections: Default::default(),
             message_write_buffer: message_write_buffer,
-        };
+        }
     }
 
     // read a message from reader
@@ -519,7 +519,7 @@ impl Session {
             let mut buffer = vec![0u8; remaining];
             match self.reader.read(&mut buffer) {
                 Err(err) => if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut {
-                        return Ok(None);
+                        Ok(None)
                     } else {
                         bail!(err);
                     }
@@ -536,14 +536,14 @@ impl Session {
                             self.pending_data = cursor.into_inner();
                             self.pending_data.clear();
 
-                            return Ok(Some(Message::try_from(bson)?));
+                            Ok(Some(Message::try_from(bson)?))
                         } else {
                             bail!("failed to deserialize bson");
                             // handle error
                         }
                     } else {
                         self.remaining_byte_count = Some(remaining - count);
-                        return Ok(None);
+                        Ok(None)
                     }
                 },
             }
@@ -556,7 +556,7 @@ impl Session {
             let mut buffer = &mut buffer[0..bytes_needed];
             match self.reader.read(&mut buffer) {
                 Err(err) => if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut {
-                        return Ok(None);
+                        Ok(None)
                     } else {
                         bail!(err);
                     }
@@ -575,7 +575,7 @@ impl Session {
                         // next call to wait_message() will begin reading the actual message
                         return self.read_message();
                     }
-                    return Ok(None);
+                    Ok(None)
                 },
             }
         }
@@ -587,7 +587,7 @@ impl Session {
             self.pending_sections.append(&mut VecDeque::from(std::mem::take(&mut message.sections)));
         }
 
-        return Ok(());
+        Ok(())
     }
 
     // route read sections to client and server buffers
@@ -630,7 +630,7 @@ impl Session {
             }
         }
 
-        return Ok(());
+        Ok(())
     }
 
     // try and send a message bson doc, spitting in half and trying again
@@ -656,7 +656,7 @@ impl Session {
         } else {
             self.writer.write_all(&self.message_write_buffer)?;
         }
-        return Ok(());
+        Ok(())
     }
 
     fn send_messages(&mut self) -> Result<()> {
@@ -678,7 +678,7 @@ impl Session {
 
         let mut message = bson::document::Document::from(message);
 
-        return self.send_message_impl(&mut message);
+        self.send_message_impl(&mut message)
     }
 
     pub fn update(&mut self) -> Result<()> {
@@ -691,17 +691,17 @@ impl Session {
         // send any responses
         self.send_messages()?;
 
-        return Ok(());
+        Ok(())
     }
 
     // getter for our server
     pub fn server(&mut self) -> &mut Server {
-        return &mut self.server;
+        &mut self.server
     }
 
     // getter for our client
     pub fn client(&mut self) -> &mut Client {
-        return &mut self.client;
+        &mut self.client
     }
 }
 
@@ -712,10 +712,10 @@ pub struct Server {
 
 impl Server {
     fn new(context: Weak<RefCell<Context>>) -> Server {
-        return Server {
+        Server {
             context: context,
             apiset_registry: Default::default(),
-        };
+        }
     }
 
     // register an apiset for remote clients to call
@@ -724,7 +724,7 @@ impl Server {
         ensure!(!self.apiset_registry.contains_key(apiset.namespace()));
         ensure!(self.apiset_registry.insert(apiset.namespace().to_string(), Box::new(apiset)).is_none());
 
-        return Ok(());
+        Ok(())
     }
 
     fn update(&mut self) -> Result<()> {
@@ -815,7 +815,7 @@ impl Server {
             context.borrow_mut().outbound_sections.append(&mut outbound_sections);
         }
 
-        return Ok(());
+        Ok(())
     }
 }
 
@@ -828,11 +828,11 @@ pub struct Client {
 
 impl Client {
     fn new(context: Weak<RefCell<Context>>) -> Client {
-        return Client {
+        Client {
             context: context,
             next_cookie: 0i64,
             inbound_responses: Default::default(),
-        };
+        }
     }
 
     // call a remote client's function
@@ -874,12 +874,12 @@ impl Client {
 
     pub fn drain_responses(&mut self) -> std::collections::vec_deque::Drain<Response> {
         self.take_responses();
-        return self.inbound_responses.drain(..);
+        self.inbound_responses.drain(..)
     }
 
     pub fn next_response(&mut self) -> Option<Response> {
         self.take_responses();
-        return self.inbound_responses.pop_front();
+        self.inbound_responses.pop_front()
     }
 }
 
@@ -985,7 +985,7 @@ fn test_honk_client_read_write() -> Result<()> {
         }
     }
 
-    return Ok(());
+    Ok(())
 }
 
 #[cfg(test)]
@@ -1005,15 +1005,15 @@ impl TestApiSet {
     fn echo_0(&mut self, mut args: bson::document::Document) -> Result<Option<bson::Bson>, ErrorCode> {
         if let Some(bson::Bson::String(val)) = args.get_mut("val") {
             println!("TestApiSet::echo_0(val): val = '{}'", val);
-            return Ok(Some(bson::Bson::String(std::mem::take(val))));
+            Ok(Some(bson::Bson::String(std::mem::take(val))))
         } else {
-            return Err(RUNTIME_ERROR_INVALID_ARG);
+            Err(RUNTIME_ERROR_INVALID_ARG)
         }
     }
 
     // second version of echo that isn't implemented
     fn echo_1(&mut self, _args: bson::document::Document) -> Result<Option<bson::Bson>, ErrorCode> {
-       return Err(RUNTIME_ERROR_NOT_IMPLEMENTED);
+       Err(RUNTIME_ERROR_NOT_IMPLEMENTED)
     }
 
     // same as echo but takes awhile and appends ' - Delayed!' to source string before returning
@@ -1026,9 +1026,9 @@ impl TestApiSet {
                 self.delay_echo_results.push_back((request_cookie, Some(bson::Bson::String(std::mem::take(val))), ErrorCode::Success));
             }
             // async func so don't return result immediately
-            return Ok(None);
+            Ok(None)
         } else {
-            return Err(RUNTIME_ERROR_INVALID_ARG);
+            Err(RUNTIME_ERROR_INVALID_ARG)
         }
     }
 
@@ -1037,9 +1037,9 @@ impl TestApiSet {
             let mut sha256 = Sha3::sha3_256();
             sha256.input(&val.bytes);
 
-            return Ok(Some(bson::Bson::String(sha256.result_str())));
+            Ok(Some(bson::Bson::String(sha256.result_str())))
         } else {
-            return Err(RUNTIME_ERROR_INVALID_ARG);
+            Err(RUNTIME_ERROR_INVALID_ARG)
         }
     }
 }
@@ -1049,33 +1049,33 @@ impl TestApiSet {
 impl ApiSet for TestApiSet {
 
     fn namespace(&self) -> &str {
-        return "test";
+        "test"
     }
 
     fn exec_function(&mut self, name: &str, version: i32, args: bson::document::Document, request_cookie: Option<RequestCookie>) -> Result<Option<bson::Bson>, ErrorCode> {
 
         match (name, version){
             ("echo", 0) => {
-                return self.echo_0(args);
+                self.echo_0(args)
             },
             ("echo", 1) => {
-                return self.echo_1(args);
+                self.echo_1(args)
             },
             ("delay_echo", 0) => {
-                return self.delay_echo_0(request_cookie, args);
+                self.delay_echo_0(request_cookie, args)
             },
             ("sha256", 0) => {
-                return self.sha256_0(args);
+                self.sha256_0(args)
             },
             (name, version) => {
                 println!("received {{ name: '{}', version: {} }}", name, version);
-                return Err(ErrorCode::RequestFunctionInvalid);
+                Err(ErrorCode::RequestFunctionInvalid)
             },
         }
     }
 
     fn next_result(&mut self) -> Option<(RequestCookie, Option<bson::Bson>, ErrorCode)> {
-        return self.delay_echo_results.pop_front();
+        self.delay_echo_results.pop_front()
     }
 }
 
@@ -1260,5 +1260,5 @@ fn test_honk_client_apiset() -> Result<()> {
         }
     }
 
-    return Ok(());
+    Ok(())
 }

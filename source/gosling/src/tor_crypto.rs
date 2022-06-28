@@ -77,7 +77,7 @@ fn calc_truncated_checksum(public_key: &[u8; ED25519_PUBLIC_KEY_SIZE]) -> [u8; T
     hasher.input(&[0x03u8]);
     hasher.result(&mut hash_bytes);
 
-    return [hash_bytes[0], hash_bytes[1]];
+    [hash_bytes[0], hash_bytes[1]]
 }
 
 // Free functions
@@ -122,7 +122,7 @@ fn hash_tor_password_with_salt(salt: &[u8; S2K_RFC2440_SPECIFIER_LEN], password:
     HEXUPPER.encode_append(salt, &mut hash);
     HEXUPPER.encode_append(&key, &mut hash);
 
-    return Ok(hash);
+    Ok(hash)
 }
 
 pub fn hash_tor_password(password: &str) -> Result<String> {
@@ -131,7 +131,7 @@ pub fn hash_tor_password(password: &str) -> Result<String> {
     OsRng.fill_bytes(&mut salt);
     salt[S2K_RFC2440_SPECIFIER_LEN - 1] = 0x60u8;
 
-    return hash_tor_password_with_salt(&salt, password);
+    hash_tor_password_with_salt(&salt, password)
 }
 
 // Struct deinitions
@@ -173,16 +173,16 @@ impl Ed25519PrivateKey {
     pub fn generate() -> Result<Ed25519PrivateKey> {
         let secret_key = pk::ed25519::SecretKey::generate(&mut rand_core::OsRng.rng_compat());
 
-        return Ok(Ed25519PrivateKey{
+        Ok(Ed25519PrivateKey{
             expanded_secret_key: pk::ed25519::ExpandedSecretKey::from(&secret_key),
-        });
+        })
     }
 
     // according to nickm, any 64 byte string here is allowed
     pub fn from_raw(raw: &[u8; ED25519_PRIVATE_KEY_SIZE]) -> Result<Ed25519PrivateKey> {
-        return Ok(Ed25519PrivateKey{
+        Ok(Ed25519PrivateKey{
             expanded_secret_key: pk::ed25519::ExpandedSecretKey::from_bytes(raw)?,
-        });
+        })
     }
 
     pub fn from_key_blob(key_blob: &str) -> Result<Ed25519PrivateKey> {
@@ -202,35 +202,35 @@ impl Ed25519PrivateKey {
         }
         let private_key_data: [u8; ED25519_PRIVATE_KEY_SIZE] = private_key_data.try_into().unwrap();
 
-        return Ed25519PrivateKey::from_raw(&private_key_data);
+        Ed25519PrivateKey::from_raw(&private_key_data)
     }
 
     pub fn to_key_blob(&self) -> Result<String> {
         let mut key_blob = ED25519_PRIVATE_KEYBLOB_HEADER.to_string();
         key_blob.push_str(&BASE64.encode(&self.expanded_secret_key.to_bytes()));
 
-        return Ok(key_blob);
+        Ok(key_blob)
     }
 
     pub fn sign_message_ex(&self, public_key: &Ed25519PublicKey, message: &[u8]) -> Result<Ed25519Signature> {
 
         let signature = self.expanded_secret_key.sign(&message, &public_key.public_key);
-        return Ok(Ed25519Signature{signature: signature});
+        Ok(Ed25519Signature{signature: signature})
     }
 
     pub fn sign_message(&self, message: &[u8]) -> Result<Ed25519Signature> {
         let public_key = Ed25519PublicKey::from_private_key(&self)?;
-        return Ok(self.sign_message_ex(&public_key, &message)?);
+        Ok(self.sign_message_ex(&public_key, &message)?)
     }
 
     pub fn get_data(&self) -> [u8; ED25519_PRIVATE_KEY_SIZE] {
-        return self.expanded_secret_key.to_bytes();
+        self.expanded_secret_key.to_bytes()
     }
 }
 
 impl PartialEq for Ed25519PrivateKey {
     fn eq(&self, other:&Self) -> bool {
-        return self.get_data().eq(&other.get_data());
+        self.get_data().eq(&other.get_data())
     }
 }
 
@@ -238,9 +238,9 @@ impl PartialEq for Ed25519PrivateKey {
 
 impl Ed25519PublicKey {
     pub fn from_raw(raw: &[u8; ED25519_PUBLIC_KEY_SIZE]) -> Result<Ed25519PublicKey> {
-        return Ok(Ed25519PublicKey{
+        Ok(Ed25519PublicKey{
             public_key: pk::ed25519::PublicKey::from_bytes(raw)?,
-        });
+        })
     }
 
     pub fn from_service_id(service_id: &V3OnionServiceId) -> Result<Ed25519PublicKey> {
@@ -251,19 +251,19 @@ impl Ed25519PublicKey {
             bail!("Ed25519PublicKey::from_service_id(): decoded byte count is '{}', expected '{}'", decoded_byte_count, V3_ONION_SERVICE_ID_RAW_SIZE);
         }
 
-        return Ok(Ed25519PublicKey{
+        Ok(Ed25519PublicKey{
             public_key: pk::ed25519::PublicKey::from_bytes(&decoded_service_id[0..ED25519_PUBLIC_KEY_SIZE])?,
-        });
+        })
     }
 
     pub fn from_private_key(private_key: &Ed25519PrivateKey) -> Result<Ed25519PublicKey> {
-        return Ok(Ed25519PublicKey{
+        Ok(Ed25519PublicKey{
             public_key: pk::ed25519::PublicKey::from(&private_key.expanded_secret_key),
-        });
+        })
     }
 
     pub fn to_base32(&self) -> String {
-        return BASE32.encode(&self.get_data());
+        BASE32.encode(&self.get_data())
     }
 
     pub fn get_data(&self) -> [u8; ED25519_PUBLIC_KEY_SIZE] {
@@ -273,7 +273,7 @@ impl Ed25519PublicKey {
 
 impl PartialEq for Ed25519PublicKey {
     fn eq(&self, other: &Self) -> bool {
-        return self.get_data().eq(&other.get_data());
+        self.get_data().eq(&other.get_data())
     }
 }
 
@@ -281,26 +281,26 @@ impl PartialEq for Ed25519PublicKey {
 
 impl Ed25519Signature {
     pub fn from_raw(raw: &[u8; ED25519_SIGNATURE_SIZE]) -> Result<Ed25519Signature> {
-        return Ok(Ed25519Signature{
+        Ok(Ed25519Signature{
             signature: pk::ed25519::Signature::from_bytes(raw)?,
-        });
+        })
     }
 
     pub fn verify(&self, message: &[u8], public_key: &Ed25519PublicKey) -> bool {
         if let Ok(()) = public_key.public_key.verify(&message, &self.signature) {
             return true;
         }
-        return false;
+        false
     }
 
     pub fn get_data(&self) -> [u8; ED25519_SIGNATURE_SIZE] {
-        return self.signature.to_bytes();
+        self.signature.to_bytes()
     }
 }
 
 impl PartialEq for Ed25519Signature {
     fn eq(&self, other: &Self) -> bool {
-        return self.get_data().eq(&other.get_data());
+        self.get_data().eq(&other.get_data())
     }
 }
 
@@ -308,15 +308,15 @@ impl PartialEq for Ed25519Signature {
 
 impl X25519PrivateKey {
     pub fn generate() -> X25519PrivateKey {
-        return X25519PrivateKey{
+        X25519PrivateKey{
             secret_key: pk::curve25519::StaticSecret::new(rand_core::OsRng.rng_compat()),
-        };
+        }
     }
 
     pub fn from_raw(raw: &[u8; X25519_PRIVATE_KEY_SIZE]) -> X25519PrivateKey {
-        return X25519PrivateKey{
+        X25519PrivateKey{
             secret_key: pk::curve25519::StaticSecret::from(*raw),
-        };
+        }
     }
 
     // a base64 encoded keyblob
@@ -330,28 +330,28 @@ impl X25519PrivateKey {
 
         let private_key_data: [u8; X25519_PRIVATE_KEY_SIZE] = private_key_data.try_into().unwrap();
 
-        return Ok(X25519PrivateKey{
+        Ok(X25519PrivateKey{
             secret_key: pk::curve25519::StaticSecret::from(private_key_data),
-        });
+        })
     }
 
     pub fn to_base64(&self) -> String {
-        return BASE64.encode(&self.secret_key.to_bytes());
+        BASE64.encode(&self.secret_key.to_bytes())
     }
 }
 
 // X25519 Public Key
 impl X25519PublicKey {
     pub fn from_private_key(private_key: &X25519PrivateKey) -> X25519PublicKey {
-        return X25519PublicKey{
+        X25519PublicKey{
             public_key: pk::curve25519::PublicKey::from(&private_key.secret_key),
-        };
+        }
     }
 
     pub fn from_raw(raw: &[u8; X25519_PUBLIC_KEY_SIZE]) -> X25519PublicKey {
-        return X25519PublicKey{
+        X25519PublicKey{
             public_key: pk::curve25519::PublicKey::from(*raw),
-        };
+        }
     }
 
     pub fn from_base32(base32: &str) -> Result<X25519PublicKey> {
@@ -364,13 +364,13 @@ impl X25519PublicKey {
 
         let public_key_data: [u8; X25519_PUBLIC_KEY_SIZE] = public_key_data.try_into().unwrap();
 
-        return Ok(X25519PublicKey{
+        Ok(X25519PublicKey{
             public_key: pk::curve25519::PublicKey::from(public_key_data),
-        });
+        })
     }
 
     pub fn to_base32(&self) -> String {
-        return BASE32_NOPAD.encode(&self.public_key.to_bytes());
+        BASE32_NOPAD.encode(&self.public_key.to_bytes())
     }
 }
 
@@ -381,7 +381,7 @@ impl V3OnionServiceId {
         if !V3OnionServiceId::is_valid(&service_id) {
             bail!("V3OnionServiceId::from_string(): '{}' is not a valid v3 onion service id", &service_id);
         }
-        return Ok(V3OnionServiceId{data: service_id.as_bytes().try_into()?});
+        Ok(V3OnionServiceId{data: service_id.as_bytes().try_into()?})
     }
 
     pub fn from_public_key(public_key: &Ed25519PublicKey) -> Result<V3OnionServiceId> {
@@ -395,7 +395,7 @@ impl V3OnionServiceId {
 
         let service_id = ONION_BASE32.encode(&raw_service_id);
 
-        return Ok(V3OnionServiceId{data:service_id.as_bytes().try_into()?});
+        Ok(V3OnionServiceId{data:service_id.as_bytes().try_into()?})
     }
 
     pub fn is_valid(service_id: &str) -> bool {
@@ -423,27 +423,27 @@ impl V3OnionServiceId {
                    truncated_checksum[1] != decoded_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 1] {
                     return false;
                 }
-                return true;
+                true
             },
-            Err(_) => return false,
+            Err(_) => false,
         }
     }
 
     pub fn get_data(&self) -> &[u8] {
-        return &self.data;
+        &self.data
     }
 }
 
 impl PartialEq for V3OnionServiceId {
     fn eq(&self, other: &Self) -> bool {
-        return self.data.eq(&other.data);
+        self.data.eq(&other.data)
     }
 }
 
 impl ToString for V3OnionServiceId {
     fn to_string(&self) -> String {
         match str::from_utf8(&self.data) {
-            Ok(result) => return result.to_string(),
+            Ok(result) => result.to_string(),
             // this should really never ever happen but who knows
             Err(err) => panic!("{}", err),
         }
@@ -496,7 +496,7 @@ fn test_ed25519() -> Result<()> {
     let signature = private_key.sign_message(&message)?;
     assert!(signature.verify(&message, &public_key));
 
-    return Ok(());
+    Ok(())
 }
 
 #[test]
@@ -512,7 +512,7 @@ fn test_password_hash() -> Result<()> {
     // ensure same password is hashed to different things
     assert!(hash_tor_password("password")? != hash_tor_password("password")?);
 
-    return Ok(());
+    Ok(())
 }
 
 #[test]
@@ -536,5 +536,5 @@ fn test_x25519() -> Result<()> {
     let public_key = X25519PublicKey::from_private_key(&private_key);
     ensure!(public_key.to_base32() == PUBLIC_BASE32);
 
-    return Ok(());
+    Ok(())
 }

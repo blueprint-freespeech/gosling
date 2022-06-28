@@ -65,7 +65,7 @@ pub struct Worker {
 impl Worker {
     pub fn new(worker_id: usize, work_manager: &Arc<WorkManager>) -> Result<Worker> {
         ensure!(work_manager.worker_count > worker_id, "Worker::new(): worker_id invalid for work_manager");
-        return Ok(Worker{worker_id: worker_id, work_manager: Arc::downgrade(work_manager)});
+        Ok(Worker{worker_id: worker_id, work_manager: Arc::downgrade(work_manager)})
     }
 
     pub fn push<T: Send + 'static, F: FnOnce() -> Result<T> + Send + 'static>(&self, closure: F) -> Result<TaskResult> {
@@ -130,7 +130,7 @@ impl WorkManager {
         for worker_name in worker_names {
             work_manager.add_worker(worker_name)?;
         }
-        return Ok(work_manager);
+        Ok(work_manager)
     }
 
     fn add_worker(&mut self, worker_name: &str) -> Result<()> {
@@ -153,7 +153,7 @@ impl WorkManager {
             })?;
 
         threads.push(thread_handle);
-        return Ok(());
+        Ok(())
     }
 
     fn accepting_tasks(&self) -> bool {
@@ -164,7 +164,7 @@ impl WorkManager {
            self.pending_tasks.load(Ordering::Relaxed) == 0 {
             return false;
         }
-        return true;
+        true
     }
 
     pub fn push<T: Send + 'static, F: FnOnce() -> Result<T> + Send + 'static>(&self, worker_id: usize, closure: F) -> Result<TaskResult> {
@@ -173,15 +173,11 @@ impl WorkManager {
         // that can store a dyn Any
         let closure = move || -> Box<dyn Any + Send> {
             match closure() {
-                Ok(result) => {
-                    return Box::new(result);
-                },
-                Err(err) => {
-                    return Box::new(err);
-                }
+                Ok(result) => Box::new(result),
+                Err(err) => Box::new(err)
             }
         };
-        return self.push_impl(worker_id, closure);
+        self.push_impl(worker_id, closure)
     }
 
     fn push_impl<F: FnOnce() -> Box<dyn Any + Send> + Send + 'static>(&self, worker_id: usize, closure: F) -> Result<TaskResult> {
@@ -203,7 +199,7 @@ impl WorkManager {
         // wake up worker thread
         self.suspend_handles[worker_id].notify_one();
 
-        return Ok(task_result);
+        Ok(task_result)
     }
 
     pub fn thread_id(&self, worker_id: usize) -> Result<ThreadId> {
@@ -213,7 +209,7 @@ impl WorkManager {
         }
 
         match self.threads.lock() {
-            Ok(threads) => return Ok(threads[worker_id].thread().id()),
+            Ok(threads) => Ok(threads[worker_id].thread().id()),
             Err(_) => bail!("WorkManager::thread_id(): cannot lock threads mutex"),
         }
     }
@@ -236,7 +232,7 @@ impl WorkManager {
             }
         }
 
-        return Ok(());
+        Ok(())
     }
 
     fn worker_func(producer_queue_weak: Weak<Mutex<Vec<Task>>>, suspend_handle_weak: Weak<Condvar>, terminating_weak: Weak<AtomicBool>, pending_tasks_weak: Weak<AtomicUsize>) -> () {
@@ -248,7 +244,7 @@ impl WorkManager {
             } else if pending_tasks_weak.upgrade().unwrap().load(Ordering::Relaxed) > 0 {
                 return false;
             }
-            return true;
+            true
         };
 
         // spin until WorkManager has no more tasks
@@ -377,5 +373,5 @@ fn test_work_manager() -> Result<()> {
 
     ensure!(counter.load(Ordering::Relaxed) == WORKER_COUNT, "Expecter counter to equal {}", WORKER_COUNT);
 
-    return Ok(());
+    Ok(())
 }
