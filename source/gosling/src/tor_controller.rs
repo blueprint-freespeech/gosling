@@ -51,7 +51,7 @@ fn generate_password(length: usize) -> String {
             .take(length)
             .collect();
 
-    return password;
+    password
 }
 
 fn read_control_port_file(control_port_file: &Path) -> Result<SocketAddr> {
@@ -181,13 +181,13 @@ impl TorProcess {
             }
         })?;
 
-        return Ok(TorProcess{
+        Ok(TorProcess{
             control_addr: control_addr.unwrap(),
             process: process,
             password: password,
             stdout_lines: stdout_lines,
             stdout: stdout,
-        });
+        })
     }
 
     fn read_stdout_task(worker: &Worker, stdout_lines: &std::sync::Weak<Mutex<Vec<String>>>, stdout: &std::sync::Weak<Mutex<BufReader<ChildStdout>>>) -> Result<()> {
@@ -221,12 +221,12 @@ impl TorProcess {
             }
         })?;
 
-        return Ok(());
+        Ok(())
     }
 
     fn wait_log_lines(&mut self) -> Vec<String> {
         let mut lines = self.stdout_lines.lock().unwrap();
-        return std::mem::take(&mut lines);
+        std::mem::take(&mut lines)
     }
 }
 
@@ -270,18 +270,18 @@ impl ControlStream {
         const READ_BUFFER_SIZE: usize = 1024;
         let pending_data = Vec::with_capacity(READ_BUFFER_SIZE);
 
-        return Ok(ControlStream{
+        Ok(ControlStream{
             stream: stream,
             closed_by_remote: false,
             pending_data: pending_data,
             pending_lines: Default::default(),
             pending_reply: Default::default(),
             reading_multiline_value: false,
-        });
+        })
     }
 
     fn closed_by_remote(&mut self) -> bool {
-        return self.closed_by_remote;
+        self.closed_by_remote
     }
 
     fn read_line(&mut self) -> Result<Option<String>> {
@@ -327,7 +327,7 @@ impl ControlStream {
             self.pending_data.drain(0..begin);
         }
 
-        return Ok(self.pending_lines.pop_front());
+        Ok(self.pending_lines.pop_front())
     }
 
     fn read_reply(&mut self) -> Result<Option<Reply>> {
@@ -391,7 +391,7 @@ impl ControlStream {
             }
         }
 
-        return Ok(Some(Reply{status_code: status_code, reply_lines: reply_lines}));
+        Ok(Some(Reply{status_code: status_code, reply_lines: reply_lines}))
     }
 
     pub fn write(&mut self, cmd: &str) -> Result<()> {
@@ -400,7 +400,7 @@ impl ControlStream {
             self.closed_by_remote = true;
             bail!(err);
         }
-        return Ok(());
+        Ok(())
     }
 }
 
@@ -442,13 +442,13 @@ impl Version {
             None
         };
 
-        return Ok(Version{
+        Ok(Version{
             major: major,
             minor: minor,
             micro: micro,
             patch_level: patch_level.unwrap_or(0u32),
             status_tag: status_tag,
-        });
+        })
     }
 }
 
@@ -495,19 +495,19 @@ impl FromStr for Version {
 impl ToString for Version {
     fn to_string(&self) -> String {
         match &self.status_tag {
-            Some(status_tag) => return format!("{}.{}.{}.{}-{}", self.major, self.minor, self.micro, self.patch_level, status_tag),
-            None => return format!("{}.{}.{}.{}", self.major, self.minor, self.micro, self.patch_level),
+            Some(status_tag) => format!("{}.{}.{}.{}-{}", self.major, self.minor, self.micro, self.patch_level, status_tag),
+            None => format!("{}.{}.{}.{}", self.major, self.minor, self.micro, self.patch_level),
         }
     }
 }
 
 impl PartialEq for Version {
     fn eq(&self, other: &Self) -> bool {
-        return self.major == other.major &&
+        self.major == other.major &&
                self.minor == other.minor &&
                self.micro == other.micro &&
                self.patch_level == other.patch_level &&
-               self.status_tag == other.status_tag;
+               self.status_tag == other.status_tag
     }
 }
 
@@ -549,7 +549,7 @@ impl PartialOrd for Version {
             return Some(Ordering::Equal);
         }
 
-        return None;
+        None
     }
 }
 
@@ -567,10 +567,10 @@ struct TorController {
 
 impl TorController {
     pub fn new(control_stream: ControlStream) -> TorController {
-        return TorController{
+        TorController{
             control_stream: control_stream,
             async_replies: Default::default(),
-        };
+        }
     }
 
     // return curently available events, does not block waiting
@@ -633,9 +633,9 @@ impl TorController {
         let mut reply_lines: Vec<String> = Default::default();
         std::mem::swap(&mut reply_lines, &mut reply.reply_lines);
 
-        return Ok(AsyncEvent::Unknown{
+        Ok(AsyncEvent::Unknown{
             lines: reply_lines,
-        });
+        })
     }
 
     pub fn wait_async_events(&mut self) -> Result<Vec<AsyncEvent>> {
@@ -646,7 +646,7 @@ impl TorController {
             async_events.push(TorController::reply_to_event(&mut reply)?);
         }
 
-        return Ok(async_events);
+        Ok(async_events)
     }
 
     // wait for a sync reply, save off async replies for later
@@ -664,7 +664,7 @@ impl TorController {
 
     fn write_command(&mut self, text: &str) -> Result<Reply> {
         self.control_stream.write(text)?;
-        return self.wait_sync_reply();
+        self.wait_sync_reply()
     }
 
     //
@@ -686,7 +686,7 @@ impl TorController {
         }
         let command = command_buffer.join(" ");
 
-        return self.write_command(&command);
+        self.write_command(&command)
     }
 
     // GETCONF (3.3)
@@ -694,7 +694,7 @@ impl TorController {
         ensure!(!keywords.is_empty());
         let command = format!("GETCONF {}", keywords.join(" "));
 
-        return self.write_command(&command);
+        self.write_command(&command)
     }
 
     // SETEVENTS (3.4)
@@ -702,14 +702,14 @@ impl TorController {
         ensure!(!event_codes.is_empty());
         let command = format!("SETEVENTS {}", event_codes.join(" "));
 
-        return self.write_command(&command);
+        self.write_command(&command)
     }
 
     // AUTHENTICATE (3.5)
     fn authenticate_cmd(&mut self, password: &str) -> Result<Reply> {
         let command = format!("AUTHENTICATE \"{}\"", password);
 
-        return self.write_command(&command);
+        self.write_command(&command)
     }
 
     // GETINFO (3.9)
@@ -717,7 +717,7 @@ impl TorController {
         ensure!(!keywords.is_empty());
         let command = format!("GETINFO {}", keywords.join(" "));
 
-        return self.write_command(&command);
+        self.write_command(&command)
     }
 
     // ADD_ONION (3.27)
@@ -783,7 +783,7 @@ impl TorController {
         // finally send the command
         let command = command_buffer.join(" ");
 
-        return self.write_command(&command);
+        self.write_command(&command)
     }
 
     // DEL_ONION (3.38)
@@ -791,7 +791,7 @@ impl TorController {
 
         let command = format!("DEL_ONION {}", service_id.to_string());
 
-        return self.write_command(&command);
+        self.write_command(&command)
     }
 
     // ONION_CLIENT_AUTH_ADD (3.30)
@@ -815,7 +815,7 @@ impl TorController {
         // finally send command
         let command = command_buffer.join(" ");
 
-        return self.write_command(&command);
+        self.write_command(&command)
     }
 
     // ONION_CLIENT_AUTH_REMOVE (3.31)
@@ -823,7 +823,7 @@ impl TorController {
 
         let command = format!("ONION_CLIENT_AUTH_REMOVE {}", service_id.to_string());
 
-        return self.write_command(&command);
+        self.write_command(&command)
     }
 
     //
@@ -834,9 +834,9 @@ impl TorController {
         let reply = self.setconf_cmd(key_values)?;
 
         match reply.status_code {
-            250u32 => return Ok(()),
+            250u32 => Ok(()),
             code => bail!("{} {}", code, reply.reply_lines.join("\n")),
-        };
+        }
     }
 
     pub fn getconf(&mut self, keywords: &[&str]) -> Result<Vec<(String,String)>> {
@@ -851,7 +851,7 @@ impl TorController {
                         None => key_values.push((line, String::new())),
                     }
                 }
-                return Ok(key_values);
+                Ok(key_values)
             },
             code => bail!("{} {}", code, reply.reply_lines.join("\n")),
         }
@@ -861,7 +861,7 @@ impl TorController {
         let reply = self.setevents_cmd(events)?;
 
         match reply.status_code {
-            250u32 => return Ok(()),
+            250u32 => Ok(()),
             code => bail!("{} {}", code, reply.reply_lines.join("\n")),
         }
     }
@@ -870,7 +870,7 @@ impl TorController {
         let reply = self.authenticate_cmd(password)?;
 
         match reply.status_code {
-            250u32 => return Ok(()),
+            250u32 => Ok(()),
             code => bail!("{} {}", code, reply.reply_lines.join("\n")),
         }
     }
@@ -887,7 +887,7 @@ impl TorController {
                         None => if line != "OK" { key_values.push((line, String::new())) },
                     }
                 }
-                return Ok(key_values);
+                Ok(key_values)
             },
             code => bail!("{} {}", code, reply.reply_lines.join("\n")),
         }
@@ -934,14 +934,14 @@ impl TorController {
             ensure!(private_key.is_some(), "TorController::add_onion(): did not return private key");
         }
 
-        return Ok((private_key, service_id.unwrap()));
+        Ok((private_key, service_id.unwrap()))
     }
 
     pub fn del_onion(&mut self, service_id: &V3OnionServiceId) -> Result<()> {
         let reply = self.del_onion_cmd(service_id)?;
 
         match reply.status_code {
-            250u32 => return Ok(()),
+            250u32 => Ok(()),
             code => bail!("{} {}", code, reply.reply_lines.join("\n")),
         }
     }
@@ -989,7 +989,7 @@ impl TorController {
         let reply = self.onion_client_auth_add_cmd(service_id, private_key, client_name, flags)?;
 
         match reply.status_code {
-            250u32..=252u32 => return Ok(()),
+            250u32..=252u32 => Ok(()),
             code => bail!("{} {}", code, reply.reply_lines.join("\n")),
         }
     }
@@ -998,7 +998,7 @@ impl TorController {
         let reply = self.onion_client_auth_remove_cmd(service_id)?;
 
         match reply.status_code {
-            250u32..=251u32 => return Ok(()),
+            250u32..=251u32 => Ok(()),
             code => bail!("{} {}", code, reply.reply_lines.join("\n")),
         }
     }
@@ -1016,7 +1016,7 @@ impl CircuitToken {
         let username = first_party.to_string();
         let password = generate_password(CIRCUIT_TOKEN_PASSWORD_LENGTH);
 
-        return CircuitToken{username: username, password: password};
+        CircuitToken{username: username, password: password}
     }
 
 }
@@ -1029,69 +1029,69 @@ pub struct OnionStream {
 impl OnionStream {
 
     pub fn nodelay(&self) -> Result<bool, std::io::Error> {
-        return self.stream.nodelay();
+        self.stream.nodelay()
     }
 
     pub fn peer_addr(&self) -> Option<&V3OnionServiceId> {
-        return self.peer_addr.as_ref();
+        self.peer_addr.as_ref()
     }
 
     pub fn read_timeout(&self) -> Result<Option<Duration>, std::io::Error> {
-        return self.stream.read_timeout();
+        self.stream.read_timeout()
     }
 
     pub fn set_nodelay(&self, nodelay: bool) -> Result<(), std::io::Error> {
-        return self.stream.set_nodelay(nodelay);
+        self.stream.set_nodelay(nodelay)
     }
 
     pub fn set_nonblocking(&self, nonblocking: bool) -> Result<(), std::io::Error> {
-        return self.stream.set_nonblocking(nonblocking);
+        self.stream.set_nonblocking(nonblocking)
     }
 
     pub fn set_read_timeout(&self, dur: Option<Duration>) -> Result<(), std::io::Error> {
-        return self.stream.set_read_timeout(dur);
+        self.stream.set_read_timeout(dur)
     }
 
     pub fn set_write_timeout(&self, dur: Option<Duration>) -> Result<(), std::io::Error> {
-        return self.stream.set_write_timeout(dur);
+        self.stream.set_write_timeout(dur)
     }
 
     pub fn shutdown(&self, how: std::net::Shutdown) -> Result<(), std::io::Error> {
-        return self.stream.shutdown(how);
+        self.stream.shutdown(how)
     }
 
     pub fn take_error(&self) -> Result<Option<std::io::Error>, std::io::Error> {
-        return self.stream.take_error();
+        self.stream.take_error()
     }
 
     pub fn write_timeout(&self) -> Result<Option<Duration>, std::io::Error> {
-        return self.stream.write_timeout();
+        self.stream.write_timeout()
     }
 
     pub fn try_clone(&self) -> Result<OnionStream> {
-        return Ok(
+        Ok(
             OnionStream{
                 stream: self.stream.try_clone()?,
                 peer_addr: self.peer_addr.clone()
-            });
+            })
     }
 }
 
 // pass-through to underlying Read stream
 impl Read for OnionStream {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize, std::io::Error> {
-        return self.stream.read(buf);
+        self.stream.read(buf)
     }
 }
 
 // pass-through to underlying Write stream
 impl Write for OnionStream {
     fn write(&mut self, buf: &[u8]) -> Result<usize, std::io::Error> {
-        return self.stream.write(buf);
+        self.stream.write(buf)
     }
 
     fn flush(&mut self) -> Result<(), std::io::Error> {
-        return self.stream.flush();
+        self.stream.flush()
     }
 }
 
@@ -1104,16 +1104,16 @@ pub struct OnionListener {
 impl OnionListener {
     pub fn set_nonblocking(&self, nonblocking: bool) -> Result<()> {
         self.listener.set_nonblocking(nonblocking)?;
-        return Ok(());
+        Ok(())
     }
 
     pub fn accept(&self) -> Result<Option<OnionStream>> {
         match self.listener.accept() {
             Ok((stream, _socket_addr)) => {
-                return Ok(Some(OnionStream{stream: stream, peer_addr: None}));
+                Ok(Some(OnionStream{stream: stream, peer_addr: None}))
             },
             Err(err) => if err.kind() == ErrorKind::WouldBlock {
-                return Ok(None);
+                Ok(None)
             } else {
                 bail!(err);
             },
@@ -1165,13 +1165,13 @@ impl TorManager {
         // register for STATUS_CLIENT async events
         controller.setevents(&["STATUS_CLIENT"])?;
 
-        return Ok(
+        Ok(
             TorManager{
                 daemon: daemon,
                 controller: Rc::new(RefCell::new(controller)),
                 events: Default::default(),
                 socks_listener: None,
-            });
+            })
     }
 
     pub fn wait_event(&mut self) -> Result<Option<Event>> {
@@ -1208,23 +1208,23 @@ impl TorManager {
             self.events.push_back(Event::LogReceived{line: std::mem::take(&mut log_line)});
         }
 
-        return Ok(self.events.pop_front());
+        Ok(self.events.pop_front())
     }
 
     pub fn version(&mut self) -> Result<Version> {
-        return self.controller.borrow_mut().getinfo_version();
+        self.controller.borrow_mut().getinfo_version()
     }
 
     pub fn bootstrap(&mut self) -> Result<()> {
-        return self.controller.borrow_mut().setconf(&[("DisableNetwork", "0")]);
+        self.controller.borrow_mut().setconf(&[("DisableNetwork", "0")])
     }
 
     pub fn add_client_auth(&mut self, service_id: &V3OnionServiceId, client_auth: &X25519PrivateKey) -> Result<()> {
-        return self.controller.borrow_mut().onion_client_auth_add(service_id, client_auth, None, &Default::default());
+        self.controller.borrow_mut().onion_client_auth_add(service_id, client_auth, None, &Default::default())
     }
 
     pub fn remove_client_auth(&mut self, service_id: &V3OnionServiceId) -> Result<()> {
-        return self.controller.borrow_mut().onion_client_auth_remove(service_id);
+        self.controller.borrow_mut().onion_client_auth_remove(service_id)
     }
 
     // connect to an onion service and returns OnionStream
@@ -1244,7 +1244,7 @@ impl TorManager {
             Some(circuit) => Socks5Stream::connect_with_password(self.socks_listener.unwrap(), target, &circuit.username, &circuit.password)?,
         };
 
-        return Ok(OnionStream{stream: stream.into_inner(), peer_addr: Some(service_id.clone())});
+        Ok(OnionStream{stream: stream.into_inner(), peer_addr: Some(service_id.clone())})
     }
 
     // stand up an onion service and return an OnionListener
@@ -1264,7 +1264,7 @@ impl TorManager {
         // start onion service
         let (_, service_id) = self.controller.borrow_mut().add_onion(Some(private_key), &flags, None, virt_port, Some(socket_addr), authorized_clients)?;
 
-        return Ok(OnionListener{listener: listener, service_id: service_id, controller: Rc::downgrade(&self.controller)});
+        Ok(OnionListener{listener: listener, service_id: service_id, controller: Rc::downgrade(&self.controller)})
     }
 }
 
@@ -1376,7 +1376,7 @@ fn test_tor_controller() -> Result<()> {
         }
     }
 
-    return Ok(());
+    Ok(())
 }
 
 #[test]
@@ -1446,7 +1446,7 @@ fn test_version() -> Result<()>
     ensure!(!(zero_version > zero_version_tag));
     ensure!(!(zero_version >= zero_version_tag));
 
-    return Ok(());
+    Ok(())
 }
 
 #[test]
@@ -1479,7 +1479,7 @@ fn test_tor_manager() -> Result<()> {
     }
     ensure!(received_log, "should have received a log line from tor daemon");
 
-    return Ok(());
+    Ok(())
 }
 
 #[test]
@@ -1596,5 +1596,5 @@ fn test_onion_service() -> Result<()> {
             bail!("No listener?");
         }
     }
-    return Ok(());
+    Ok(())
 }

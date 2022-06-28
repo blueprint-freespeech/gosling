@@ -34,16 +34,15 @@ pub struct ObjectRegistry<T> {
 impl<T> ObjectRegistry<T> where T : HasByteTypeId{
     fn next_key(&mut self) -> usize {
         self.counter = self.counter + 1;
-        let retval = (self.counter << 8) + T::get_byte_type_id();
-        return retval;
+        (self.counter << 8) + T::get_byte_type_id()
     }
 
     pub fn new() -> ObjectRegistry<T> {
-        return ObjectRegistry{map: BTreeMap::new(), counter: 0};
+        ObjectRegistry{map: BTreeMap::new(), counter: 0}
     }
 
     pub fn contains_key(&self, key:usize) -> bool {
-        return self.map.contains_key(&key);
+        self.map.contains_key(&key)
     }
 
     pub fn remove(&mut self, key:usize) -> () {
@@ -55,15 +54,15 @@ impl<T> ObjectRegistry<T> where T : HasByteTypeId{
         if !self.map.insert(key, val).is_none() {
             panic!();
         }
-        return key;
+        key
     }
 
     pub fn get(&self, key:usize) -> Option<&T> {
-        return self.map.get(&key);
+        self.map.get(&key)
     }
 
     pub fn get_mut(&mut self, key:usize) -> Option<&mut T> {
-        return self.map.get_mut(&key);
+        self.map.get_mut(&key)
     }
 }
 
@@ -86,7 +85,7 @@ macro_rules! define_registry {
 
             impl HasByteTypeId for $type {
                 fn get_byte_type_id() -> usize {
-                    return [<$type:snake:upper _BYTE_TYPE_ID>];
+                    [<$type:snake:upper _BYTE_TYPE_ID>]
                 }
             }
         }

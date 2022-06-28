@@ -19,7 +19,7 @@ pub struct Error {
 
 impl Error {
     pub fn new(message: &str) -> Error {
-        return Error{message: CString::new(message).unwrap()};
+        Error{message: CString::new(message).unwrap()}
     }
 }
 
@@ -48,7 +48,7 @@ pub extern "C" fn gosling_error_get_message(error: *const GoslingError) -> *cons
         }
     }
 
-    return ptr::null();
+    ptr::null()
 }
 
 // macro for defining the implmenetation of freeing objects
@@ -126,7 +126,7 @@ fn translate_failures<R,F>(default: R, out_error: *mut *mut GoslingError, closur
     match panic::catch_unwind(closure) {
         // handle success
         Ok(Ok(retval)) => {
-            return retval;
+            retval
         },
         // handle runtime error
         Ok(Err(err)) => {
@@ -135,7 +135,7 @@ fn translate_failures<R,F>(default: R, out_error: *mut *mut GoslingError, closur
                 let key = error_registry().insert(Error::new(format!("{:?}", err).as_str()));
                 unsafe {*out_error = key as *mut GoslingError;};
             }
-            return default;
+            default
         },
         // handle panic
         Err(_) => {
@@ -144,7 +144,7 @@ fn translate_failures<R,F>(default: R, out_error: *mut *mut GoslingError, closur
                 let key = error_registry().insert(Error::new("panic occurred"));
                 unsafe {*out_error = key as *mut GoslingError;};
             }
-            return default;
+            default
         },
     }
 }
@@ -300,6 +300,6 @@ pub extern "C" fn gosling_string_is_valid_v3_onion_service_id(
         }
 
         let service_id_string_slice = unsafe { std::slice::from_raw_parts(service_id_string as *const u8, service_id_string_length) };
-        return Ok(V3OnionServiceId::is_valid(str::from_utf8(service_id_string_slice)?));
+        Ok(V3OnionServiceId::is_valid(str::from_utf8(service_id_string_slice)?))
     })
 }

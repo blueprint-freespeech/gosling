@@ -14,7 +14,6 @@
 #![allow(clippy::manual_map)]
 #![allow(clippy::needless_borrow)]
 #![allow(clippy::needless_question_mark)]
-#![allow(clippy::needless_return)]
 #![allow(clippy::neg_cmp_op_on_partial_ord)]
 #![allow(clippy::nonminimal_bool)]
 #![allow(clippy::redundant_field_names)]
