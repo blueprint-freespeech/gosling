@@ -662,7 +662,7 @@ impl TorController {
         }
     }
 
-    fn write_command(&mut self, text: &String) -> Result<Reply> {
+    fn write_command(&mut self, text: &str) -> Result<Reply> {
         self.control_stream.write(text)?;
         return self.wait_sync_reply();
     }

@@ -580,7 +580,7 @@ impl EndpointServerApiSet {
         return Err(GoslingError::NotImplemented);
     }
 
-    fn send_client_proof(&mut self, client_cookie: &Vec<u8>, client_proof: &Vec<u8>) -> Result<(), GoslingError> {
+    fn send_client_proof(&mut self, client_cookie: &[u8], client_proof: &[u8]) -> Result<(), GoslingError> {
         return Ok(());
     }
 

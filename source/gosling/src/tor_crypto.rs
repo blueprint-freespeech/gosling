@@ -387,9 +387,7 @@ impl V3OnionServiceId {
     pub fn from_public_key(public_key: &Ed25519PublicKey) -> Result<V3OnionServiceId> {
         let mut raw_service_id = [0u8; V3_ONION_SERVICE_ID_RAW_SIZE];
 
-        for i in 0..ED25519_PUBLIC_KEY_SIZE {
-            raw_service_id[i] = public_key.get_data()[i];
-        }
+        raw_service_id[..ED25519_PUBLIC_KEY_SIZE].copy_from_slice(&public_key.get_data()[..]);
         let truncated_checksum = calc_truncated_checksum(&public_key.get_data());
         raw_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 0] = truncated_checksum[0];
         raw_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 1] = truncated_checksum[1];
@@ -418,9 +416,7 @@ impl V3OnionServiceId {
                 }
                 // copy public key into own buffer
                 let mut public_key = [0u8; ED25519_PUBLIC_KEY_SIZE];
-                for i in 0..ED25519_PUBLIC_KEY_SIZE {
-                    public_key[i] = decoded_service_id[i];
-                }
+                public_key[..].copy_from_slice(&decoded_service_id[..ED25519_PUBLIC_KEY_SIZE]);
                 // ensure checksum is correct
                 let truncated_checksum = calc_truncated_checksum(&public_key);
                 if truncated_checksum[0] != decoded_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 0] ||
