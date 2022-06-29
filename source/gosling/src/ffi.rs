@@ -40,10 +40,8 @@ pub extern "C" fn gosling_error_get_message(error: *const GoslingError) -> *cons
 
         let registry = error_registry();
         if registry.contains_key(key) {
-            let obj = registry.get(key);
-            match obj {
-                Some(x) => return x.message.as_ptr(),
-                _ => (),
+            if let Some(x) = registry.get(key) {
+                return x.message.as_ptr();
             }
         }
     }

@@ -16,7 +16,6 @@
 #![allow(clippy::nonminimal_bool)]
 #![allow(clippy::redundant_field_names)]
 #![allow(clippy::redundant_pattern_matching)]
-#![allow(clippy::single_match)]
 
 #[macro_use]
 extern crate lazy_static;

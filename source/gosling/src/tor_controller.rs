@@ -951,24 +951,21 @@ impl TorController {
     pub fn getinfo_net_listeners_socks(&mut self) -> Result<Vec<SocketAddr>> {
         let response = self.getinfo(&["net/listeners/socks"])?;
         for (key, value) in response.iter() {
-            match key.as_str() {
-                "net/listeners/socks" => {
-                    if value.len() == 0 {
-                        return Ok(Default::default());
-                    }
-                    // get our list of double-quoted strings
-                    let listeners: Vec<&str> = value.split(' ').collect();
-                    let mut result: Vec<SocketAddr> = Default::default();
-                    for socket_addr in listeners.iter() {
-                        ensure!(socket_addr.starts_with('\"') && socket_addr.ends_with('\"'));
+            if key.as_str() == "net/listeners/socks" {
+                if value.len() == 0 {
+                    return Ok(Default::default());
+                }
+                // get our list of double-quoted strings
+                let listeners: Vec<&str> = value.split(' ').collect();
+                let mut result: Vec<SocketAddr> = Default::default();
+                for socket_addr in listeners.iter() {
+                    ensure!(socket_addr.starts_with('\"') && socket_addr.ends_with('\"'));
 
-                        // remove leading/trailing double quote
-                        let stripped = &socket_addr[1..socket_addr.len() - 1];
-                        result.push(SocketAddr::from_str(stripped)?);
-                    }
-                    return Ok(result);
-                },
-                _ => {},
+                    // remove leading/trailing double quote
+                    let stripped = &socket_addr[1..socket_addr.len() - 1];
+                    result.push(SocketAddr::from_str(stripped)?);
+                }
+                return Ok(result);
             }
         }
         bail!("TorController::getinfo_net_listeners_socks(): did not find a 'net/listeners/socks' key/value");
@@ -977,9 +974,8 @@ impl TorController {
     pub fn getinfo_version(&mut self) -> Result<Version> {
         let response = self.getinfo(&["version"])?;
         for (key, value) in response.iter() {
-            match key.as_str() {
-                "version" => return Version::from_str(value),
-                _ => {},
+            if key.as_str() == "version" {
+                return Version::from_str(value);
             }
         }
         bail!("TorController::getinfo_version(): did not find a 'version' key/value");
@@ -1176,31 +1172,28 @@ impl TorManager {
 
     pub fn wait_event(&mut self) -> Result<Option<Event>> {
         for async_event in self.controller.borrow_mut().wait_async_events()?.iter() {
-            match async_event {
-                AsyncEvent::StatusClient{severity,action,arguments} => {
-                    if severity == "NOTICE" && action == "BOOTSTRAP" {
-                        let mut progress: u32 = 0;
-                        let mut tag: String = Default::default();
-                        let mut summary: String = Default::default();
-                        for (key,val) in arguments.iter() {
-                            match key.as_str() {
-                                "PROGRESS" => progress = val.parse()?,
-                                "TAG" => tag = val.to_string(),
-                                "SUMMARY" => summary = val.to_string(),
-                                _ => {}, // ignore unexpected arguments
-                            }
-                        }
-                        self.events.push_back(Event::BootstrapStatus{
-                            progress: progress,
-                            tag: tag,
-                            summary: summary,
-                        });
-                        if progress == 100u32 {
-                            self.events.push_back(Event::BootstrapComplete);
+            if let AsyncEvent::StatusClient{severity,action,arguments} = async_event {
+                if severity == "NOTICE" && action == "BOOTSTRAP" {
+                    let mut progress: u32 = 0;
+                    let mut tag: String = Default::default();
+                    let mut summary: String = Default::default();
+                    for (key,val) in arguments.iter() {
+                        match key.as_str() {
+                            "PROGRESS" => progress = val.parse()?,
+                            "TAG" => tag = val.to_string(),
+                            "SUMMARY" => summary = val.to_string(),
+                            _ => {}, // ignore unexpected arguments
                         }
                     }
-                },
-                _ => {},
+                    self.events.push_back(Event::BootstrapStatus{
+                        progress: progress,
+                        tag: tag,
+                        summary: summary,
+                    });
+                    if progress == 100u32 {
+                        self.events.push_back(Event::BootstrapComplete);
+                    }
+                }
             }
         }
 
@@ -1288,10 +1281,9 @@ fn test_tor_controller() -> Result<()> {
         ensure!(tor_controller.authenticate_cmd("invalid password")?.status_code == 515u32);
 
         // tor controller should have shutdown the connection after failed authentication
-        match tor_controller.authenticate_cmd(&tor_process.password) {
-            Ok(_)=> bail!("Expected failure due to closed connection"),
-            Err(_) => (),
-        };
+        if tor_controller.authenticate_cmd(&tor_process.password).is_ok() {
+            bail!("Expected failure due to closed connection");
+        }
         ensure!(tor_controller.control_stream.closed_by_remote());
     }
     // now create a second controller
@@ -1564,9 +1556,8 @@ fn test_onion_service() -> Result<()> {
 
         {
             println!("Connecting to onion service (should fail)");
-            match tor.connect(&service_id, VIRT_PORT, None) {
-                Ok(_) => bail!("Should not able to connect to an authenticated onion service without auth key"),
-                Err(_) => {},
+            if tor.connect(&service_id, VIRT_PORT, None).is_ok() {
+                bail!("Should not able to connect to an authenticated onion service without auth key");
             }
 
             println!("Add auth key for onion service");

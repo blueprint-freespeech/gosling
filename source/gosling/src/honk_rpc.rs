@@ -915,20 +915,17 @@ fn test_honk_client_read_write() -> Result<()> {
             }));
     pat.send_messages()?;
 
-    match alice.read_message() {
-        Ok(Some(mut msg)) => {
-            ensure!(msg.sections.len() == 1);
-            match msg.sections.pop() {
-                Some(Section::Error(section)) => {
-                    ensure!(section.cookie.is_some() && section.cookie.unwrap() == 42069);
-                    ensure!(section.code == ErrorCode::Runtime(1));
-                    ensure!(section.message.is_some() && section.message.unwrap() == CUSTOM_ERROR);
-                },
-                Some(_) => bail!("Was expecting an Error section"),
-                None => bail!("We should have a message"),
-            }
-        },
-        _ => (),
+    if let Ok(Some(mut msg)) = alice.read_message() {
+        ensure!(msg.sections.len() == 1);
+        match msg.sections.pop() {
+            Some(Section::Error(section)) => {
+                ensure!(section.cookie.is_some() && section.cookie.unwrap() == 42069);
+                ensure!(section.code == ErrorCode::Runtime(1));
+                ensure!(section.message.is_some() && section.message.unwrap() == CUSTOM_ERROR);
+            },
+            Some(_) => bail!("Was expecting an Error section"),
+            None => bail!("We should have a message"),
+        }
     }
 
     alice.context.borrow_mut().outbound_sections.append(
