@@ -215,7 +215,7 @@ impl Ed25519PrivateKey {
     pub fn sign_message_ex(&self, public_key: &Ed25519PublicKey, message: &[u8]) -> Result<Ed25519Signature> {
 
         let signature = self.expanded_secret_key.sign(message, &public_key.public_key);
-        Ok(Ed25519Signature{signature: signature})
+        Ok(Ed25519Signature{signature})
     }
 
     pub fn sign_message(&self, message: &[u8]) -> Result<Ed25519Signature> {

@@ -183,10 +183,10 @@ impl TorProcess {
 
         Ok(TorProcess{
             control_addr: control_addr.unwrap(),
-            process: process,
-            password: password,
-            stdout_lines: stdout_lines,
-            stdout: stdout,
+            process,
+            password,
+            stdout_lines,
+            stdout,
         })
     }
 
@@ -271,9 +271,9 @@ impl ControlStream {
         let pending_data = Vec::with_capacity(READ_BUFFER_SIZE);
 
         Ok(ControlStream{
-            stream: stream,
+            stream,
             closed_by_remote: false,
-            pending_data: pending_data,
+            pending_data,
             pending_lines: Default::default(),
             pending_reply: Default::default(),
             reading_multiline_value: false,
@@ -391,7 +391,7 @@ impl ControlStream {
             }
         }
 
-        Ok(Some(Reply{status_code: status_code, reply_lines: reply_lines}))
+        Ok(Some(Reply{status_code, reply_lines}))
     }
 
     pub fn write(&mut self, cmd: &str) -> Result<()> {
@@ -443,11 +443,11 @@ impl Version {
         };
 
         Ok(Version{
-            major: major,
-            minor: minor,
-            micro: micro,
+            major,
+            minor,
+            micro,
             patch_level: patch_level.unwrap_or(0u32),
-            status_tag: status_tag,
+            status_tag,
         })
     }
 }
@@ -486,7 +486,7 @@ impl FromStr for Version {
                 None => None,
             };
 
-            return Ok(Version{major: major, minor: minor, micro: micro, patch_level: patch_level, status_tag: status_tag});
+            return Ok(Version{major, minor, micro, patch_level, status_tag});
         }
         bail!("Version::from_str(): failed to parse '{}' as Version", s);
     }
@@ -568,7 +568,7 @@ struct TorController {
 impl TorController {
     pub fn new(control_stream: ControlStream) -> TorController {
         TorController{
-            control_stream: control_stream,
+            control_stream,
             async_replies: Default::default(),
         }
     }
@@ -625,7 +625,7 @@ impl TorController {
             return Ok(AsyncEvent::StatusClient{
                 severity: severity.to_string(),
                 action: action.to_string(),
-                arguments: arguments
+                arguments
             });
         }
 
@@ -1012,7 +1012,7 @@ impl CircuitToken {
         let username = first_party.to_string();
         let password = generate_password(CIRCUIT_TOKEN_PASSWORD_LENGTH);
 
-        CircuitToken{username: username, password: password}
+        CircuitToken{username, password}
     }
 
 }
@@ -1106,7 +1106,7 @@ impl OnionListener {
     pub fn accept(&self) -> Result<Option<OnionStream>> {
         match self.listener.accept() {
             Ok((stream, _socket_addr)) => {
-                Ok(Some(OnionStream{stream: stream, peer_addr: None}))
+                Ok(Some(OnionStream{stream, peer_addr: None}))
             },
             Err(err) => if err.kind() == ErrorKind::WouldBlock {
                 Ok(None)
@@ -1163,7 +1163,7 @@ impl TorManager {
 
         Ok(
             TorManager{
-                daemon: daemon,
+                daemon,
                 controller: Rc::new(RefCell::new(controller)),
                 events: Default::default(),
                 socks_listener: None,
@@ -1185,11 +1185,7 @@ impl TorManager {
                             _ => {}, // ignore unexpected arguments
                         }
                     }
-                    self.events.push_back(Event::BootstrapStatus{
-                        progress: progress,
-                        tag: tag,
-                        summary: summary,
-                    });
+                    self.events.push_back(Event::BootstrapStatus{progress, tag, summary});
                     if progress == 100u32 {
                         self.events.push_back(Event::BootstrapComplete);
                     }
@@ -1257,7 +1253,7 @@ impl TorManager {
         // start onion service
         let (_, service_id) = self.controller.borrow_mut().add_onion(Some(private_key), &flags, None, virt_port, Some(socket_addr), authorized_clients)?;
 
-        Ok(OnionListener{listener: listener, service_id: service_id, controller: Rc::downgrade(&self.controller)})
+        Ok(OnionListener{listener, service_id, controller: Rc::downgrade(&self.controller)})
     }
 }
 

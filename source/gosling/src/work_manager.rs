@@ -65,7 +65,7 @@ pub struct Worker {
 impl Worker {
     pub fn new(worker_id: usize, work_manager: &Arc<WorkManager>) -> Result<Worker> {
         ensure!(work_manager.worker_count > worker_id, "Worker::new(): worker_id invalid for work_manager");
-        Ok(Worker{worker_id: worker_id, work_manager: Arc::downgrade(work_manager)})
+        Ok(Worker{worker_id, work_manager: Arc::downgrade(work_manager)})
     }
 
     pub fn push<T: Send + 'static, F: FnOnce() -> Result<T> + Send + 'static>(&self, closure: F) -> Result<TaskResult> {
@@ -122,8 +122,8 @@ impl WorkManager {
                 producer_queues: Default::default(),
                 threads: Default::default(),
                 suspend_handles: Default::default(),
-                terminating: terminating,
-                pending_tasks: pending_tasks,
+                terminating,
+                pending_tasks,
             };
 
         // add and start our worker threads

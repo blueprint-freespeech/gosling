@@ -258,11 +258,7 @@ impl TryFrom<bson::document::Document> for ErrorSection {
             None => None,
         };
 
-        Ok(ErrorSection{
-            cookie: cookie,
-            code: code,
-            message: message,
-            data: data})
+        Ok(ErrorSection{cookie, code, message, data})
     }
 }
 
@@ -328,13 +324,7 @@ impl TryFrom<bson::document::Document> for RequestSection {
             Err(_) => return Err(ErrorCode::SectionParseFailed),
         };
 
-        Ok(RequestSection{
-            cookie: cookie,
-            namespace: namespace,
-            function: function,
-            version: version,
-            arguments: arguments,
-        })
+        Ok(RequestSection{cookie, namespace, function, version, arguments})
     }
 }
 
@@ -395,11 +385,7 @@ impl TryFrom<bson::document::Document> for ResponseSection {
             return Err(ErrorCode::SectionParseFailed);
         }
 
-        Ok(ResponseSection{
-            cookie: cookie,
-            state: state,
-            result: result,
-        })
+        Ok(ResponseSection{cookie, state, result})
     }
 }
 
@@ -500,13 +486,13 @@ impl Session {
         Session{
             server: Server::new(Rc::downgrade(&context)),
             client: Client::new(Rc::downgrade(&context)),
-            context: context,
+            context,
             reader: Box::new(reader),
             writer: Box::new(writer),
             remaining_byte_count: None,
             pending_data: Default::default(),
             pending_sections: Default::default(),
-            message_write_buffer: message_write_buffer,
+            message_write_buffer,
         }
     }
 
@@ -712,7 +698,7 @@ pub struct Server {
 impl Server {
     fn new(context: Weak<RefCell<Context>>) -> Server {
         Server {
-            context: context,
+            context,
             apiset_registry: Default::default(),
         }
     }
@@ -740,7 +726,7 @@ impl Server {
                             if let Some(cookie) = request.cookie {
                                 outbound_sections.push(
                                     Section::Response(ResponseSection{
-                                        cookie: cookie,
+                                        cookie,
                                         state: RequestState::Complete,
                                         result: Some(result),
                                 }));
@@ -751,7 +737,7 @@ impl Server {
                             if let Some(cookie) = request.cookie {
                                 outbound_sections.push(
                                     Section::Response(ResponseSection{
-                                        cookie: cookie,
+                                        cookie,
                                         state: RequestState::Pending,
                                         result: None,
                                 }));
@@ -789,7 +775,7 @@ impl Server {
                             outbound_sections.push(
                                 Section::Response(
                                     ResponseSection{
-                                        cookie: cookie,
+                                        cookie,
                                         state: RequestState::Complete,
                                         result: Some(result),
                                     }));
@@ -828,7 +814,7 @@ pub struct Client {
 impl Client {
     fn new(context: Weak<RefCell<Context>>) -> Client {
         Client {
-            context: context,
+            context,
             next_cookie: 0i64,
             inbound_responses: Default::default(),
         }
@@ -840,7 +826,7 @@ impl Client {
         namespace: &str,
         function: &str,
         version: i32,
-        args: bson::document::Document,
+        arguments: bson::document::Document,
     ) -> Result<RequestCookie> {
         if let Some(context) = self.context.upgrade() {
             // always make sure we have a new cookie
@@ -853,8 +839,8 @@ impl Client {
                     cookie: Some(cookie),
                     namespace: namespace.to_string(),
                     function: function.to_string(),
-                    version: version,
-                    arguments: args,
+                    version,
+                    arguments,
                 }));
 
             return Ok(cookie);
