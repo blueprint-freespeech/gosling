@@ -2,7 +2,7 @@
 participant Client
 participant "Introduction Server" as Server
 
-Client->Server: begin_handshake()
+Client->Server: begin_handshake(...)
 
     note over Server: Evaluate Protocol Version
 
@@ -11,59 +11,26 @@ Client->Server: begin_handshake()
         note over Server: Close Connection
     end
 
+Client<-Server: return {server_cookie, endpoint_challenge}
+
+Client->Server: send_response(...)
+
+    note over Client, Server: Some time may pass as the Server processes request
+
     note over Server: Check Client Block-List
+    note over Server: Check Client Proof Signature
+    note over Server: Check Client Authorization Signature
+    note over Server: Check Requested Endpoint
+    note over Server: Check Challenge Response
 
-    alt Client Blocked
+    alt Any Check Failed
         Client<-Server: error
         note over Server: Close Connection
     end
 
-Client<-Server: return server cookie
+    note over Server: Adds the Client to the Endpoint Allow-List
 
-Client->Server: send_client_proof()
+    Client<-Server: return {service id}
 
-    note over Server: Evaluate Client Proof
-
-    alt Invalid Proof
-        Client<-Server: error
-        note over Server: Close Connection
-    end
-
-Server->Client: return
-
-loop
-    Client->Server: request_endpoint_challenge()
-
-        note over Server: Evaluate Endpoint String
-        alt Invalid Endpoint
-            Client<-Server: error
-            note over Server: Close Connection
-        end
-
-        note over Server: Evaluate Allow-List
-        alt Existing Contact
-            Client<-Server: return
-        end
-
-        Client<-Server: return challenge
-
-    Client->Server: send_endpoint_challenge_response()
-
-        note over Client, Server: Some time may pass as the Server processes request
-
-        alt Server Rejects Request
-            Client<-Server: error
-            note over Server: Close Connection
-        end
-
-        note over Server: Adds the Client to Allow-List
-
-        Client<-Server: return service id
-
-    note over Server
-        Maintains connection to allow client
-        to make more endpoint requests
-    endnote
-end
-        note over Client: Close Connection
+note over Client: Close Connection
 @enduml
