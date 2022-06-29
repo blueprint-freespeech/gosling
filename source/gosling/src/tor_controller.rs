@@ -198,7 +198,7 @@ impl TorProcess {
                 let mut line = String::default();
                 let mut stdout = stdout.lock().unwrap();
                 // read line
-                if let Ok(_) = stdout.read_line(&mut line) {
+                if stdout.read_line(&mut line).is_ok() {
                     // remove trailing '\n'
                     line.pop();
                     // then acquire the lock on the line buffer
@@ -917,9 +917,9 @@ impl TorController {
                         ensure!(private_key.is_none(), "TorController::add_onion(): received duplicate private keys");
                         index = index + "PrivateKey=".len();
                         private_key = Some(Ed25519PrivateKey::from_key_blob(&line[index..])?);
-                    } else if let Some(_) = line.find("ClientAuthV3=") {
+                    } else if line.contains("ClientAuthV3=") {
                         ensure!(client_auth.is_some() && client_auth.unwrap().len() > 0, "TorController::add_onion(): received unexpected ClientAuthV3 keys");
-                    } else if let None = line.find("OK") {
+                    } else if !line.contains("OK") {
                         bail!("TorController::add_onion(): received unexpected reply line: '{}'", line);
                     }
                 }
@@ -1223,7 +1223,7 @@ impl TorManager {
     // connect to an onion service and returns OnionStream
     pub fn connect(&mut self, service_id: &V3OnionServiceId, virt_port: u16, circuit: Option<CircuitToken>) -> Result<OnionStream> {
 
-        if let None = self.socks_listener {
+        if self.socks_listener.is_none() {
             let mut listeners = self.controller.borrow_mut().getinfo_net_listeners_socks()?;
             ensure!(!listeners.is_empty(), "TorManager::connect(): no available socks listener to connect through");
             self.socks_listener = Some(listeners.swap_remove(0));
