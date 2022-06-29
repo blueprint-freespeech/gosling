@@ -45,7 +45,7 @@ impl<T> ObjectRegistry<T> where T : HasByteTypeId{
         self.map.contains_key(&key)
     }
 
-    pub fn remove(&mut self, key:usize) -> () {
+    pub fn remove(&mut self, key:usize) {
         self.map.remove(&key);
     }
 

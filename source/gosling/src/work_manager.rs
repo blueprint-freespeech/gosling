@@ -235,7 +235,7 @@ impl WorkManager {
         Ok(())
     }
 
-    fn worker_func(producer_queue_weak: Weak<Mutex<Vec<Task>>>, suspend_handle_weak: Weak<Condvar>, terminating_weak: Weak<AtomicBool>, pending_tasks_weak: Weak<AtomicUsize>) -> () {
+    fn worker_func(producer_queue_weak: Weak<Mutex<Vec<Task>>>, suspend_handle_weak: Weak<Condvar>, terminating_weak: Weak<AtomicBool>, pending_tasks_weak: Weak<AtomicUsize>) {
         let mut consumer_queue = Vec::<Task>::new();
 
         let finished = || -> bool {

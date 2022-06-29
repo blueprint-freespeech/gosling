@@ -863,7 +863,7 @@ impl Client {
     }
 
     // migrate any responses from our context to the client for iterators
-    fn take_responses(&mut self) -> () {
+    fn take_responses(&mut self) {
         if let Some(context) = self.context.upgrade() {
             for response in context.borrow_mut().inbound_responses.drain(..) {
                 self.inbound_responses.push_back(response);

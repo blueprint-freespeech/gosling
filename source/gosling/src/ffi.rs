@@ -72,7 +72,7 @@ macro_rules! impl_registry_free {
 ///
 /// @param error : the error object to free
 #[no_mangle]
-pub extern "C" fn gosling_error_free(error: *mut GoslingError) -> () {
+pub extern "C" fn gosling_error_free(error: *mut GoslingError) {
     impl_registry_free!(error, Error);
 }
 
@@ -90,28 +90,28 @@ define_registry!{V3OnionServiceId, ObjectTypes::V3OnionServiceId}
 ///
 /// @param private_key : the private key to free
 #[no_mangle]
-pub extern "C" fn gosling_ed25519_private_key_free(private_key: *mut GoslingEd25519PrivateKey) -> () {
+pub extern "C" fn gosling_ed25519_private_key_free(private_key: *mut GoslingEd25519PrivateKey) {
     impl_registry_free!(private_key, Ed25519PrivateKey);
 }
 /// Frees a gosling_ed25519_public_key object
 ///
 /// @param public_key : the public key to free
 #[no_mangle]
-pub extern "C" fn gosling_ed25519_public_key_free(public_key: *mut GoslingEd25519PublicKey) -> () {
+pub extern "C" fn gosling_ed25519_public_key_free(public_key: *mut GoslingEd25519PublicKey) {
     impl_registry_free!(public_key, Ed25519PublicKey);
 }
 /// Frees a gosling_ed25519_signature object
 ///
 /// @param signature : the signature object to free
 #[no_mangle]
-pub extern "C" fn gosling_ed25519_signature_free(signature: *mut GoslingEd25519Signature) -> () {
+pub extern "C" fn gosling_ed25519_signature_free(signature: *mut GoslingEd25519Signature) {
     impl_registry_free!(signature, Ed25519Signature);
 }
 /// Frees a gosling_v3_onion_service_id object
 ///
 /// @param service_id : the service id object to free
 #[no_mangle]
-pub extern "C" fn gosling_v3_onion_service_id_free(service_id: *mut GoslingV3OnionServiceId) -> () {
+pub extern "C" fn gosling_v3_onion_service_id_free(service_id: *mut GoslingV3OnionServiceId) {
     impl_registry_free!(service_id, V3OnionServiceId);
 }
 
@@ -163,7 +163,7 @@ pub extern "C" fn gosling_ed25519_private_key_from_keyblob(
     out_private_key: *mut *mut GoslingEd25519PrivateKey,
     key_blob: *const c_char,
     key_blob_length: usize,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
 
     translate_failures((), error, || -> Result<()> {
         if out_private_key.is_null() {
@@ -205,7 +205,7 @@ pub extern "C" fn gosling_ed25519_private_key_to_keyblob(
     private_key: *const GoslingEd25519PrivateKey,
     out_key_blob: *mut c_char,
     key_blob_size: usize,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
 
     translate_failures((), error, || -> Result<()> {
         if private_key.is_null() {
@@ -250,7 +250,7 @@ pub extern "C" fn gosling_ed25519_private_key_to_keyblob(
 pub extern "C" fn gosling_ed25519_public_key_from_ed25519_private_key(
     out_public_key: *mut *mut GoslingEd25519PublicKey,
     private_key: *const GoslingEd25519PrivateKey,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
 
     translate_failures((), error, || -> Result<()> {
         if out_public_key.is_null() {

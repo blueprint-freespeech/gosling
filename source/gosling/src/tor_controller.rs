@@ -231,7 +231,7 @@ impl TorProcess {
 }
 
 impl Drop for TorProcess {
-    fn drop(&mut self) -> () {
+    fn drop(&mut self) {
         let _ = self.process.kill();
     }
 }
@@ -1122,7 +1122,7 @@ impl OnionListener {
 }
 
 impl Drop for OnionListener {
-    fn drop(&mut self) -> () {
+    fn drop(&mut self) {
         // on destruction tear down the onion service
         if let Some(controller) = self.controller.upgrade() {
             let _err = controller.borrow_mut().del_onion(&self.service_id);
