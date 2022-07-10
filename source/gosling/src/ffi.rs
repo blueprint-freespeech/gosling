@@ -221,7 +221,7 @@ pub extern "C" fn gosling_ed25519_private_key_to_keyblob(
         let registry = ed25519_private_key_registry();
         match registry.get(private_key as usize) {
             Some(private_key) => {
-                let private_key_blob = private_key.to_key_blob()?;
+                let private_key_blob = private_key.to_key_blob();
                 unsafe {
                     // copy keyblob into output buffer
                     let key_blob_view = std::slice::from_raw_parts_mut(out_key_blob as *mut u8, key_blob_size);
@@ -262,7 +262,7 @@ pub extern "C" fn gosling_ed25519_public_key_from_ed25519_private_key(
         let private_key_registry = ed25519_private_key_registry();
         match private_key_registry.get(private_key as usize) {
             Some(private_key) => {
-                let public_key = Ed25519PublicKey::from_private_key(private_key)?;
+                let public_key = Ed25519PublicKey::from_private_key(private_key);
                 unsafe {
                     *out_public_key = ed25519_public_key_registry().insert(public_key) as *mut GoslingEd25519PublicKey;
                 };

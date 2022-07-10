@@ -8,6 +8,7 @@ use signature:: Verifier;
 use std::convert::TryInto;
 use std::str;
 use tor_llcrypto::*;
+use tor_llcrypto::pk::keymanip::*;
 use tor_llcrypto::util::rand_compat::RngCompatExt;
 
 use anyhow::{bail, Result, ensure};
@@ -136,7 +137,6 @@ pub fn hash_tor_password(password: &str) -> Result<String> {
 
 // Struct deinitions
 
-// #[derive(Clone)]
 pub struct Ed25519PrivateKey {
     expanded_secret_key: pk::ed25519::ExpandedSecretKey,
 }
@@ -161,7 +161,7 @@ pub struct X25519PublicKey {
     public_key: pk::curve25519::PublicKey,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct V3OnionServiceId {
     data: [u8; V3_ONION_SERVICE_ID_LENGTH],
 }
@@ -170,12 +170,12 @@ pub struct V3OnionServiceId {
 
 impl Ed25519PrivateKey {
 
-    pub fn generate() -> Result<Ed25519PrivateKey> {
+    pub fn generate() -> Ed25519PrivateKey {
         let secret_key = pk::ed25519::SecretKey::generate(&mut rand_core::OsRng.rng_compat());
 
-        Ok(Ed25519PrivateKey{
+        Ed25519PrivateKey{
             expanded_secret_key: pk::ed25519::ExpandedSecretKey::from(&secret_key),
-        })
+        }
     }
 
     // according to nickm, any 64 byte string here is allowed
@@ -205,32 +205,49 @@ impl Ed25519PrivateKey {
         Ed25519PrivateKey::from_raw(&private_key_data)
     }
 
-    pub fn to_key_blob(&self) -> Result<String> {
+    fn from_private_x25519(x25519_private: &X25519PrivateKey) -> Result<(Ed25519PrivateKey, u8)> {
+        if let Some((result, signbit)) = convert_curve25519_to_ed25519_private(&x25519_private.secret_key) {
+            return Ok((Ed25519PrivateKey{
+                expanded_secret_key: result
+            }, signbit));
+        }
+        bail!("couldn't convert key");
+    }
+
+    pub fn to_key_blob(&self) -> String {
         let mut key_blob = ED25519_PRIVATE_KEYBLOB_HEADER.to_string();
         key_blob.push_str(&BASE64.encode(&self.expanded_secret_key.to_bytes()));
 
-        Ok(key_blob)
+        key_blob
     }
 
-    pub fn sign_message_ex(&self, public_key: &Ed25519PublicKey, message: &[u8]) -> Result<Ed25519Signature> {
+    pub fn sign_message_ex(&self, public_key: &Ed25519PublicKey, message: &[u8]) -> Ed25519Signature {
 
         let signature = self.expanded_secret_key.sign(message, &public_key.public_key);
-        Ok(Ed25519Signature{signature})
+        Ed25519Signature{signature}
     }
 
-    pub fn sign_message(&self, message: &[u8]) -> Result<Ed25519Signature> {
-        let public_key = Ed25519PublicKey::from_private_key(self)?;
+    pub fn sign_message(&self, message: &[u8]) -> Ed25519Signature {
+        let public_key = Ed25519PublicKey::from_private_key(self);
         self.sign_message_ex(&public_key, message)
     }
 
-    pub fn get_data(&self) -> [u8; ED25519_PRIVATE_KEY_SIZE] {
+    pub fn to_bytes(&self) -> [u8; ED25519_PRIVATE_KEY_SIZE] {
         self.expanded_secret_key.to_bytes()
     }
 }
 
 impl PartialEq for Ed25519PrivateKey {
     fn eq(&self, other:&Self) -> bool {
-        self.get_data().eq(&other.get_data())
+        self.to_bytes().eq(&other.to_bytes())
+    }
+}
+
+impl Clone for Ed25519PrivateKey {
+    fn clone(&self) -> Ed25519PrivateKey {
+        Ed25519PrivateKey{
+            expanded_secret_key: pk::ed25519::ExpandedSecretKey::from_bytes(&self.to_bytes()).unwrap()
+        }
     }
 }
 
@@ -246,7 +263,7 @@ impl Ed25519PublicKey {
     pub fn from_service_id(service_id: &V3OnionServiceId) -> Result<Ed25519PublicKey> {
         // decode base32 encoded service id
         let mut decoded_service_id = [0u8; V3_ONION_SERVICE_ID_RAW_SIZE];
-        let decoded_byte_count = ONION_BASE32.decode_mut(service_id.get_data(), &mut decoded_service_id).unwrap();
+        let decoded_byte_count = ONION_BASE32.decode_mut(service_id.as_bytes(), &mut decoded_service_id).unwrap();
         if decoded_byte_count != V3_ONION_SERVICE_ID_RAW_SIZE {
             bail!("Ed25519PublicKey::from_service_id(): decoded byte count is '{}', expected '{}'", decoded_byte_count, V3_ONION_SERVICE_ID_RAW_SIZE);
         }
@@ -256,24 +273,34 @@ impl Ed25519PublicKey {
         })
     }
 
-    pub fn from_private_key(private_key: &Ed25519PrivateKey) -> Result<Ed25519PublicKey> {
-        Ok(Ed25519PublicKey{
+    pub fn from_private_key(private_key: &Ed25519PrivateKey) -> Ed25519PublicKey {
+        Ed25519PublicKey{
             public_key: pk::ed25519::PublicKey::from(&private_key.expanded_secret_key),
+        }
+    }
+
+    fn from_public_x25519(public_x25519: &X25519PublicKey, signbit: u8) -> Result<Ed25519PublicKey> {
+        ensure!(signbit == 0u8 || signbit == 1u8);
+        Ok(Ed25519PublicKey{
+            public_key: match convert_curve25519_to_ed25519_public(&public_x25519.public_key, signbit) {
+                Some(public_key) => public_key,
+                None => bail!("failed to convert public key"),
+            },
         })
     }
 
     pub fn to_base32(&self) -> String {
-        BASE32.encode(&self.get_data())
+        BASE32.encode(self.as_bytes())
     }
 
-    pub fn get_data(&self) -> [u8; ED25519_PUBLIC_KEY_SIZE] {
-        *self.public_key.as_bytes()
+    pub fn as_bytes(&self) -> &[u8; ED25519_PUBLIC_KEY_SIZE] {
+        self.public_key.as_bytes()
     }
 }
 
 impl PartialEq for Ed25519PublicKey {
     fn eq(&self, other: &Self) -> bool {
-        self.get_data().eq(&other.get_data())
+        self.public_key.eq(&other.public_key)
     }
 }
 
@@ -293,14 +320,27 @@ impl Ed25519Signature {
         false
     }
 
-    pub fn get_data(&self) -> [u8; ED25519_SIGNATURE_SIZE] {
+    // derives an ed25519 public key from the provided x25519 public key and signbit, then
+    // verifies this signature using said ed25519 public key
+    pub fn verify_x25519(&self, message: &[u8], public_key: &X25519PublicKey, signbit: u8) -> bool {
+        if signbit != 0u8 && signbit != 1u8 {
+            return false;
+        }
+
+        if let Ok(public_key) = Ed25519PublicKey::from_public_x25519(public_key, signbit) {
+            return self.verify(message, &public_key);
+        }
+        false
+    }
+
+    pub fn to_bytes(&self) -> [u8; ED25519_SIGNATURE_SIZE] {
         self.signature.to_bytes()
     }
 }
 
 impl PartialEq for Ed25519Signature {
     fn eq(&self, other: &Self) -> bool {
-        self.get_data().eq(&other.get_data())
+        self.signature.eq(&other.signature)
     }
 }
 
@@ -335,8 +375,21 @@ impl X25519PrivateKey {
         })
     }
 
+    // security note: only ever sign messages the private key owner controls the contents of!
+    // this function first derives an ed25519 private key from the provided x25519 private key
+    // and signs the message, returning the signature and signbit needed to calculate the
+    // ed25519 public key from our x25519 private key's associated x25519 public key
+    pub fn sign_message(&self, message: &[u8]) -> Result<(Ed25519Signature, u8)> {
+        let (ed25519_private, signbit) = Ed25519PrivateKey::from_private_x25519(self)?;
+        Ok((ed25519_private.sign_message(message), signbit))
+    }
+
     pub fn to_base64(&self) -> String {
         BASE64.encode(&self.secret_key.to_bytes())
+    }
+
+    pub fn to_bytes(&self) -> [u8; X25519_PRIVATE_KEY_SIZE] {
+        self.secret_key.to_bytes()
     }
 }
 
@@ -370,7 +423,11 @@ impl X25519PublicKey {
     }
 
     pub fn to_base32(&self) -> String {
-        BASE32_NOPAD.encode(&self.public_key.to_bytes())
+        BASE32_NOPAD.encode(self.public_key.as_bytes())
+    }
+
+    pub fn as_bytes(&self) -> &[u8; X25519_PUBLIC_KEY_SIZE] {
+        self.public_key.as_bytes()
     }
 }
 
@@ -384,18 +441,24 @@ impl V3OnionServiceId {
         Ok(V3OnionServiceId{data: service_id.as_bytes().try_into()?})
     }
 
-    pub fn from_public_key(public_key: &Ed25519PublicKey) -> Result<V3OnionServiceId> {
+    pub fn from_public_key(public_key: &Ed25519PublicKey) -> V3OnionServiceId {
         let mut raw_service_id = [0u8; V3_ONION_SERVICE_ID_RAW_SIZE];
 
-        raw_service_id[..ED25519_PUBLIC_KEY_SIZE].copy_from_slice(&public_key.get_data()[..]);
-        let truncated_checksum = calc_truncated_checksum(&public_key.get_data());
+        raw_service_id[..ED25519_PUBLIC_KEY_SIZE].copy_from_slice(&public_key.as_bytes()[..]);
+        let truncated_checksum = calc_truncated_checksum(&public_key.as_bytes());
         raw_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 0] = truncated_checksum[0];
         raw_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 1] = truncated_checksum[1];
         raw_service_id[V3_ONION_SERVICE_ID_VERSION_OFFSET] = 0x03u8;
 
-        let service_id = ONION_BASE32.encode(&raw_service_id);
+        let mut service_id = [0u8; V3_ONION_SERVICE_ID_LENGTH];
+        // panics on wrong buffer size, but given our constant buffer sizes should be fine
+        ONION_BASE32.encode_mut(&raw_service_id, &mut service_id);
 
-        Ok(V3OnionServiceId{data:service_id.as_bytes().try_into()?})
+        V3OnionServiceId{data:service_id}
+    }
+
+    pub fn from_private_key(private_key: &Ed25519PrivateKey) -> V3OnionServiceId {
+        return Self::from_public_key(&Ed25519PublicKey::from_private_key(private_key));
     }
 
     pub fn is_valid(service_id: &str) -> bool {
@@ -429,24 +492,14 @@ impl V3OnionServiceId {
         }
     }
 
-    pub fn get_data(&self) -> &[u8] {
+    pub fn as_bytes(&self) -> &[u8] {
         &self.data
-    }
-}
-
-impl PartialEq for V3OnionServiceId {
-    fn eq(&self, other: &Self) -> bool {
-        self.data.eq(&other.data)
     }
 }
 
 impl ToString for V3OnionServiceId {
     fn to_string(&self) -> String {
-        match str::from_utf8(&self.data) {
-            Ok(result) => result.to_string(),
-            // this should really never ever happen but who knows
-            Err(err) => panic!("{}", err),
-        }
+        return unsafe { str::from_utf8_unchecked(&self.data).to_string() };
     }
 }
 
@@ -471,15 +524,15 @@ fn test_ed25519() -> Result<()> {
 
     let private_key = Ed25519PrivateKey::from_raw(&private_raw)?;
     assert!(private_key == Ed25519PrivateKey::from_key_blob(&private_key_blob)?);
-    assert!(private_key_blob == private_key.to_key_blob()?);
+    assert!(private_key_blob == private_key.to_key_blob());
 
     let public_key = Ed25519PublicKey::from_raw(&public_raw)?;
     assert!(public_key == Ed25519PublicKey::from_service_id(&service_id)?);
-    assert!(public_key == Ed25519PublicKey::from_private_key(&private_key)?);
-    assert!(service_id == V3OnionServiceId::from_public_key(&public_key)?);
+    assert!(public_key == Ed25519PublicKey::from_private_key(&private_key));
+    assert!(service_id == V3OnionServiceId::from_public_key(&public_key));
     assert!(public_base32 == public_key.to_base32());
 
-    let signature = private_key.sign_message(&message)?;
+    let signature = private_key.sign_message(&message);
     assert!(signature == Ed25519Signature::from_raw(&signature_raw)?);
     assert!(signature.verify(&message, &public_key));
     assert!(!signature.verify(&null_message, &public_key));
@@ -491,9 +544,9 @@ fn test_ed25519() -> Result<()> {
     assert!(!V3OnionServiceId::is_valid("6L62FW7TQCTLU5FESDQUKVPOXEZKAXBZLLRAFA2VE6EWUHZPHXCZSJYD"));
 
     // generate a new key, get the public key and sign/verify a message
-    let private_key = Ed25519PrivateKey::generate()?;
-    let public_key = Ed25519PublicKey::from_private_key(&private_key)?;
-    let signature = private_key.sign_message(&message)?;
+    let private_key = Ed25519PrivateKey::generate();
+    let public_key = Ed25519PublicKey::from_private_key(&private_key);
+    let signature = private_key.sign_message(&message);
     assert!(signature.verify(&message, &public_key));
 
     Ok(())
@@ -535,6 +588,11 @@ fn test_x25519() -> Result<()> {
     let private_key = X25519PrivateKey::from_base64(&SECRET_BASE64)?;
     let public_key = X25519PublicKey::from_private_key(&private_key);
     ensure!(public_key.to_base32() == PUBLIC_BASE32);
+
+    let message = b"All around me are familiar faces";
+
+    let (signature, signbit) = private_key.sign_message(message)?;
+    ensure!(signature.verify_x25519(message, &public_key, signbit));
 
     Ok(())
 }

@@ -735,7 +735,7 @@ impl TorController {
 
         // set our key or request a new one
         if let Some(key) = key {
-            command_buffer.push(key.to_key_blob()?);
+            command_buffer.push(key.to_key_blob());
         } else {
             command_buffer.push("NEW:ED25519-V3".to_string());
         }
@@ -1320,7 +1320,7 @@ fn test_tor_controller() -> Result<()> {
         // add an onoin service
         let (private_key, service_id) = tor_controller.add_onion(None, &Default::default(), None, 22, None, None)?;
 
-        println!("private_key: {}", private_key.unwrap().to_key_blob()?);
+        println!("private_key: {}", private_key.unwrap().to_key_blob());
         println!("service_id: {}", service_id.to_string());
 
         if let Ok(()) = tor_controller.del_onion(&V3OnionServiceId::from_string("6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd")?) {
@@ -1471,7 +1471,7 @@ fn test_tor_manager() -> Result<()> {
 }
 
 #[test]
-#[timeout(90000)]
+#[timeout(60000)]
 fn test_onion_service() -> Result<()> {
 
     const WORKER_NAMES: [&str; 1] = ["tor_stdout"];
@@ -1502,9 +1502,9 @@ fn test_onion_service() -> Result<()> {
     // vanilla V3 onion service
     {
         // create an onion service for this test
-        let private_key = Ed25519PrivateKey::generate()?;
-        let public_key = Ed25519PublicKey::from_private_key(&private_key)?;
-        let service_id = V3OnionServiceId::from_public_key(&public_key)?;
+        let private_key = Ed25519PrivateKey::generate();
+        let public_key = Ed25519PublicKey::from_private_key(&private_key);
+        let service_id = V3OnionServiceId::from_public_key(&public_key);
 
         println!("Starting and listening to onion service");
         const VIRT_PORT: u16 = 42069u16;
@@ -1537,9 +1537,9 @@ fn test_onion_service() -> Result<()> {
     // authenticated onion service
     {
         // create an onion service for this test
-        let private_key = Ed25519PrivateKey::generate()?;
-        let public_key = Ed25519PublicKey::from_private_key(&private_key)?;
-        let service_id = V3OnionServiceId::from_public_key(&public_key)?;
+        let private_key = Ed25519PrivateKey::generate();
+        let public_key = Ed25519PublicKey::from_private_key(&private_key);
+        let service_id = V3OnionServiceId::from_public_key(&public_key);
 
         let private_auth_key = X25519PrivateKey::generate();
         let public_auth_key = X25519PublicKey::from_private_key(&private_auth_key);
