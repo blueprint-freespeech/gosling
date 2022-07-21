@@ -212,7 +212,10 @@ The client authorization signature is calculated by the **client** by signing th
 
 A **client** proves they control the x25519 private key associated with the provided x25519 public key (used for onion service client authorization) by generating the above signature  and sending it to the **introduction server**. A gosling **introduction server** must verify the validity of the provided signature to guarantee the **client** controls the private x25519 key used to derive the provided public x25519 key.
 
----
+## Acknowledgements
+
+Creation of innovative free software needs support. We thank the NGI Assure Fund, a fund established by NLnet with financial support from the European Commission's Next Generation Internet programme, under the aegis of DG Communications Networks, Content and Technology under grant agreement No 957073
+
 [^1]: see [Onion routing](https://en.wikipedia.org/wiki/Onion_routing)
 
 [^2]: see [About Tor](https://support.torproject.org/about/)
