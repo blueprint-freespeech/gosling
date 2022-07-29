@@ -107,6 +107,8 @@ namespace gosling_introduction {
   //   Verification')
   // - binary client_authorization_key : 32-byte x25519 public key to be used to encrypt
   //   the endpoint onion service descriptor
+  // - bool client_authorization_key_signbit : the signbit of the ed25519 public key to be
+  //   derived from the provided x25519 public key; true => 1, false => 0
   // - binary client_authorization_signature : 64-byte ed25519 signature of the client's
   //   provided v3 onion service id, signed with the ed25519 private key derived
   //   from the private x25519 key associated with the provided public x25519
@@ -125,6 +127,7 @@ namespace gosling_introduction {
                 string client_identity,
                 binary client_identity_proof_signature,
                 binary client_authorization_key,
+                bool client_authorization_key_signbit,
                 binary client_authorization_signature,
                 document challenge_response) -> string;
 }
