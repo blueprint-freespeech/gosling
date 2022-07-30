@@ -170,14 +170,12 @@ namespace gosling_endpoint {
   //   client's v3 onion service id (see 'Client Identity Proof Calculation and
   //   Verification')
   //
-  // return : on success, a string containing the v3 onion service id of the
-  // endpoint server (otherwise an error is raised); the endpoint's onion
-  // service descriptor will be encrypted with the provided client authorization key
+  // return : on success, returns an empty document
   //
   // An error is raised if any of the associated checks or signature verifications fail
   send_response(binary client_cookie,
                 string client_identity,
-                binary client_identity_proof_signature) -> string;
+                binary client_identity_proof_signature) -> document;
 }
 ```
 
