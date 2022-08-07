@@ -1104,6 +1104,12 @@ impl Write for OnionStream {
     }
 }
 
+impl From<OnionStream> for TcpStream {
+    fn from(onion_stream: OnionStream) -> Self {
+        return onion_stream.stream;
+    }
+}
+
 pub struct OnionListener {
     listener: TcpListener,
     service_id: V3OnionServiceId,
