@@ -556,6 +556,7 @@ impl PartialOrd for Version {
 enum AsyncEvent {
     Unknown{lines: Vec<String>},
     StatusClient{severity: String, action: String, arguments: Vec<(String,String)>},
+    HsDesc{action: String, hs_address: V3OnionServiceId},
 }
 
 struct TorController {
@@ -596,10 +597,10 @@ impl TorController {
         ensure!(reply.status_code == 650u32, "TorController::reply_to_event(): received unexpected synchrynous reply");
 
         lazy_static! {
-
             // STATUS_EVENT replies
             static ref STATUS_EVENT_PATTERN: Regex = Regex::new(r#"^STATUS_CLIENT (?P<severity>NOTICE|WARN|ERR) (?P<action>[A-Za-z]+)"#).unwrap();
             static ref STATUS_EVENT_ARGUMENT_PATTERN: Regex = Regex::new(r#"(?P<key>[A-Z]+)=(?P<value>[A-Za-z0-9_]+|"[^"]+")"#).unwrap();
+            static ref HS_DESC_PATTERN: Regex = Regex::new(r#"HS_DESC (?P<action>REQUESTED|UPLOAD|RECEIVED|UPLOADED|IGNORE|FAILED|CREATED) (?P<hsaddress>[a-z2-7]{56})"#).unwrap();
         }
 
         // not sure this is what we want but yolo
@@ -627,6 +628,18 @@ impl TorController {
                 action: action.to_string(),
                 arguments
             });
+        }
+
+        if let Some(caps) = HS_DESC_PATTERN.captures(&reply_text) {
+            let action = caps.name("action").unwrap().as_str();
+            let hs_address = caps.name("hsaddress").unwrap().as_str();
+
+            if let Ok(hs_address) = V3OnionServiceId::from_string(&hs_address) {
+                return Ok(AsyncEvent::HsDesc{
+                    action: action.to_string(),
+                    hs_address
+                });
+            }
         }
 
         // no luck parsing reply, just return full text
@@ -1130,6 +1143,7 @@ pub enum Event {
     BootstrapStatus{progress: u32, tag: String, summary: String },
     BootstrapComplete,
     LogReceived{line: String},
+    OnionServicePublished{service_id: V3OnionServiceId},
 }
 
 pub struct TorManager {
@@ -1159,7 +1173,7 @@ impl TorManager {
         ensure!(version >= min_required_version, "TorManager::new(): tor daemon not new enough; must be at least version {}", min_required_version.to_string());
 
         // register for STATUS_CLIENT async events
-        controller.setevents(&["STATUS_CLIENT"])?;
+        controller.setevents(&["STATUS_CLIENT", "HS_DESC"])?;
 
         Ok(
             TorManager{
@@ -1172,24 +1186,37 @@ impl TorManager {
 
     pub fn wait_event(&mut self) -> Result<Option<Event>> {
         for async_event in self.controller.borrow_mut().wait_async_events()?.iter() {
-            if let AsyncEvent::StatusClient{severity,action,arguments} = async_event {
-                if severity == "NOTICE" && action == "BOOTSTRAP" {
-                    let mut progress: u32 = 0;
-                    let mut tag: String = Default::default();
-                    let mut summary: String = Default::default();
-                    for (key,val) in arguments.iter() {
-                        match key.as_str() {
-                            "PROGRESS" => progress = val.parse()?,
-                            "TAG" => tag = val.to_string(),
-                            "SUMMARY" => summary = val.to_string(),
-                            _ => {}, // ignore unexpected arguments
+            match async_event {
+                AsyncEvent::StatusClient{severity,action,arguments} => {
+                    if severity == "NOTICE" && action == "BOOTSTRAP" {
+                        let mut progress: u32 = 0;
+                        let mut tag: String = Default::default();
+                        let mut summary: String = Default::default();
+                        for (key,val) in arguments.iter() {
+                            match key.as_str() {
+                                "PROGRESS" => progress = val.parse()?,
+                                "TAG" => tag = val.to_string(),
+                                "SUMMARY" => summary = val.to_string(),
+                                _ => {}, // ignore unexpected arguments
+                            }
+                        }
+                        self.events.push_back(Event::BootstrapStatus{progress, tag, summary});
+                        if progress == 100u32 {
+                            self.events.push_back(Event::BootstrapComplete);
                         }
                     }
-                    self.events.push_back(Event::BootstrapStatus{progress, tag, summary});
-                    if progress == 100u32 {
-                        self.events.push_back(Event::BootstrapComplete);
+                },
+                AsyncEvent::HsDesc{action,hs_address} => {
+                    if action == "UPLOADED" {
+                        self.events.push_back(Event::OnionServicePublished{service_id: hs_address.clone()});
                     }
-                }
+                },
+                AsyncEvent::Unknown{lines} => {
+                    println!("Received Unknown Event:");
+                    for line in lines.iter() {
+                        println!(" {}", line);
+                    }
+                },
             }
         }
 
@@ -1352,13 +1379,16 @@ fn test_tor_controller() -> Result<()> {
                 match async_event {
                     AsyncEvent::Unknown{lines} => {
                         println!("Unknown: {}", lines.join("\n"));
-                    }
+                    },
                     AsyncEvent::StatusClient{severity,action,arguments} => {
                         println!("STATUS_CLIENT severity={}, action={}", severity, action);
                         for (key,value) in arguments.iter() {
                             println!(" {}='{}'", key, value);
                         }
                     },
+                    AsyncEvent::HsDesc{action,hs_address} => {
+                        println!("HS_DESC action={}, hsaddress={}", action, hs_address.to_string());
+                    }
                 }
             }
         }
@@ -1454,14 +1484,15 @@ fn test_tor_manager() -> Result<()> {
         if let Some(event) = tor.wait_event()? {
             match event {
                 Event::BootstrapStatus{progress,tag,summary} => println!("BootstrapStatus: {{ progress: {}, tag: {}, summary: '{}' }}", progress, tag, summary),
-                Event::BootstrapComplete =>     {
+                Event::BootstrapComplete => {
                     println!("Bootstrap Complete!");
                     break;
-                }
+                },
                 Event::LogReceived{line} => {
                     received_log = true;
                     println!("--- {}", line);
-                }
+                },
+                _ => {},
             }
         }
     }
@@ -1491,10 +1522,11 @@ fn test_onion_service() -> Result<()> {
                 Event::BootstrapComplete =>     {
                     println!("Bootstrap Complete!");
                     break;
-                }
+                },
                 Event::LogReceived{line} => {
                     println!("--- {}", line);
-                }
+                },
+                _ => {},
             }
         }
     }
@@ -1503,16 +1535,35 @@ fn test_onion_service() -> Result<()> {
     {
         // create an onion service for this test
         let private_key = Ed25519PrivateKey::generate();
-        let public_key = Ed25519PublicKey::from_private_key(&private_key);
-        let service_id = V3OnionServiceId::from_public_key(&public_key);
+
 
         println!("Starting and listening to onion service");
         const VIRT_PORT: u16 = 42069u16;
         let listener = tor.listener(&private_key, VIRT_PORT, None)?;
 
+        loop {
+            if let Some(event) = tor.wait_event()? {
+                match event {
+                    Event::LogReceived{line} => {
+                        println!("--- {}", line);
+                    },
+                    Event::OnionServicePublished{service_id} => {
+                        let expected_service_id = V3OnionServiceId::from_private_key(&private_key);
+                        if expected_service_id == service_id {
+                            println!("Onion Service {} published", service_id.to_string());
+                            break;
+                        }
+                    },
+                    _ => {},
+                }
+            }
+        }
+
         const MESSAGE: &str = "Hello World!";
 
         {
+            let service_id = V3OnionServiceId::from_private_key(&private_key);
+
             println!("Connecting to onion service");
             let mut client = tor.connect(&service_id, VIRT_PORT, None)?;
             println!("Client writing message: '{}'", MESSAGE);
@@ -1538,19 +1589,37 @@ fn test_onion_service() -> Result<()> {
     {
         // create an onion service for this test
         let private_key = Ed25519PrivateKey::generate();
-        let public_key = Ed25519PublicKey::from_private_key(&private_key);
-        let service_id = V3OnionServiceId::from_public_key(&public_key);
 
         let private_auth_key = X25519PrivateKey::generate();
         let public_auth_key = X25519PublicKey::from_private_key(&private_auth_key);
 
-        println!("Starting and listening to onion service");
+        println!("Starting and listening to authenticated onion service");
         const VIRT_PORT: u16 = 42069u16;
         let listener = tor.listener(&private_key, VIRT_PORT, Some(&[public_auth_key]))?;
+
+        loop {
+            if let Some(event) = tor.wait_event()? {
+                match event {
+                    Event::LogReceived{line} => {
+                        println!("--- {}", line);
+                    },
+                    Event::OnionServicePublished{service_id} => {
+                        let expected_service_id = V3OnionServiceId::from_private_key(&private_key);
+                        if expected_service_id == service_id {
+                            println!("Authenticated Onion Service {} published", service_id.to_string());
+                            break;
+                        }
+                    },
+                    _ => {},
+                }
+            }
+        }
 
         const MESSAGE: &str = "Hello World!";
 
         {
+            let service_id = V3OnionServiceId::from_private_key(&private_key);
+
             println!("Connecting to onion service (should fail)");
             if tor.connect(&service_id, VIRT_PORT, None).is_ok() {
                 bail!("Should not able to connect to an authenticated onion service without auth key");
