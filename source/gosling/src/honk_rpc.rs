@@ -508,7 +508,7 @@ impl Session {
                     } else {
                         bail!(err);
                     }
-                Ok(0) => bail!("Client::wait_message(): no more available bytes"),
+                Ok(0) => bail!("Client::wait_message(): no more available bytes; expecting {} bytes", remaining),
                 Ok(count) => {
                     self.pending_data.extend_from_slice(&buffer[0..count]);
                     if remaining == count {
@@ -566,13 +566,22 @@ impl Session {
         }
     }
 
-    // read and save of availabl esections
+    // read and save of available sections
     fn read_sections(&mut self) -> Result<()> {
-        while let Some (mut message) = self.read_message()? {
-            self.pending_sections.append(&mut VecDeque::from(std::mem::take(&mut message.sections)));
+        loop {
+            match self.read_message() {
+                Ok(Some(mut message)) => {
+                    self.pending_sections.extend(message.sections.drain(..));
+                },
+                Ok(None) => return Ok(()),
+                Err(err) => {
+                    if self.pending_sections.is_empty() {
+                        bail!(err);
+                    }
+                    return Ok(());
+                },
+            }
         }
-
-        Ok(())
     }
 
     // route read sections to client and server buffers
