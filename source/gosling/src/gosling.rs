@@ -36,6 +36,7 @@ use crate::work_manager::*;
 
 #[derive(Debug, Eq, PartialEq, TryFromPrimitive)]
 #[repr(i32)]
+/// cbindgen:ignore
 enum GoslingError {
     NotImplemented = 1, // TODO: remove once all the APIs are implemented
     // bad gosling version
@@ -2045,15 +2046,15 @@ fn test_gosling_context() -> Result<()> {
     let mut alice_server_socket = alice_server_socket.take().unwrap();
     let mut pat_client_socket = pat_client_socket.take().unwrap();
 
-    pat_client_socket.write(b"Hello World!\n");
+    pat_client_socket.write(b"Hello World!\n")?;
     pat_client_socket.flush()?;
 
     alice_server_socket.set_nonblocking(false)?;
     let mut alice_reader = BufReader::new(alice_server_socket);
 
     let mut response: String = Default::default();
-    alice_reader.read_line(&mut response);
- ;
+    alice_reader.read_line(&mut response)?;
+
     println!("response: '{}'", response);
     ensure!(response == "Hello World!\n");
 

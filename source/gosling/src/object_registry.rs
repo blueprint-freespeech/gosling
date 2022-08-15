@@ -10,8 +10,8 @@ use anyhow::Result;
 pub enum ObjectTypes {
     Error,
     Ed25519PrivateKey,
-    Ed25519PublicKey,
-    Ed25519Signature,
+    X25519PrivateKey,
+    X25519PublicKey,
     V3OnionServiceId,
 }
 

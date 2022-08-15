@@ -17,7 +17,8 @@ line_length = 80
 "GoslingError" = "gosling_error"
 "GoslingEd25519PrivateKey" = "gosling_ed25519_private_key"
 "GoslingEd25519PublicKey" = "gosling_ed25519_public_key"
-"GoslingEd25519Signature" = "gosling_ed25519_signature"
+"GoslingX25519PrivateKey" = "gosling_x25519_private_key"
+"GoslingX25519PublicKey" = "gosling_x25519_public_key"
 "GoslingV3OnionServiceId" = "gosling_v3_onion_service_id"
 
 [fn]

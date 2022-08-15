@@ -84,16 +84,16 @@ namespace std {
             gosling_ed25519_private_key_free(val);
         }
     };
-    template<> class default_delete<gosling_ed25519_public_key> {
+    template<> class default_delete<gosling_x25519_private_key> {
     public:
-        void operator()(gosling_ed25519_public_key *val) {
-            gosling_ed25519_public_key_free(val);
+        void operator()(gosling_x25519_private_key *val) {
+            gosling_x25519_private_key_free(val);
         }
     };
-    template<> class default_delete<gosling_ed25519_signature> {
+    template<> class default_delete<gosling_x25519_public_key> {
     public:
-        void operator()(gosling_ed25519_signature *val) {
-            gosling_ed25519_signature_free(val);
+        void operator()(gosling_x25519_public_key *val) {
+            gosling_x25519_public_key_free(val);
         }
     };
     template<> class default_delete<gosling_v3_onion_service_id> {

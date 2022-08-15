@@ -47,8 +47,12 @@ pub const X25519_PRIVATE_KEY_SIZE: usize = 32;
 pub const X25519_PUBLIC_KEY_SIZE: usize = 32;
 /// The number of bytes needed to store base64 encoded x25519 private key as an ASCII c-string (not including null-terminator)
 pub const X25519_PRIVATE_KEYBLOB_BASE64_LENGTH: usize = 44;
+/// The number of bytes needed to store base64 encoded x25519 private key as an ASCII c-string (including a null terminator)
+pub const X25519_PRIVATE_KEYBLOB_BASE64_SIZE: usize = X25519_PRIVATE_KEYBLOB_BASE64_LENGTH + 1;
 /// The number of bytes needed to store base32 encoded x25519 public key as an ASCII c-string (not including null-terminator)
 pub const X25519_PUBLIC_KEYBLOB_BASE32_LENGTH: usize = 52;
+/// The number of bytes needed to store bsae32 encoded x25519 public key as an ASCII c-string (including a null terminator)
+pub const X25519_PUBLIC_KEYBLOB_BASE32_SIZE: usize = X25519_PUBLIC_KEYBLOB_BASE32_LENGTH + 1;
 
 // decoder for lowercase base32 (BASE32 object is upper-case)
 lazy_static! {
