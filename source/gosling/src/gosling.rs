@@ -1,6 +1,7 @@
 // standard
 use std::boxed::Box;
 use std::cell::{Ref, RefCell};
+use std::clone::Clone;
 use std::collections::{HashMap,HashSet};
 use std::convert::TryInto;
 use std::io::{BufRead, BufReader, Read, Write};
@@ -19,8 +20,6 @@ use bson::spec::BinarySubtype;
 use crypto::digest::Digest;
 use crypto::sha3::Sha3;
 use data_encoding::{HEXLOWER};
-#[cfg(test)]
-use ntest::timeout;
 use num_enum::TryFromPrimitive;
 use rand::RngCore;
 use rand::rngs::OsRng;
@@ -146,15 +145,16 @@ struct IntroductionClient<H> {
     handshake_complete: bool,
 }
 
-impl<H> IntroductionClient<H> where H : IntroductionClientHandshake + Default {
+impl<H> IntroductionClient<H> where H : IntroductionClientHandshake {
     fn new(
+        handshake: H,
         endpoint: &str,
         rpc: Session,
         server_service_id: V3OnionServiceId,
         client_ed25519_private: Ed25519PrivateKey) -> Self {
         Self {
             next_function: Some(IntroductionHandshakeFunction::BeginHandshake),
-            handshake: Default::default(),
+            handshake,
             rpc,
             server_service_id,
             requested_endpoint: endpoint.to_string(),
@@ -344,9 +344,10 @@ struct IntroductionServerApiSet<H> {
 }
 
 // actual implementation of various rpc methods, glue/plumbing to the intro server handshake object
-impl<H> IntroductionServerApiSet<H> where H : IntroductionServerHandshake + Default {
+impl<H> IntroductionServerApiSet<H> where H : IntroductionServerHandshake {
 
     fn new(
+        handshake: H,
         server_service_id: V3OnionServiceId,
         blocked_clients: Weak<RefCell<HashSet<V3OnionServiceId>>>,
         new_client: Weak<RefCell<Option<(Ed25519PrivateKey, String, V3OnionServiceId, X25519PublicKey)>>>,
@@ -356,7 +357,7 @@ impl<H> IntroductionServerApiSet<H> where H : IntroductionServerHandshake + Defa
         OsRng.fill_bytes(&mut server_cookie);
 
         IntroductionServerApiSet{
-            handshake: Default::default(),
+            handshake,
             // flags
             client_requested_endpoint_valid: false,
             client_allowed: false,
@@ -622,7 +623,7 @@ impl<H> IntroductionServerApiSet<H> where H : IntroductionServerHandshake + Defa
 }
 
 // ApiSet implementation for the introduction rpc server
-impl<H> ApiSet for IntroductionServerApiSet<H> where H : IntroductionServerHandshake + Default {
+impl<H> ApiSet for IntroductionServerApiSet<H> where H : IntroductionServerHandshake {
     fn namespace(&self) -> &str {
         "gosling_introduction"
     }
@@ -729,8 +730,9 @@ struct IntroductionServer<H> {
     handshake_complete: bool,
 }
 
-impl<H> IntroductionServer<H> where H : IntroductionServerHandshake + Default + 'static{
+impl<H> IntroductionServer<H> where H : IntroductionServerHandshake + 'static{
     fn new(
+        handshake: H,
         service_id: V3OnionServiceId,
         blocked_clients: Weak<RefCell<HashSet<V3OnionServiceId>>>,
         rpc: Session) -> Self {
@@ -744,6 +746,7 @@ impl<H> IntroductionServer<H> where H : IntroductionServerHandshake + Default + 
         };
 
         let apiset = IntroductionServerApiSet::<H>::new(
+            handshake,
             service_id,
             blocked_clients,
             Rc::downgrade(&retval.new_client),
@@ -1189,6 +1192,9 @@ pub struct Context<CH, SH> {
     introduction_port : u16,
     endpoint_port : u16,
 
+    client_handshake_prototype: CH,
+    server_handshake_prototype: SH,
+
     //
     // Servers and Clients for in-process handshakes
     //
@@ -1255,8 +1261,10 @@ enum ContextEvent {
     },
 }
 
-impl<CH,SH> Context<CH,SH> where CH : IntroductionClientHandshake + Default, SH : IntroductionServerHandshake + Default + 'static{
+impl<CH,SH> Context<CH,SH> where CH : IntroductionClientHandshake + Clone, SH : IntroductionServerHandshake + Clone + 'static {
     fn new(
+        client_handshake_prototype: CH,
+        server_handshake_prototype: SH,
         mut tor_manager: TorManager,
         introduction_port: u16,
         endpoint_port: u16,
@@ -1270,6 +1278,9 @@ impl<CH,SH> Context<CH,SH> where CH : IntroductionClientHandshake + Default, SH 
             tor_manager,
             introduction_port,
             endpoint_port,
+
+            client_handshake_prototype,
+            server_handshake_prototype,
 
             introduction_clients: Default::default(),
             introduction_servers: Default::default(),
@@ -1335,6 +1346,7 @@ impl<CH,SH> Context<CH,SH> where CH : IntroductionClientHandshake + Default, SH 
         let client_rpc = Session::new(stream.try_clone()?, stream);
 
         let intro_client = IntroductionClient::<CH>::new(
+            self.client_handshake_prototype.clone(),
             endpoint,
             client_rpc,
             introduction_server_id,
@@ -1373,6 +1385,7 @@ impl<CH,SH> Context<CH,SH> where CH : IntroductionClientHandshake + Default, SH 
                 let server_service_id = V3OnionServiceId::from_public_key(&introduction_public_key);
                 let server_rpc = Session::new(stream.try_clone()?, stream.try_clone()?);
                 let intro_server = IntroductionServer::<SH>::new(
+                    self.server_handshake_prototype.clone(),
                     server_service_id,
                     Rc::downgrade(&self.blocked_clients),
                     server_rpc);
@@ -1652,7 +1665,7 @@ impl IntroductionClientHandshake for TestBadIntroductionClientHandshake {
 }
 
 #[cfg(test)]
-fn introduction_test<CH, SH>(should_fail: bool, client_blocked: bool, endpoint: &str) -> Result<()>  where CH : IntroductionClientHandshake + Default + 'static, SH : IntroductionServerHandshake + Default + 'static {
+fn introduction_test<CH, SH>(should_fail: bool, client_blocked: bool, endpoint: &str) -> Result<()>  where CH : IntroductionClientHandshake + Default, SH : IntroductionServerHandshake + Default + 'static {
     // test sockets
     let stream1 = MemoryStream::new();
     let stream2 = MemoryStream::new();
@@ -1667,6 +1680,7 @@ fn introduction_test<CH, SH>(should_fail: bool, client_blocked: bool, endpoint: 
     let mut server_rpc = Session::new(stream1.clone(), stream2.clone());
 
     let mut intro_server = IntroductionServer::<SH>::new(
+        Default::default(),
         server_service_id.clone(),
         Rc::downgrade(&blocked_clients),
         server_rpc);
@@ -1684,6 +1698,7 @@ fn introduction_test<CH, SH>(should_fail: bool, client_blocked: bool, endpoint: 
     let mut client_rpc = Session::new(stream2, stream1);
 
     let mut intro_client = IntroductionClient::<CH>::new(
+        Default::default(),
         endpoint,
         client_rpc,
         server_service_id.clone(),
@@ -1853,7 +1868,7 @@ fn test_endpoint_handshake() -> Result<()> {
 
 // AutoAccept Server
 #[cfg(test)]
-#[derive(Default)]
+#[derive(Default, Clone)]
 struct AutoAcceptIntroductionServerHandshake {
 }
 
@@ -1884,7 +1899,7 @@ impl IntroductionServerHandshake for AutoAcceptIntroductionServerHandshake {
 // Client Handshake
 
 #[cfg(test)]
-#[derive(Default)]
+#[derive(Default, Clone)]
 struct NoOpIntroductionClientHandshake {
 
 }
@@ -1897,7 +1912,7 @@ impl IntroductionClientHandshake for NoOpIntroductionClientHandshake {
 }
 
 #[test]
-#[timeout(90000)]
+#[serial_test::serial(timeout_ms = 90000)]
 fn test_gosling_context() -> Result<()> {
 
     const WORKER_NAMES: [&str; 1] = ["tor_stdout"];
@@ -1930,6 +1945,8 @@ fn test_gosling_context() -> Result<()> {
 
     println!("Starting Alice gosling context ({})", alice_service_id.to_string());
     let mut alice = Context::<NoOpIntroductionClientHandshake,AutoAcceptIntroductionServerHandshake>::new(
+        Default::default(),
+        Default::default(),
         tor,
         420,
         420,
@@ -1962,6 +1979,8 @@ fn test_gosling_context() -> Result<()> {
 
     println!("Starting Pat gosling context ({})", pat_service_id.to_string());
     let mut pat = Context::<NoOpIntroductionClientHandshake,AutoAcceptIntroductionServerHandshake>::new(
+        Default::default(),
+        Default::default(),
         tor,
         420,
         420,
@@ -1990,8 +2009,11 @@ fn test_gosling_context() -> Result<()> {
                 ContextEvent::IntroductionServerPublished => {
                     if !introduction_published {
                         println!("Alice introduction server published");
-                        introduction_published = true;
+
+                        // alice has published the intro server, so pay may now request an endpoint
+
                         pat.request_remote_endpoint(alice_service_id.clone(), "test_endpoint")?;
+                        introduction_published = true;
                     }
                 },
                 ContextEvent::EndpointServerPublished{endpoint_service_id, endpoint_name} => {
@@ -1999,13 +2021,19 @@ fn test_gosling_context() -> Result<()> {
                         println!("Alice endpoint server published");
                         println!(" endpoint_service_id: {}", endpoint_service_id.to_string());
                         println!(" endpoint_name: {}", endpoint_name);
-                        endpoint_published = true;
 
                         // alice has published this endpoint, so pat may now connect
-                        pat.open_endpoint_channel(
-                            saved_endpoint_service_id.take().unwrap(),
-                            saved_endpoint_client_auth_key.take().unwrap(),
-                            "test_channel")?;
+
+                        if let Some(saved_endpoint_service_id) = saved_endpoint_service_id.as_ref() {
+                            ensure!(*saved_endpoint_service_id == endpoint_service_id);
+                        } else {
+                            bail!("mismatching endpoint service ids");
+                        }
+
+                        pat.open_endpoint_channel(saved_endpoint_service_id.take().unwrap(),
+                                                  saved_endpoint_client_auth_key.take().unwrap(),
+                                                  "test_channel")?;
+                        endpoint_published = true;
                     }
                 },
                 ContextEvent::EndpointRequestHandled{endpoint_private_key, endpoint_name, client_service_id, client_auth_public_key} => {

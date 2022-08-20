@@ -21,8 +21,6 @@ use std::time::{Duration, Instant};
 
 // extern crates
 use anyhow::{bail, ensure, Result};
-#[cfg(test)]
-use ntest::timeout;
 use rand::Rng;
 use rand::rngs::OsRng;
 use rand::distributions::Alphanumeric;
@@ -1292,6 +1290,7 @@ impl TorManager {
 
 
 #[test]
+#[serial_test::serial(timeout_ms = 30000)]
 fn test_tor_controller() -> Result<()> {
     const WORKER_NAMES: [&str; 1] = ["tor_stdout"];
     const WORKER_COUNT: usize = WORKER_NAMES.len();
@@ -1474,7 +1473,7 @@ fn test_version() -> Result<()>
 }
 
 #[test]
-#[timeout(30000)]
+#[serial_test::serial(timeout_ms = 60000)]
 fn test_tor_manager() -> Result<()> {
     const WORKER_NAMES: [&str; 1] = ["tor_stdout"];
     const WORKER_COUNT: usize = WORKER_NAMES.len();
@@ -1508,7 +1507,7 @@ fn test_tor_manager() -> Result<()> {
 }
 
 #[test]
-#[timeout(60000)]
+#[serial_test::serial(timeout_ms = 60000)]
 fn test_onion_service() -> Result<()> {
 
     const WORKER_NAMES: [&str; 1] = ["tor_stdout"];
