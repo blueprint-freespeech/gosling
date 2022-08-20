@@ -13,6 +13,7 @@ pub enum ObjectTypes {
     X25519PrivateKey,
     X25519PublicKey,
     V3OnionServiceId,
+    Context,
 }
 
 // This trait is required for types we want to keep in an ObjectRegistry

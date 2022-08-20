@@ -1,14 +1,24 @@
+// standard
 use std::ptr;
 use std::str;
 use std::panic;
 use std::ffi::CString;
-use std::os::raw::c_char;
+use std::os::raw::{c_void, c_char, c_int};
+#[cfg(unix)]
+use std::os::unix::io::{IntoRawFd, RawFd};
+#[cfg(windows)]
+use std::os::windows::io::{IntoRawSocket, RawSocket};
 use std::sync::Mutex;
-use anyhow::{Result, bail};
 
+// extern crates
+use anyhow::{Result, bail};
+use bson::doc;
+
+// internal crates
 use crate::object_registry::*;
 use crate::define_registry;
 use crate::tor_crypto::*;
+use crate::gosling::*;
 
 /// Error Handling
 
@@ -51,12 +61,12 @@ pub extern "C" fn gosling_error_get_message(error: *const GoslingError) -> *cons
 // macro for defining the implmenetation of freeing objects
 // owned by an ObjectRegistry
 macro_rules! impl_registry_free {
-    ($error:expr, $type:ty) => {
-        if $error.is_null() {
+    ($obj:expr, $type:ty) => {
+        if $obj.is_null() {
             return;
         }
 
-        let key = $error as usize;
+        let key = $obj as usize;
         paste::paste! {
             [<$type:snake _registry>]().remove(key);
         }
@@ -77,11 +87,15 @@ pub struct GoslingEd25519PrivateKey;
 pub struct GoslingX25519PrivateKey;
 pub struct GoslingX25519PublicKey;
 pub struct GoslingV3OnionServiceId;
+pub struct GoslingContext;
 
 define_registry!{Ed25519PrivateKey, ObjectTypes::Ed25519PrivateKey}
 define_registry!{X25519PrivateKey, ObjectTypes::X25519PrivateKey}
 define_registry!{X25519PublicKey, ObjectTypes::X25519PublicKey}
 define_registry!{V3OnionServiceId, ObjectTypes::V3OnionServiceId}
+/// cbindgen:ignore
+type NativeContext = Context<NativeIntroClientHandshake, NativeIntroServerHandshake>;
+define_registry!{NativeContext, ObjectTypes::Context}
 
 /// Frees a gosling_ed25519_private_key object
 ///
@@ -111,6 +125,13 @@ pub extern "C" fn gosling_x25519_public_key_free(public_key: *mut GoslingX25519P
 #[no_mangle]
 pub extern "C" fn gosling_v3_onion_service_id_free(service_id: *mut GoslingV3OnionServiceId) {
     impl_registry_free!(service_id, V3OnionServiceId);
+}
+/// Frees a gosling_context object
+///
+/// @param context : the context object to free
+#[no_mangle]
+pub extern "C" fn gosling_context_free(context: *mut GoslingContext) {
+    impl_registry_free!(context, NativeContext);
 }
 
 /// Wrapper around rust code which may panic or return a failing Result to be used at FFI boundaries.
@@ -547,4 +568,272 @@ pub extern "C" fn gosling_string_is_valid_v3_onion_service_id(
         let service_id_string_slice = unsafe { std::slice::from_raw_parts(service_id_string as *const u8, service_id_string_length) };
         Ok(V3OnionServiceId::is_valid(str::from_utf8(service_id_string_slice)?))
     })
+}
+
+pub type GoslingHandshakeStartedServerCallback = extern fn(
+    introduction_handle: usize) -> ();
+
+pub type GoslingHandshakeEndpointSupportedCallback = extern fn(
+    introduction_handle: usize,
+    endpoint_name: *const c_char,
+    endpoint_name_len: usize) -> bool;
+
+pub type GoslingHandshakeChallengeSizeCallback = extern fn(
+    introduction_handle: usize,
+    endpoint_name: *const c_char,
+    endpoint_name_len: usize) -> usize;
+
+pub type GoslingHandshakeBuildChallengeCallback = extern fn(
+    introduction_handle: usize,
+    endpoint_name: *const c_char,
+    endpoint_name_len: usize,
+    out_challenge_buffer: *mut u8,
+    challenge_buffer_size: usize) -> ();
+
+#[repr(C)]
+pub enum ChallengeResponseResult {
+    Valid,
+    Invalid,
+    Pending,
+}
+
+pub type GoslingHandshakeVerifyChallengeResponseCallback = extern fn(
+    introduction_handle: usize,
+    endpoint_name: *const c_char,
+    endpoint_name_len: usize,
+    challenge_buffer: *const u8,
+    challenge_buffer_size: usize,
+    response_buffer: *const u8,
+    response_buffer_size: usize) -> ChallengeResponseResult;
+
+pub type GoslingHandshakePollChallengeResponseResultCallback = extern fn(
+    introduction_handle: usize) -> ChallengeResponseResult;
+
+pub struct NativeIntroServerHandshake {
+    started_server_callback: GoslingHandshakeStartedServerCallback,
+    endpoint_supported_callback: GoslingHandshakeEndpointSupportedCallback,
+    challenge_size_callack: GoslingHandshakeChallengeSizeCallback,
+    build_challenge_callback: GoslingHandshakeBuildChallengeCallback,
+    poll_challenge_response_result_callback: GoslingHandshakePollChallengeResponseResultCallback,
+}
+
+impl IntroductionServerHandshake for NativeIntroServerHandshake {
+    fn endpoint_supported(&mut self, endpoint: &str) -> bool {
+        true
+    }
+
+    fn build_endpoint_challenge(&mut self, endpoint: &str) -> Option<bson::document::Document> {
+        Some(doc!{})
+    }
+
+    fn verify_challenge_response(&mut self,
+                                 endpoint: &str,
+                                 challenge: bson::document::Document,
+                                 challenge_response: bson::document::Document) -> Option<bool> {
+        Some(true)
+    }
+
+    fn poll_result(&mut self) -> Option<IntroductionHandshakeResult> {
+        None
+    }
+}
+
+pub type GoslingHandshakeStartedClientCallback = extern fn(
+    introduction_handle: usize) -> ();
+
+pub type GoslingHandshakeBuildResponseSizeCallback = extern fn(
+    introduction_handle: usize,
+    endpoint_name: *const c_char,
+    endpoint_name_len: usize) -> usize;
+
+pub type GoslingHandshakeBuildResponseCallback = extern fn(
+    introduction_handle: usize,
+    endpoint_name: *const c_char,
+    endpoint_name_len: usize,
+    challenge_buffer: *const u8,
+    challenge_buffer_size: usize,
+    out_challenge_response_buffer: *mut u8,
+    challenge_response_buffer_size: usize) -> ();
+
+pub struct NativeIntroClientHandshake {
+    started_client_callback: GoslingHandshakeStartedClientCallback,
+    build_response_size_callback: GoslingHandshakeBuildResponseSizeCallback,
+    build_response_callback: GoslingHandshakeBuildResponseCallback,
+}
+
+impl IntroductionClientHandshake for NativeIntroClientHandshake {
+    fn build_challenge_response(&self, endpoint: &str, challenge: &bson::document::Document) -> bson::document::Document {
+        doc!{}
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn gosling_context_init(
+    // out context
+    out_context: *mut *mut GoslingContext,
+    introduction_port: u16,
+    endpoint_port: u16,
+    identity_private_key: *const GoslingEd25519PrivateKey,
+    blocked_clients: *const *const GoslingV3OnionServiceId,
+    blocked_clients_count: usize,
+
+    // server-side callbacks
+    started_server_callback: GoslingHandshakeStartedServerCallback,
+    endpoint_supported_callback: GoslingHandshakeEndpointSupportedCallback,
+    challenge_size_callack: GoslingHandshakeChallengeSizeCallback,
+    build_challenge_callback: GoslingHandshakePollChallengeResponseResultCallback,
+    // client-side callbacks
+    started_client_callback: GoslingHandshakeStartedClientCallback,
+    challenge_build_response_size_callback: GoslingHandshakeBuildResponseSizeCallback,
+    challenge_build_response_callback: GoslingHandshakeBuildResponseCallback,
+
+    error: *mut *mut GoslingError) -> () {
+
+}
+
+#[no_mangle]
+pub extern "C" fn gosling_context_bootstrap_tor(
+    context: *mut GoslingContext,
+    error: *mut *mut GoslingError) -> () {
+
+}
+
+#[no_mangle]
+pub extern "C" fn gosling_context_start_introduction_server(
+    context: *mut GoslingContext,
+    error: *mut *mut GoslingError) -> () {
+
+}
+
+#[no_mangle]
+pub extern "C" fn gosling_context_stop_introduction_server(
+    context: *mut GoslingContext,
+    error: *mut *mut GoslingError) ->() {
+
+}
+
+#[no_mangle]
+pub extern "C" fn gosling_context_start_endpoint_server(
+    context: *mut GoslingContext,
+    endpoint_private_key: *const GoslingEd25519PrivateKey,
+    endpoint_name: *const c_char,
+    endpoint_name_len: usize,
+    client_identity: *const GoslingV3OnionServiceId,
+    client_auth_public_key: *const GoslingX25519PublicKey,
+    error: *mut *mut GoslingError) -> () {
+
+}
+
+#[no_mangle]
+pub extern "C" fn gosling_context_stop_endpoint_server(
+    context: *mut GoslingContext,
+    endpoint_private_key: *const GoslingEd25519PrivateKey,
+    error: *mut *mut GoslingError) -> () {
+
+}
+
+#[no_mangle]
+pub extern "C" fn gosling_context_request_remote_endpoint(
+    context: *mut GoslingContext,
+    identity_service_id: *const GoslingV3OnionServiceId,
+    endpoint_name: *const c_char,
+    endpoint_name_len: usize,
+    error: *mut *mut GoslingError) -> () {
+
+}
+
+#[no_mangle]
+pub extern "C" fn gosling_context_open_endpoint_channel(
+    context: *mut GoslingContext,
+    endpoint_service_id: *const GoslingV3OnionServiceId,
+    client_auth_private_key: *const GoslingX25519PrivateKey,
+    channel_name: *const c_char,
+    channel_name_len: usize,
+    error: *mut *mut GoslingError) -> () {
+
+}
+
+#[no_mangle]
+pub extern "C" fn gosling_context_poll_events(
+    context: *mut GoslingContext,
+    event: *mut c_void,
+    error: *mut *mut GoslingError) -> () {
+}
+
+/// Event Callbacks
+
+pub type GoslingTorBootstrappedCallback = extern fn(
+    context: *mut GoslingContext) -> ();
+
+pub type GoslingIntroductionServerPublishedCallback = extern fn(
+    context: *mut GoslingContext) -> ();
+
+pub type GoslingEndpointServerPublishedCallback = extern fn(
+    context: *mut GoslingContext,
+    enpdoint_service_id: *mut GoslingV3OnionServiceId,
+    endpoint_name: *const c_char,
+    endpoint_name_len: usize) -> ();
+
+pub type GoslingEndpointRequestSucceeded = extern fn (
+    context: *mut GoslingContext,
+    identity_service_id: *mut GoslingV3OnionServiceId,
+    endpoint_service_id: *mut GoslingV3OnionServiceId,
+    endpoint_name: *const c_char,
+    endpoint_name_len: usize,
+    client_auth_private_key: *mut GoslingX25519PrivateKey) -> ();
+
+pub type GoslingEndpointRequestHandled = extern fn (
+    context: *mut GoslingContext,
+    endpoint_private_key: *mut GoslingEd25519PrivateKey,
+    endpoint_name: *const c_char,
+    endpoint_name_len: usize,
+    client_service_id: *mut GoslingV3OnionServiceId,
+    client_auth_public_key: *mut GoslingX25519PublicKey) -> ();
+
+#[cfg(any(linux, macos, unix))]
+pub type GoslingEndpointChannelOpened = extern fn(
+    context: *mut GoslingContext,
+    endpoint_service_id: *mut GoslingV3OnionServiceId,
+    channel_name: *const c_char,
+    channel_name_len: usize,
+    stream: RawFd);
+
+#[cfg(windows)]
+pub type GoslingEndpointChannelOpened = extern fn(
+    context: *mut GoslingContext,
+    endpoint_service_id: *mut GoslingV3OnionServiceId,
+    channel_name: *const c_char,
+    channel_name_len: usize,
+    stream: RawSocket);
+
+/// Setters for Event Callbacks
+
+#[no_mangle]
+pub extern "C" fn gosling_context_tor_bootstrapped_callback(callback: GoslingTorBootstrappedCallback) -> () {
+
+}
+
+#[no_mangle]
+pub extern "C" fn gosling_context_set_introduction_server_published_callback(callback: GoslingIntroductionServerPublishedCallback) -> () {
+
+}
+
+#[no_mangle]
+pub extern "C" fn gosling_context_set_endpoint_server_published_callback(callback: GoslingEndpointServerPublishedCallback) -> () {
+
+}
+
+#[no_mangle]
+pub extern "C" fn gosling_context_set_endpoint_request_succeeded_callback(callback: GoslingEndpointRequestSucceeded) -> () {
+
+}
+
+#[no_mangle]
+pub extern "C" fn gosling_context_set_endpoint_request_handled_callback(callback: GoslingEndpointRequestHandled) -> () {
+
+}
+
+#[no_mangle]
+pub extern "C" fn gosling_context_set_endpoint_channel_opened_callback(callback: GoslingEndpointChannelOpened) -> () {
+
 }

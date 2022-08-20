@@ -102,4 +102,10 @@ namespace std {
             gosling_v3_onion_service_id_free(val);
         }
     };
+    template<> class default_delete<gosling_context> {
+    public:
+        void operator()(gosling_context *val) {
+            gosling_context_free(val);
+        }
+    };
 }

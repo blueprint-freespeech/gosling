@@ -31,6 +31,7 @@ use crate::tor_crypto::*;
 use crate::tor_controller::*;
 use crate::work_manager::*;
 
+// todo: introdocution server/client -> identity server/client
 
 #[derive(Debug, Eq, PartialEq, TryFromPrimitive)]
 #[repr(i32)]
@@ -1191,6 +1192,7 @@ pub struct Context<CH, SH> {
 }
 
 // todo: dear god change these names
+// GoslingIntro(Client|Server)(EventName)
 enum ContextEvent {
     // introduction server published
     IntroductionServerPublished,
