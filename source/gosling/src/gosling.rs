@@ -180,7 +180,7 @@ impl<H> IntroductionClient<H> where H : IntroductionClientHandshake {
         match self.next_function {
             // send initial handshake request
             Some(IntroductionHandshakeFunction::BeginHandshake) => {
-                self.rpc.client().call(
+                self.rpc.client_call(
                     "gosling_introduction",
                     "begin_handshake",
                     0,
@@ -192,7 +192,7 @@ impl<H> IntroductionClient<H> where H : IntroductionClientHandshake {
             },
             // send challenge response
             Some(IntroductionHandshakeFunction::SendResponse) => {
-                if let Some(response) = self.rpc.client().next_response() {
+                if let Some(response) = self.rpc.client_next_response() {
                     let result = match response {
                         Response::Pending{cookie} => return Ok(None),
                         Response::Error{cookie, error_code} => bail!("received unexpected error: {}", error_code),
@@ -255,7 +255,7 @@ impl<H> IntroductionClient<H> where H : IntroductionClientHandshake {
                             };
 
                             // make rpc call
-                            self.rpc.client().call(
+                            self.rpc.client_call(
                                 "gosling_introduction",
                                 "send_response",
                                 0,
@@ -269,7 +269,7 @@ impl<H> IntroductionClient<H> where H : IntroductionClientHandshake {
             },
             // waiting for final response
             None => {
-                if let Some(response) = self.rpc.client().next_response() {
+                if let Some(response) = self.rpc.client_next_response() {
                     let result = match response {
                         Response::Pending{cookie} => return Ok(None),
                         Response::Error{cookie, error_code} => bail!("received unexpected error: {}", error_code),
@@ -751,7 +751,7 @@ impl<H> IntroductionServer<H> where H : IntroductionServerHandshake + 'static{
             blocked_clients,
             Rc::downgrade(&retval.new_client),
             Rc::downgrade(&retval.handshake_failed));
-        retval.rpc.server().register_apiset(apiset).unwrap();
+        retval.rpc.server_register_apiset(apiset).unwrap();
 
         retval
     }
@@ -829,7 +829,7 @@ impl EndpointClient {
         match self.next_function {
             Some(EndpointHandshakeFunction::BeginHandshake) => {
                 println!("call begin_handshake");
-                self.rpc.client().call(
+                self.rpc.client_call(
                     "gosling_endpoint",
                     "begin_handshake",
                     0,
@@ -841,7 +841,7 @@ impl EndpointClient {
                 self.next_function = Some(EndpointHandshakeFunction::SendResponse);
             },
             Some(EndpointHandshakeFunction::SendResponse) => {
-                if let Some(response) = self.rpc.client().next_response() {
+                if let Some(response) = self.rpc.client_next_response() {
                     let result = match response {
                         Response::Pending{cookie} => return Ok(None),
                         Response::Error{cookie, error_code} => bail!("received unexpected error: {}", error_code),
@@ -885,7 +885,7 @@ impl EndpointClient {
 
                             // make rpc call
                             println!("call send_response");
-                            self.rpc.client().call(
+                            self.rpc.client_call(
                                 "gosling_endpoint",
                                 "send_response",
                                 0,
@@ -898,7 +898,7 @@ impl EndpointClient {
             },
             // waiting for final response
             None => {
-                if let Some(response) = self.rpc.client().next_response() {
+                if let Some(response) = self.rpc.client_next_response() {
                     let result = match response {
                         Response::Pending{cookie} => return Ok(None),
                         Response::Error{cookie, error_code} => bail!("received unexpected error: {}", error_code),
@@ -1158,7 +1158,7 @@ impl EndpointServer {
             allowed_client,
             Rc::downgrade(&retval.new_channel),
             Rc::downgrade(&retval.handshake_failed));
-        retval.rpc.server().register_apiset(apiset).unwrap();
+        retval.rpc.server_register_apiset(apiset).unwrap();
 
         retval
     }
@@ -2012,8 +2012,9 @@ fn test_gosling_context() -> Result<()> {
 
                         // alice has published the intro server, so pay may now request an endpoint
 
-                        pat.request_remote_endpoint(alice_service_id.clone(), "test_endpoint")?;
-                        introduction_published = true;
+                        if let Ok(()) = pat.request_remote_endpoint(alice_service_id.clone(), "test_endpoint") {
+                            introduction_published = true;
+                        }
                     }
                 },
                 ContextEvent::EndpointServerPublished{endpoint_service_id, endpoint_name} => {
@@ -2030,10 +2031,11 @@ fn test_gosling_context() -> Result<()> {
                             bail!("mismatching endpoint service ids");
                         }
 
-                        pat.open_endpoint_channel(saved_endpoint_service_id.take().unwrap(),
-                                                  saved_endpoint_client_auth_key.take().unwrap(),
-                                                  "test_channel")?;
-                        endpoint_published = true;
+                        if let Ok(()) = pat.open_endpoint_channel(saved_endpoint_service_id.clone().unwrap(),
+                                                                  saved_endpoint_client_auth_key.clone().unwrap(),
+                                                                  "test_channel") {
+                            endpoint_published = true;
+                        }
                     }
                 },
                 ContextEvent::EndpointRequestHandled{endpoint_private_key, endpoint_name, client_service_id, client_auth_public_key} => {
