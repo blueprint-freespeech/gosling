@@ -445,17 +445,13 @@ impl Default for Context {
 
 pub struct Session {
 
-    // rpc server
-    server: Server,
-    // rpc client
-    client: Client,
     // shared data
     context: Context,
 
     // read stream
-    reader: Box<dyn std::io::Read>,
+    reader: Box<dyn std::io::Read + Send>,
     // write stream
-    writer: Box<dyn std::io::Write>,
+    writer: Box<dyn std::io::Write + Send>,
 
     // message read data
 
@@ -472,17 +468,20 @@ pub struct Session {
     // we write outgoing messages to this buffer first
     // to verify size limitations
     message_write_buffer: Vec<u8>,
+
+    // the next request cookie to use when making a remote prodedure call
+    next_cookie: RequestCookie,
+    // local instance we take from Session
+    inbound_responses: VecDeque<Response>,
 }
 
 impl Session {
-    pub fn new<R, W>(reader: R, writer: W) -> Session where R : std::io::Read + 'static, W : std::io::Write + 'static {
+    pub fn new<R, W>(reader: R, writer: W) -> Session where R : std::io::Read + Send + 'static, W : std::io::Write + Send + 'static {
 
         let mut message_write_buffer: Vec<u8> = Default::default();
         message_write_buffer.reserve(DEFAULT_MAX_MESSAGE_SIZE);
 
         Session{
-            server: Default::default(),
-            client: Default::default(),
             context: Default::default(),
             reader: Box::new(reader),
             writer: Box::new(writer),
@@ -490,6 +489,8 @@ impl Session {
             pending_data: Default::default(),
             pending_sections: Default::default(),
             message_write_buffer,
+            next_cookie: Default::default(),
+            inbound_responses: Default::default(),
         }
     }
 
@@ -671,84 +672,37 @@ impl Session {
         self.send_message_impl(&mut message)
     }
 
-    pub fn update(&mut self) -> Result<()> {
+    pub fn update(&mut self, apisets: Option<&mut [&mut dyn ApiSet]>) -> Result<()> {
         // read sections from remote
         self.read_sections()?;
         // route sections to buffers
         self.process_sections()?;
-        // handle api requests
-        self.server.update(&mut self.context)?;
+
+        // handle incoming api calls
+        let apisets = match apisets {
+            Some(apisets) => apisets,
+            None => &mut [],
+        };
+        self.handle_requests(apisets)?;
+
         // send any responses
         self.send_messages()?;
 
         Ok(())
     }
 
-    // getter for our server
-    pub fn server(&mut self) -> &mut Server {
-        &mut self.server
-    }
-
-    // server methods
-    pub fn server_register_apiset<A>(&mut self, apiset: A) -> Result<()> where A : ApiSet + 'static {
-        self.server.register_apiset(apiset)
-    }
-
-    // client methods
-    pub fn client_call(
-        &mut self,
-        namespace: &str,
-        function: &str,
-        version: i32,
-        arguments: bson::document::Document) -> Result<RequestCookie> {
-
-        self.client.call(
-            &mut self.context,
-            namespace,
-            function,
-            version,
-            arguments)
-    }
-
-    pub fn client_drain_responses(&mut self) -> std::collections::vec_deque::Drain<Response> {
-        self.client.drain_responses(&mut self.context)
-    }
-
-    pub fn client_next_response(&mut self) -> Option<Response> {
-        self.client.next_response(&mut self.context)
-    }
-
-
-}
-
-#[derive(Default)]
-pub struct Server {
-    apiset_registry: HashMap<String, Box<dyn ApiSet>>,
-}
-
-impl Server {
-
-    // register an apiset for remote clients to call
-    pub fn register_apiset<A>(&mut self, apiset: A) -> Result<()> where A : ApiSet + 'static {
-        // ensure we aren't writing over existing apiset
-        ensure!(!self.apiset_registry.contains_key(apiset.namespace()));
-        ensure!(self.apiset_registry.insert(apiset.namespace().to_string(), Box::new(apiset)).is_none());
-
-        Ok(())
-    }
-
-    fn update(&mut self, context: &mut Context) -> Result<()> {
-        // temp buffer to put sections
-        let mut outbound_sections : Vec<Section> = Default::default();
+    // apisets : a slice of mutable ApiSet references sorted by their namespaces
+    fn handle_requests(&mut self, apisets: &mut [&mut dyn ApiSet]) -> Result<()> {
 
         // first handle all of our inbound requests
-        for mut request in context.inbound_requests.drain(..) {
-            if let Some(apiset) = self.apiset_registry.get_mut(&request.namespace) {
+        for mut request in self.context.inbound_requests.drain(..) {
+            if let Ok(idx) = apisets.binary_search_by(|probe| probe.namespace().cmp(&request.namespace)) {
+                let mut apiset = apisets.get_mut(idx).unwrap();
                 match apiset.exec_function(&request.function, request.version, std::mem::take(&mut request.arguments), request.cookie) {
                     // func found, called, and returned immediately
                     Ok(Some(result)) => {
                         if let Some(cookie) = request.cookie {
-                            outbound_sections.push(
+                            self.context.outbound_sections.push(
                                 Section::Response(ResponseSection{
                                     cookie,
                                     state: RequestState::Complete,
@@ -759,7 +713,7 @@ impl Server {
                     // func found, called, and result is pending
                     Ok(None) => {
                         if let Some(cookie) = request.cookie {
-                            outbound_sections.push(
+                            self.context.outbound_sections.push(
                                 Section::Response(ResponseSection{
                                     cookie,
                                     state: RequestState::Pending,
@@ -769,7 +723,7 @@ impl Server {
                     },
                     // some error
                     Err(error_code) => {
-                        outbound_sections.push(
+                        self.context.outbound_sections.push(
                             Section::Error(ErrorSection{
                                 cookie: request.cookie,
                                 code: error_code,
@@ -780,7 +734,7 @@ impl Server {
                 }
             } else {
                 // invalid namespace
-                outbound_sections.push(
+                self.context.outbound_sections.push(
                     Section::Error(ErrorSection{
                         cookie: request.cookie,
                         code: ErrorCode::RequestNamespaceInvalid,
@@ -791,12 +745,12 @@ impl Server {
         }
 
         // next send out async responses from apisets
-        for apiset in self.apiset_registry.values_mut() {
+        for apiset in apisets.iter_mut() {
             // put pending results in our message
             while let Some((cookie, result, error_code)) = apiset.next_result() {
                 match (cookie, result, error_code) {
                     (cookie, Some(result), ErrorCode::Success) => {
-                        outbound_sections.push(
+                        self.context.outbound_sections.push(
                             Section::Response(
                                 ResponseSection{
                                     cookie,
@@ -808,7 +762,7 @@ impl Server {
                         if result.is_some() {
                             println!("Server::update(): ApiSet next_result() returned both result and an ErrorCode {{ result : '{}', error : {} }}", result.unwrap(), error_code);
                         }
-                        outbound_sections.push(
+                        self.context.outbound_sections.push(
                             Section::Error(
                                 ErrorSection{
                                     cookie: Some(cookie),
@@ -820,25 +774,12 @@ impl Server {
                 }
             }
         }
-
-        context.outbound_sections.append(&mut outbound_sections);
-
         Ok(())
     }
-}
 
-#[derive(Default)]
-pub struct Client {
-    next_cookie: RequestCookie,
-    // local instance we take from Session
-    inbound_responses: VecDeque<Response>,
-}
-
-impl Client {
     // call a remote client's function
-    fn call(
+    pub fn client_call(
         &mut self,
-        context: &mut Context,
         namespace: &str,
         function: &str,
         version: i32,
@@ -849,7 +790,7 @@ impl Client {
         self.next_cookie += 1;
 
         // add request to outgoing buffer
-        context.outbound_sections.push(
+        self.context.outbound_sections.push(
             Section::Request(RequestSection{
                 cookie: Some(cookie),
                 namespace: namespace.to_string(),
@@ -861,22 +802,35 @@ impl Client {
         return Ok(cookie);
     }
 
-    // migrate any responses from our context to the client for iterators
-    fn take_responses(&mut self, context: &mut Context) {
-        for response in context.inbound_responses.drain(..) {
-            self.inbound_responses.push_back(response);
-        }
-    }
-
-    fn drain_responses(&mut self, context: &mut Context) -> std::collections::vec_deque::Drain<Response> {
-        self.take_responses(context);
+    // consume all the responses from the client
+    pub fn client_drain_responses(&mut self) -> std::collections::vec_deque::Drain<Response> {
+        self.take_responses();
         self.inbound_responses.drain(..)
     }
 
-    fn next_response(&mut self, context: &mut Context) -> Option<Response> {
-        self.take_responses(context);
+    // gt the nxt response from the client
+    pub fn client_next_response(&mut self) -> Option<Response> {
+        self.take_responses();
         self.inbound_responses.pop_front()
     }
+
+    // migrate any responses from our context to the client for iterators
+    fn take_responses(&mut self) {
+        for response in self.context.inbound_responses.drain(..) {
+            self.inbound_responses.push_back(response);
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct Client {
+    next_cookie: RequestCookie,
+    // local instance we take from Session
+    inbound_responses: VecDeque<Response>,
+}
+
+impl Client {
+
 }
 
 #[test]
@@ -1080,19 +1034,19 @@ fn test_honk_client_apiset() -> Result<()> {
     let mut alice = Session::new(stream1.clone(), stream2.clone());
     let mut pat = Session::new(stream2, stream1);
 
-    let test_api_set: TestApiSet = Default::default();
-    alice.server().register_apiset(test_api_set)?;
+    let mut test_api_set: TestApiSet = Default::default();
+    let alice_apisets : &mut[&mut dyn ApiSet] = &mut [&mut test_api_set];
 
     // Pat calls remote test::echo_0 call
     //
     let sent_cookie = pat.client_call("test", "echo", 0, doc!{"val" : "Hello Alice!"})?;
-    pat.update()?;
+    pat.update(None)?;
 
     // alice receives and handles request
-    alice.update()?;
+    alice.update(Some(alice_apisets))?;
 
     // pat recieves and handles alices response
-    pat.update()?;
+    pat.update(None)?;
     if let Some(response) = pat.client_next_response() {
         match response {
             Response::Pending{cookie} => {
@@ -1116,13 +1070,13 @@ fn test_honk_client_apiset() -> Result<()> {
     // Pat calls remote test::echo_0 call (with wrong arg)
     //
     let sent_cookie = pat.client_call("test", "echo", 0, doc!{"string" : "Hello Alice!"})?;
-    pat.update()?;
+    pat.update(None)?;
 
     // alice receives and handles request
-    alice.update()?;
+    alice.update(Some(alice_apisets))?;
 
     // pat recieves and handles alices response
-    pat.update()?;
+    pat.update(None)?;
     if let Some(response) = pat.client_next_response() {
         match response {
             Response::Pending{cookie} => {
@@ -1145,13 +1099,13 @@ fn test_honk_client_apiset() -> Result<()> {
     // Pat calls v2 remote test::echo_1 call (which is not implemented)
     //
     let sent_cookie = pat.client_call("test", "echo", 1, doc!{"val" : "Hello Again!"})?;
-    pat.update()?;
+    pat.update(None)?;
 
     // alice receives and handles request
-    alice.update()?;
+    alice.update(Some(alice_apisets))?;
 
     // pat recieves and handles alices response
-    pat.update()?;
+    pat.update(None)?;
     if let Some(response) = pat.client_next_response() {
         match response {
             Response::Pending{cookie} => {
@@ -1173,13 +1127,13 @@ fn test_honk_client_apiset() -> Result<()> {
     // Pat calls test::delay_echo_0 which goes through the async machinery
     //
     let sent_cookie = pat.client_call("test", "delay_echo", 0, doc!{"val" : "Hello Delayed?"})?;
-    pat.update()?;
+    pat.update(None)?;
 
     // alice receives and handles request
-    alice.update()?;
+    alice.update(Some(alice_apisets))?;
 
     // pat recieves and handles alices response
-    pat.update()?;
+    pat.update(None)?;
     if let Some(response) = pat.client_next_response() {
         match response {
             Response::Pending{cookie} => {
@@ -1225,13 +1179,13 @@ fn test_honk_client_apiset() -> Result<()> {
     args.insert("data", bson::Bson::Binary(bson::Binary{subtype: bson::spec::BinarySubtype::Generic, bytes: data}));
 
     let cookie2 = pat.client_call("test", "sha256", 0, args)?;
-    pat.update()?;
+    pat.update(None)?;
 
     // alice handle requests
-    alice.update()?;
+    alice.update(Some(alice_apisets))?;
 
     // pat handle responses
-    pat.update()?;
+    pat.update(None)?;
     for response in pat.client_drain_responses() {
         match response {
             Response::Pending{cookie} => {

@@ -1,8 +1,7 @@
 // standard
-use std::cell::RefCell;
 use std::convert::From;
 use std::io::{ErrorKind, Read, Write};
-use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 // extern crates
 use anyhow::{bail, ensure, Result};
@@ -11,7 +10,7 @@ use anyhow::{bail, ensure, Result};
 // #[cfg(test)]
 #[derive(Clone)]
 pub struct MemoryStream {
-    stream: Rc<RefCell<Vec<u8>>>,
+    stream: Arc<Mutex<Vec<u8>>>,
     read_head: usize,
 }
 
@@ -28,7 +27,7 @@ impl MemoryStream {
 // #[cfg(test)]
 impl Read for MemoryStream {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize, std::io::Error> {
-        let read_buf = self.stream.borrow();
+        let read_buf = self.stream.lock().unwrap();
         let read_head = self.read_head;
         let read_tail: usize = (read_head + buf.len()).min(read_buf.len());
 
@@ -45,7 +44,7 @@ impl Read for MemoryStream {
     }
 
     fn read_to_end(&mut self, buf: &mut Vec<u8>) -> Result<usize, std::io::Error> {
-        let read_buf = self.stream.borrow();
+        let read_buf = self.stream.lock().unwrap();
         let read_head = self.read_head;
         let read_tail = read_buf.len();
         let byte_count = read_tail - read_head;
@@ -61,7 +60,7 @@ impl Read for MemoryStream {
 // #[cfg(test)]
 impl Write for MemoryStream where {
     fn write(&mut self, buf: &[u8]) -> Result<usize, std::io::Error> {
-        self.stream.borrow_mut().extend_from_slice(buf);
+        self.stream.lock().unwrap().extend_from_slice(buf);
         return Ok(buf.len());
     }
 

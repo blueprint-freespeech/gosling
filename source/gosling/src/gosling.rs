@@ -5,7 +5,6 @@ use std::clone::Clone;
 use std::collections::{HashMap,HashSet};
 use std::convert::TryInto;
 use std::io::{BufRead, BufReader, Read, Write};
-use std::marker::PhantomData;
 use std::net::TcpStream;
 use std::path::Path;
 use std::rc::{Rc, Weak};
@@ -175,7 +174,7 @@ impl<H> IntroductionClient<H> where H : IntroductionClientHandshake {
         ensure!(!self.handshake_complete);
 
         // update our rpc session
-        self.rpc.update()?;
+        self.rpc.update(None)?;
 
 
         // client state machine
@@ -721,9 +720,10 @@ impl<H> ApiSet for IntroductionServerApiSet<H> where H : IntroductionServerHands
 // introduction requests
 //
 struct IntroductionServer<H> {
-    handshake_type: PhantomData<H>,
     // endpoint private key, endpoint name, client service id, client authorization key
     new_client: Rc<RefCell<Option<(Ed25519PrivateKey, String, V3OnionServiceId, X25519PublicKey)>>>,
+    // apiset
+    apiset: IntroductionServerApiSet<H>,
     // rpc
     rpc: Session,
     // apiset sets this to true on handshake failure
@@ -739,21 +739,23 @@ impl<H> IntroductionServer<H> where H : IntroductionServerHandshake + 'static{
         blocked_clients: Weak<RefCell<HashSet<V3OnionServiceId>>>,
         rpc: Session) -> Self {
 
-        let mut retval = Self {
-            handshake_type: Default::default(),
-            new_client: Default::default(),
-            rpc,
-            handshake_failed: Default::default(),
-            handshake_complete: false,
-        };
+        let new_client : Rc<RefCell<Option<(Ed25519PrivateKey, String, V3OnionServiceId, X25519PublicKey)>>> = Default::default();
+        let handshake_failed : Rc<RefCell<bool>> = Default::default();
 
         let apiset = IntroductionServerApiSet::<H>::new(
             handshake,
             service_id,
             blocked_clients,
-            Rc::downgrade(&retval.new_client),
-            Rc::downgrade(&retval.handshake_failed));
-        retval.rpc.server_register_apiset(apiset).unwrap();
+            Rc::downgrade(&new_client),
+            Rc::downgrade(&handshake_failed));
+
+        let mut retval = Self {
+            new_client,
+            apiset,
+            rpc,
+            handshake_failed,
+            handshake_complete: false,
+        };
 
         retval
     }
@@ -763,7 +765,7 @@ impl<H> IntroductionServer<H> where H : IntroductionServerHandshake + 'static{
         ensure!(!self.handshake_complete);
 
         // update the rpc server
-        self.rpc.update()?;
+        self.rpc.update(Some(&mut [&mut self.apiset]))?;
 
         if *self.handshake_failed.borrow() {
             self.handshake_complete = true;
@@ -825,7 +827,7 @@ impl EndpointClient {
     fn update(&mut self) -> Result<Option<(V3OnionServiceId,String)>> {
         ensure!(!self.handshake_complete);
 
-        self.rpc.update()?;
+        self.rpc.update(None)?;
 
         // client state machine
         match self.next_function {
@@ -1134,6 +1136,8 @@ impl ApiSet for EndpointServerApiSet {
 struct EndpointServer {
     // connected client service id, and requested channel name
     new_channel: Rc<RefCell<Option<(V3OnionServiceId, V3OnionServiceId, String)>>>,
+    // apiset
+    apiset: EndpointServerApiSet,
     // rpc
     rpc: Session,
     // apiset sets this to true on handshake failure
@@ -1148,21 +1152,22 @@ impl EndpointServer {
         allowed_client: V3OnionServiceId,
         rpc: Session) -> Self {
 
-        let mut retval = Self {
-            new_channel: Default::default(),
-            rpc,
-            handshake_failed: Default::default(),
-            handshake_complete: false,
-        };
+        let new_channel : Rc<RefCell<Option<(V3OnionServiceId, V3OnionServiceId, String)>>> = Default::default();
+        let handshake_failed : Rc<RefCell<bool>> = Default::default();
 
         let apiset = EndpointServerApiSet::new(
             service_id,
             allowed_client,
-            Rc::downgrade(&retval.new_channel),
-            Rc::downgrade(&retval.handshake_failed));
-        retval.rpc.server_register_apiset(apiset).unwrap();
+            Rc::downgrade(&new_channel),
+            Rc::downgrade(&handshake_failed));
 
-        retval
+        Self {
+            new_channel,
+            apiset,
+            rpc,
+            handshake_failed,
+            handshake_complete: false,
+        }
     }
 
     // fails if rpc update fails or if handshake is complete
@@ -1170,7 +1175,7 @@ impl EndpointServer {
         ensure!(!self.handshake_complete);
 
         // update the rpc server
-        self.rpc.update()?;
+        self.rpc.update(Some(&mut [&mut self.apiset]))?;
 
         if *self.handshake_failed.borrow() {
             self.handshake_complete = true;
