@@ -23,6 +23,8 @@ use data_encoding::{HEXLOWER};
 use num_enum::TryFromPrimitive;
 use rand::RngCore;
 use rand::rngs::OsRng;
+#[cfg(test)]
+use serial_test::serial;
 
 // internal crates
 use crate::honk_rpc::*;
@@ -1412,23 +1414,21 @@ impl<CH,SH> Context<CH,SH> where CH : IntroductionClientHandshake + Clone, SH : 
         let mut events : Vec<ContextEvent> = Default::default();
 
         // consume tor events
-        {
-            while let Some(event) = self.tor_manager.wait_event()? {
-                match event {
-                    Event::OnionServicePublished{service_id} => {
-                        if service_id == self.introduction_service_id {
-                            events.push(ContextEvent::IntroductionServerPublished);
-                        } else {
-                            if let Some((endpoint_name, _, _)) = self.endpoint_listeners.get(&service_id) {
-                                events.push(ContextEvent::EndpointServerPublished{
-                                    endpoint_service_id: service_id.clone(),
-                                    endpoint_name: endpoint_name.clone(),
-                                });
-                            }
+        for event in self.tor_manager.update()?.iter() {
+            match event {
+                Event::OnionServicePublished{service_id} => {
+                    if *service_id == self.introduction_service_id {
+                        events.push(ContextEvent::IntroductionServerPublished);
+                    } else {
+                        if let Some((endpoint_name, _, _)) = self.endpoint_listeners.get(&service_id) {
+                            events.push(ContextEvent::EndpointServerPublished{
+                                endpoint_service_id: service_id.clone(),
+                                endpoint_name: endpoint_name.clone(),
+                            });
                         }
-                    },
-                    _ => {},
-                }
+                    }
+                },
+                _ => {},
             }
         }
 
@@ -1912,7 +1912,7 @@ impl IntroductionClientHandshake for NoOpIntroductionClientHandshake {
 }
 
 #[test]
-#[serial_test::serial(timeout_ms = 90000)]
+#[serial]
 fn test_gosling_context() -> Result<()> {
 
     const WORKER_NAMES: [&str; 1] = ["tor_stdout"];
@@ -1925,7 +1925,7 @@ fn test_gosling_context() -> Result<()> {
 
     let mut bootstrap_complete = false;
     while !bootstrap_complete {
-        while let Some(event) = tor.wait_event()? {
+        for event in tor.update()?.iter() {
             match event {
                 Event::BootstrapStatus{progress,tag,summary} => println!("Alice BootstrapStatus: {{ progress: {}, tag: {}, summary: '{}' }}", progress, tag, summary),
                 Event::BootstrapComplete => {
@@ -1958,7 +1958,7 @@ fn test_gosling_context() -> Result<()> {
 
     let mut bootstrap_complete = false;
     while !bootstrap_complete {
-        while let Some(event) = tor.wait_event()? {
+        for event in tor.update()?.iter() {
             match event {
                 Event::BootstrapStatus{progress,tag,summary} => println!("Pat BootstrapStatus: {{ progress: {}, tag: {}, summary: '{}' }}", progress, tag, summary),
                 Event::BootstrapComplete => {
