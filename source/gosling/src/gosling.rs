@@ -1,13 +1,11 @@
 // standard
 use std::boxed::Box;
-use std::cell::{Ref, RefCell};
 use std::clone::Clone;
 use std::collections::{HashMap,HashSet};
 use std::convert::TryInto;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::TcpStream;
 use std::path::Path;
-use std::rc::{Rc, Weak};
 use std::sync::{Arc};
 
 // extern crates
@@ -327,7 +325,7 @@ struct IntroductionServerApiSet<H> {
     // The introduciton server's onion service id and main identiity
     server_identity: V3OnionServiceId,
     // Client block-list
-    blocked_clients: Weak<RefCell<HashSet<V3OnionServiceId>>>,
+    blocked_clients: HashSet<V3OnionServiceId>,
     // The endpoint type client is requesting
     requested_endpoint: String,
     // The server's per-handshake generated cookie
@@ -335,9 +333,9 @@ struct IntroductionServerApiSet<H> {
     // The challenge object the server gave the client
     server_challenge: bson::document::Document,
     // Newly accepted client saved here
-    new_client: Weak<RefCell<Option<(Ed25519PrivateKey, String, V3OnionServiceId, X25519PublicKey)>>>,
+    new_client: Option<(Ed25519PrivateKey, String, V3OnionServiceId, X25519PublicKey)>,
     // Flag set on any error
-    handshake_failed: Weak<RefCell<bool>>,
+    handshake_failed: bool,
 
     // Request Cookies
     begin_handshake_cookie: Option<RequestCookie>,
@@ -350,9 +348,7 @@ impl<H> IntroductionServerApiSet<H> where H : IntroductionServerHandshake {
     fn new(
         handshake: H,
         server_service_id: V3OnionServiceId,
-        blocked_clients: Weak<RefCell<HashSet<V3OnionServiceId>>>,
-        new_client: Weak<RefCell<Option<(Ed25519PrivateKey, String, V3OnionServiceId, X25519PublicKey)>>>,
-        handshake_failed: Weak<RefCell<bool>>) -> IntroductionServerApiSet<H> {
+        blocked_clients: HashSet<V3OnionServiceId>) -> IntroductionServerApiSet<H> {
 
         let mut server_cookie: ServerCookie = Default::default();
         OsRng.fill_bytes(&mut server_cookie);
@@ -374,8 +370,8 @@ impl<H> IntroductionServerApiSet<H> where H : IntroductionServerHandshake {
             requested_endpoint: Default::default(),
             server_cookie: server_cookie,
             server_challenge: Default::default(),
-            new_client,
-            handshake_failed,
+            new_client: None,
+            handshake_failed: false,
             // cookies
             begin_handshake_cookie: None,
             send_response_cookie: None,
@@ -428,9 +424,7 @@ impl<H> IntroductionServerApiSet<H> where H : IntroductionServerHandshake {
         self.client_requested_endpoint_valid = self.handshake.endpoint_supported(&self.requested_endpoint);
 
         // check our block list and verify the client is even allowed to request
-        if let Some(blocked_clients) = self.blocked_clients.upgrade() {
-            self.client_allowed = !blocked_clients.borrow().contains(&client_identity);
-        }
+        self.client_allowed = !self.blocked_clients.contains(&client_identity);
 
         // convert client_identity to client's public ed25519 key
         if let Ok(client_identity_key) = Ed25519PublicKey::from_service_id(&client_identity) {
@@ -584,30 +578,28 @@ impl<H> IntroductionServerApiSet<H> where H : IntroductionServerHandshake {
            self.client_auth_signature_valid &&
            self.challenge_response_valid {
 
-            if let Some(new_client) = self.new_client.upgrade() {
-                let new_client_service_id = match &self.new_client_service_id {
-                    Some(service_id) => service_id.clone(),
-                    None => return None,
-                };
+            let new_client_service_id = match &self.new_client_service_id {
+                Some(service_id) => service_id.clone(),
+                None => return None,
+            };
 
-                let new_client_authorization_key = match &self.new_client_authorization_key {
-                    Some(auth_key) => auth_key.clone(),
-                    None => return None,
-                };
+            let new_client_authorization_key = match &self.new_client_authorization_key {
+                Some(auth_key) => auth_key.clone(),
+                None => return None,
+            };
 
-                // generate service id private key
-                let endpoint_onion_service_private = Ed25519PrivateKey::generate();
+            // generate service id private key
+            let endpoint_onion_service_private = Ed25519PrivateKey::generate();
 
-                // calculate service id
-                let endpoint_onion_service_public = Ed25519PublicKey::from_private_key(&endpoint_onion_service_private);
-                let endpoint_service_id = V3OnionServiceId::from_public_key(&endpoint_onion_service_public);
+            // calculate service id
+            let endpoint_onion_service_public = Ed25519PublicKey::from_private_key(&endpoint_onion_service_private);
+            let endpoint_service_id = V3OnionServiceId::from_public_key(&endpoint_onion_service_public);
 
-                // save off onion service info
-                new_client.borrow_mut().replace((endpoint_onion_service_private, self.requested_endpoint.clone(), new_client_service_id, new_client_authorization_key))  ;
+            // save off onion service info
+            self.new_client = Some((endpoint_onion_service_private, self.requested_endpoint.clone(), new_client_service_id, new_client_authorization_key));
 
-                // return service id to client
-                return Some(endpoint_service_id);
-            }
+            // return service id to client
+            return Some(endpoint_service_id);
 
         }
         // some failure ocurred
@@ -651,7 +643,7 @@ impl<H> ApiSet for IntroductionServerApiSet<H> where H : IntroductionServerHands
         match retval {
             Err(_) => {
                 println!("error in exec_function");
-                self.handshake_failed.upgrade().unwrap().replace(true);
+                self.handshake_failed = true;
             },
             Ok(_) => {},
         }
@@ -706,7 +698,7 @@ impl<H> ApiSet for IntroductionServerApiSet<H> where H : IntroductionServerHands
             Some((_, _, ErrorCode::Success)) => {},
             Some(_) => {
                 println!("error in next_result");
-                self.handshake_failed.upgrade().unwrap().replace(true);
+                self.handshake_failed = true;
             },
             None => {},
         }
@@ -720,14 +712,10 @@ impl<H> ApiSet for IntroductionServerApiSet<H> where H : IntroductionServerHands
 // introduction requests
 //
 struct IntroductionServer<H> {
-    // endpoint private key, endpoint name, client service id, client authorization key
-    new_client: Rc<RefCell<Option<(Ed25519PrivateKey, String, V3OnionServiceId, X25519PublicKey)>>>,
     // apiset
     apiset: IntroductionServerApiSet<H>,
     // rpc
     rpc: Session,
-    // apiset sets this to true on handshake failure
-    handshake_failed: Rc<RefCell<bool>>,
     // set to true once handshake completes
     handshake_complete: bool,
 }
@@ -736,28 +724,19 @@ impl<H> IntroductionServer<H> where H : IntroductionServerHandshake + 'static{
     fn new(
         handshake: H,
         service_id: V3OnionServiceId,
-        blocked_clients: Weak<RefCell<HashSet<V3OnionServiceId>>>,
+        blocked_clients: HashSet<V3OnionServiceId>,
         rpc: Session) -> Self {
-
-        let new_client : Rc<RefCell<Option<(Ed25519PrivateKey, String, V3OnionServiceId, X25519PublicKey)>>> = Default::default();
-        let handshake_failed : Rc<RefCell<bool>> = Default::default();
 
         let apiset = IntroductionServerApiSet::<H>::new(
             handshake,
             service_id,
-            blocked_clients,
-            Rc::downgrade(&new_client),
-            Rc::downgrade(&handshake_failed));
+            blocked_clients);
 
-        let mut retval = Self {
-            new_client,
+        Self {
             apiset,
             rpc,
-            handshake_failed,
             handshake_complete: false,
-        };
-
-        retval
+        }
     }
 
     // fails if rpc update fails or if handshake is complete
@@ -767,12 +746,12 @@ impl<H> IntroductionServer<H> where H : IntroductionServerHandshake + 'static{
         // update the rpc server
         self.rpc.update(Some(&mut [&mut self.apiset]))?;
 
-        if *self.handshake_failed.borrow() {
+        if self.apiset.handshake_failed {
             self.handshake_complete = true;
             return Ok(None);
         }
 
-        if let Some(retval) = self.new_client.borrow_mut().take() {
+        if let Some(retval) = self.apiset.new_client.take() {
             self.handshake_complete = true;
             return Ok(Some(retval));
         }
@@ -954,17 +933,15 @@ struct EndpointServerApiSet {
     // The server's per-handshake generated cookie
     server_cookie: ServerCookie,
     // New channel info saved here to be read by server
-    new_channel: Weak<RefCell<Option<(V3OnionServiceId, V3OnionServiceId, String)>>>,
+    new_channel: Option<(V3OnionServiceId, V3OnionServiceId, String)>,
     // Flag set on any error
-    handshake_failed: Weak<RefCell<bool>>,
+    handshake_failed: bool,
 }
 
 impl EndpointServerApiSet {
     fn new(
         server_identity: V3OnionServiceId,
-        allowed_client: V3OnionServiceId,
-        new_channel: Weak<RefCell<Option<(V3OnionServiceId, V3OnionServiceId, String)>>>,
-        handshake_failed: Weak<RefCell<bool>>) -> EndpointServerApiSet {
+        allowed_client: V3OnionServiceId) -> EndpointServerApiSet {
 
         let mut server_cookie: ServerCookie = Default::default();
         OsRng.fill_bytes(&mut server_cookie);
@@ -976,8 +953,8 @@ impl EndpointServerApiSet {
             allowed_client,
             requested_channel: Default::default(),
             server_cookie: server_cookie,
-            new_channel,
-            handshake_failed,
+            new_channel: None,
+            handshake_failed: false,
         }
     }
 
@@ -1022,14 +999,10 @@ impl EndpointServerApiSet {
                 let client_proof_signature_valid = client_identity_proof_signature.verify(&client_proof, &client_identity_key);
 
                 if client_allowed && client_proof_signature_valid {
-                    if let Some(new_channel) = self.new_channel.upgrade() {
-                        // save off channel info
-                        new_channel.borrow_mut().replace((
-                            self.server_identity.clone(), client_identity, std::mem::take(&mut self.requested_channel)));
+                    self.new_channel = Some((self.server_identity.clone(), client_identity, std::mem::take(&mut self.requested_channel)));
 
-                        // return empty doc
-                        return Ok(doc!{});
-                    }
+                    // return empty doc
+                    return Ok(doc!{});
                 }
             };
         }
@@ -1116,7 +1089,7 @@ impl ApiSet for EndpointServerApiSet {
 
         match retval {
             Err(_) => {
-                self.handshake_failed.upgrade().unwrap().replace(true);
+                self.handshake_failed = true;
             },
             Ok(_) => {},
         }
@@ -1134,14 +1107,10 @@ impl ApiSet for EndpointServerApiSet {
 // endpoint requests
 //
 struct EndpointServer {
-    // connected client service id, and requested channel name
-    new_channel: Rc<RefCell<Option<(V3OnionServiceId, V3OnionServiceId, String)>>>,
     // apiset
     apiset: EndpointServerApiSet,
     // rpc
     rpc: Session,
-    // apiset sets this to true on handshake failure
-    handshake_failed: Rc<RefCell<bool>>,
     // set to true once handshake completes
     handshake_complete: bool,
 }
@@ -1152,20 +1121,11 @@ impl EndpointServer {
         allowed_client: V3OnionServiceId,
         rpc: Session) -> Self {
 
-        let new_channel : Rc<RefCell<Option<(V3OnionServiceId, V3OnionServiceId, String)>>> = Default::default();
-        let handshake_failed : Rc<RefCell<bool>> = Default::default();
-
-        let apiset = EndpointServerApiSet::new(
-            service_id,
-            allowed_client,
-            Rc::downgrade(&new_channel),
-            Rc::downgrade(&handshake_failed));
+        let apiset = EndpointServerApiSet::new(service_id, allowed_client);
 
         Self {
-            new_channel,
             apiset,
             rpc,
-            handshake_failed,
             handshake_complete: false,
         }
     }
@@ -1177,12 +1137,12 @@ impl EndpointServer {
         // update the rpc server
         self.rpc.update(Some(&mut [&mut self.apiset]))?;
 
-        if *self.handshake_failed.borrow() {
+        if self.apiset.handshake_failed {
             self.handshake_complete = true;
             return Ok(None);
         }
 
-        if let Some(retval) = self.new_channel.borrow_mut().take() {
+        if let Some(retval) = self.apiset.new_channel.take() {
             self.handshake_complete = true;
             return Ok(Some(retval));
         }
@@ -1227,7 +1187,7 @@ pub struct Context<CH, SH> {
     introduction_service_id : V3OnionServiceId,
 
     // Clients blocked on the introduction server
-    blocked_clients : Rc<RefCell<HashSet<V3OnionServiceId>>>,
+    blocked_clients : HashSet<V3OnionServiceId>,
 }
 
 // todo: dear god change these names
@@ -1299,7 +1259,7 @@ impl<CH,SH> Context<CH,SH> where CH : IntroductionClientHandshake + Clone, SH : 
 
             introduction_private_key,
             introduction_service_id,
-            blocked_clients: Rc::new(RefCell::new(blocked_clients)),
+            blocked_clients,
         })
     }
 
@@ -1394,7 +1354,7 @@ impl<CH,SH> Context<CH,SH> where CH : IntroductionClientHandshake + Clone, SH : 
                 let intro_server = IntroductionServer::<SH>::new(
                     self.server_handshake_prototype.clone(),
                     server_service_id,
-                    Rc::downgrade(&self.blocked_clients),
+                    self.blocked_clients.clone(),
                     server_rpc);
 
                 self.introduction_servers.push(intro_server);
@@ -1675,39 +1635,37 @@ fn introduction_test<CH, SH>(should_fail: bool, client_blocked: bool, endpoint: 
     let stream1 = MemoryStream::new();
     let stream2 = MemoryStream::new();
 
-    // server setup
-    let server_ed25519_private = Ed25519PrivateKey::generate();
-    let server_ed25519_public = Ed25519PublicKey::from_private_key(&server_ed25519_private);
-    let server_service_id = V3OnionServiceId::from_public_key(&server_ed25519_public);
-
-    let blocked_clients: Rc<RefCell<HashSet<V3OnionServiceId>>> = Default::default();
-
-    let mut server_rpc = Session::new(stream1.clone(), stream2.clone());
-
-    let mut intro_server = IntroductionServer::<SH>::new(
-        Default::default(),
-        server_service_id.clone(),
-        Rc::downgrade(&blocked_clients),
-        server_rpc);
-
     // client setup
     let client_ed25519_private = Ed25519PrivateKey::generate();
     let client_ed25519_public = Ed25519PublicKey::from_private_key(&client_ed25519_private);
     let client_service_id = V3OnionServiceId::from_public_key(&client_ed25519_public);
 
+    // server setup
+    let server_ed25519_private = Ed25519PrivateKey::generate();
+    let server_ed25519_public = Ed25519PublicKey::from_private_key(&server_ed25519_private);
+    let server_service_id = V3OnionServiceId::from_public_key(&server_ed25519_public);
+
+    let mut blocked_clients: HashSet<V3OnionServiceId> = Default::default();
     if client_blocked {
         // block the client
-        blocked_clients.borrow_mut().insert(client_service_id.clone());
+        blocked_clients.insert(client_service_id.clone());
     }
 
-    let mut client_rpc = Session::new(stream2, stream1);
-
+    // rpc setup
+    let mut client_rpc = Session::new(stream1.clone(), stream2.clone());
     let mut intro_client = IntroductionClient::<CH>::new(
         Default::default(),
         endpoint,
         client_rpc,
         server_service_id.clone(),
         client_ed25519_private);
+
+    let mut server_rpc = Session::new(stream2, stream1);
+    let mut intro_server = IntroductionServer::<SH>::new(
+        Default::default(),
+        server_service_id.clone(),
+        blocked_clients,
+        server_rpc);
 
     let endpoint_private_key: Option<Ed25519PrivateKey> = None;
     let endpoint_service_id: Option<V3OnionServiceId> = None;
