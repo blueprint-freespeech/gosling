@@ -30,7 +30,6 @@ use url::Host;
 
 // internal crates
 use crate::tor_crypto::*;
-use crate::work_manager::*;
 
 // get the name of our tor executable
 fn system_tor() -> &'static str {
@@ -77,12 +76,13 @@ struct TorProcess {
     process: Child,
     password: String,
     // stdout data
+    stdout_thread: std::thread::JoinHandle<()>,
     stdout: Arc<Mutex<BufReader<ChildStdout>>>,
     stdout_lines: Arc<Mutex<Vec<String>>>
 }
 
 impl TorProcess {
-    pub fn new(data_directory: &Path, stdout_worker: &Worker) -> Result<TorProcess> {
+    pub fn new(data_directory: &Path) -> Result<TorProcess> {
 
         // create data directory if it doesn't exist
         if !data_directory.exists() {
@@ -169,29 +169,30 @@ impl TorProcess {
         let stdout_lines: Arc<Mutex<Vec<String>>> = Default::default();
         let stdout = Arc::new(Mutex::new(BufReader::new(process.stdout.take().unwrap())));
 
-        // start reading daemon's stdout
-        stdout_worker.push({
-            let worker = stdout_worker.clone();
+        let stdout_thread = {
             let stdout_lines = Arc::downgrade(&stdout_lines);
             let stdout = Arc::downgrade(&stdout);
-            move || {
-                TorProcess::read_stdout_task(&worker,&stdout_lines, &stdout)
-            }
-        })?;
+
+            std::thread::Builder::new()
+            .name("tor_stdout_reader".to_string())
+            .spawn(move || {
+                TorProcess::read_stdout_task(&stdout_lines, &stdout);
+            })?
+        };
 
         Ok(TorProcess{
             control_addr: control_addr.unwrap(),
             process,
             password,
+            stdout_thread,
             stdout_lines,
             stdout,
         })
     }
 
-    fn read_stdout_task(worker: &Worker, stdout_lines: &std::sync::Weak<Mutex<Vec<String>>>, stdout: &std::sync::Weak<Mutex<BufReader<ChildStdout>>>) -> Result<()> {
+    fn read_stdout_task(stdout_lines: &std::sync::Weak<Mutex<Vec<String>>>, stdout: &std::sync::Weak<Mutex<BufReader<ChildStdout>>>) -> () {
 
-
-        if let Some(stdout) = stdout.upgrade() {
+        while let Some(stdout) = stdout.upgrade() {
             if let Some(stdout_lines) = stdout_lines.upgrade() {
                 let mut line = String::default();
                 let mut stdout = stdout.lock().unwrap();
@@ -204,22 +205,7 @@ impl TorProcess {
                     stdout_lines.push(line);
                 }
             }
-        } else {
-            // stdout is gone so this task can stop
-            return Ok(());
         }
-
-        // enqueue next read request
-        worker.push({
-            let worker = worker.clone();
-            let stdout_lines = stdout_lines.clone();
-            let stdout = stdout.clone();
-            move || {
-                TorProcess::read_stdout_task(&worker,&stdout_lines, &stdout)
-            }
-        })?;
-
-        Ok(())
     }
 
     fn wait_log_lines(&mut self) -> Vec<String> {
@@ -1156,9 +1142,9 @@ pub struct TorManager {
 }
 
 impl TorManager {
-    pub fn new(data_directory: &Path, stdout_worker: &Worker) -> Result<TorManager> {
+    pub fn new(data_directory: &Path) -> Result<TorManager> {
         // launch tor
-        let daemon = TorProcess::new(data_directory, stdout_worker)?;
+        let daemon = TorProcess::new(data_directory)?;
         // open a control stream
         let control_stream = ControlStream::new(&daemon.control_addr, Duration::from_millis(16))?;
 
@@ -1307,12 +1293,7 @@ impl TorManager {
 #[test]
 #[serial]
 fn test_tor_controller() -> Result<()> {
-    const WORKER_NAMES: [&str; 1] = ["tor_stdout"];
-    const WORKER_COUNT: usize = WORKER_NAMES.len();
-    let work_manager: Arc<WorkManager> = Arc::<WorkManager>::new(WorkManager::new(&WORKER_NAMES)?);
-    let worker = Worker::new(0, &work_manager)?;
-
-    let tor_process = TorProcess::new(Path::new("/tmp/test_tor_controller"), &worker)?;
+    let tor_process = TorProcess::new(Path::new("/tmp/test_tor_controller"))?;
 
     // create a scope to ensure tor_controller is dropped
     {
@@ -1490,12 +1471,8 @@ fn test_version() -> Result<()>
 #[test]
 #[serial]
 fn test_tor_manager() -> Result<()> {
-    const WORKER_NAMES: [&str; 1] = ["tor_stdout"];
-    const WORKER_COUNT: usize = WORKER_NAMES.len();
-    let work_manager: Arc<WorkManager> = Arc::<WorkManager>::new(WorkManager::new(&WORKER_NAMES)?);
-    let worker = Worker::new(0, &work_manager)?;
 
-    let mut tor = TorManager::new(Path::new("/tmp/test_tor_manager"), &worker)?;
+    let mut tor = TorManager::new(Path::new("/tmp/test_tor_manager"))?;
     println!("version : {}", tor.version()?.to_string());
     tor.bootstrap()?;
 
@@ -1525,13 +1502,7 @@ fn test_tor_manager() -> Result<()> {
 #[test]
 #[serial]
 fn test_onion_service() -> Result<()> {
-
-    const WORKER_NAMES: [&str; 1] = ["tor_stdout"];
-    const WORKER_COUNT: usize = WORKER_NAMES.len();
-    let work_manager: Arc<WorkManager> = Arc::<WorkManager>::new(WorkManager::new(&WORKER_NAMES)?);
-    let worker = Worker::new(0, &work_manager)?;
-
-    let mut tor = TorManager::new(Path::new("/tmp/test_onion_service"), &worker)?;
+    let mut tor = TorManager::new(Path::new("/tmp/test_onion_service"))?;
 
     // for 30secs for bootstrap
     tor.bootstrap()?;
