@@ -14,6 +14,8 @@ pub enum ObjectTypes {
     X25519PublicKey,
     V3OnionServiceId,
     Context,
+    IdentityClientHandshake,
+    IdentityServerHandshake,
 }
 
 // This trait is required for types we want to keep in an ObjectRegistry
@@ -46,8 +48,8 @@ impl<T> ObjectRegistry<T> where T : HasByteTypeId{
         self.map.contains_key(&key)
     }
 
-    pub fn remove(&mut self, key:usize) {
-        self.map.remove(&key);
+    pub fn remove(&mut self, key:usize) -> Option<T> {
+        self.map.remove(&key)
     }
 
     pub fn insert(&mut self, val:T) -> usize {
@@ -77,7 +79,7 @@ macro_rules! define_registry {
             }
 
             // get a mutex guard wrapping the object registry
-            pub fn [<$type:snake _registry>]<'a>() -> std::sync::MutexGuard<'a, ObjectRegistry<$type>> {
+            pub fn [<get_ $type:snake _registry>]<'a>() -> std::sync::MutexGuard<'a, ObjectRegistry<$type>> {
                 [<$type:snake:upper _REGISTRY>].lock().unwrap()
             }
 

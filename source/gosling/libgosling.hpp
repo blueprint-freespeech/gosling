@@ -108,4 +108,16 @@ namespace std {
             gosling_context_free(val);
         }
     };
+    template<> class default_delete<gosling_identity_client_handshake> {
+    public:
+        void operator()(gosling_identity_client_handshake *val) {
+            gosling_identity_client_handshake_free(val);
+        }
+    };
+    template<> class default_delete<gosling_identity_server_handshake> {
+    public:
+        void operator()(gosling_identity_server_handshake *val) {
+            gosling_identity_server_handshake_free(val);
+        }
+    };
 }

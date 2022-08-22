@@ -29,9 +29,6 @@ use crate::honk_rpc::*;
 use crate::test_utils::MemoryStream;
 use crate::tor_crypto::*;
 use crate::tor_controller::*;
-use crate::work_manager::*;
-
-// todo: introdocution server/client -> identity server/client
 
 #[derive(Debug, Eq, PartialEq, TryFromPrimitive)]
 #[repr(i32)]
@@ -48,31 +45,32 @@ enum GoslingError {
     Failure,
 }
 
-enum IntroductionHandshakeFunction {
+enum IdentityHandshakeFunction {
     BeginHandshake,
     SendResponse,
 }
 
-pub enum IntroductionHandshakeResult {
+pub enum IdentityHandshakeResult {
     BuildEndpointChallenge(bson::document::Document),
     VerifyChallengeResponse(bool),
 }
 
-pub trait IntroductionServerHandshake {
+pub trait IdentityServerHandshake {
 
     fn endpoint_supported(&mut self, endpoint: &str) -> bool;
 
+    // todo: thi should always return Some never None
     fn build_endpoint_challenge(&mut self, endpoint: &str) -> Option<bson::document::Document>;
 
     fn verify_challenge_response(&mut self,
                                  endpoint: &str,
                                  challenge: bson::document::Document,
                                  challenge_response: bson::document::Document) -> Option<bool>;
-    fn poll_result(&mut self) -> Option<IntroductionHandshakeResult>;
+    fn poll_result(&mut self) -> Option<IdentityHandshakeResult>;
 
 }
 
-pub trait IntroductionClientHandshake {
+pub trait IdentityClientHandshake {
     // client-side method for responding to challenge response
     fn build_challenge_response(&self, endpoint: &str, challenge: &bson::document::Document) -> bson::document::Document;
 }
@@ -87,14 +85,14 @@ type ServerCookie = [u8; SERVER_COOKIE_SIZE];
 type ClientProof = Vec<u8>;
 
 enum DomainSeparator {
-    GoslingIntroduction,
+    GoslingIdentity,
     GoslingEndpoint,
 }
 
 impl From<DomainSeparator> for &[u8] {
     fn from(sep: DomainSeparator) -> &'static [u8] {
         match sep {
-            DomainSeparator::GoslingIntroduction => b"gosling-introduction",
+            DomainSeparator::GoslingIdentity => b"gosling-identity",
             DomainSeparator::GoslingEndpoint => b"gosling-endpoint",
         }
     }
@@ -126,12 +124,12 @@ fn build_client_proof(domain_separator: DomainSeparator,
 }
 
 //
-// An introduction client object used for connecting
-// to an introduction server
+// An identity client object used for connecting
+// to an identity server
 //
-struct IntroductionClient<H> {
+struct IdentityClient<H> {
     // used for state machine
-    next_function: Option<IntroductionHandshakeFunction>,
+    next_function: Option<IdentityHandshakeFunction>,
     handshake: H,
     rpc: Session,
 
@@ -145,7 +143,7 @@ struct IntroductionClient<H> {
     handshake_complete: bool,
 }
 
-impl<H> IntroductionClient<H> where H : IntroductionClientHandshake {
+impl<H> IdentityClient<H> where H : IdentityClientHandshake {
     fn new(
         handshake: H,
         endpoint: &str,
@@ -153,7 +151,7 @@ impl<H> IntroductionClient<H> where H : IntroductionClientHandshake {
         server_service_id: V3OnionServiceId,
         client_ed25519_private: Ed25519PrivateKey) -> Self {
         Self {
-            next_function: Some(IntroductionHandshakeFunction::BeginHandshake),
+            next_function: Some(IdentityHandshakeFunction::BeginHandshake),
             handshake,
             rpc,
             server_service_id,
@@ -165,7 +163,7 @@ impl<H> IntroductionClient<H> where H : IntroductionClientHandshake {
     }
 
     // on completion returns tuple containing:
-    // - the introduction service id we are connected to
+    // - the identity service id we are connected to
     // - the endpoint service id we can connect to
     // - the endpoint name
     // - the x25519 client auth private key used to encrypt the end point's descriptor
@@ -179,19 +177,19 @@ impl<H> IntroductionClient<H> where H : IntroductionClientHandshake {
         // client state machine
         match self.next_function {
             // send initial handshake request
-            Some(IntroductionHandshakeFunction::BeginHandshake) => {
+            Some(IdentityHandshakeFunction::BeginHandshake) => {
                 self.rpc.client_call(
-                    "gosling_introduction",
+                    "gosling_identity",
                     "begin_handshake",
                     0,
                     doc!{
                         "version" : bson::Bson::String(GOSLING_VERSION.to_string()),
                         "endpoint" : bson::Bson::String(self.requested_endpoint.clone()),
                     })?;
-                self.next_function = Some(IntroductionHandshakeFunction::SendResponse);
+                self.next_function = Some(IdentityHandshakeFunction::SendResponse);
             },
             // send challenge response
-            Some(IntroductionHandshakeFunction::SendResponse) => {
+            Some(IdentityHandshakeFunction::SendResponse) => {
                 if let Some(response) = self.rpc.client_next_response() {
                     let result = match response {
                         Response::Pending{cookie} => return Ok(None),
@@ -218,7 +216,7 @@ impl<H> IntroductionClient<H> where H : IntroductionClientHandshake {
                                 Err(_) => bail!("invalid server cookie length"),
                             };
                             let client_identity_proof = build_client_proof(
-                                DomainSeparator::GoslingIntroduction,
+                                DomainSeparator::GoslingIdentity,
                                 &self.requested_endpoint,
                                 &client_service_id,
                                 &self.server_service_id,
@@ -256,7 +254,7 @@ impl<H> IntroductionClient<H> where H : IntroductionClientHandshake {
 
                             // make rpc call
                             self.rpc.client_call(
-                                "gosling_introduction",
+                                "gosling_identity",
                                 "send_response",
                                 0,
                                 args)?;
@@ -289,10 +287,10 @@ impl<H> IntroductionClient<H> where H : IntroductionClientHandshake {
 }
 
 //
-// The introduction server apiset for the introduction
+// The identity server apiset for the identity
 // server's RpcServer
 //
-struct IntroductionServerApiSet<H> {
+struct IdentityServerApiSet<H> {
     // handshake endpoint challenge/response implementation
     handshake: H,
 
@@ -323,7 +321,7 @@ struct IntroductionServerApiSet<H> {
     // Handshake Data
     //
 
-    // The introduciton server's onion service id and main identiity
+    // The identduciton server's onion service id and main identiity
     server_identity: V3OnionServiceId,
     // Client block-list
     blocked_clients: HashSet<V3OnionServiceId>,
@@ -343,18 +341,18 @@ struct IntroductionServerApiSet<H> {
     send_response_cookie: Option<RequestCookie>,
 }
 
-// actual implementation of various rpc methods, glue/plumbing to the intro server handshake object
-impl<H> IntroductionServerApiSet<H> where H : IntroductionServerHandshake {
+// actual implementation of various rpc methods, glue/plumbing to the ident server handshake object
+impl<H> IdentityServerApiSet<H> where H : IdentityServerHandshake {
 
     fn new(
         handshake: H,
         server_service_id: V3OnionServiceId,
-        blocked_clients: HashSet<V3OnionServiceId>) -> IntroductionServerApiSet<H> {
+        blocked_clients: HashSet<V3OnionServiceId>) -> IdentityServerApiSet<H> {
 
         let mut server_cookie: ServerCookie = Default::default();
         OsRng.fill_bytes(&mut server_cookie);
 
-        IntroductionServerApiSet{
+        IdentityServerApiSet{
             handshake,
             // flags
             client_requested_endpoint_valid: false,
@@ -431,7 +429,7 @@ impl<H> IntroductionServerApiSet<H> where H : IntroductionServerHandshake {
         if let Ok(client_identity_key) = Ed25519PublicKey::from_service_id(&client_identity) {
             // construct + verify client proof
             if let Ok(client_proof) = build_client_proof(
-                                            DomainSeparator::GoslingIntroduction,
+                                            DomainSeparator::GoslingIdentity,
                                             &self.requested_endpoint,
                                             &client_identity,
                                             &self.server_identity,
@@ -616,10 +614,10 @@ impl<H> IntroductionServerApiSet<H> where H : IntroductionServerHandshake {
     }
 }
 
-// ApiSet implementation for the introduction rpc server
-impl<H> ApiSet for IntroductionServerApiSet<H> where H : IntroductionServerHandshake {
+// ApiSet implementation for the identity rpc server
+impl<H> ApiSet for IdentityServerApiSet<H> where H : IdentityServerHandshake {
     fn namespace(&self) -> &str {
-        "gosling_introduction"
+        "gosling_identity"
     }
 
     fn exec_function(&mut self, name: &str, version: i32, args: bson::document::Document, request_cookie: Option<RequestCookie>) -> Result<Option<bson::Bson>, ErrorCode> {
@@ -655,7 +653,7 @@ impl<H> ApiSet for IntroductionServerApiSet<H> where H : IntroductionServerHands
     fn next_result(&mut self) -> Option<(RequestCookie, Option<bson::Bson>, ErrorCode)> {
 
         let retval = match self.handshake.poll_result() {
-            Some(IntroductionHandshakeResult::BuildEndpointChallenge(endpoint_challenge)) => {
+            Some(IdentityHandshakeResult::BuildEndpointChallenge(endpoint_challenge)) => {
                 Some((
                     self.begin_handshake_cookie.unwrap(),
                     Some(Bson::Document(doc!{
@@ -665,7 +663,7 @@ impl<H> ApiSet for IntroductionServerApiSet<H> where H : IntroductionServerHands
                     ErrorCode::Success))
             },
             // verification failure
-            Some(IntroductionHandshakeResult::VerifyChallengeResponse(false)) => {
+            Some(IdentityHandshakeResult::VerifyChallengeResponse(false)) => {
                 self.print_flags();
                 Some((
                     self.send_response_cookie.unwrap(),
@@ -673,7 +671,7 @@ impl<H> ApiSet for IntroductionServerApiSet<H> where H : IntroductionServerHands
                     ErrorCode::Runtime(GoslingError::Failure as i32)))
             },
             // verification success
-            Some(IntroductionHandshakeResult::VerifyChallengeResponse(true)) => {
+            Some(IdentityHandshakeResult::VerifyChallengeResponse(true)) => {
                 // get our endpoint now that the challenge response has been verified
                 self.challenge_response_valid = true;
 
@@ -709,26 +707,26 @@ impl<H> ApiSet for IntroductionServerApiSet<H> where H : IntroductionServerHands
 }
 
 //
-// The introduction server object that handles incoming
-// introduction requests
+// The identity server object that handles incoming
+// identity requests
 //
-struct IntroductionServer<H> {
+struct IdentityServer<H> {
     // apiset
-    apiset: IntroductionServerApiSet<H>,
+    apiset: IdentityServerApiSet<H>,
     // rpc
     rpc: Session,
     // set to true once handshake completes
     handshake_complete: bool,
 }
 
-impl<H> IntroductionServer<H> where H : IntroductionServerHandshake + 'static{
+impl<H> IdentityServer<H> where H : IdentityServerHandshake + 'static{
     fn new(
         handshake: H,
         service_id: V3OnionServiceId,
         blocked_clients: HashSet<V3OnionServiceId>,
         rpc: Session) -> Self {
 
-        let apiset = IntroductionServerApiSet::<H>::new(
+        let apiset = IdentityServerApiSet::<H>::new(
             handshake,
             service_id,
             blocked_clients);
@@ -1157,7 +1155,8 @@ impl EndpointServer {
 pub struct Context<CH, SH> {
     // our tor instance
     tor_manager : TorManager,
-    introduction_port : u16,
+    bootstrap_complete: bool,
+    identity_port : u16,
     endpoint_port : u16,
 
     client_handshake_prototype: CH,
@@ -1166,15 +1165,15 @@ pub struct Context<CH, SH> {
     //
     // Servers and Clients for in-process handshakes
     //
-    introduction_clients: Vec<IntroductionClient<CH>>,
-    introduction_servers: Vec<IntroductionServer<SH>>,
+    identity_clients: Vec<IdentityClient<CH>>,
+    identity_servers: Vec<IdentityServer<SH>>,
     endpoint_clients : Vec<(EndpointClient, TcpStream)>,
     endpoint_servers : Vec<(EndpointServer, TcpStream)>,
 
     //
     // Listeners for incoming connections
     //
-    introduction_listener : Option<OnionListener>,
+    identity_listener : Option<OnionListener>,
     // maps the endpoint service id to the enpdoint name, alowed client, onion listener tuple
     endpoint_listeners : HashMap<V3OnionServiceId, (String, V3OnionServiceId, OnionListener)>,
 
@@ -1182,47 +1181,56 @@ pub struct Context<CH, SH> {
     // Server Config Data
     //
 
-    // Private key behind the introduction onion service
-    introduction_private_key : Ed25519PrivateKey,
-    // Introduciton server's service id
-    introduction_service_id : V3OnionServiceId,
+    // Private key behind the identity onion service
+    identity_private_key : Ed25519PrivateKey,
+    // Identity server's service id
+    identity_service_id : V3OnionServiceId,
 
-    // Clients blocked on the introduction server
+    // Clients blocked on the identity server
     blocked_clients : HashSet<V3OnionServiceId>,
 }
 
-// todo: dear god change these names
-// GoslingIntro(Client|Server)(EventName)
-enum ContextEvent {
-    // introduction server published
-    IntroductionServerPublished,
+pub enum ContextEvent {
+    // bootstrap progress
+    TorBootstrapStatusReceived{
+        progress: u32,
+        tag: String,
+        summary: String
+    },
+    // bootstrapping finished
+    TorBootstrapCompleted,
+    // tor log
+    TorLogReceived{line: String},
+
+    // identity server published
+    IdentityServerPublished,
     // endpoint server published
     EndpointServerPublished{
         endpoint_service_id: V3OnionServiceId,
         endpoint_name: String,
     },
     // client successfully requests an endpoint
-    EndpointRequestSucceeded{
-        introduction_service_id: V3OnionServiceId,
+    EndpointClientRequestCompleted{
+        identity_service_id: V3OnionServiceId,
         endpoint_service_id: V3OnionServiceId,
         endpoint_name: String,
         client_auth_private_key: X25519PrivateKey
     },
     // server supplies a new endpoint server
-    EndpointRequestHandled{
+    EndpointServerRequestCompleted{
         endpoint_private_key: Ed25519PrivateKey,
         endpoint_name: String,
         client_service_id: V3OnionServiceId,
         client_auth_public_key: X25519PublicKey
     },
     // client successfully opens a channel on an endpoint
-    EndpointChannelOpened{
+    EndpointClientChannelRequestCompleted{
         endpoint_service_id: V3OnionServiceId,
         channel_name: String,
         stream: TcpStream
     },
     // server has acepted incoming channel request
-    EndpointChannelAccepted{
+    EndpointServerChannelRequestCompleted{
         endpoint_service_id: V3OnionServiceId,
         client_service_id: V3OnionServiceId,
         channel_name:  String,
@@ -1230,65 +1238,75 @@ enum ContextEvent {
     },
 }
 
-impl<CH,SH> Context<CH,SH> where CH : IntroductionClientHandshake + Clone, SH : IntroductionServerHandshake + Clone + 'static {
-    fn new(
+impl<CH,SH> Context<CH,SH> where CH : IdentityClientHandshake + Clone, SH : IdentityServerHandshake + Clone + 'static {
+    pub fn new(
         client_handshake_prototype: CH,
         server_handshake_prototype: SH,
-        mut tor_manager: TorManager,
-        introduction_port: u16,
+        tor_working_directory: &Path,
+        identity_port: u16,
         endpoint_port: u16,
-        introduction_private_key: Ed25519PrivateKey,
+        identity_private_key: Ed25519PrivateKey,
         blocked_clients: HashSet<V3OnionServiceId>,
         ) -> Result<Self> {
 
-        let introduction_service_id = V3OnionServiceId::from_private_key(&introduction_private_key);
+        let tor_manager = TorManager::new(tor_working_directory)?;
+
+        let identity_service_id = V3OnionServiceId::from_private_key(&identity_private_key);
 
         Ok(Self {
             tor_manager,
-            introduction_port,
+            bootstrap_complete: false,
+            identity_port,
             endpoint_port,
 
             client_handshake_prototype,
             server_handshake_prototype,
 
-            introduction_clients: Default::default(),
-            introduction_servers: Default::default(),
+            identity_clients: Default::default(),
+            identity_servers: Default::default(),
             endpoint_clients: Default::default(),
             endpoint_servers: Default::default(),
 
-            introduction_listener: None,
+            identity_listener: None,
             endpoint_listeners: Default::default(),
 
-            introduction_private_key,
-            introduction_service_id,
+            identity_private_key,
+            identity_service_id,
             blocked_clients,
         })
     }
 
-    fn start_introduction_server(&mut self) -> Result<()> {
-        ensure!(self.introduction_listener.is_none());
+    pub fn bootstrap(&mut self) -> Result<()> {
+        self.tor_manager.bootstrap()
+    }
 
-        let mut introduction_listener = self.tor_manager.listener(&self.introduction_private_key, self.introduction_port, None)?;
-        introduction_listener.set_nonblocking(true)?;
+    pub fn start_identity_server(&mut self) -> Result<()> {
+        ensure!(self.bootstrap_complete);
+        ensure!(self.identity_listener.is_none());
 
-        self.introduction_listener = Some(introduction_listener);
+        let mut identity_listener = self.tor_manager.listener(&self.identity_private_key, self.identity_port, None)?;
+        identity_listener.set_nonblocking(true)?;
+
+        self.identity_listener = Some(identity_listener);
         Ok(())
     }
 
-    fn stop_introduction_server(&mut self) -> Result<()> {
-        // clear out current introduciton listener
-        self.introduction_listener = None;
-        // clear out any in-process introduction handshakes
-        self.introduction_servers = Default::default();
+    pub fn stop_identity_server(&mut self) -> Result<()> {
+        ensure!(self.bootstrap_complete);
+        // clear out current identduciton listener
+        self.identity_listener = None;
+        // clear out any in-process identity handshakes
+        self.identity_servers = Default::default();
         Ok(())
     }
 
-    fn start_endpoint_server(
+    pub fn start_endpoint_server(
         &mut self,
         endpoint_private_key: Ed25519PrivateKey,
         endpoint_name: String,
         client_identity: V3OnionServiceId,
         client_auth: X25519PublicKey) -> Result<()> {
+        ensure!(self.bootstrap_complete);
         let mut endpoint_listener = self.tor_manager.listener(&endpoint_private_key, self.endpoint_port, Some(&[client_auth]))?;
         endpoint_listener.set_nonblocking(true)?;
 
@@ -1299,37 +1317,42 @@ impl<CH,SH> Context<CH,SH> where CH : IntroductionClientHandshake + Clone, SH : 
         Ok(())
     }
 
-    fn stop_endpoint_server(
+    pub fn stop_endpoint_server(
         &mut self,
-        endpoint_identity: V3OnionServiceId) -> () {
+        endpoint_identity: V3OnionServiceId) -> Result<()> {
+        ensure!(self.bootstrap_complete);
         self.endpoint_listeners.remove(&endpoint_identity);
-    }
 
-    fn request_remote_endpoint(
-        &mut self,
-        introduction_server_id: V3OnionServiceId,
-        endpoint: &str) -> Result<()> {
-        // open tcp stream to remove intro server
-        let mut stream = self.tor_manager.connect(&introduction_server_id, self.introduction_port, None)?;
-        stream.set_nonblocking(true)?;
-        let client_rpc = Session::new(stream.try_clone()?, stream);
-
-        let intro_client = IntroductionClient::<CH>::new(
-            self.client_handshake_prototype.clone(),
-            endpoint,
-            client_rpc,
-            introduction_server_id,
-            self.introduction_private_key.clone());
-
-        self.introduction_clients.push(intro_client);
         Ok(())
     }
 
-    fn open_endpoint_channel(
+    pub fn request_remote_endpoint(
+        &mut self,
+        identity_server_id: V3OnionServiceId,
+        endpoint: &str) -> Result<()> {
+        ensure!(self.bootstrap_complete);
+        // open tcp stream to remove ident server
+        let mut stream = self.tor_manager.connect(&identity_server_id, self.identity_port, None)?;
+        stream.set_nonblocking(true)?;
+        let client_rpc = Session::new(stream.try_clone()?, stream);
+
+        let ident_client = IdentityClient::<CH>::new(
+            self.client_handshake_prototype.clone(),
+            endpoint,
+            client_rpc,
+            identity_server_id,
+            self.identity_private_key.clone());
+
+        self.identity_clients.push(ident_client);
+        Ok(())
+    }
+
+    pub fn open_endpoint_channel(
         &mut self,
         endpoint_server_id: V3OnionServiceId,
         client_auth_key: X25519PrivateKey,
         channel: &str) -> Result<()> {
+        ensure!(self.bootstrap_complete);
         self.tor_manager.add_client_auth(&endpoint_server_id, &client_auth_key)?;
         let stream = self.tor_manager.connect(&endpoint_server_id, self.endpoint_port, None)?;
         stream.set_nonblocking(true)?;
@@ -1339,27 +1362,27 @@ impl<CH,SH> Context<CH,SH> where CH : IntroductionClientHandshake + Clone, SH : 
             channel,
             client_rpc,
             endpoint_server_id,
-            self.introduction_private_key.clone());
+            self.identity_private_key.clone());
         self.endpoint_clients.push((endpoint_client, stream.into()));
         Ok(())
     }
 
-    fn update(&mut self) -> Result<Vec<ContextEvent>> {
+    pub fn update(&mut self) -> Result<Vec<ContextEvent>> {
 
-        // first handle new introduction connections
-        if let Some(listener) = &mut self.introduction_listener {
+        // first handle new identity connections
+        if let Some(listener) = &mut self.identity_listener {
             if let Some(mut stream) = listener.accept()? {
                 stream.set_nonblocking(true)?;
-                let introduction_public_key = Ed25519PublicKey::from_private_key(&self.introduction_private_key);
-                let server_service_id = V3OnionServiceId::from_public_key(&introduction_public_key);
+                let identity_public_key = Ed25519PublicKey::from_private_key(&self.identity_private_key);
+                let server_service_id = V3OnionServiceId::from_public_key(&identity_public_key);
                 let server_rpc = Session::new(stream.try_clone()?, stream.try_clone()?);
-                let intro_server = IntroductionServer::<SH>::new(
+                let ident_server = IdentityServer::<SH>::new(
                     self.server_handshake_prototype.clone(),
                     server_service_id,
                     self.blocked_clients.clone(),
                     server_rpc);
 
-                self.introduction_servers.push(intro_server);
+                self.identity_servers.push(ident_server);
             }
         }
 
@@ -1381,33 +1404,42 @@ impl<CH,SH> Context<CH,SH> where CH : IntroductionClientHandshake + Clone, SH : 
         let mut events : Vec<ContextEvent> = Default::default();
 
         // consume tor events
-        for event in self.tor_manager.update()?.iter() {
+        for event in self.tor_manager.update()?.drain(..) {
             match event {
+                Event::BootstrapStatus{progress,tag,summary} => {
+                    events.push(ContextEvent::TorBootstrapStatusReceived{progress, tag, summary});
+                },
+                Event::BootstrapComplete => {
+                    events.push(ContextEvent::TorBootstrapCompleted);
+                    self.bootstrap_complete = true;
+                },
+                Event::LogReceived{line} => {
+                    events.push(ContextEvent::TorLogReceived{line});
+                },
                 Event::OnionServicePublished{service_id} => {
-                    if *service_id == self.introduction_service_id {
-                        events.push(ContextEvent::IntroductionServerPublished);
+                    if service_id == self.identity_service_id {
+                        events.push(ContextEvent::IdentityServerPublished);
                     } else {
                         if let Some((endpoint_name, _, _)) = self.endpoint_listeners.get(&service_id) {
                             events.push(ContextEvent::EndpointServerPublished{
-                                endpoint_service_id: service_id.clone(),
+                                endpoint_service_id: service_id,
                                 endpoint_name: endpoint_name.clone(),
                             });
                         }
                     }
                 },
-                _ => {},
             }
         }
 
-        // update the intro client handshakes
+        // update the ident client handshakes
         {
             let mut idx = 0;
-            while idx < self.introduction_clients.len() {
-                let remove = match self.introduction_clients[idx].update() {
-                    Ok(Some((introduction_service_id, endpoint_service_id, endpoint_name, client_auth_private_key))) => {
+            while idx < self.identity_clients.len() {
+                let remove = match self.identity_clients[idx].update() {
+                    Ok(Some((identity_service_id, endpoint_service_id, endpoint_name, client_auth_private_key))) => {
                         events.push(
-                            ContextEvent::EndpointRequestSucceeded{
-                                introduction_service_id,
+                            ContextEvent::EndpointClientRequestCompleted{
+                                identity_service_id,
                                 endpoint_service_id,
                                 endpoint_name,
                                 client_auth_private_key});
@@ -1420,21 +1452,21 @@ impl<CH,SH> Context<CH,SH> where CH : IntroductionClientHandshake + Clone, SH : 
                     },
                 };
                 if remove {
-                    self.introduction_clients.remove(idx);
+                    self.identity_clients.remove(idx);
                 } else {
                     idx += 1;
                 }
             }
         }
 
-        // update the intro server handshakes
+        // update the ident server handshakes
         {
             let mut idx = 0;
-            while idx < self.introduction_servers.len() {
-                let remove = match self.introduction_servers[idx].update() {
+            while idx < self.identity_servers.len() {
+                let remove = match self.identity_servers[idx].update() {
                     Ok(Some((endpoint_private_key, endpoint_name, client_service_id, client_auth_public_key))) => {
                         events.push(
-                            ContextEvent::EndpointRequestHandled{
+                            ContextEvent::EndpointServerRequestCompleted{
                                 endpoint_private_key,
                                 endpoint_name,
                                 client_service_id,
@@ -1446,7 +1478,7 @@ impl<CH,SH> Context<CH,SH> where CH : IntroductionClientHandshake + Clone, SH : 
                 };
 
                 if remove {
-                    self.introduction_servers.remove(idx);
+                    self.identity_servers.remove(idx);
                 } else {
                     idx += 1;
                 }
@@ -1460,7 +1492,7 @@ impl<CH,SH> Context<CH,SH> where CH : IntroductionClientHandshake + Clone, SH : 
                 let remove = match self.endpoint_clients[idx].0.update() {
                     Ok(Some((endpoint_service_id, channel_name))) => {
                         events.push(
-                            ContextEvent::EndpointChannelOpened{
+                            ContextEvent::EndpointClientChannelRequestCompleted{
                                 endpoint_service_id,
                                 channel_name,
                                 stream: self.endpoint_clients[idx].1.try_clone()?});
@@ -1485,7 +1517,7 @@ impl<CH,SH> Context<CH,SH> where CH : IntroductionClientHandshake + Clone, SH : 
                 let remove = match self.endpoint_servers[idx].0.update() {
                     Ok(Some((endpoint_service_id, client_service_id, channel_name))) => {
                         events.push(
-                            ContextEvent::EndpointChannelAccepted{
+                            ContextEvent::EndpointServerChannelRequestCompleted{
                                 endpoint_service_id,
                                 client_service_id,
                                 channel_name,
@@ -1516,12 +1548,12 @@ impl<CH,SH> Context<CH,SH> where CH : IntroductionClientHandshake + Clone, SH : 
 // Synchronous Server Handshake
 #[cfg(test)]
 #[derive(Default)]
-struct TestIntroductionServerHandshake {
+struct TestIdentityServerHandshake {
 
 }
 
 #[cfg(test)]
-impl IntroductionServerHandshake for TestIntroductionServerHandshake {
+impl IdentityServerHandshake for TestIdentityServerHandshake {
 
     fn endpoint_supported(&mut self, endpoint: &str) -> bool {
         endpoint == "endpoint"
@@ -1545,7 +1577,7 @@ impl IntroductionServerHandshake for TestIntroductionServerHandshake {
         Some(false)
     }
 
-    fn poll_result(&mut self) -> Option<IntroductionHandshakeResult> {
+    fn poll_result(&mut self) -> Option<IdentityHandshakeResult> {
         None
     }
 }
@@ -1553,19 +1585,19 @@ impl IntroductionServerHandshake for TestIntroductionServerHandshake {
 // Asynchronous Server Handshake
 #[cfg(test)]
 #[derive(Default)]
-struct TestAsyncIntroductionServerHandshake {
-    func_result: Option<IntroductionHandshakeResult>
+struct TestAsyncIdentityServerHandshake {
+    func_result: Option<IdentityHandshakeResult>
 }
 
 #[cfg(test)]
-impl IntroductionServerHandshake for TestAsyncIntroductionServerHandshake {
+impl IdentityServerHandshake for TestAsyncIdentityServerHandshake {
 
     fn endpoint_supported(&mut self, endpoint: &str) -> bool {
         endpoint == "endpoint"
     }
 
     fn build_endpoint_challenge(&mut self, endpoint: &str) -> Option<bson::document::Document> {
-        self.func_result = Some(IntroductionHandshakeResult::BuildEndpointChallenge(doc!{
+        self.func_result = Some(IdentityHandshakeResult::BuildEndpointChallenge(doc!{
             "a" : 1i32,
             "b" : 2i32,
         }));
@@ -1577,14 +1609,14 @@ impl IntroductionServerHandshake for TestAsyncIntroductionServerHandshake {
                                  challenge: bson::document::Document,
                                  challenge_response: bson::document::Document) -> Option<bool> {
         if let Ok(challenge_response) = challenge_response.get_i32("c") {
-            self.func_result = Some(IntroductionHandshakeResult::VerifyChallengeResponse(challenge_response == 3));
+            self.func_result = Some(IdentityHandshakeResult::VerifyChallengeResponse(challenge_response == 3));
             return None;
         }
-        self.func_result = Some(IntroductionHandshakeResult::VerifyChallengeResponse(false));
+        self.func_result = Some(IdentityHandshakeResult::VerifyChallengeResponse(false));
         None
     }
 
-    fn poll_result(&mut self) -> Option<IntroductionHandshakeResult> {
+    fn poll_result(&mut self) -> Option<IdentityHandshakeResult> {
         return self.func_result.take();
     }
 }
@@ -1593,12 +1625,12 @@ impl IntroductionServerHandshake for TestAsyncIntroductionServerHandshake {
 
 #[cfg(test)]
 #[derive(Default)]
-struct TestIntroductionClientHandshake {
+struct TestIdentityClientHandshake {
 
 }
 
 #[cfg(test)]
-impl IntroductionClientHandshake for TestIntroductionClientHandshake {
+impl IdentityClientHandshake for TestIdentityClientHandshake {
     fn build_challenge_response(&self, endpoint: &str, challenge: &bson::document::Document) -> bson::document::Document {
         if let (Ok(a), Ok(b)) = (challenge.get_i32("a"), challenge.get_i32("b")) {
             return doc!{
@@ -1613,12 +1645,12 @@ impl IntroductionClientHandshake for TestIntroductionClientHandshake {
 
 #[cfg(test)]
 #[derive(Default)]
-struct TestBadIntroductionClientHandshake {
+struct TestBadIdentityClientHandshake {
 
 }
 
 #[cfg(test)]
-impl IntroductionClientHandshake for TestBadIntroductionClientHandshake {
+impl IdentityClientHandshake for TestBadIdentityClientHandshake {
     fn build_challenge_response(&self, endpoint: &str, challenge: &bson::document::Document) -> bson::document::Document {
         if let (Ok(a), Ok(b)) = (challenge.get_i32("a"), challenge.get_i32("b")) {
             return doc!{
@@ -1632,7 +1664,7 @@ impl IntroductionClientHandshake for TestBadIntroductionClientHandshake {
 }
 
 #[cfg(test)]
-fn introduction_test<CH, SH>(should_fail: bool, client_blocked: bool, endpoint: &str) -> Result<()>  where CH : IntroductionClientHandshake + Default, SH : IntroductionServerHandshake + Default + 'static {
+fn identity_test<CH, SH>(should_fail: bool, client_blocked: bool, endpoint: &str) -> Result<()>  where CH : IdentityClientHandshake + Default, SH : IdentityServerHandshake + Default + 'static {
     // test sockets
     let stream1 = MemoryStream::new();
     let stream2 = MemoryStream::new();
@@ -1655,7 +1687,7 @@ fn introduction_test<CH, SH>(should_fail: bool, client_blocked: bool, endpoint: 
 
     // rpc setup
     let mut client_rpc = Session::new(stream1.clone(), stream2.clone());
-    let mut intro_client = IntroductionClient::<CH>::new(
+    let mut ident_client = IdentityClient::<CH>::new(
         Default::default(),
         endpoint,
         client_rpc,
@@ -1663,7 +1695,7 @@ fn introduction_test<CH, SH>(should_fail: bool, client_blocked: bool, endpoint: 
         client_ed25519_private);
 
     let mut server_rpc = Session::new(stream2, stream1);
-    let mut intro_server = IntroductionServer::<SH>::new(
+    let mut ident_server = IdentityServer::<SH>::new(
         Default::default(),
         server_service_id.clone(),
         blocked_clients,
@@ -1677,7 +1709,7 @@ fn introduction_test<CH, SH>(should_fail: bool, client_blocked: bool, endpoint: 
     let mut client_complete = false;
     while !server_complete || !client_complete {
         if !server_complete {
-            match intro_server.update() {
+            match ident_server.update() {
                 Ok(Some((endpoint_private_key, endpoint_name, client_service_id, client_auth_public_key))) => {
                     ensure!(endpoint_name == endpoint);
                     println!("server complete! client_service_id : {}", client_service_id.to_string());
@@ -1693,9 +1725,9 @@ fn introduction_test<CH, SH>(should_fail: bool, client_blocked: bool, endpoint: 
         }
 
         if !client_complete {
-            match intro_client.update() {
-                Ok(Some((introduction_service_id, endpoint_service_id, endpoint_name, client_auth_private_key))) => {
-                    ensure!(introduction_service_id == server_service_id);
+            match ident_client.update() {
+                Ok(Some((identity_service_id, endpoint_service_id, endpoint_name, client_auth_private_key))) => {
+                    ensure!(identity_service_id == server_service_id);
                     ensure!(endpoint_name == endpoint);
                     println!("client complete! endpoint_server : {}", endpoint_service_id.to_string());
                     client_complete = true;
@@ -1715,31 +1747,31 @@ fn introduction_test<CH, SH>(should_fail: bool, client_blocked: bool, endpoint: 
 }
 
 #[test]
-fn test_introduction_handshake() -> Result<()> {
+fn test_identity_handshake() -> Result<()> {
 
     println!("Sucessful Sync ---");
-    introduction_test::<TestIntroductionClientHandshake, TestIntroductionServerHandshake>(false, false, "endpoint")?;
+    identity_test::<TestIdentityClientHandshake, TestIdentityServerHandshake>(false, false, "endpoint")?;
     println!("Bad Endpoint Sync ---");
-    introduction_test::<TestIntroductionClientHandshake, TestIntroductionServerHandshake>(true, false, "bad_endpoint")?;
+    identity_test::<TestIdentityClientHandshake, TestIdentityServerHandshake>(true, false, "bad_endpoint")?;
     println!("Bad Challenge Response Sync ---");
-    introduction_test::<TestBadIntroductionClientHandshake, TestIntroductionServerHandshake>(true, false, "endpoint")?;
+    identity_test::<TestBadIdentityClientHandshake, TestIdentityServerHandshake>(true, false, "endpoint")?;
     println!("Blocked Client Sync ---");
-    introduction_test::<TestIntroductionClientHandshake, TestIntroductionServerHandshake>(true, true, "endpoint")?;
+    identity_test::<TestIdentityClientHandshake, TestIdentityServerHandshake>(true, true, "endpoint")?;
 
     Ok(())
 }
 
 #[test]
-fn test_async_introduction_handshake() -> Result<()> {
+fn test_async_identity_handshake() -> Result<()> {
 
     println!("Sucessful Async ---");
-    introduction_test::<TestIntroductionClientHandshake, TestAsyncIntroductionServerHandshake>(false, false, "endpoint")?;
+    identity_test::<TestIdentityClientHandshake, TestAsyncIdentityServerHandshake>(false, false, "endpoint")?;
     println!("Bad Endpoint Async ---");
-    introduction_test::<TestIntroductionClientHandshake, TestAsyncIntroductionServerHandshake>(true, false, "bad_endpoint")?;
+    identity_test::<TestIdentityClientHandshake, TestAsyncIdentityServerHandshake>(true, false, "bad_endpoint")?;
     println!("Bad Challenge Response Async ---");
-    introduction_test::<TestBadIntroductionClientHandshake, TestAsyncIntroductionServerHandshake>(true, false, "endpoint")?;
+    identity_test::<TestBadIdentityClientHandshake, TestAsyncIdentityServerHandshake>(true, false, "endpoint")?;
     println!("Blocked Client Async ---");
-    introduction_test::<TestIntroductionClientHandshake, TestAsyncIntroductionServerHandshake>(true, true, "endpoint")?;
+    identity_test::<TestIdentityClientHandshake, TestAsyncIdentityServerHandshake>(true, true, "endpoint")?;
 
     Ok(())
 }
@@ -1834,12 +1866,12 @@ fn test_endpoint_handshake() -> Result<()> {
 // AutoAccept Server
 #[cfg(test)]
 #[derive(Default, Clone)]
-struct AutoAcceptIntroductionServerHandshake {
+struct AutoAcceptIdentityServerHandshake {
 }
 
 
 #[cfg(test)]
-impl IntroductionServerHandshake for AutoAcceptIntroductionServerHandshake {
+impl IdentityServerHandshake for AutoAcceptIdentityServerHandshake {
 
     fn endpoint_supported(&mut self, endpoint: &str) -> bool {
         true
@@ -1856,7 +1888,7 @@ impl IntroductionServerHandshake for AutoAcceptIntroductionServerHandshake {
         Some(true)
     }
 
-    fn poll_result(&mut self) -> Option<IntroductionHandshakeResult> {
+    fn poll_result(&mut self) -> Option<IdentityHandshakeResult> {
         None
     }
 }
@@ -1865,12 +1897,12 @@ impl IntroductionServerHandshake for AutoAcceptIntroductionServerHandshake {
 
 #[cfg(test)]
 #[derive(Default, Clone)]
-struct NoOpIntroductionClientHandshake {
+struct NoOpIdentityClientHandshake {
 
 }
 
 #[cfg(test)]
-impl IntroductionClientHandshake for NoOpIntroductionClientHandshake {
+impl IdentityClientHandshake for NoOpIdentityClientHandshake {
     fn build_challenge_response(&self, endpoint: &str, challenge: &bson::document::Document) -> bson::document::Document {
         doc!{}
     }
@@ -1880,84 +1912,74 @@ impl IntroductionClientHandshake for NoOpIntroductionClientHandshake {
 #[serial]
 fn test_gosling_context() -> Result<()> {
 
-    const WORKER_NAMES: [&str; 1] = ["tor_stdout"];
-    const WORKER_COUNT: usize = WORKER_NAMES.len();
-    let work_manager: Arc<WorkManager> = Arc::<WorkManager>::new(WorkManager::new(&WORKER_NAMES)?);
-    let worker = Worker::new(0, &work_manager)?;
-
-    let mut tor = TorManager::new(Path::new("/tmp/test_gosling_context_alice"), &worker)?;
-    tor.bootstrap()?;
-
-    let mut bootstrap_complete = false;
-    while !bootstrap_complete {
-        for event in tor.update()?.iter() {
-            match event {
-                Event::BootstrapStatus{progress,tag,summary} => println!("Alice BootstrapStatus: {{ progress: {}, tag: {}, summary: '{}' }}", progress, tag, summary),
-                Event::BootstrapComplete => {
-                    println!("Alice Bootstrap Complete!");
-                    bootstrap_complete = true;
-                },
-                Event::LogReceived{line} => {
-                    println!("--- {}", line);
-                },
-                _ => {},
-            }
-        }
-    }
-
     let alice_private_key = Ed25519PrivateKey::generate();
     let alice_service_id = V3OnionServiceId::from_private_key(&alice_private_key);
 
     println!("Starting Alice gosling context ({})", alice_service_id.to_string());
-    let mut alice = Context::<NoOpIntroductionClientHandshake,AutoAcceptIntroductionServerHandshake>::new(
+    let mut alice = Context::<NoOpIdentityClientHandshake,AutoAcceptIdentityServerHandshake>::new(
         Default::default(),
         Default::default(),
-        tor,
+        Path::new("/tmp/test_gosling_context_alice"),
         420,
         420,
         alice_private_key,
         Default::default())?;
-
-    let mut tor = TorManager::new(Path::new("/tmp/test_gosling_context_pat"), &worker)?;
-    tor.bootstrap()?;
+    alice.bootstrap()?;
 
     let mut bootstrap_complete = false;
     while !bootstrap_complete {
-        for event in tor.update()?.iter() {
+        for event in alice.update()?.drain(..) {
             match event {
-                Event::BootstrapStatus{progress,tag,summary} => println!("Pat BootstrapStatus: {{ progress: {}, tag: {}, summary: '{}' }}", progress, tag, summary),
-                Event::BootstrapComplete => {
-                    println!("Pat Bootstrap Complete!");
+                ContextEvent::TorBootstrapStatusReceived{progress,tag,summary} => println!("Alice BootstrapStatus: {{ progress: {}, tag: {}, summary: '{}' }}", progress, tag, summary),
+                ContextEvent::TorBootstrapCompleted => {
+                    println!("Alice Bootstrap Complete!");
                     bootstrap_complete = true;
                 },
-                Event::LogReceived{line} => {
-                    println!("--- {}", line);
+                ContextEvent::TorLogReceived{line} => {
+                    println!("--- ALICE --- {}", line);
                 },
                 _ => {},
             }
         }
     }
-
 
     let pat_private_key = Ed25519PrivateKey::generate();
     let pat_service_id = V3OnionServiceId::from_private_key(&pat_private_key);
 
     println!("Starting Pat gosling context ({})", pat_service_id.to_string());
-    let mut pat = Context::<NoOpIntroductionClientHandshake,AutoAcceptIntroductionServerHandshake>::new(
+    let mut pat = Context::<NoOpIdentityClientHandshake,AutoAcceptIdentityServerHandshake>::new(
         Default::default(),
         Default::default(),
-        tor,
+        Path::new("/tmp/test_gosling_context_pat"),
         420,
         420,
         pat_private_key,
         Default::default())?;
+    pat.bootstrap()?;
 
-    println!("Starting Alice intro server");
-    alice.start_introduction_server()?;
+    let mut bootstrap_complete = false;
+    while !bootstrap_complete {
+        for event in pat.update()?.drain(..) {
+            match event {
+                ContextEvent::TorBootstrapStatusReceived{progress,tag,summary} => println!("Pat BootstrapStatus: {{ progress: {}, tag: {}, summary: '{}' }}", progress, tag, summary),
+                ContextEvent::TorBootstrapCompleted => {
+                    println!("Pat Bootstrap Complete!");
+                    bootstrap_complete = true;
+                },
+                ContextEvent::TorLogReceived{line} => {
+                    println!("--- PAT --- {}", line);
+                },
+                _ => {},
+            }
+        }
+    }
+
+    println!("Starting Alice identity server");
+    alice.start_identity_server()?;
 
     println!("------------ Begin event loop ------------ ");
 
-    let mut introduction_published = false;
+    let mut identity_published = false;
     let mut endpoint_published = false;
     let mut saved_endpoint_service_id: Option<V3OnionServiceId> = None;
     let mut saved_endpoint_client_auth_key: Option<X25519PrivateKey> = None;
@@ -1971,14 +1993,14 @@ fn test_gosling_context() -> Result<()> {
         let mut events = alice.update()?;
         for mut event in events.drain(..) {
             match event {
-                ContextEvent::IntroductionServerPublished => {
-                    if !introduction_published {
-                        println!("Alice introduction server published");
+                ContextEvent::IdentityServerPublished => {
+                    if !identity_published {
+                        println!("Alice identity server published");
 
-                        // alice has published the intro server, so pay may now request an endpoint
+                        // alice has published the identity server, so pay may now request an endpoint
 
                         if let Ok(()) = pat.request_remote_endpoint(alice_service_id.clone(), "test_endpoint") {
-                            introduction_published = true;
+                            identity_published = true;
                         }
                     }
                 },
@@ -2003,7 +2025,7 @@ fn test_gosling_context() -> Result<()> {
                         }
                     }
                 },
-                ContextEvent::EndpointRequestHandled{endpoint_private_key, endpoint_name, client_service_id, client_auth_public_key} => {
+                ContextEvent::EndpointServerRequestCompleted{endpoint_private_key, endpoint_name, client_service_id, client_auth_public_key} => {
                     println!("Alice: endpoint request handled");
                     println!(" endpoint_service_id: {}", V3OnionServiceId::from_private_key(&endpoint_private_key).to_string());
                     println!(" endpoint: {}", endpoint_name);
@@ -2012,9 +2034,12 @@ fn test_gosling_context() -> Result<()> {
                     // server handed out endpoint server info, so start the endpoint server
                     alice.start_endpoint_server(endpoint_private_key, endpoint_name, client_service_id, client_auth_public_key)?;
                 },
-                ContextEvent::EndpointChannelAccepted{endpoint_service_id, client_service_id, channel_name, stream} => {
+                ContextEvent::EndpointServerChannelRequestCompleted{endpoint_service_id, client_service_id, channel_name, stream} => {
                     println!("Alice: endpoint channel accepted");
                     alice_server_socket = Some(stream);
+                },
+                ContextEvent::TorLogReceived{line} => {
+                    println!("--- ALICE --- {}", line);
                 },
                 _ => bail!("Alice received unexpected event"),
             }
@@ -2024,14 +2049,17 @@ fn test_gosling_context() -> Result<()> {
         let mut events = pat.update()?;
         for mut event in events.drain(..) {
             match event {
-                ContextEvent::EndpointRequestSucceeded{introduction_service_id, endpoint_service_id, endpoint_name, client_auth_private_key} => {
+                ContextEvent::EndpointClientRequestCompleted{identity_service_id, endpoint_service_id, endpoint_name, client_auth_private_key} => {
                     println!("Pat: endpoint request succeeded");
                     saved_endpoint_service_id = Some(endpoint_service_id);
                     saved_endpoint_client_auth_key = Some(client_auth_private_key);
                 },
-                ContextEvent::EndpointChannelOpened{endpoint_service_id, channel_name, stream} => {
+                ContextEvent::EndpointClientChannelRequestCompleted{endpoint_service_id, channel_name, stream} => {
                     println!("Pat: endpoint channel opened");
                     pat_client_socket = Some(stream);
+                },
+                ContextEvent::TorLogReceived{line} => {
+                    println!("--- PAT --- {}", line);
                 },
                 _ => bail!("Pat received unexpected event"),
             }
