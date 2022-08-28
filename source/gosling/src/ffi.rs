@@ -519,6 +519,38 @@ pub extern "C" fn gosling_v3_onion_service_id_from_string(
     })
 }
 
+/// Conversion method for converting an ed25519 private key  into a
+/// gosling_v3_onion_service_id object
+///
+/// @param out_service_id : returned service id object
+/// @param ed25519_private_key: an e25519 private key
+/// @param error : filled on error
+#[no_mangle]
+pub extern "C" fn gosling_v3_onion_service_id_from_ed25519_private_key(
+    out_service_id: *mut *mut GoslingV3OnionServiceId,
+    ed25519_private_key: *const GoslingEd25519PrivateKey,
+    error: *mut *mut GoslingError)  -> () {
+
+    translate_failures((), error, || -> Result<()> {
+        ensure!(!out_service_id.is_null(), "gosling_v3_onion_service_id_from_ed25519_private_key(): out_service_id must not be null");
+        ensure!(!ed25519_private_key.is_null(), "gosling_v3_onion_service_id_from_ed25519_private_key(): ed25519_private_key must not be null");
+
+        let service_id = {
+            let ed25519_private_key_registry = get_ed25519_private_key_registry();
+            let ed25519_private_key = match ed25519_private_key_registry.get(ed25519_private_key as usize) {
+                Some(ed25519_private_key) => ed25519_private_key,
+                None => bail!("gosling_v3_onion_service_id_from_ed25519_private_key(): ed25519_private_key is invalid"),
+            };
+            V3OnionServiceId::from_private_key(&ed25519_private_key)
+        };
+
+        let handle = get_v3_onion_service_id_registry().insert(service_id);
+        unsafe { *out_service_id = handle as *mut GoslingV3OnionServiceId };
+
+        Ok(())
+    })
+}
+
 /// Conversion method for converting v3 onion service id to a null-terminated
 /// string
 ///
@@ -916,6 +948,8 @@ impl IdentityServerHandshake for NativeIdentityServerHandshake {
             GoslingChallengeResponseResult::Valid => Some(true),
             GoslingChallengeResponseResult::Invalid => Some(false),
             GoslingChallengeResponseResult::Pending => None,
+            #[allow(unreachable_patterns)]
+            _ => panic!("NativeIdentityServerHandshake::verify_challenge_response(): verify_challenge_response_callback returned invalid value"),
         }
     }
 
@@ -931,6 +965,8 @@ impl IdentityServerHandshake for NativeIdentityServerHandshake {
             GoslingChallengeResponseResult::Valid => Some(IdentityHandshakeResult::VerifyChallengeResponse(true)),
             GoslingChallengeResponseResult::Invalid => Some(IdentityHandshakeResult::VerifyChallengeResponse(false)),
             GoslingChallengeResponseResult::Pending => None,
+            #[allow(unreachable_patterns)]
+            _ => panic!("NativeIdentityServerHandshake::poll_result(): poll_challenge_response_result_callback returned invalid value"),
         }
     }
 }

@@ -272,6 +272,28 @@ TEST_CASE("gosling_v3_onion_service_id_from_string") {
     REQUIRE(serviceId.get() != nullptr);
 }
 
+TEST_CASE("gosling_v3_onion_service_id_from_ed25519_private_key") {
+    const std::string privateKeyBlob = "ED25519-V3:YE3GZtDmc+izGijWKgeVRabbXqK456JKKGONDBhV+kPBVKa2mHVQqnRTVuFXe3inU3YW6qvc7glYEwe9rK0LhQ==";
+    const std::string serviceIdString = "6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd";
+
+    // golden path
+    unique_ptr<gosling_ed25519_private_key> privateKey;
+    REQUIRE_NOTHROW(::gosling_ed25519_private_key_from_keyblob(out(privateKey), privateKeyBlob.data(), privateKeyBlob.size(), throw_on_error()));
+
+    unique_ptr<gosling_v3_onion_service_id> serviceId;
+    REQUIRE_NOTHROW(::gosling_v3_onion_service_id_from_ed25519_private_key(out(serviceId), privateKey.get(), throw_on_error()));
+
+    char serviceIdStringRaw[V3_ONION_SERVICE_ID_SIZE] = {0};
+    REQUIRE_NOTHROW(::gosling_v3_onion_service_id_to_string(serviceId.get(), serviceIdStringRaw, sizeof(serviceIdStringRaw), throw_on_error()));
+
+    REQUIRE(serviceIdString == serviceIdStringRaw);
+
+    // invalid inputs
+    REQUIRE_THROWS(::gosling_v3_onion_service_id_from_ed25519_private_key(nullptr, nullptr, throw_on_error()));
+    REQUIRE_THROWS(::gosling_v3_onion_service_id_from_ed25519_private_key(out(serviceId), nullptr, throw_on_error()));
+    REQUIRE_THROWS(::gosling_v3_onion_service_id_from_ed25519_private_key(nullptr, privateKey.get(), throw_on_error()));
+}
+
 TEST_CASE("gosling_v3_onion_service_id_to_string") {
 
     unique_ptr<gosling_v3_onion_service_id> serviceId;
