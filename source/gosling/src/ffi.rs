@@ -195,7 +195,7 @@ fn translate_failures<R,F>(default: R, out_error: *mut *mut GoslingError, closur
 
 /// Creation method for securely generating a new gosling_ed25510_private_key
 ///
-/// @param out_privateKey : returned generated ed25519 private key
+/// @param out_private_key : returned generated ed25519 private key
 /// @param error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_ed25519_private_key_generate(
@@ -207,6 +207,31 @@ pub extern "C" fn gosling_ed25519_private_key_generate(
         }
 
         let private_key = Ed25519PrivateKey::generate();
+        let handle = get_ed25519_private_key_registry().insert(private_key);
+        unsafe { *out_private_key = handle as *mut GoslingEd25519PrivateKey };
+
+        Ok(())
+    })
+}
+
+/// Copy method for gosling_ed25519_private_key
+///
+/// @param out_private_key : returned copy
+/// @param private_key : original to copy
+/// @param error : fliled on error
+#[no_mangle]
+pub extern "C" fn gosling_ed25519_private_key_clone(
+    out_private_key: *mut *mut GoslingEd25519PrivateKey,
+    private_key: *const GoslingEd25519PrivateKey,
+    error: *mut *mut GoslingError) {
+    translate_failures((), error, || -> Result<()> {
+        ensure!(!out_private_key.is_null(), "gosling_ed25519_private_key_clone(): out_private_key must not be null");
+        ensure!(!private_key.is_null(), "gosling_ed25519_private_key_clone(): private_key must not be null");
+
+        let private_key = match get_ed25519_private_key_registry().get(private_key as usize) {
+            Some(private_key) => private_key.clone(),
+            None => bail!("gosling_ed25519_private_key_clone(): private key is invalid"),
+        };
         let handle = get_ed25519_private_key_registry().insert(private_key);
         unsafe { *out_private_key = handle as *mut GoslingEd25519PrivateKey };
 
@@ -304,6 +329,31 @@ pub extern "C" fn gosling_ed25519_private_key_to_keyblob(
     })
 }
 
+/// Copy method for gosling_x25519_private_key
+///
+/// @param out_private_key : returned copy
+/// @param private_key : original to copy
+/// @param error : fliled on error
+#[no_mangle]
+pub extern "C" fn gosling_x25519_private_key_clone(
+    out_private_key: *mut *mut GoslingX25519PrivateKey,
+    private_key: *const GoslingX25519PrivateKey,
+    error: *mut *mut GoslingError) {
+    translate_failures((), error, || -> Result<()> {
+        ensure!(!out_private_key.is_null(), "gosling_x25519_private_key_clone(): out_private_key must not be null");
+        ensure!(!private_key.is_null(), "gosling_x25519_private_key_clone(): private_key must not be null");
+
+        let private_key = match get_x25519_private_key_registry().get(private_key as usize) {
+            Some(private_key) => private_key.clone(),
+            None => bail!("gosling_x25519_private_key_clone(): private key is invalid"),
+        };
+        let handle = get_x25519_private_key_registry().insert(private_key);
+        unsafe { *out_private_key = handle as *mut GoslingX25519PrivateKey };
+
+        Ok(())
+    })
+}
+
 /// Conversion method for converting a base64-encoded string used by the
 /// ONION_CLIENT_AUTH_ADD command into a gosling_x25519_private_key
 ///
@@ -387,6 +437,31 @@ pub extern "C" fn gosling_x25519_private_key_to_base64(
                 bail!("gosling_x25519_private_key_to_base64(): private_key is invalid");
             },
         };
+
+        Ok(())
+    })
+}
+
+/// Copy method for gosling_x25519_public_key
+///
+/// @param out_public_key : returned copy
+/// @param public_key : original to copy
+/// @param error : fliled on error
+#[no_mangle]
+pub extern "C" fn gosling_x25519_public_key_clone(
+    out_public_key: *mut *mut GoslingX25519PublicKey,
+    public_key: *const GoslingX25519PublicKey,
+    error: *mut *mut GoslingError) {
+    translate_failures((), error, || -> Result<()> {
+        ensure!(!out_public_key.is_null(), "gosling_x25519_publice_key_clone(): out_public_key must not be null");
+        ensure!(!public_key.is_null(), "gosling_x25519_publice_key_clone(): public_key must not be null");
+
+        let public_key = match get_x25519_public_key_registry().get(public_key as usize) {
+            Some(public_key) => public_key.clone(),
+            None => bail!("gosling_x25519_publice_key_clone(): public key is invalid"),
+        };
+        let handle = get_x25519_public_key_registry().insert(public_key);
+        unsafe { *out_public_key = handle as *mut GoslingX25519PublicKey };
 
         Ok(())
     })
@@ -479,6 +554,32 @@ pub extern "C" fn gosling_x25519_public_key_to_base32(
         Ok(())
     })
 }
+
+/// Copy method for gosling_v3_onion_service_id
+///
+/// @param out_service_id : returned copy
+/// @param service_id : original to copy
+/// @param error : fliled on error
+#[no_mangle]
+pub extern "C" fn gosling_v3_onion_service_id_clone(
+    out_service_id: *mut *mut GoslingV3OnionServiceId,
+    service_id: *const GoslingV3OnionServiceId,
+    error: *mut *mut GoslingError) {
+    translate_failures((), error, || -> Result<()> {
+        ensure!(!out_service_id.is_null(), "gosling_v3_onion_service_id_clone(): out_service_id must not be null");
+        ensure!(!service_id.is_null(), "gosling_v3_onion_service_id_clone(): service_id must not be null");
+
+        let service_id = match get_v3_onion_service_id_registry().get(service_id as usize) {
+            Some(service_id) => service_id.clone(),
+            None => bail!("gosling_v3_onion_service_id_clone(): service_id key is invalid"),
+        };
+        let handle = get_v3_onion_service_id_registry().insert(service_id);
+        unsafe { *out_service_id = handle as *mut GoslingV3OnionServiceId };
+
+        Ok(())
+    })
+}
+
 
 /// Conversion method for converting a v3 onion service string into a
 /// gosling_v3_onion_service_id object
@@ -818,10 +919,14 @@ pub type GoslingIdentityServerHandshakeBuildChallengeCallback = extern "C" fn(
 
 #[repr(C)]
 pub enum GoslingChallengeResponseResult {
+    /// the challenge response is accepted
     Valid,
+    /// the challenge response is not acceptd
     Invalid,
+    /// the challenge response is pending evaluation
     Pending,
 }
+pub type GoslingChallengeResponseResultT = GoslingChallengeResponseResult;
 
 pub type GoslingIdentityServerHandshakeVerifyChallengeResponseCallback = extern fn(
     handshake_handle: usize,
@@ -830,10 +935,10 @@ pub type GoslingIdentityServerHandshakeVerifyChallengeResponseCallback = extern 
     challenge_buffer: *const u8,
     challenge_buffer_size: usize,
     challenge_response_buffer: *const u8,
-    challenge_response_buffer_size: usize) -> GoslingChallengeResponseResult;
+    challenge_response_buffer_size: usize) -> GoslingChallengeResponseResultT;
 
 pub type GoslingIdentityServerHandshakePollChallengeResponseResultCallback = extern fn(
-    handshake_handle: usize) -> GoslingChallengeResponseResult;
+    handshake_handle: usize) -> GoslingChallengeResponseResultT;
 
 #[derive(Default)]
 pub struct NativeIdentityServerHandshake {
