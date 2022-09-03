@@ -2,6 +2,9 @@
 #include <iostream>
 #include <string>
 
+// boost
+#include <boost/asio.hpp>
+
 // Gosling
 #include <libgosling.hpp>
 
