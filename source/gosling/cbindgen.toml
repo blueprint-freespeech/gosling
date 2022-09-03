@@ -41,6 +41,8 @@ args = "vertical"
 
 [enum]
 rename_variants = "SnakeCase"
+enum_class = true
+prefix_with_name = true
 
 [export.rename]
 "RawSocket" = "SOCKET"
@@ -57,8 +59,8 @@ rename_variants = "SnakeCase"
 "GoslingIdentityClientHandshake" = "gosling_identity_client_handshake"
 "GoslingIdentityServerHandshake" = "gosling_identity_server_handshake"
 # enums
-"GoslingChallengeResponseResult" = "gosling_challenge_response_result_t"
-
+"GoslingChallengeResponseResult" = "gosling_challenge_response_result"
+"GoslingChallengeResponseResultT" = "gosling_challenge_response_result_t"
 # client handshake callbacks
 "GoslingIdentityClientHandshakeStartedCallback" = "gosling_identity_client_handshake_started_callback_t"
 "GoslingIdentityClientHandshakeChallengeResponseSizeCallback" = "gosling_identity_client_handshake_challenge_response_size_callback_t"
