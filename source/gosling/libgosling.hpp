@@ -3,6 +3,7 @@
 // c++
 #include <stdexcept>
 #include <memory>
+#include <ostream>
 
 // gosling header
 #include <libgosling.h>
@@ -75,9 +76,44 @@ namespace gosling {
     {
         return {ptr};
     }
+
+    //
+    // std::ostream<< overloads for various gosling types
+    //
+
+    inline std::ostream& operator<<(std::ostream &stream, const gosling_v3_onion_service_id* serviceId) {
+        char serviceIdStringRaw[V3_ONION_SERVICE_ID_SIZE];
+        ::gosling_v3_onion_service_id_to_string(serviceId, serviceIdStringRaw, sizeof(serviceIdStringRaw), gosling::throw_on_error());
+
+        return stream.write(serviceIdStringRaw, sizeof(serviceIdStringRaw) - 1);
+    }
+
+    inline std::ostream& operator<<(std::ostream &stream, const gosling_ed25519_private_key* privateKey) {
+        char keyBlobRaw[ED25519_KEYBLOB_SIZE];
+        ::gosling_ed25519_private_key_to_keyblob(privateKey, keyBlobRaw, sizeof(keyBlobRaw), gosling::throw_on_error());
+
+        return stream.write(keyBlobRaw, sizeof(keyBlobRaw) - 1);
+    }
+
+    inline std::ostream& operator<<(std::ostream &stream, const gosling_x25519_private_key* privateKey) {
+        char keyBlobRaw[X25519_PRIVATE_KEYBLOB_BASE64_SIZE];
+        ::gosling_x25519_private_key_to_base64(privateKey, keyBlobRaw, sizeof(keyBlobRaw), gosling::throw_on_error());
+
+        return stream.write(keyBlobRaw, sizeof(keyBlobRaw) - 1);
+    }
+
+    inline std::ostream& operator<<(std::ostream &stream, const gosling_x25519_public_key* publicKey) {
+        char keyBlobRaw[X25519_PUBLIC_KEYBLOB_BASE32_SIZE];
+        ::gosling_x25519_public_key_to_base32(publicKey, keyBlobRaw, sizeof(keyBlobRaw), gosling::throw_on_error());
+
+        return stream.write(keyBlobRaw, sizeof(keyBlobRaw) - 1);
+    }
 }
 
 namespace std {
+    //
+    // default_delete implementation for unique_ptr of various gosling types
+    //
     template<> class default_delete<gosling_ed25519_private_key> {
     public:
         void operator()(gosling_ed25519_private_key *val) {
