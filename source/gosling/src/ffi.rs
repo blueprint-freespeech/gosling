@@ -264,8 +264,8 @@ pub extern "C" fn gosling_ed25519_private_key_from_keyblob(
             bail!("gosling_ed25519_private_key_from_keyblob(): key_blob must not not be null");
         }
 
-        if key_blob_length != ED25519_KEYBLOB_LENGTH {
-            bail!("gosling_ed25519_private_key_from_keyblob(): key_blob_length must be exactly ED25519_KEYBLOB_LENGTH ({}); received '{}'", ED25519_KEYBLOB_LENGTH, key_blob_length);
+        if key_blob_length != ED25519_PRIVATE_KEYBLOB_LENGTH {
+            bail!("gosling_ed25519_private_key_from_keyblob(): key_blob_length must be exactly ED25519_PRIVATE_KEYBLOB_LENGTH ({}); received '{}'", ED25519_PRIVATE_KEYBLOB_LENGTH, key_blob_length);
         }
 
         let key_blob_view = unsafe { std::slice::from_raw_parts(key_blob as *const u8, key_blob_length) };
@@ -304,8 +304,8 @@ pub extern "C" fn gosling_ed25519_private_key_to_keyblob(
             bail!("gosling_ed25519_private_key_to_keyblob(): out_key_blob must not be null");
         }
 
-        if key_blob_size < ED25519_KEYBLOB_SIZE {
-            bail!("gosling_ed25519_private_key_to_keyblob(): key_blob_size must be at least '{}', received '{}'", ED25519_KEYBLOB_SIZE, key_blob_size);
+        if key_blob_size < ED25519_PRIVATE_KEYBLOB_SIZE {
+            bail!("gosling_ed25519_private_key_to_keyblob(): key_blob_size must be at least ED25519_PRIVATE_KEYBLOB_SIZE ('{}'), received '{}'", ED25519_PRIVATE_KEYBLOB_SIZE, key_blob_size);
         }
 
         let registry = get_ed25519_private_key_registry();
@@ -315,9 +315,9 @@ pub extern "C" fn gosling_ed25519_private_key_to_keyblob(
                 unsafe {
                     // copy keyblob into output buffer
                     let key_blob_view = std::slice::from_raw_parts_mut(out_key_blob as *mut u8, key_blob_size);
-                    std::ptr::copy(private_key_blob.as_ptr(), key_blob_view.as_mut_ptr(), ED25519_KEYBLOB_LENGTH);
+                    std::ptr::copy(private_key_blob.as_ptr(), key_blob_view.as_mut_ptr(), ED25519_PRIVATE_KEYBLOB_LENGTH);
                     // add final null-terminator
-                    key_blob_view[ED25519_KEYBLOB_LENGTH] = 0u8;
+                    key_blob_view[ED25519_PRIVATE_KEYBLOB_LENGTH] = 0u8;
                 };
             },
             None => {

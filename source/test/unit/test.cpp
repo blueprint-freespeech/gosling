@@ -22,10 +22,10 @@ TEST_CASE("gosling_ed25519_private_key_generate") {
     REQUIRE(privateKeyAlice.get() != privateKeyPat.get());
 
     // generated keys should have a different key blob representation
-    char aliceKeyBlobRaw[ED25519_KEYBLOB_SIZE] = {0};
-    char patKeyBlobRaw[ED25519_KEYBLOB_SIZE] = {0};
-    REQUIRE_NOTHROW(::gosling_ed25519_private_key_to_keyblob(privateKeyAlice.get(), aliceKeyBlobRaw, ED25519_KEYBLOB_SIZE, throw_on_error()));
-    REQUIRE_NOTHROW(::gosling_ed25519_private_key_to_keyblob(privateKeyPat.get(), patKeyBlobRaw, ED25519_KEYBLOB_SIZE, throw_on_error()));
+    char aliceKeyBlobRaw[ED25519_PRIVATE_KEYBLOB_SIZE] = {0};
+    char patKeyBlobRaw[ED25519_PRIVATE_KEYBLOB_SIZE] = {0};
+    REQUIRE_NOTHROW(::gosling_ed25519_private_key_to_keyblob(privateKeyAlice.get(), aliceKeyBlobRaw, ED25519_PRIVATE_KEYBLOB_SIZE, throw_on_error()));
+    REQUIRE_NOTHROW(::gosling_ed25519_private_key_to_keyblob(privateKeyPat.get(), patKeyBlobRaw, ED25519_PRIVATE_KEYBLOB_SIZE, throw_on_error()));
 
     REQUIRE(strcmp(aliceKeyBlobRaw, patKeyBlobRaw) != 0);
 }
@@ -34,28 +34,28 @@ TEST_CASE("gosling_ed25519_private_key_from_keyblob") {
     unique_ptr<gosling_ed25519_private_key> privateKey;
     const std::string keyBlob = "ED25519-V3:YE3GZtDmc+izGijWKgeVRabbXqK456JKKGONDBhV+kPBVKa2mHVQqnRTVuFXe3inU3YW6qvc7glYEwe9rK0LhQ==";
     const std::string invalidKeyBlob = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-    REQUIRE(keyBlob.size() == ED25519_KEYBLOB_LENGTH);
-    REQUIRE(invalidKeyBlob.size() == ED25519_KEYBLOB_LENGTH);
+    REQUIRE(keyBlob.size() == ED25519_PRIVATE_KEYBLOB_LENGTH);
+    REQUIRE(invalidKeyBlob.size() == ED25519_PRIVATE_KEYBLOB_LENGTH);
 
     // no valid inputs
     REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(nullptr, nullptr, 0, throw_on_error()));
     REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(nullptr, nullptr, 1, throw_on_error()));
-    REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(nullptr, nullptr, ED25519_KEYBLOB_SIZE, throw_on_error()));
+    REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(nullptr, nullptr, ED25519_PRIVATE_KEYBLOB_SIZE, throw_on_error()));
 
     // valid dest, invalid key blob, invaild key blob len
     REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(out(privateKey), nullptr, 0, throw_on_error()));
     REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(out(privateKey), nullptr, 1, throw_on_error()));
-    REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(out(privateKey), nullptr, ED25519_KEYBLOB_SIZE, throw_on_error()));
+    REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(out(privateKey), nullptr, ED25519_PRIVATE_KEYBLOB_SIZE, throw_on_error()));
 
     // valid dest, valid key blob, invaild key blob len
     REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(out(privateKey), keyBlob.c_str(), 0, throw_on_error()));
     REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(out(privateKey), keyBlob.c_str(), 1, throw_on_error()));
-    REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(out(privateKey), keyBlob.c_str(), ED25519_KEYBLOB_SIZE, throw_on_error()));
+    REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(out(privateKey), keyBlob.c_str(), ED25519_PRIVATE_KEYBLOB_SIZE, throw_on_error()));
 
     // invalid dest, valid key blob, invalid key blob len
     REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(nullptr, keyBlob.c_str(), 0, throw_on_error()));
     REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(nullptr, keyBlob.c_str(), 1, throw_on_error()));
-    REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(nullptr, keyBlob.c_str(), ED25519_KEYBLOB_SIZE, throw_on_error()));
+    REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(nullptr, keyBlob.c_str(), ED25519_PRIVATE_KEYBLOB_SIZE, throw_on_error()));
 
     // invalid dest, valid key blob, valid key blob len
     REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(nullptr, keyBlob.c_str(), keyBlob.size(), throw_on_error()));
@@ -71,24 +71,24 @@ TEST_CASE("gosling_ed25519_private_key_from_keyblob") {
 TEST_CASE("gosling_ed25519_private_key_to_keyblob") {
     unique_ptr<gosling_ed25519_private_key> privateKey;
     const std::string keyBlob = "ED25519-V3:YE3GZtDmc+izGijWKgeVRabbXqK456JKKGONDBhV+kPBVKa2mHVQqnRTVuFXe3inU3YW6qvc7glYEwe9rK0LhQ==";
-    char keyBlobRaw[ED25519_KEYBLOB_SIZE] = {0};
+    char keyBlobRaw[ED25519_PRIVATE_KEYBLOB_SIZE] = {0};
     REQUIRE_NOTHROW(::gosling_ed25519_private_key_from_keyblob(out(privateKey), keyBlob.c_str(), keyBlob.size(), throw_on_error()));
     REQUIRE(privateKey.get() != nullptr);
 
     // no valid inputs
     REQUIRE_THROWS(::gosling_ed25519_private_key_to_keyblob(nullptr, nullptr, 0, throw_on_error()));
     REQUIRE_THROWS(::gosling_ed25519_private_key_to_keyblob(nullptr, nullptr, 1, throw_on_error()));
-    REQUIRE_THROWS(::gosling_ed25519_private_key_to_keyblob(nullptr, nullptr, ED25519_KEYBLOB_LENGTH, throw_on_error()));
+    REQUIRE_THROWS(::gosling_ed25519_private_key_to_keyblob(nullptr, nullptr, ED25519_PRIVATE_KEYBLOB_LENGTH, throw_on_error()));
 
     // valid key, invalid out key blob, invalid key blob size
     REQUIRE_THROWS(::gosling_ed25519_private_key_to_keyblob(privateKey.get(), nullptr, 0, throw_on_error()));
     REQUIRE_THROWS(::gosling_ed25519_private_key_to_keyblob(privateKey.get(), nullptr, 1, throw_on_error()));
-    REQUIRE_THROWS(::gosling_ed25519_private_key_to_keyblob(privateKey.get(), nullptr, ED25519_KEYBLOB_LENGTH, throw_on_error()));
+    REQUIRE_THROWS(::gosling_ed25519_private_key_to_keyblob(privateKey.get(), nullptr, ED25519_PRIVATE_KEYBLOB_LENGTH, throw_on_error()));
 
     // valid key, valid out key blob, invalid key blob size
     REQUIRE_THROWS(::gosling_ed25519_private_key_to_keyblob(privateKey.get(), keyBlobRaw, 0, throw_on_error()));
     REQUIRE_THROWS(::gosling_ed25519_private_key_to_keyblob(privateKey.get(), keyBlobRaw, 1, throw_on_error()));
-    REQUIRE_THROWS(::gosling_ed25519_private_key_to_keyblob(privateKey.get(), keyBlobRaw, ED25519_KEYBLOB_LENGTH, throw_on_error()));
+    REQUIRE_THROWS(::gosling_ed25519_private_key_to_keyblob(privateKey.get(), keyBlobRaw, ED25519_PRIVATE_KEYBLOB_LENGTH, throw_on_error()));
 
     // valid key, valid out key blob, valid key size
     REQUIRE_NOTHROW(::gosling_ed25519_private_key_to_keyblob(privateKey.get(), keyBlobRaw, sizeof(keyBlobRaw), throw_on_error()));

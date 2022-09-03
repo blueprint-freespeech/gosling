@@ -89,7 +89,7 @@ namespace gosling {
     }
 
     inline std::ostream& operator<<(std::ostream &stream, const gosling_ed25519_private_key* privateKey) {
-        char keyBlobRaw[ED25519_KEYBLOB_SIZE];
+        char keyBlobRaw[ED25519_PRIVATE_KEYBLOB_SIZE];
         ::gosling_ed25519_private_key_to_keyblob(privateKey, keyBlobRaw, sizeof(keyBlobRaw), gosling::throw_on_error());
 
         return stream.write(keyBlobRaw, sizeof(keyBlobRaw) - 1);
