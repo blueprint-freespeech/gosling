@@ -654,40 +654,50 @@ impl<H> ApiSet for IdentityServerApiSet<H> where H : IdentityServerHandshake {
 
         let retval = match self.handshake.poll_result() {
             Some(IdentityHandshakeResult::BuildEndpointChallenge(endpoint_challenge)) => {
-                Some((
-                    self.begin_handshake_cookie.unwrap(),
-                    Some(Bson::Document(doc!{
-                        "server_cookie" : Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: self.server_cookie.to_vec()}),
-                        "endpoint_challenge" :endpoint_challenge,
-                    })),
-                    ErrorCode::Success))
+                match self.begin_handshake_cookie {
+                    Some(cookie) => Some((
+                        cookie,
+                        Some(
+                            Bson::Document(doc!{
+                                    "server_cookie" : Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: self.server_cookie.to_vec()}),
+                                    "endpoint_challenge" :endpoint_challenge,
+                                })),
+                        ErrorCode::Success)),
+                    None => panic!("IdentityServerApiSet::next_result(): IdentityServerHandshake::poll_result() returned IdentityHandshakeResult::BuildEndpointChallenge(...) but no begin_handshake_cookie is available"),
+                }
+
             },
             // verification failure
             Some(IdentityHandshakeResult::VerifyChallengeResponse(false)) => {
-                self.print_flags();
-                Some((
-                    self.send_response_cookie.unwrap(),
-                    None,
-                    ErrorCode::Runtime(GoslingError::Failure as i32)))
+                match self.send_response_cookie {
+                    Some(cookie) => {
+                        self.print_flags();
+                        Some((cookie, None, ErrorCode::Runtime(GoslingError::Failure as i32)))
+                    },
+                    None => panic!("IdentityServerApiSet::next_result(): IdentityServerHandshake::poll_result() returned IdentityHandshakeResult::VerifyChallengeResponse(false) but no send_response_cookie is available"),
+                }
             },
             // verification success
             Some(IdentityHandshakeResult::VerifyChallengeResponse(true)) => {
-                // get our endpoint now that the challenge response has been verified
-                self.challenge_response_valid = true;
-
-                self.print_flags();
-
-                if let Some(endpoint_service_id) = self.register_new_client() {
-                    Some((
-                        self.send_response_cookie.unwrap(),
-                        Some(Bson::String(endpoint_service_id.to_string())),
-                        ErrorCode::Success))
-                } else {
-                // failure to generate a new endpoint
-                    Some((
-                        self.send_response_cookie.unwrap(),
-                        None,
-                        ErrorCode::Runtime(GoslingError::Failure as i32)))
+                match self.send_response_cookie {
+                    Some(cookie) => {
+                        // get our endpoint now that the challenge response has been verified
+                        self.challenge_response_valid = true;
+                        self.print_flags();
+                        if let Some(endpoint_service_id) = self.register_new_client() {
+                            Some((
+                                cookie,
+                                Some(Bson::String(endpoint_service_id.to_string())),
+                                ErrorCode::Success))
+                        } else {
+                            // failure to generate a new endpoint
+                            Some((
+                                cookie,
+                                None,
+                                ErrorCode::Runtime(GoslingError::Failure as i32)))
+                        }
+                    },
+                    None => panic!("IdentityServerApiSet::next_result(): IdentityServerHandshake::poll_result() returned IdentityHandshakeResult::VerifyChallengeResponse(true) but no send_response_cookie is available"),
                 }
             },
             None => None,
