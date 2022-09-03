@@ -13,6 +13,10 @@ Libgosling currently has the following dependencies:
 - rust >= 1.61.0
 - cmake >= 3.16.6
 
+The tests additionally depend on:
+
+- boost >= 1.66
+
 ## Building
 
 The reference implementation is currently a work-in-progress and not fully implemented.
