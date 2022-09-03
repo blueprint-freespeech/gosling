@@ -5,6 +5,8 @@ add_executable(gosling_functional_test
     test.cpp)
 target_precompile_headers(gosling_functional_test PRIVATE precomp.hpp)
 
+target_include_directories(gosling_functional_test PRIVATE ${Boost_INCLUDE_DIRS})
+
 target_link_libraries(gosling_functional_test PRIVATE gosling)
 target_link_libraries(gosling_functional_test PRIVATE Catch2::Catch2WithMain)
 
