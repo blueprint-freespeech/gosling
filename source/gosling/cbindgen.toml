@@ -84,3 +84,4 @@ prefix_with_name = true
 "GoslingEndpointServerRequestCompletedCallback" = "gosling_endpoint_server_request_completed_callback_t"
 "GoslingEndpointClientChannelRequestCompletedCallback" = "gosling_endpoint_client_channel_request_completed_callback_t"
 "GoslingEndpointServerChannelRequestCompletedCallback" = "gosling_endpoint_server_channel_request_completed_callback_t"
+

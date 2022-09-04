@@ -6,6 +6,14 @@ if(UNIX AND NOT APPLE)
     set(LINUX TRUE)
 endif()
 
+if(UNIX AND APPLE)
+    set(MACOS TRUE)
+endif()
+
+if(WIN32)
+    set(WINDOWS TRUE)
+endif()
+
 # enable tests
 enable_testing()
 list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
