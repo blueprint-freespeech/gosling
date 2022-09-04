@@ -1924,12 +1924,14 @@ fn test_gosling_context() -> Result<()> {
 
     let alice_private_key = Ed25519PrivateKey::generate();
     let alice_service_id = V3OnionServiceId::from_private_key(&alice_private_key);
+    let mut alice_path = std::env::temp_dir();
+    alice_path.push("test_gosling_context_alice");
 
     println!("Starting Alice gosling context ({})", alice_service_id.to_string());
     let mut alice = Context::<NoOpIdentityClientHandshake,AutoAcceptIdentityServerHandshake>::new(
         Default::default(),
         Default::default(),
-        Path::new("/tmp/test_gosling_context_alice"),
+        &alice_path,
         420,
         420,
         alice_private_key,
@@ -1955,12 +1957,14 @@ fn test_gosling_context() -> Result<()> {
 
     let pat_private_key = Ed25519PrivateKey::generate();
     let pat_service_id = V3OnionServiceId::from_private_key(&pat_private_key);
+    let mut pat_path = std::env::temp_dir();
+    pat_path.push("test_gosling_context_pat");
 
     println!("Starting Pat gosling context ({})", pat_service_id.to_string());
     let mut pat = Context::<NoOpIdentityClientHandshake,AutoAcceptIdentityServerHandshake>::new(
         Default::default(),
         Default::default(),
-        Path::new("/tmp/test_gosling_context_pat"),
+        &pat_path,
         420,
         420,
         pat_private_key,

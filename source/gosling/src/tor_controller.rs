@@ -1293,7 +1293,9 @@ impl TorManager {
 #[test]
 #[serial]
 fn test_tor_controller() -> Result<()> {
-    let tor_process = TorProcess::new(Path::new("/tmp/test_tor_controller"))?;
+    let mut tor_path = std::env::temp_dir();
+    tor_path.push("test_tor_controller");
+    let tor_process = TorProcess::new(&tor_path)?;
 
     // create a scope to ensure tor_controller is dropped
     {
@@ -1332,11 +1334,15 @@ fn test_tor_controller() -> Result<()> {
         }
 
         let vals = tor_controller.getinfo(&["version", "config-file", "config-text"])?;
+        let mut expected_torrc_path = tor_path.clone();
+        expected_torrc_path.push("torrc");
+        let mut expected_control_port_path = tor_path.clone();
+        expected_control_port_path.push("control_port");
         for (key, value) in vals.iter() {
             match key.as_str() {
                 "version" => ensure!(Regex::new(r"\d+\.\d+\.\d+\.\d+")?.is_match(&value)),
-                "config-file" => ensure!(value == "/tmp/test_tor_controller/torrc"),
-                "config-text" => ensure!(value == "\nControlPort auto\nControlPortWriteToFile /tmp/test_tor_controller/control_port\nDataDirectory /tmp/test_tor_controller"),
+                "config-file" => ensure!(Path::new(&value) == expected_torrc_path),
+                "config-text" => ensure!(value.to_string() == format!("\nControlPort auto\nControlPortWriteToFile {}\nDataDirectory {}", expected_control_port_path.display(), tor_path.display())),
                 _ => bail!("Unexpected returned key: {}", key),
             }
         }
@@ -1472,7 +1478,10 @@ fn test_version() -> Result<()>
 #[serial]
 fn test_tor_manager() -> Result<()> {
 
-    let mut tor = TorManager::new(Path::new("/tmp/test_tor_manager"))?;
+    let mut tor_path = std::env::temp_dir();
+    tor_path.push("test_tor_manager");
+
+    let mut tor = TorManager::new(&tor_path)?;
     println!("version : {}", tor.version()?.to_string());
     tor.bootstrap()?;
 
@@ -1502,7 +1511,11 @@ fn test_tor_manager() -> Result<()> {
 #[test]
 #[serial]
 fn test_onion_service() -> Result<()> {
-    let mut tor = TorManager::new(Path::new("/tmp/test_onion_service"))?;
+
+    let mut tor_path = std::env::temp_dir();
+    tor_path.push("test_onion_service");
+
+    let mut tor = TorManager::new(&tor_path)?;
 
     // for 30secs for bootstrap
     tor.bootstrap()?;
