@@ -822,17 +822,6 @@ impl Session {
     }
 }
 
-#[derive(Default)]
-pub struct Client {
-    next_cookie: RequestCookie,
-    // local instance we take from Session
-    inbound_responses: VecDeque<Response>,
-}
-
-impl Client {
-
-}
-
 #[test]
 fn test_honk_client_read_write() -> Result<()> {
 
