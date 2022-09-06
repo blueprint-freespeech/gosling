@@ -1,6 +1,6 @@
 @startuml
 participant Client
-participant "Introduction Server" as Server
+participant "Identity Server" as Server
 
 Client->Server: begin_handshake(...)
 
