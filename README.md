@@ -8,18 +8,21 @@ It is meant to generalize (and improve upon) the authentication scheme used by [
 
 ## Dependencies
 
-Libgosling currently has the following dependencies:
+Libgosling currently has the following build dependencies:
 
-- rust >= 1.61.0
-- cmake >= 3.16.6
+- rust >= [1.61.0](https://github.com/blueprint-freespeech/gosling/blob/main/source/gosling/Cargo.toml#L6)
+- cargo
+- cmake >= [3.16.6](https://github.com/blueprint-freespeech/gosling/blob/main/source/CMakeLists.txt#L1)
 
-The tests additionally depend on:
+Cargo will automatically download and build the required Rust crates. The list of current dependencies can be found in [Cargo.toml](https://github.com/blueprint-freespeech/gosling/blob/main/source/gosling/Cargo.toml)
 
-- boost >= 1.66
+The functional tests additionally depend on:
+
+- boost >= [1.66](https://github.com/blueprint-freespeech/gosling/blob/main/source/test/functional/CMakeLists.txt#L1)
 
 ## Building
 
-The reference implementation is currently a work-in-progress and not fully implemented.
+The reference implementation is a work-in-progress and the API is not yet fully stable.
 
 You will need to initialize the git submodules by:
 
