@@ -14,8 +14,6 @@ pub enum ObjectTypes {
     X25519PublicKey,
     V3OnionServiceId,
     Context,
-    IdentityClientHandshake,
-    IdentityServerHandshake,
 }
 
 // This trait is required for types we want to keep in an ObjectRegistry

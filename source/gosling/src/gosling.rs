@@ -1169,8 +1169,8 @@ pub struct Context<CH, SH> {
     identity_port : u16,
     endpoint_port : u16,
 
-    client_handshake_prototype: CH,
-    server_handshake_prototype: SH,
+    pub client_handshake_prototype: CH,
+    pub server_handshake_prototype: SH,
 
     //
     // Servers and Clients for in-process handshakes

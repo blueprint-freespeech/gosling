@@ -97,10 +97,6 @@ pub struct GoslingX25519PublicKey;
 pub struct GoslingV3OnionServiceId;
 /// A context object associated with a single peer identity
 pub struct GoslingContext;
-/// A handshake prototype object contanining the client challenge callbacks
-pub struct GoslingIdentityClientHandshake;
-/// A handshake prototype object contanining the server challenge callbacks
-pub struct GoslingIdentityServerHandshake;
 
 define_registry!{Ed25519PrivateKey, ObjectTypes::Ed25519PrivateKey}
 define_registry!{X25519PrivateKey, ObjectTypes::X25519PrivateKey}
@@ -147,20 +143,6 @@ pub extern "C" fn gosling_v3_onion_service_id_free(service_id: *mut GoslingV3Oni
 #[no_mangle]
 pub extern "C" fn gosling_context_free(context: *mut GoslingContext) {
     impl_registry_free!(context, ContextTuple);
-}
-/// Frees a gosling_identity_client_handshake object
-///
-/// @param handshake : the handshake object to free
-#[no_mangle]
-pub extern "C" fn gosling_identity_client_handshake_free(handshake: *mut GoslingIdentityClientHandshake) {
-    impl_registry_free!(handshake, NativeIdentityClientHandshake);
-}
-/// Frees a gosling_identity_server_handshake object
-///
-/// @param handshake : the handshake object to free
-#[no_mangle]
-pub extern "C" fn gosling_identity_server_handshake_free(handshake: *mut GoslingIdentityServerHandshake) {
-    impl_registry_free!(handshake, NativeIdentityServerHandshake);
 }
 
 /// Wrapper around rust code which may panic or return a failing Result to be used at FFI boundaries.
@@ -737,57 +719,6 @@ lazy_static! {
     static ref NEXT_HANDSHAKE_HANDLE: AtomicUsize = Default::default();
 }
 
-/// The function pointer type for the client handshake started callback. This
-/// callback is called when a client starts a handshake with an identity server.
-///
-/// @param handshake_handle : a unique identifier for callbacks associated with this
-///  ongoing client handshake
-pub type GoslingIdentityClientHandshakeStartedCallback = extern fn(
-    handshake_handle: usize) -> ();
-
-/// The function pointer type for the client handshake challenge response size
-/// callback. This callback is called when a client needs to know how much memory
-/// to allocate for a challenge response.
-///
-/// @param handshake_handle : the client handshake session this callback invocation
-///  is associated with
-/// @param endpoint_name : a null terminated ASCII string containing the name of the
-///  enpdoint being requested
-/// @param endpoint_name_length : the number of chars in endpoint_name, not
-///  including the null terminator
-/// @return : the number of bytes required to store the challenge response object
-pub type GoslingIdentityClientHandshakeChallengeResponseSizeCallback = extern fn(
-    handshake_handle: usize,
-    endpoint_name: *const c_char,
-    endpoint_name_length: usize) -> usize;
-
-/// The function pointer type for the client handshake build challlenge response
-/// callback. This callback is called when a client is ready to build a challenge
-/// response object.
-///
-/// @param handshake_handle : the client handshake session this callback invocation
-///  is associated with
-/// @param endpoint_name : a null terminated ASCII string containing the name of the
-///  endpoint being requested
-/// @param endpoint_name_length : the number of chars in endpoint_name, not
-///  including the null terminator
-/// @param challenge_buffer : the source buffer containing a BSON document received
-///  from the  identity server to serve as an endpoint request challenge
-/// @param challenge_buffer_size : the number of bytes in challenge_buffer
-/// @param out_challenge_response_buffer : the destination buffer for the callback
-///  to write a BSON document representing the endpoint request challenge response
-///  object
-/// @param challenge_response_buffer_size : the number of bytes allocated in
-///  out_challenge_response_buffer
-pub type GoslingIdentityClientHandshakeBuildChallengeResponseCallback = extern fn(
-    handshake_handle: usize,
-    endpoint_name: *const c_char,
-    endpoint_name_length: usize,
-    challenge_buffer: *const u8,
-    challenge_buffer_size: usize,
-    out_challenge_response_buffer: *mut u8,
-    challenge_response_buffer_size: usize) -> ();
-
 #[derive(Default)]
 pub struct NativeIdentityClientHandshake {
     handshake_handle: usize,
@@ -801,9 +732,8 @@ impl Clone for NativeIdentityClientHandshake {
         // needs to dupicate the callbacks of the prototype handshake, and invoke the
         // started_callback with a new unique handle
         let handshake_handle = NEXT_HANDSHAKE_HANDLE.fetch_add(1, Ordering::Relaxed);
-        match self.started_callback {
-            Some(started_callback) => started_callback(handshake_handle),
-            None => panic!("NativeIdentityClientHandshake::clone(): missing started_callback"),
+        if let Some(started_callback) = self.started_callback {
+            started_callback(handshake_handle);
         }
 
         Self{
@@ -823,19 +753,19 @@ impl IdentityClientHandshake for NativeIdentityClientHandshake {
             Some(challenge_response_size_callback) => {
                 challenge_response_size_callback(self.handshake_handle, endpoint0.as_ptr(), endpoint.len())
             },
-            None => panic!("NativeIdentityClientHandshake::build_challenge_response(): missing challenge_response_size_callback"),
+            None => 0,
         };
 
-        // buffer for response to be written
-        let mut response_buffer = vec![0u8; response_size];
+        if response_size > 0 {
+            if let Some(build_challenge_response_callback) = self.build_challenge_response_callback {
+                // buffer for response to be written
+                let mut response_buffer = vec![0u8; response_size];
 
-        // challenge to bytes for native callback
-        let mut challenge_buffer: Vec<u8> = Default::default();
-        challenge.to_writer(&mut challenge_buffer).unwrap();
+                // challenge to bytes for native callback
+                let mut challenge_buffer: Vec<u8> = Default::default();
+                challenge.to_writer(&mut challenge_buffer).unwrap();
 
-        // build response via the response callback
-        match self.build_challenge_response_callback {
-            Some(build_challenge_response_callback) => {
+                // build response document via the response callback
                 build_challenge_response_callback(
                     self.handshake_handle,
                     endpoint0.as_ptr(),
@@ -843,221 +773,20 @@ impl IdentityClientHandshake for NativeIdentityClientHandshake {
                     challenge_buffer.as_ptr(),
                     challenge_buffer.len(),
                     response_buffer.as_mut_ptr(),
-                    response_buffer.len())
-            },
-            None => panic!("NativeIdentityClientHandshake::build_challenge_response(): missing build_challenge_response_callback"),
-        }
+                    response_buffer.len());
 
-        // convert byte buffer to a bson document and return
-        match bson::document::Document::from_reader(Cursor::new(response_buffer)) {
-            Ok(response) => response,
-            Err(_) => panic!("NativeIdentityClientHandshake::build_challenge_response(): build_challenge_response_callback returned invalid bson document"),
+                match bson::document::Document::from_reader(Cursor::new(response_buffer)) {
+                    Ok(response) => response,
+                    Err(_) => panic!("NativeIdentityClientHandshake::build_challenge_response(): build_challenge_response_callback returned invalid bson document"),
+                }
+            } else {
+                Default::default()
+            }
+        } else {
+            Default::default()
         }
     }
 }
-
-define_registry!{NativeIdentityClientHandshake, ObjectTypes::IdentityClientHandshake}
-
-/// Initialize a gosling_identity_client_handshake object
-///
-/// @param out_client_handshake : destination to store pointer to initialized
-///  gosling_identity_client_handshake object
-/// @param error : filled on error
-#[no_mangle]
-pub extern "C" fn gosling_identity_client_handshake_init(
-    out_client_handshake: *mut *mut GoslingIdentityClientHandshake,
-    error: *mut *mut GoslingError) -> () {
-    translate_failures((), error, || -> Result<()> {
-        ensure!(!out_client_handshake.is_null(), "gosling_identity_client_handshake_init(): out_client_handshake must not be null");
-        let handle = get_native_identity_client_handshake_registry().insert(Default::default());
-        unsafe {*out_client_handshake = handle as *mut GoslingIdentityClientHandshake };
-
-        Ok(())
-    });
-}
-
-/// Sets the client handshake start callback
-///
-/// @param client_handshake : client callback object
-/// @param callback : the new callback, or null to remote current callback
-/// @param error : filled on error
-#[no_mangle]
-pub extern "C" fn gosling_identity_client_handshake_set_started_callback(
-    client_handshake: *mut GoslingIdentityClientHandshake,
-    callback: GoslingIdentityClientHandshakeStartedCallback,
-    error: *mut *mut GoslingError) -> () {
-    translate_failures((), error, || -> Result<()> {
-        ensure!(!client_handshake.is_null(), "gosling_identity_client_handshake_set_started_callback(): client_handshake must not be null");
-        ensure!(!(callback as *const c_void).is_null(), "gosling_identity_client_handshake_set_started_callback(): callback must not be null");
-
-        let mut native_identity_client_registry = get_native_identity_client_handshake_registry();
-        let mut client_handshake = match native_identity_client_registry.get_mut(client_handshake as usize) {
-            Some(client_handshake) => client_handshake,
-            None => bail!("gosling_identity_client_handshake_set_started_callback(): client_handshake is invalid"),
-        };
-        client_handshake.started_callback = Some(callback);
-        Ok(())
-    });
-}
-
-/// Sets the client handshake challenge response size callback
-///
-/// @param client_handshake : client callback object
-/// @param callback : the new callback, or null to remote current callback
-/// @param error : filled on error
-#[no_mangle]
-pub extern "C" fn gosling_identity_client_handshake_set_challenge_response_size_callback(
-    client_handshake: *mut GoslingIdentityClientHandshake,
-    callback: GoslingIdentityClientHandshakeChallengeResponseSizeCallback,
-    error: *mut *mut GoslingError) -> () {
-    translate_failures((), error, || -> Result<()> {
-        ensure!(!client_handshake.is_null(), "gosling_identity_client_handshake_set_challenge_response_size_callback(): client_handshake must not be null");
-        ensure!(!(callback as *const c_void).is_null(), "gosling_identity_client_handshake_set_challenge_response_size_callback(): callback must not be null");
-
-        let mut native_identity_client_registry = get_native_identity_client_handshake_registry();
-        let mut client_handshake = match native_identity_client_registry.get_mut(client_handshake as usize) {
-            Some(client_handshake) => client_handshake,
-            None => bail!("gosling_identity_client_handshake_set_challenge_response_size_callback(): client_handshake is invalid"),
-        };
-        client_handshake.challenge_response_size_callback = Some(callback);
-        Ok(())
-    });
-}
-
-
-/// Sets the client handshake build challenge response callback
-///
-/// @param client_handshake : client callback object
-/// @param callback : the new callback, or null to remote current callback
-/// @param error : filled on error
-#[no_mangle]
-pub extern "C" fn gosling_identity_client_handshake_set_build_challenge_response_callback(
-    client_handshake: *mut GoslingIdentityClientHandshake,
-    callback: GoslingIdentityClientHandshakeBuildChallengeResponseCallback,
-    error: *mut *mut GoslingError) -> () {
-    translate_failures((), error, || -> Result<()> {
-        ensure!(!client_handshake.is_null(), "gosling_identity_client_handshake_set_build_challenge_response_callback(): client_handshake must not be null");
-        ensure!(!(callback as *const c_void).is_null(), "gosling_identity_client_handshake_set_build_challenge_response_callback(): callback must not be null");
-
-        let mut native_identity_client_registry = get_native_identity_client_handshake_registry();
-        let mut client_handshake = match native_identity_client_registry.get_mut(client_handshake as usize) {
-            Some(client_handshake) => client_handshake,
-            None => bail!("gosling_identity_client_handshake_set_build_challenge_response_callback(): client_handshake is invalid"),
-        };
-        client_handshake.build_challenge_response_callback = Some(callback);
-        Ok(())
-    });
-}
-
-/// The function pointer type for the server handshake started callback. This
-/// callback is called when a server starts a handshake with an identity client.
-///
-/// @param handshake_handle : a unique identifier for callbacks associted with this
-///  ongoing server handshake
-pub type GoslingIdentityServerHandshakeStartedCallback = extern "C" fn(
-    handshake_handle: usize) -> ();
-
-/// The function pointer type of the server endpoint supported callback. This
-/// callback is called when the server needs to determine if the client's requested
-/// endpoint is supported.
-///
-/// @param handshake_handle : the server handshake session this callback invocation
-///  is associated with
-/// @param endpoint_name : a null terminated ASCII string containing the name of the
-///  endpoint being requested
-/// @param endpoint_name_length : the number of chars in endpoint_name, not
-///  including the null terminator
-/// @return : true if the server can handle requests for the requested endpoint,
-///  false otherwise
-pub type GoslingIdentityServerHandshakeEndpointSupportedCallback = extern "C" fn(
-    handshake_handle: usize,
-    endpoint_name: *const c_char,
-    endpoint_name_length: usize) -> bool;
-
-/// The function pointer type for the server handshake challenge size callback.
-/// This callback is called when a server needs to know how much memory to allocate
-/// for a challenge.
-///
-/// @param handshake_handle : the server handshake session this callback invocation
-///  is associated with
-/// @param endpoint_name : a null terminated ASCII string containing the name of the
-///  endpoint being requested
-/// @param endpoint_name_length : the number of chars in endpoint_name, not
-///  including the null terminator
-/// @return : the number of bytes required to store the challenge object
-pub type GoslingIdentityServerHandshakeChallengeSizeCallback = extern "C" fn(
-    handshake_handle: usize,
-    endpoint_name: *const c_char,
-    endpoint_name_length: usize) -> usize;
-
-/// The function pointer type for the server handshake build challenge callback.
-/// This callback is called when a server needs to build a challenge object.
-///
-/// @param handshake_handle : the server handshake session this callback invocation
-///  is associated with
-/// @param endpoint_name : a null terminated ASCII string containing the name of the
-///  endpoint being requested
-/// @param endpoint_name_length : the number of chars in endpoint_name, not
-///  including the null terminator
-/// @param out_challenge_buffer : the destination buffer for the callback
-///  to write a BSON document representing the endpoint request challenge object
-/// @param challenge_buffer_size : the number of bytes allocated in
-///  out_challenge_buffer
-pub type GoslingIdentityServerHandshakeBuildChallengeCallback = extern "C" fn(
-    handshake_handle: usize,
-    endpoint_name: *const c_char,
-    endpoint_name_length: usize,
-    out_challenge_buffer: *mut u8,
-    challenge_buffer_size: usize) -> ();
-
-/// The posible responses for evaluating a challenge response
-#[repr(C)]
-pub enum GoslingChallengeResponseResult {
-    /// the challenge response is accepted
-    Valid,
-    /// the challenge response is not acceptd
-    Invalid,
-    /// the challenge response is pending evaluation
-    Pending,
-}
-pub type GoslingChallengeResponseResultT = GoslingChallengeResponseResult;
-
-/// The function poointer type for the server handshake verify challenge response
-/// callback. This callback is called when a server needs to verify a challenge
-/// response object.
-///
-/// @param handshake_handle : the server handshake session this callback invocation
-///  is associated with
-/// @param endpoint_name : a null terminated ASCII string containing the name of the
-///  endpoint being requested
-/// @param endpoint_name_length : the number of chars in endpoint_name, not
-///  including the null terminator
-/// @param challenge_buffer : a buffer containing the BSON document representing
-///  the endpoint request challenge object
-/// @param challenge_buffer_size : the number of bytes in challenge_buffer
-/// @param challenge_response_buffer : a buffer containing the BSON document representing
-///  the endpoint request challenge response object
-/// @param challenge_response_buffer_size : the number of bytes in
-///  challenge_response_buffer
-/// @return : the result of the challenge response verification
-pub type GoslingIdentityServerHandshakeVerifyChallengeResponseCallback = extern fn(
-    handshake_handle: usize,
-    endpoint_name: *const c_char,
-    endpoint_name_length: usize,
-    challenge_buffer: *const u8,
-    challenge_buffer_size: usize,
-    challenge_response_buffer: *const u8,
-    challenge_response_buffer_size: usize) -> GoslingChallengeResponseResultT;
-
-/// The function pointer type for the server handshake poll chllenge respone result
-/// callbback. This callback is repeatedly called if the call to the registered server
-/// handshake verify challenge response callback returned gosling_challenge_response_result_pending.
-///
-/// @param handshake_handle : the server handshake session this callback invocation
-///  is associated with
-/// @return : the result of the challenge response verification
-pub type GoslingIdentityServerHandshakePollChallengeResponseResultCallback = extern fn(
-    handshake_handle: usize) -> GoslingChallengeResponseResultT;
 
 #[derive(Default)]
 pub struct NativeIdentityServerHandshake {
@@ -1075,9 +804,8 @@ impl Clone for NativeIdentityServerHandshake {
         // needs to duplicate the callbacks of the prototype handshake, and invoke the
         // started_callback with a new unique handle
         let handshake_handle = NEXT_HANDSHAKE_HANDLE.fetch_add(1, Ordering::Relaxed);
-        match self.started_callback {
-            Some(started_callback) => started_callback(handshake_handle),
-            None => panic!("NativeIdentityServerHandshake::clone(): missing started_callback"),
+        if let Some(started_callback) = self.started_callback {
+            started_callback(handshake_handle);
         }
 
         Self{
@@ -1102,7 +830,7 @@ impl IdentityServerHandshake for NativeIdentityServerHandshake {
                 self.handshake_handle,
                 endpoint0.as_ptr(),
                 endpoint.len()),
-            None => panic!("NativeIdentityServerHandshake::endpoint_supported(): missing endpoint_supported_callback"),
+            None => false
         }
     }
 
@@ -1115,27 +843,28 @@ impl IdentityServerHandshake for NativeIdentityServerHandshake {
                 self.handshake_handle,
                 endpoint0.as_ptr(),
                 endpoint.len()),
-            None => panic!("NativeIdentityServerHandshake::build_endpoint_challenge(): missing challenge_size_callack"),
+            None => 0,
         };
 
-        // buffer for challenge to be written
-        let mut challenge_buffer = vec![0u8; challenge_size];
+        if challenge_size > 0 {
+            if let Some(build_challenge_callback) = self.build_challenge_callback {
+                let mut challenge_buffer = vec![0u8; challenge_size];
+                build_challenge_callback(
+                    self.handshake_handle,
+                    endpoint0.as_ptr(),
+                    endpoint.len(),
+                    challenge_buffer.as_mut_ptr(),
+                    challenge_size);
 
-        // write challenge to buffer
-        match self.build_challenge_callback {
-            Some(build_challenge_callback) => build_challenge_callback(
-                self.handshake_handle,
-                endpoint0.as_ptr(),
-                endpoint.len(),
-                challenge_buffer.as_mut_ptr(),
-                challenge_size),
-            None => panic!("NativeIdentityServerHandshake::build_endpoint_challenge(): missing build_challenge_callback"),
-        }
-
-        // convert byte buffer to a bson document and return
-        match bson::document::Document::from_reader(Cursor::new(challenge_buffer)) {
-            Ok(challenge) => Some(challenge),
-            Err(_) => panic!("NativeIdentityServerHandshake::build_challenge_response(): build_challenge_callback returned invalid bson document"),
+                match bson::document::Document::from_reader(Cursor::new(challenge_buffer)) {
+                    Ok(challenge) => Some(challenge),
+                    Err(_) => panic!("NativeIdentityServerHandshake::build_challenge_response(): build_challenge_callback returned invalid bson document"),
+                }
+            } else {
+                Default::default()
+            }
+        } else {
+            Default::default()
         }
     }
 
@@ -1164,7 +893,7 @@ impl IdentityServerHandshake for NativeIdentityServerHandshake {
                 challenge_buffer.len(),
                 challenge_response_buffer.as_ptr(),
                 challenge_response_buffer.len()),
-            None => panic!("NativeIdentityServerHandshake::verify_challenge_response(): missing verify_challenge_response_callback"),
+            None => GoslingChallengeResponseResult::Invalid,
         };
 
         // convert enum to Option<bool>
@@ -1181,7 +910,7 @@ impl IdentityServerHandshake for NativeIdentityServerHandshake {
         // poll for verification result
         let challenge_response_result = match self.poll_challenge_response_result_callback {
             Some(poll_challenge_response_result_callback) => poll_challenge_response_result_callback(self.handshake_handle),
-            None => panic!("NativeIdentityServerHandshake::poll_result(): missing poll_challenge_response_result_callback"),
+            None => GoslingChallengeResponseResult::Pending,
         };
 
         // convert enum to Option<IdentityHandshakeResult>
@@ -1193,170 +922,6 @@ impl IdentityServerHandshake for NativeIdentityServerHandshake {
             _ => panic!("NativeIdentityServerHandshake::poll_result(): poll_challenge_response_result_callback returned invalid value"),
         }
     }
-}
-
-define_registry!{NativeIdentityServerHandshake, ObjectTypes::IdentityServerHandshake}
-
-/// Initialize a gosling_identity_server_handshake object.
-///
-/// @param out_server_handshake : destination to store pointer to initialized
-///  gosling_identity_server_handshake object
-/// @param error : filled on error
-#[no_mangle]
-pub extern "C" fn gosling_identity_server_handshake_init(
-    out_server_handshake: *mut *mut GoslingIdentityServerHandshake,
-    error: *mut *mut GoslingError) -> () {
-    translate_failures((), error, || -> Result<()> {
-        ensure!(!out_server_handshake.is_null(), "gosling_identity_server_handshake_init(): out_server_handshake must not be null");
-        let handle = get_native_identity_server_handshake_registry().insert(Default::default());
-        unsafe {*out_server_handshake = handle as *mut GoslingIdentityServerHandshake };
-
-        Ok(())
-    });
-}
-
-// Sets the server handshake started callback.
-//
-// @param server_handshake : server callback object
-// @param callback : the new callback, or null to remote current callback
-// @param error : filled on error
-#[no_mangle]
-pub extern "C" fn gosling_identity_server_handshake_set_started_callback(
-    server_handshake: *mut GoslingIdentityServerHandshake,
-    callback: GoslingIdentityServerHandshakeStartedCallback,
-    error: *mut *mut GoslingError) -> () {
-    translate_failures((), error, || -> Result<()> {
-        ensure!(!server_handshake.is_null(), "gosling_identity_server_handshake_set_started_callback(): server_handshake must not be null");
-        ensure!(!(callback as *const c_void).is_null(), "gosling_identity_server_handshake_set_started_callback(): callback must not be null");
-
-        let mut native_identity_server_registry = get_native_identity_server_handshake_registry();
-        let mut server_handshake = match native_identity_server_registry.get_mut(server_handshake as usize) {
-            Some(server_handshake) => server_handshake,
-            None => bail!("gosling_identity_server_handshake_set_started_callback(): server_handshake is invalid"),
-        };
-        server_handshake.started_callback = Some(callback);
-        Ok(())
-    });
-}
-
-// Sets the server handshake endpont supported callback.
-//
-// @param server_handshake : server callback object
-// @param callback : the new callback, or null to remote current callback
-// @param error : filled on error
-#[no_mangle]
-pub extern "C" fn gosling_identity_server_handshake_set_endpoint_supported_callback(
-    server_handshake: *mut GoslingIdentityServerHandshake,
-    callback: GoslingIdentityServerHandshakeEndpointSupportedCallback,
-    error: *mut *mut GoslingError) -> () {
-    translate_failures((), error, || -> Result<()> {
-        ensure!(!server_handshake.is_null(), "gosling_identity_server_handshake_set_endpoint_supported_callback(): server_handshake must not be null");
-        ensure!(!(callback as *const c_void).is_null(), "gosling_identity_server_handshake_set_endpoint_supported_callback(): callback must not be null");
-
-        let mut native_identity_server_registry = get_native_identity_server_handshake_registry();
-        let mut server_handshake = match native_identity_server_registry.get_mut(server_handshake as usize) {
-            Some(server_handshake) => server_handshake,
-            None => bail!("gosling_identity_server_handshake_set_endpoint_supported_callback(): client_handshake is invalid"),
-        };
-        server_handshake.endpoint_supported_callback = Some(callback);
-        Ok(())
-    });
-}
-
-// Sets the server handshake challenge size callback.
-//
-// @param server_handshake : server callback object
-// @param callback : the new callback, or null to remote current callback
-// @param error : filled on error
-#[no_mangle]
-pub extern "C" fn gosling_identity_server_handshake_set_challenge_size_callack(
-    server_handshake: *mut GoslingIdentityServerHandshake,
-    callback: GoslingIdentityServerHandshakeChallengeSizeCallback,
-    error: *mut *mut GoslingError) -> () {
-    translate_failures((), error, || -> Result<()> {
-        ensure!(!server_handshake.is_null(), "gosling_identity_server_handshake_set_challenge_size_callack(): server_handshake must not be null");
-        ensure!(!(callback as *const c_void).is_null(), "gosling_identity_server_handshake_set_challenge_size_callack(): callback must not be null");
-
-        let mut native_identity_server_registry = get_native_identity_server_handshake_registry();
-        let mut server_handshake = match native_identity_server_registry.get_mut(server_handshake as usize) {
-            Some(server_handshake) => server_handshake,
-            None => bail!("gosling_identity_server_handshake_set_challenge_size_callack(): client_handshake is invalid"),
-        };
-        server_handshake.challenge_size_callack = Some(callback);
-        Ok(())
-    });
-}
-
-// Sets the server handshake build challenge callback.
-//
-// @param server_handshake : server callback object
-// @param callback : the new callback, or null to remote current callback
-// @param error : filled on error
-#[no_mangle]
-pub extern "C" fn gosling_identity_server_handshake_set_build_challenge_callback(
-    server_handshake: *mut GoslingIdentityServerHandshake,
-    callback: GoslingIdentityServerHandshakeBuildChallengeCallback,
-    error: *mut *mut GoslingError) -> () {
-    translate_failures((), error, || -> Result<()> {
-        ensure!(!server_handshake.is_null(), "gosling_identity_server_handshake_set_build_challenge_callback(): server_handshake must not be null");
-        ensure!(!(callback as *const c_void).is_null(), "gosling_identity_server_handshake_set_build_challenge_callback(): callback must not be null");
-
-        let mut native_identity_server_registry = get_native_identity_server_handshake_registry();
-        let mut server_handshake = match native_identity_server_registry.get_mut(server_handshake as usize) {
-            Some(server_handshake) => server_handshake,
-            None => bail!("gosling_identity_server_handshake_set_build_challenge_callback(): client_handshake is invalid"),
-        };
-        server_handshake.build_challenge_callback = Some(callback);
-        Ok(())
-    });
-}
-
-// Sets the server handshake verify challenge response callback.
-//
-// @param server_handshake : server callback object
-// @param callback : the new callback, or null to remote current callback
-// @param error : filled on error
-#[no_mangle]
-pub extern "C" fn gosling_identity_server_handshake_set_verify_challenge_response_callback(
-    server_handshake: *mut GoslingIdentityServerHandshake,
-    callback: GoslingIdentityServerHandshakeVerifyChallengeResponseCallback,
-    error: *mut *mut GoslingError) -> () {
-    translate_failures((), error, || -> Result<()> {
-        ensure!(!server_handshake.is_null(), "gosling_identity_server_handshake_set_verify_challenge_response_callback(): server_handshake must not be null");
-        ensure!(!(callback as *const c_void).is_null(), "gosling_identity_server_handshake_set_verify_challenge_response_callback(): callback must not be null");
-
-        let mut native_identity_server_registry = get_native_identity_server_handshake_registry();
-        let mut server_handshake = match native_identity_server_registry.get_mut(server_handshake as usize) {
-            Some(server_handshake) => server_handshake,
-            None => bail!("gosling_identity_server_handshake_set_verify_challenge_response_callback(): client_handshake is invalid"),
-        };
-        server_handshake.verify_challenge_response_callback = Some(callback);
-        Ok(())
-    });
-}
-
-// Sets the server handshake poll challenge response result callback.
-//
-// @param server_handshake : server callback object
-// @param callback : the new callback, or null to remote current callback
-// @param error : filled on error
-#[no_mangle]
-pub extern "C" fn gosling_identity_server_handshake_set_poll_challenge_response_result_callback(
-    server_handshake: *mut GoslingIdentityServerHandshake,
-    callback: GoslingIdentityServerHandshakePollChallengeResponseResultCallback,
-    error: *mut *mut GoslingError) -> () {
-    translate_failures((), error, || -> Result<()> {
-        ensure!(!server_handshake.is_null(), "gosling_identity_server_handshake_set_poll_challenge_response_result_callback(): server_handshake must not be null");
-        ensure!(!(callback as *const c_void).is_null(), "gosling_identity_server_handshake_set_poll_challenge_response_result_callback(): callback must not be null");
-
-        let mut native_identity_server_registry = get_native_identity_server_handshake_registry();
-        let mut server_handshake = match native_identity_server_registry.get_mut(server_handshake as usize) {
-            Some(server_handshake) => server_handshake,
-            None => bail!("gosling_identity_server_handshake_set_poll_challenge_response_result_callback(): client_handshake is invalid"),
-        };
-        server_handshake.poll_challenge_response_result_callback = Some(callback);
-        Ok(())
-    });
 }
 
 // Initialize a gosling context.
@@ -1387,9 +952,6 @@ pub extern "C" fn gosling_context_init(
     blocked_clients: *const *const GoslingV3OnionServiceId,
     blocked_clients_count: usize,
 
-    client_handshake: *mut GoslingIdentityClientHandshake,
-    server_handshake: *mut GoslingIdentityServerHandshake,
-
     error: *mut *mut GoslingError) -> () {
     translate_failures((), error, || -> Result<()> {
         // validate params
@@ -1402,8 +964,6 @@ pub extern "C" fn gosling_context_init(
         ensure!(endpoint_port != 0u16, "gosling_context_init(): endpoint_port must not be 0");
         ensure!(!identity_private_key.is_null(), "gosling_context_init(): identity_private_key may not be null");
         ensure!((blocked_clients.is_null() && blocked_clients_count == 0) || (!blocked_clients.is_null() && blocked_clients_count > 0), "gosling_context_init(): blocked_clients must not be null or blocked_clients_count must not be 0");
-        ensure!(!client_handshake.is_null(), "gosling_context_init(): client_handshake must not be null");
-        ensure!(!server_handshake.is_null(), "gosling_context_init(): server_handshake must not be null");
 
         // tor working dir
         let tor_working_directory = unsafe { std::slice::from_raw_parts(tor_working_directory as *const u8, tor_working_directory_length) };
@@ -1434,27 +994,8 @@ pub extern "C" fn gosling_context_init(
             blocked_clients
         };
 
-        // get client handshake from registry
-        let client_handshake = match get_native_identity_client_handshake_registry().remove(client_handshake as usize) {
-            Some(client_handshake) => client_handshake,
-            None => bail!("gosling_context_init(): client_handshake is invalid"),
-        };
-        ensure!(client_handshake.started_callback.is_some(), "gosling_context_init(): client_handshake missing started_callback");
-        ensure!(client_handshake.challenge_response_size_callback.is_some(), "gosling_context_init(): client_handshake missing challenge_response_size_callback");
-        ensure!(client_handshake.build_challenge_response_callback.is_some(), "gosling_context_init(): client_handshake missing build_challenge_response_callback");
-
-        // get server handshake from registry
-        let server_handshake = match get_native_identity_server_handshake_registry().remove(server_handshake as usize) {
-            Some(server_handshake) => server_handshake,
-            None => bail!("gosling_context_init(): server_handshake is invalid"),
-        };
-        ensure!(server_handshake.started_callback.is_some(), "gosling_context_init(): server_handshake missing started_callback");
-        ensure!(server_handshake.endpoint_supported_callback.is_some(), "gosling_context_init(): server_handshake missing endpoint_supported_callback");
-        ensure!(server_handshake.challenge_size_callack.is_some(), "gosling_context_init(): server_handshake missing challenge_size_callack");
-        ensure!(server_handshake.build_challenge_callback.is_some(), "gosling_context_init(): server_handshake missing build_challenge_callback");
-        ensure!(server_handshake.verify_challenge_response_callback.is_some(), "gosling_context_init(): server_handshake missing verify_challenge_response_callback");
-        ensure!(server_handshake.poll_challenge_response_result_callback.is_some(), "gosling_context_init(): server_handshake missing poll_challenge_response_result_callback");
-
+        let client_handshake: NativeIdentityClientHandshake = Default::default();
+        let server_handshake: NativeIdentityServerHandshake= Default::default();
 
         // construct context
         let context = Context::new(
@@ -1982,6 +1523,169 @@ pub type GoslingEndpointServerRequestCompletedCallback = extern fn (
     client_service_id: *const GoslingV3OnionServiceId,
     client_auth_public_key: *const GoslingX25519PublicKey) -> ();
 
+/// The function pointer type for the client handshake started callback. This
+/// callback is called when a client starts a handshake with an identity server.
+///
+/// @param handshake_handle : a unique identifier for callbacks associated with this
+///  ongoing client handshake
+pub type GoslingIdentityClientHandshakeStartedCallback = extern fn(
+    handshake_handle: usize) -> ();
+
+/// The function pointer type for the client handshake challenge response size
+/// callback. This callback is called when a client needs to know how much memory
+/// to allocate for a challenge response.
+///
+/// @param handshake_handle : the client handshake session this callback invocation
+///  is associated with
+/// @param endpoint_name : a null terminated ASCII string containing the name of the
+///  enpdoint being requested
+/// @param endpoint_name_length : the number of chars in endpoint_name, not
+///  including the null terminator
+/// @return : the number of bytes required to store the challenge response object
+pub type GoslingIdentityClientHandshakeChallengeResponseSizeCallback = extern fn(
+    handshake_handle: usize,
+    endpoint_name: *const c_char,
+    endpoint_name_length: usize) -> usize;
+
+/// The function pointer type for the client handshake build challlenge response
+/// callback. This callback is called when a client is ready to build a challenge
+/// response object.
+///
+/// @param handshake_handle : the client handshake session this callback invocation
+///  is associated with
+/// @param endpoint_name : a null terminated ASCII string containing the name of the
+///  endpoint being requested
+/// @param endpoint_name_length : the number of chars in endpoint_name, not
+///  including the null terminator
+/// @param challenge_buffer : the source buffer containing a BSON document received
+///  from the  identity server to serve as an endpoint request challenge
+/// @param challenge_buffer_size : the number of bytes in challenge_buffer
+/// @param out_challenge_response_buffer : the destination buffer for the callback
+///  to write a BSON document representing the endpoint request challenge response
+///  object
+/// @param challenge_response_buffer_size : the number of bytes allocated in
+///  out_challenge_response_buffer
+pub type GoslingIdentityClientHandshakeBuildChallengeResponseCallback = extern fn(
+    handshake_handle: usize,
+    endpoint_name: *const c_char,
+    endpoint_name_length: usize,
+    challenge_buffer: *const u8,
+    challenge_buffer_size: usize,
+    out_challenge_response_buffer: *mut u8,
+    challenge_response_buffer_size: usize) -> ();
+
+
+
+/// The function pointer type for the server handshake started callback. This
+/// callback is called when a server starts a handshake with an identity client.
+///
+/// @param handshake_handle : a unique identifier for callbacks associted with this
+///  ongoing server handshake
+pub type GoslingIdentityServerHandshakeStartedCallback = extern "C" fn(
+    handshake_handle: usize) -> ();
+
+/// The function pointer type of the server endpoint supported callback. This
+/// callback is called when the server needs to determine if the client's requested
+/// endpoint is supported.
+///
+/// @param handshake_handle : the server handshake session this callback invocation
+///  is associated with
+/// @param endpoint_name : a null terminated ASCII string containing the name of the
+///  endpoint being requested
+/// @param endpoint_name_length : the number of chars in endpoint_name, not
+///  including the null terminator
+/// @return : true if the server can handle requests for the requested endpoint,
+///  false otherwise
+pub type GoslingIdentityServerHandshakeEndpointSupportedCallback = extern "C" fn(
+    handshake_handle: usize,
+    endpoint_name: *const c_char,
+    endpoint_name_length: usize) -> bool;
+
+/// The function pointer type for the server handshake challenge size callback.
+/// This callback is called when a server needs to know how much memory to allocate
+/// for a challenge.
+///
+/// @param handshake_handle : the server handshake session this callback invocation
+///  is associated with
+/// @param endpoint_name : a null terminated ASCII string containing the name of the
+///  endpoint being requested
+/// @param endpoint_name_length : the number of chars in endpoint_name, not
+///  including the null terminator
+/// @return : the number of bytes required to store the challenge object
+pub type GoslingIdentityServerHandshakeChallengeSizeCallback = extern "C" fn(
+    handshake_handle: usize,
+    endpoint_name: *const c_char,
+    endpoint_name_length: usize) -> usize;
+
+/// The function pointer type for the server handshake build challenge callback.
+/// This callback is called when a server needs to build a challenge object.
+///
+/// @param handshake_handle : the server handshake session this callback invocation
+///  is associated with
+/// @param endpoint_name : a null terminated ASCII string containing the name of the
+///  endpoint being requested
+/// @param endpoint_name_length : the number of chars in endpoint_name, not
+///  including the null terminator
+/// @param out_challenge_buffer : the destination buffer for the callback
+///  to write a BSON document representing the endpoint request challenge object
+/// @param challenge_buffer_size : the number of bytes allocated in
+///  out_challenge_buffer
+pub type GoslingIdentityServerHandshakeBuildChallengeCallback = extern "C" fn(
+    handshake_handle: usize,
+    endpoint_name: *const c_char,
+    endpoint_name_length: usize,
+    out_challenge_buffer: *mut u8,
+    challenge_buffer_size: usize) -> ();
+
+/// The posible responses for evaluating a challenge response
+#[repr(C)]
+pub enum GoslingChallengeResponseResult {
+    /// the challenge response is accepted
+    Valid,
+    /// the challenge response is not acceptd
+    Invalid,
+    /// the challenge response is pending evaluation
+    Pending,
+}
+pub type GoslingChallengeResponseResultT = GoslingChallengeResponseResult;
+
+/// The function poointer type for the server handshake verify challenge response
+/// callback. This callback is called when a server needs to verify a challenge
+/// response object.
+///
+/// @param handshake_handle : the server handshake session this callback invocation
+///  is associated with
+/// @param endpoint_name : a null terminated ASCII string containing the name of the
+///  endpoint being requested
+/// @param endpoint_name_length : the number of chars in endpoint_name, not
+///  including the null terminator
+/// @param challenge_buffer : a buffer containing the BSON document representing
+///  the endpoint request challenge object
+/// @param challenge_buffer_size : the number of bytes in challenge_buffer
+/// @param challenge_response_buffer : a buffer containing the BSON document representing
+///  the endpoint request challenge response object
+/// @param challenge_response_buffer_size : the number of bytes in
+///  challenge_response_buffer
+/// @return : the result of the challenge response verification
+pub type GoslingIdentityServerHandshakeVerifyChallengeResponseCallback = extern fn(
+    handshake_handle: usize,
+    endpoint_name: *const c_char,
+    endpoint_name_length: usize,
+    challenge_buffer: *const u8,
+    challenge_buffer_size: usize,
+    challenge_response_buffer: *const u8,
+    challenge_response_buffer_size: usize) -> GoslingChallengeResponseResultT;
+
+/// The function pointer type for the server handshake poll chllenge respone result
+/// callbback. This callback is repeatedly called if the call to the registered server
+/// handshake verify challenge response callback returned gosling_challenge_response_result_pending.
+///
+/// @param handshake_handle : the server handshake session this callback invocation
+///  is associated with
+/// @return : the result of the challenge response verification
+pub type GoslingIdentityServerHandshakePollChallengeResponseResultCallback = extern fn(
+    handshake_handle: usize) -> GoslingChallengeResponseResultT;
+
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 pub type GoslingEndpointClientChannelRequestCompletedCallback = extern fn(
     context: *mut GoslingContext,
@@ -2033,7 +1737,7 @@ pub struct EventCallbacks {
 /// Set the tor bootstrap status received callback for the specified context
 ///
 /// @param context : the context to register the callback to
-/// @param callback : the callbcak to register
+/// @param callback : the callback to register
 /// @param  error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_context_set_tor_bootstrap_status_received_callback(
@@ -2062,7 +1766,7 @@ pub extern "C" fn gosling_context_set_tor_bootstrap_status_received_callback(
 /// Set the tor bootstrap completed callback for the specified context
 ///
 /// @param context : the context to register the callback to
-/// @param callback : the callbcak to register
+/// @param callback : the callback to register
 /// @param  error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_context_set_tor_bootstrap_completed_callback(
@@ -2091,7 +1795,7 @@ pub extern "C" fn gosling_context_set_tor_bootstrap_completed_callback(
 /// Set the tor log received callback for the specified context
 ///
 /// @param context : the context to register the callback to
-/// @param callback : the callbcak to register
+/// @param callback : the callback to register
 /// @param  error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_context_set_tor_log_received_callback(
@@ -2120,7 +1824,7 @@ pub extern "C" fn gosling_context_set_tor_log_received_callback(
 /// Set the identity server published callback for the specified context
 ///
 /// @param context : the context to register the callback to
-/// @param callback : the callbcak to register
+/// @param callback : the callback to register
 /// @param  error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_context_set_identity_server_published_callback(
@@ -2146,10 +1850,263 @@ pub extern "C" fn gosling_context_set_identity_server_published_callback(
     });
 }
 
+/// Sets the identity client handshake started callback
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on error
+#[no_mangle]
+pub extern "C" fn gosling_context_set_identity_client_handshake_started_callback(
+    context: *mut GoslingContext,
+    callback: GoslingIdentityClientHandshakeStartedCallback,
+    error: *mut *mut GoslingError) -> () {
+    translate_failures((), error, || -> Result<()> {
+        let mut context_tuple_registry = get_context_tuple_registry();
+        let mut context = match context_tuple_registry.get_mut(context as usize) {
+            Some(context) => context,
+            None => {
+                bail!("gosling_context_set_identity_client_handshake_started_callback(): context is invalid");
+            }
+        };
+
+        context.0.client_handshake_prototype.started_callback = if (callback as *const c_void).is_null() {
+            None
+        } else {
+            Some(callback)
+        };
+        Ok(())
+    });
+}
+
+/// Sets the identity challenge challenge response size callback
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on error
+#[no_mangle]
+pub extern "C" fn gosling_context_set_identity_client_challenge_response_size_callback(
+    context: *mut GoslingContext,
+    callback: GoslingIdentityClientHandshakeChallengeResponseSizeCallback,
+    error: *mut *mut GoslingError) -> () {
+    translate_failures((), error, || -> Result<()> {
+        let mut context_tuple_registry = get_context_tuple_registry();
+        let mut context = match context_tuple_registry.get_mut(context as usize) {
+            Some(context) => context,
+            None => {
+                bail!("gosling_context_set_identity_client_challenge_response_size_callback(): context is invalid");
+            }
+        };
+
+        context.0.client_handshake_prototype.challenge_response_size_callback = if (callback as *const c_void).is_null() {
+            None
+        } else {
+            Some(callback)
+        };
+        Ok(())
+    });
+}
+
+
+/// Sets the identity client build challenge response callback
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on error
+#[no_mangle]
+pub extern "C" fn gosling_context_set_identity_client_build_challenge_response_callback(
+    context: *mut GoslingContext,
+    callback: GoslingIdentityClientHandshakeBuildChallengeResponseCallback,
+    error: *mut *mut GoslingError) -> () {
+    translate_failures((), error, || -> Result<()> {
+        let mut context_tuple_registry = get_context_tuple_registry();
+        let mut context = match context_tuple_registry.get_mut(context as usize) {
+            Some(context) => context,
+            None => {
+                bail!("gosling_context_set_identity_client_build_challenge_response_callback(): context is invalid");
+            }
+        };
+
+        context.0.client_handshake_prototype.build_challenge_response_callback = if (callback as *const c_void).is_null() {
+            None
+        } else {
+            Some(callback)
+        };
+        Ok(())
+    });
+}
+
+/// Sets the identity server handshake started callback
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on error
+#[no_mangle]
+pub extern "C" fn gosling_context_set_identity_server_handshake_started_callback(
+    context: *mut GoslingContext,
+    callback: GoslingIdentityServerHandshakeStartedCallback,
+    error: *mut *mut GoslingError) -> () {
+    translate_failures((), error, || -> Result<()> {
+        let mut context_tuple_registry = get_context_tuple_registry();
+        let mut context = match context_tuple_registry.get_mut(context as usize) {
+            Some(context) => context,
+            None => {
+                bail!("gosling_context_set_identity_server_handshake_started_callback(): context is invalid");
+            }
+        };
+
+        context.0.server_handshake_prototype.started_callback = if (callback as *const c_void).is_null() {
+            None
+        } else {
+            Some(callback)
+        };
+        Ok(())
+    });
+}
+
+/// Sets the identity server endpoint supported callback
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on error
+#[no_mangle]
+pub extern "C" fn gosling_context_set_identity_server_endpoint_supported_callback(
+    context: *mut GoslingContext,
+    callback: GoslingIdentityServerHandshakeEndpointSupportedCallback,
+    error: *mut *mut GoslingError) -> () {
+    translate_failures((), error, || -> Result<()> {
+        let mut context_tuple_registry = get_context_tuple_registry();
+        let mut context = match context_tuple_registry.get_mut(context as usize) {
+            Some(context) => context,
+            None => {
+                bail!("gosling_context_set_identity_server_endpoint_supported_callback(): context is invalid");
+            }
+        };
+
+        context.0.server_handshake_prototype.endpoint_supported_callback = if (callback as *const c_void).is_null() {
+            None
+        } else {
+            Some(callback)
+        };
+        Ok(())
+    });
+}
+
+/// Sets the identity server challenge size callback
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on erro
+#[no_mangle]
+pub extern "C" fn gosling_context_set_identity_server_challenge_size_callack(
+    context: *mut GoslingContext,
+    callback: GoslingIdentityServerHandshakeChallengeSizeCallback,
+    error: *mut *mut GoslingError) -> () {
+    translate_failures((), error, || -> Result<()> {
+        let mut context_tuple_registry = get_context_tuple_registry();
+        let mut context = match context_tuple_registry.get_mut(context as usize) {
+            Some(context) => context,
+            None => {
+                bail!("gosling_context_set_identity_server_challenge_size_callack(): context is invalid");
+            }
+        };
+
+        context.0.server_handshake_prototype.challenge_size_callack = if (callback as *const c_void).is_null() {
+            None
+        } else {
+            Some(callback)
+        };
+        Ok(())
+    });
+}
+
+/// Sets the identity server endpoint supported callback
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on erro
+#[no_mangle]
+pub extern "C" fn gosling_context_set_identity_server_build_challenge_callback(
+    context: *mut GoslingContext,
+    callback: GoslingIdentityServerHandshakeBuildChallengeCallback,
+    error: *mut *mut GoslingError) -> () {
+    translate_failures((), error, || -> Result<()> {
+        let mut context_tuple_registry = get_context_tuple_registry();
+        let mut context = match context_tuple_registry.get_mut(context as usize) {
+            Some(context) => context,
+            None => {
+                bail!("gosling_context_set_identity_server_build_challenge_callback(): context is invalid");
+            }
+        };
+
+        context.0.server_handshake_prototype.build_challenge_callback = if (callback as *const c_void).is_null() {
+            None
+        } else {
+            Some(callback)
+        };
+        Ok(())
+    });
+}
+
+/// Sets the identity server verify challenge response callback
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on erro
+#[no_mangle]
+pub extern "C" fn gosling_context_set_identity_server_verify_challenge_response_callback(
+    context: *mut GoslingContext,
+    callback: GoslingIdentityServerHandshakeVerifyChallengeResponseCallback,
+    error: *mut *mut GoslingError) -> () {
+    translate_failures((), error, || -> Result<()> {
+        let mut context_tuple_registry = get_context_tuple_registry();
+        let mut context = match context_tuple_registry.get_mut(context as usize) {
+            Some(context) => context,
+            None => {
+                bail!("gosling_context_set_identity_server_verify_challenge_response_callback(): context is invalid");
+            }
+        };
+
+        context.0.server_handshake_prototype.verify_challenge_response_callback = if (callback as *const c_void).is_null() {
+            None
+        } else {
+            Some(callback)
+        };
+        Ok(())
+    });
+}
+
+/// Sets the identity server poll challenge response result callback
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param error : filled on error
+#[no_mangle]
+pub extern "C" fn gosling_context_set_identity_server_poll_challenge_response_result_callback(
+    context: *mut GoslingContext,
+    callback: GoslingIdentityServerHandshakePollChallengeResponseResultCallback,
+    error: *mut *mut GoslingError) -> () {
+    translate_failures((), error, || -> Result<()> {
+        let mut context_tuple_registry = get_context_tuple_registry();
+        let mut context = match context_tuple_registry.get_mut(context as usize) {
+            Some(context) => context,
+            None => {
+                bail!("gosling_context_set_identity_server_poll_challenge_response_result_callback(): context is invalid");
+            }
+        };
+
+        context.0.server_handshake_prototype.poll_challenge_response_result_callback = if (callback as *const c_void).is_null() {
+            None
+        } else {
+            Some(callback)
+        };
+        Ok(())
+    });
+}
+
 /// Set the endpoint server published callback for the specified context
 ///
 /// @param context : the context to register the callback to
-/// @param callback : the callbcak to register
+/// @param callback : the callback to register
 /// @param  error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_context_set_endpoint_server_published_callback(
@@ -2178,7 +2135,7 @@ pub extern "C" fn gosling_context_set_endpoint_server_published_callback(
 /// Set the endpoint client request completed callback for the specified context
 ///
 /// @param context : the context to register the callback to
-/// @param callback : the callbcak to register
+/// @param callback : the callback to register
 /// @param  error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_context_set_endpoint_client_request_completed_callback(
@@ -2207,7 +2164,7 @@ pub extern "C" fn gosling_context_set_endpoint_client_request_completed_callback
 /// Set the endpoint server request completed callback for the specified context
 ///
 /// @param context : the context to register the callback to
-/// @param callback : the callbcak to register
+/// @param callback : the callback to register
 /// @param  error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_context_set_endpoint_server_request_completed_callback(
@@ -2236,7 +2193,7 @@ pub extern "C" fn gosling_context_set_endpoint_server_request_completed_callback
 /// Set the endpoint client channel request completed callback for the specified context
 ///
 /// @param context : the context to register the callback to
-/// @param callback : the callbcak to register
+/// @param callback : the callback to register
 /// @param  error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_context_set_endpoint_client_channel_request_completed_callback(
@@ -2265,7 +2222,7 @@ pub extern "C" fn gosling_context_set_endpoint_client_channel_request_completed_
 /// Set the endpoint server channel request completed callback for the specified context
 ///
 /// @param context : the context to register the callback to
-/// @param callback : the callbcak to register
+/// @param callback : the callback to register
 /// @param  error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_context_set_endpoint_server_channel_request_completed_callback(

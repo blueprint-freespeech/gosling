@@ -27,16 +27,13 @@ constexpr static uint8_t  challenge_response_bson[] = {
     0x00
 };
 
-static unique_ptr<gosling_identity_client_handshake> create_client_handshake() {
-    unique_ptr<gosling_identity_client_handshake> client_handshake;
-    REQUIRE_NOTHROW(::gosling_identity_client_handshake_init(out(client_handshake), throw_on_error()));
-
+static void create_client_handshake(unique_ptr<gosling_context>& ctx) {
     const auto started_callback = [](
         size_t handshake_handle) -> void {
         cout << "--- started_callback: { handshake_handle: " << handshake_handle << " }" <<endl;
     };
-    REQUIRE_NOTHROW(::gosling_identity_client_handshake_set_started_callback(
-        client_handshake.get(),
+    REQUIRE_NOTHROW(::gosling_context_set_identity_client_handshake_started_callback(
+        ctx.get(),
         started_callback,
         throw_on_error()));
 
@@ -48,8 +45,8 @@ static unique_ptr<gosling_identity_client_handshake> create_client_handshake() {
         return sizeof(challenge_response_bson);
     };
 
-    REQUIRE_NOTHROW(::gosling_identity_client_handshake_set_challenge_response_size_callback(
-        client_handshake.get(),
+    REQUIRE_NOTHROW(::gosling_context_set_identity_client_challenge_response_size_callback(
+        ctx.get(),
         challenge_response_size_callback,
         throw_on_error()));
 
@@ -71,24 +68,20 @@ static unique_ptr<gosling_identity_client_handshake> create_client_handshake() {
         std::copy(challenge_response_bson, challenge_response_bson + sizeof(challenge_response_bson), out_challenge_response_buffer);
     };
 
-    REQUIRE_NOTHROW(::gosling_identity_client_handshake_set_build_challenge_response_callback(
-        client_handshake.get(),
+    REQUIRE_NOTHROW(::gosling_context_set_identity_client_build_challenge_response_callback(
+        ctx.get(),
         build_challenge_response_callback,
         throw_on_error()));
 
-    return client_handshake;
 }
 
-static unique_ptr<gosling_identity_server_handshake> create_server_handshake() {
-    unique_ptr<gosling_identity_server_handshake> server_handshake;
-    REQUIRE_NOTHROW(::gosling_identity_server_handshake_init(out(server_handshake), throw_on_error()));
-
+static void create_server_handshake(unique_ptr<gosling_context>& ctx) {
     const auto started_callback = [](size_t handshake_handle) -> void {
         cout << "--- started_callback: { handshake_handle: " << handshake_handle << " }" <<endl;
     };
 
-    REQUIRE_NOTHROW(::gosling_identity_server_handshake_set_started_callback(
-        server_handshake.get(),
+    REQUIRE_NOTHROW(::gosling_context_set_identity_server_handshake_started_callback(
+        ctx.get(),
         started_callback,
         throw_on_error()));
 
@@ -106,8 +99,8 @@ static unique_ptr<gosling_identity_server_handshake> create_server_handshake() {
         return false;
     };
 
-    REQUIRE_NOTHROW(::gosling_identity_server_handshake_set_endpoint_supported_callback(
-        server_handshake.get(),
+    REQUIRE_NOTHROW(::gosling_context_set_identity_server_endpoint_supported_callback(
+        ctx.get(),
         endpoint_supported_callback,
         throw_on_error()));
 
@@ -119,8 +112,8 @@ static unique_ptr<gosling_identity_server_handshake> create_server_handshake() {
         return sizeof(challenge_bson);
     };
 
-    REQUIRE_NOTHROW(::gosling_identity_server_handshake_set_challenge_size_callack(
-        server_handshake.get(),
+    REQUIRE_NOTHROW(::gosling_context_set_identity_server_challenge_size_callack(
+        ctx.get(),
         challenge_size_callback,
         throw_on_error()));
 
@@ -139,8 +132,8 @@ static unique_ptr<gosling_identity_server_handshake> create_server_handshake() {
         std::copy(challenge_bson, challenge_bson + sizeof(challenge_bson), out_challenge_buffer);
     };
 
-    REQUIRE_NOTHROW(::gosling_identity_server_handshake_set_build_challenge_callback(
-        server_handshake.get(),
+    REQUIRE_NOTHROW(::gosling_context_set_identity_server_build_challenge_callback(
+        ctx.get(),
         build_challenge_callback,
         throw_on_error()));
 
@@ -171,8 +164,8 @@ static unique_ptr<gosling_identity_server_handshake> create_server_handshake() {
         return gosling_challenge_response_result_valid;
     };
 
-    REQUIRE_NOTHROW(::gosling_identity_server_handshake_set_verify_challenge_response_callback(
-        server_handshake.get(),
+    REQUIRE_NOTHROW(::gosling_context_set_identity_server_verify_challenge_response_callback(
+        ctx.get(),
         verify_challenge_response_callback,
         throw_on_error()));
 
@@ -182,12 +175,11 @@ static unique_ptr<gosling_identity_server_handshake> create_server_handshake() {
         return gosling_challenge_response_result_pending;
     };
 
-    REQUIRE_NOTHROW(::gosling_identity_server_handshake_set_poll_challenge_response_result_callback(
-        server_handshake.get(),
+    REQUIRE_NOTHROW(::gosling_context_set_identity_server_poll_challenge_response_result_callback(
+        ctx.get(),
         poll_challenge_response_result_callback,
         throw_on_error()));
 
-    return server_handshake;
 }
 
 // gosling demo
@@ -227,9 +219,10 @@ TEST_CASE("gosling_cpp_demo") {
         alice_private_key.get(), // identity private key
         nullptr, // blocked clients,
         0, // blocked clients count
-        create_client_handshake().get(), // client callbacks
-        create_server_handshake().get(), // server callbacks
         throw_on_error()));
+
+    create_client_handshake(alice_context); // client callbacks
+    create_server_handshake(alice_context); // server callbacks
 
     unique_ptr<gosling_context> pat_context;
     string_view pat_working_dir = "/tmp/gosling_context_test_pat";
@@ -242,9 +235,10 @@ TEST_CASE("gosling_cpp_demo") {
         alice_private_key.get(), // identity private key
         nullptr, // blocked clients,
         0, // blocked clients count
-        create_client_handshake().get(), // client callbacks
-        create_server_handshake().get(), // server callbacks
         throw_on_error()));
+
+    create_client_handshake(pat_context); // client callbacks
+    create_server_handshake(pat_context); // server callbacks
 
     // bootstrap alice
     static bool alice_bootstrap_complete = false;
