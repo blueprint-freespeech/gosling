@@ -60,7 +60,7 @@ One could also imagine applications which forego using the **identity server** e
 
 **Nodes** communicate with each other using a BSON-based RPC protocol[^5]. As described above, each **node** has two server components: an **identity server** and at least one **endpoint server**.
 
-A **client** initially connects to an **identity server** to complete the identity handshake. The purpose of this handshake is to prove to the identity server that the connecting client controls all of the keys they claim to, and (if successful) to exchange credentials the **client** needs to access a **identity server's** associated **endpoint server**.
+A **client** initially connects to an **identity server** to complete the identity handshake. The purpose of this handshake is to prove to the **identity server** that the connecting **client** controls all of the keys they claim to, and (if successful) to exchange credentials the **client** needs to access a **identity server's** associated **endpoint server**.
 
 After a **client** connects to and successfully authenticates with an **endpoint server**, we exit the Gosling handshake state machine and the underlying TCP stream is handed off to the endpoint application.
 
