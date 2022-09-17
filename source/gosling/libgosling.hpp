@@ -8,6 +8,9 @@
 // gosling header
 #include <libgosling.h>
 
+// we need to support client and server handshake handles being pointers in disguise
+static_assert(sizeof(size_t) == sizeof(uintptr_t));
+
 namespace gosling {
 
     // Converts gosling_error_t** C style error handling to exceptions

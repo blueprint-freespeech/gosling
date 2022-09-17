@@ -714,33 +714,40 @@ pub extern "C" fn gosling_string_is_valid_v3_onion_service_id(
     })
 }
 
-// shared between client and server handshakes to avoid accidental collisions
-lazy_static! {
-    static ref NEXT_HANDSHAKE_HANDLE: AtomicUsize = Default::default();
-}
-
 #[derive(Default)]
 pub struct NativeIdentityClientHandshake {
-    handshake_handle: usize,
-    started_callback: Option<GoslingIdentityClientHandshakeStartedCallback>,
+    handshake_handle: Option<usize>,
+    init_callback: Option<GoslingIdentityClientHandshakeInitCallback>,
+    free_callback: Option<GoslingIdentityClientHandshakeFreeCallback>,
     challenge_response_size_callback: Option<GoslingIdentityClientHandshakeChallengeResponseSizeCallback>,
     build_challenge_response_callback: Option<GoslingIdentityClientHandshakeBuildChallengeResponseCallback>,
 }
 
 impl Clone for NativeIdentityClientHandshake {
     fn clone(&self) -> Self {
-        // needs to dupicate the callbacks of the prototype handshake, and invoke the
-        // started_callback with a new unique handle
-        let handshake_handle = NEXT_HANDSHAKE_HANDLE.fetch_add(1, Ordering::Relaxed);
-        if let Some(started_callback) = self.started_callback {
-            started_callback(handshake_handle);
-        }
+
+        let handshake_handle = match self.init_callback {
+            Some(init_callback) => Some(init_callback()),
+            None => None,
+        };
 
         Self{
             handshake_handle,
-            started_callback: self.started_callback.clone(),
+            init_callback: self.init_callback.clone(),
+            free_callback: self.free_callback.clone(),
             challenge_response_size_callback: self.challenge_response_size_callback.clone(),
             build_challenge_response_callback: self.build_challenge_response_callback.clone(),
+        }
+    }
+}
+
+impl Drop for NativeIdentityClientHandshake {
+    fn drop(&mut self) {
+        if let Some(free_callback) = self.free_callback {
+            match self.handshake_handle {
+                Some(handle) => free_callback(handle),
+                None => panic!("NativeIdentityClientHandshake::drop(): client handle free callback was provided but client handle init callback was not"),
+            }
         }
     }
 }
@@ -749,49 +756,56 @@ impl IdentityClientHandshake for NativeIdentityClientHandshake {
     fn build_challenge_response(&self, endpoint: &str, challenge: &bson::document::Document) -> bson::document::Document {
 
         let endpoint0 = CString::new(endpoint).unwrap();
-        let response_size = match self.challenge_response_size_callback {
+        match self.challenge_response_size_callback {
             Some(challenge_response_size_callback) => {
-                challenge_response_size_callback(self.handshake_handle, endpoint0.as_ptr(), endpoint.len())
-            },
-            None => 0,
-        };
+                let handshake_handle = match self.handshake_handle {
+                    Some(handle) => &handle as *const usize,
+                    None => ptr::null_mut()
+                };
 
-        if response_size > 0 {
-            if let Some(build_challenge_response_callback) = self.build_challenge_response_callback {
-                // buffer for response to be written
-                let mut response_buffer = vec![0u8; response_size];
+                let response_size = challenge_response_size_callback(handshake_handle, endpoint0.as_ptr(), endpoint.len());
 
-                // challenge to bytes for native callback
-                let mut challenge_buffer: Vec<u8> = Default::default();
-                challenge.to_writer(&mut challenge_buffer).unwrap();
+                if response_size > 0 {
+                    match self.build_challenge_response_callback {
+                            Some(build_challenge_response_callback) => {
+                            // buffer for response to be written
+                            let mut response_buffer = vec![0u8; response_size];
 
-                // build response document via the response callback
-                build_challenge_response_callback(
-                    self.handshake_handle,
-                    endpoint0.as_ptr(),
-                    endpoint.len(),
-                    challenge_buffer.as_ptr(),
-                    challenge_buffer.len(),
-                    response_buffer.as_mut_ptr(),
-                    response_buffer.len());
+                            // challenge to bytes for native callback
+                            let mut challenge_buffer: Vec<u8> = Default::default();
+                            challenge.to_writer(&mut challenge_buffer).unwrap();
 
-                match bson::document::Document::from_reader(Cursor::new(response_buffer)) {
-                    Ok(response) => response,
-                    Err(_) => panic!("NativeIdentityClientHandshake::build_challenge_response(): build_challenge_response_callback returned invalid bson document"),
+                            // build response document via the response callback
+                            build_challenge_response_callback(
+                                handshake_handle,
+                                endpoint0.as_ptr(),
+                                endpoint.len(),
+                                challenge_buffer.as_ptr(),
+                                challenge_buffer.len(),
+                                response_buffer.as_mut_ptr(),
+                                response_buffer.len());
+
+                            match bson::document::Document::from_reader(Cursor::new(response_buffer)) {
+                                Ok(response) => response,
+                                Err(_) => panic!("NativeIdentityClientHandshake::build_challenge_response(): build_challenge_response_callback returned invalid bson document"),
+                            }
+                        },
+                        None => panic!("NativeIdentityClientHandshake::build_challenge_response(): challenge_response_size callback was provided but build_challenge_response_callback was not provided"),
+                    }
+                } else {
+                    Default::default()
                 }
-            } else {
-                Default::default()
-            }
-        } else {
-            Default::default()
+            },
+            None => Default::default(),
         }
     }
 }
 
 #[derive(Default)]
 pub struct NativeIdentityServerHandshake {
-    handshake_handle: usize,
-    started_callback: Option<GoslingIdentityServerHandshakeStartedCallback>,
+    handshake_handle: Option<usize>,
+    init_callback: Option<GoslingIdentityServerHandshakeInitCallback>,
+    free_callback: Option<GoslingIdentityServerHandshakeFreeCallback>,
     endpoint_supported_callback: Option<GoslingIdentityServerHandshakeEndpointSupportedCallback>,
     challenge_size_callack: Option<GoslingIdentityServerHandshakeChallengeSizeCallback>,
     build_challenge_callback: Option<GoslingIdentityServerHandshakeBuildChallengeCallback>,
@@ -801,16 +815,15 @@ pub struct NativeIdentityServerHandshake {
 
 impl Clone for NativeIdentityServerHandshake {
     fn clone(&self) -> Self {
-        // needs to duplicate the callbacks of the prototype handshake, and invoke the
-        // started_callback with a new unique handle
-        let handshake_handle = NEXT_HANDSHAKE_HANDLE.fetch_add(1, Ordering::Relaxed);
-        if let Some(started_callback) = self.started_callback {
-            started_callback(handshake_handle);
-        }
+        let handshake_handle = match self.init_callback {
+            Some(init_callback) => Some(init_callback()),
+            None => None,
+        };
 
         Self{
             handshake_handle,
-            started_callback: self.started_callback.clone(),
+            init_callback: self.init_callback.clone(),
+            free_callback: self.free_callback.clone(),
             endpoint_supported_callback: self.endpoint_supported_callback.clone(),
             challenge_size_callack: self.challenge_size_callack.clone(),
             build_challenge_callback: self.build_challenge_callback.clone(),
@@ -820,14 +833,30 @@ impl Clone for NativeIdentityServerHandshake {
     }
 }
 
+impl Drop for NativeIdentityServerHandshake {
+    fn drop(&mut self) {
+        if let Some(free_callback) = self.free_callback {
+            match self.handshake_handle {
+                Some(handle) => free_callback(handle),
+                None => panic!("NativeIdentityServerHandshake::drop(): server handle free callback was provided but server handle init callback was not"),
+            }
+        }
+    }
+}
+
 impl IdentityServerHandshake for NativeIdentityServerHandshake {
     fn endpoint_supported(&mut self, endpoint: &str) -> bool {
+        let handshake_handle = match self.handshake_handle {
+            Some(handshake_handle) => &handshake_handle as *const usize,
+            None => ptr::null_mut(),
+        };
+
         // endpoint to cstring
         let endpoint0 = CString::new(endpoint).unwrap();
 
         match self.endpoint_supported_callback {
             Some(endpoint_supported_callback) => endpoint_supported_callback(
-                self.handshake_handle,
+                handshake_handle,
                 endpoint0.as_ptr(),
                 endpoint.len()),
             None => false
@@ -835,12 +864,17 @@ impl IdentityServerHandshake for NativeIdentityServerHandshake {
     }
 
     fn build_endpoint_challenge(&mut self, endpoint: &str) -> Option<bson::document::Document> {
+        let handshake_handle = match self.handshake_handle {
+            Some(handshake_handle) => &handshake_handle as *const usize,
+            None => ptr::null_mut(),
+        };
+
         // endpoint to cstring
         let endpoint0 = CString::new(endpoint).unwrap();
 
         let challenge_size = match self.challenge_size_callack {
             Some(challenge_size_callack) => challenge_size_callack(
-                self.handshake_handle,
+                handshake_handle,
                 endpoint0.as_ptr(),
                 endpoint.len()),
             None => 0,
@@ -850,7 +884,7 @@ impl IdentityServerHandshake for NativeIdentityServerHandshake {
             if let Some(build_challenge_callback) = self.build_challenge_callback {
                 let mut challenge_buffer = vec![0u8; challenge_size];
                 build_challenge_callback(
-                    self.handshake_handle,
+                    handshake_handle,
                     endpoint0.as_ptr(),
                     endpoint.len(),
                     challenge_buffer.as_mut_ptr(),
@@ -872,6 +906,11 @@ impl IdentityServerHandshake for NativeIdentityServerHandshake {
                                  endpoint: &str,
                                  challenge: bson::document::Document,
                                  challenge_response: bson::document::Document) -> Option<bool> {
+        let handshake_handle = match self.handshake_handle {
+            Some(handshake_handle) => &handshake_handle as *const usize,
+            None => ptr::null_mut(),
+        };
+
         // epdoint to cstring
         let endpoint0 = CString::new(endpoint).unwrap();
 
@@ -886,7 +925,7 @@ impl IdentityServerHandshake for NativeIdentityServerHandshake {
         // get challenge response verification result
         let challenge_response_result = match self.verify_challenge_response_callback {
             Some(verify_challenge_response_callback) => verify_challenge_response_callback(
-                self.handshake_handle,
+                handshake_handle,
                 endpoint0.as_ptr(),
                 endpoint.len(),
                 challenge_buffer.as_ptr(),
@@ -907,9 +946,14 @@ impl IdentityServerHandshake for NativeIdentityServerHandshake {
     }
 
     fn poll_result(&mut self) -> Option<IdentityHandshakeResult> {
+        let handshake_handle = match self.handshake_handle {
+            Some(handshake_handle) => &handshake_handle as *const usize,
+            None => ptr::null_mut(),
+        };
+
         // poll for verification result
         let challenge_response_result = match self.poll_challenge_response_result_callback {
-            Some(poll_challenge_response_result_callback) => poll_challenge_response_result_callback(self.handshake_handle),
+            Some(poll_challenge_response_result_callback) => poll_challenge_response_result_callback(handshake_handle),
             None => GoslingChallengeResponseResult::Pending,
         };
 
@@ -924,22 +968,18 @@ impl IdentityServerHandshake for NativeIdentityServerHandshake {
     }
 }
 
-// Initialize a gosling context.
-//
-// @param out_context : returned initialied gosling context
-// @param tor_working_directory : the file system path to store tor's data
-// @param tor_working_directory_length : the length of tork_working_directory not including any null terminator
-// @param identity_port : the tor virtual port the identity server listens on
-// @param endpoint_port : the tor virtual port endpoint servers listen on
-// @param identity_private_key : the e25519 private key used to start th identity server's onion service
-// @param blocked_clients : an array of service ids which will always fail to succesfully complete the
-//  identity handshake
-// @param blocked_clients_count : the number of service ids in the blocked_clients array
-// @param client_handshake : a gosling_identity_client_handshake object which defines the client side of the
-//  identity handshake
-// @param server_handshake : a gosling_identity_server_handshake object which defines the server side of the
-//  identity handshake
-// @param error : filled on error
+/// Initialize a gosling context.
+///
+/// @param out_context : returned initialied gosling context
+/// @param tor_working_directory : the file system path to store tor's data
+/// @param tor_working_directory_length : the length of tork_working_directory not including any null terminator
+/// @param identity_port : the tor virtual port the identity server listens on
+/// @param endpoint_port : the tor virtual port endpoint servers listen on
+/// @param identity_private_key : the e25519 private key used to start th identity server's onion service
+/// @param blocked_clients : an array of service ids which will always fail to succesfully complete the
+///  identity handshake
+/// @param blocked_clients_count : the number of service ids in the blocked_clients array
+/// @param error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_context_init(
     // out context
@@ -1014,10 +1054,10 @@ pub extern "C" fn gosling_context_init(
     });
 }
 
-// Connect a gosling_context to the tor network
-//
-// @param context : the gosling context object to connect to the tor network
-// @param error : filled on error
+/// Connect a gosling_context to the tor network
+///
+/// @param context : the gosling context object to connect to the tor network
+/// @param error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_context_bootstrap_tor(
     context: *mut GoslingContext,
@@ -1038,10 +1078,10 @@ pub extern "C" fn gosling_context_bootstrap_tor(
 }
 
 
-// Start the identity server so that clients may request endpoints
-//
-// @param context : the gosling context whose identity server to start
-// @param error : filled on error
+/// Start the identity server so that clients may request endpoints
+///
+/// @param context : the gosling context whose identity server to start
+/// @param error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_context_start_identity_server(
     context: *mut GoslingContext,
@@ -1060,10 +1100,10 @@ pub extern "C" fn gosling_context_start_identity_server(
     });
 }
 
-// Stop the identity server so clients can no longer request endpoints
-//
-// @param context : the gosling context whose identity server to stop
-// @param error : filled on error
+/// Stop the identity server so clients can no longer request endpoints
+///
+/// @param context : the gosling context whose identity server to stop
+/// @param error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_context_stop_identity_server(
     context: *mut GoslingContext,
@@ -1082,17 +1122,17 @@ pub extern "C" fn gosling_context_stop_identity_server(
     });
 }
 
-// Start an endpoint server so the confirmed contact may connect
-//
-// @param context : the gosling context with the given endpoint to start
-// @param endpoint_private_key : the ed25519 private key needed to start the endpoint
-//  onion service
-// @param endpoint_name : the ascii-encoded name of the endpoint server
-// @param endpoint_name_length : the number of characters in the endpoint name not including any
-//  null terminator
-// @param client_identity : the v3 onion service id of the gosling client associated with this endpoint
-// @param client_auth_public_key : the x25519 public key used to encrypt the onion service descriptor
-// @param error : filled on error
+/// Start an endpoint server so the confirmed contact may connect
+///
+/// @param context : the gosling context with the given endpoint to start
+/// @param endpoint_private_key : the ed25519 private key needed to start the endpoint
+///  onion service
+/// @param endpoint_name : the ascii-encoded name of the endpoint server
+/// @param endpoint_name_length : the number of characters in the endpoint name not including any
+///  null terminator
+/// @param client_identity : the v3 onion service id of the gosling client associated with this endpoint
+/// @param client_auth_public_key : the x25519 public key used to encrypt the onion service descriptor
+/// @param error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_context_start_endpoint_server(
     context: *mut GoslingContext,
@@ -1151,11 +1191,11 @@ pub extern "C" fn gosling_context_start_endpoint_server(
 
 }
 
-// Stops an endpoint server
-//
-// @param context : the gosling context associated with the endpoint server
-// @param endpoint_private_key : the ed25519 private key associated with the endpoint server to stop
-// @param error : filled on erro
+/// Stops an endpoint server
+///
+/// @param context : the gosling context associated with the endpoint server
+/// @param endpoint_private_key : the ed25519 private key associated with the endpoint server to stop
+/// @param error : filled on erro
 #[no_mangle]
 pub extern "C" fn gosling_context_stop_endpoint_server(
     context: *mut GoslingContext,
@@ -1186,14 +1226,14 @@ pub extern "C" fn gosling_context_stop_endpoint_server(
     });
 }
 
-// Connect to and begin a handshake to request an endpoint forom the given identity server
-//
-// @param context : the context to request an endpoint server for
-// @param identity_service_id : the service id of the identity server we want ot request an endpoint server
-//  from
-// @param endpoint_name : the name of the endpoint server to request
-// @param endpoint_name_length : the length of the endpoint server name not including any null terminator
-// @param error : filled on error
+/// Connect to and begin a handshake to request an endpoint forom the given identity server
+///
+/// @param context : the context to request an endpoint server for
+/// @param identity_service_id : the service id of the identity server we want ot request an endpoint server
+///  from
+/// @param endpoint_name : the name of the endpoint server to request
+/// @param endpoint_name_length : the length of the endpoint server name not including any null terminator
+/// @param error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_context_request_remote_endpoint(
     context: *mut GoslingContext,
@@ -1231,14 +1271,14 @@ pub extern "C" fn gosling_context_request_remote_endpoint(
     });
 }
 
-// Try to open a channel to the given endpoint
-//
-// @param context : the context which will be opening the channel
-// @param endpoint_service_id : the endpoint server to open a channel to
-// @param client_auth_private_key : the x25519 clienth authorization key needed to decrypt the endpoint server's
-//  onion service descriptor
-// @param channel_name : the ascii-encoded name of the channel to open
-// @param channel_name_length : the length of the channel name not including any null-terminator
+/// Try to open a channel to the given endpoint
+///
+/// @param context : the context which will be opening the channel
+/// @param endpoint_service_id : the endpoint server to open a channel to
+/// @param client_auth_private_key : the x25519 clienth authorization key needed to decrypt the endpoint server's
+///  onion service descriptor
+/// @param channel_name : the ascii-encoded name of the channel to open
+/// @param channel_name_length : the length of the channel name not including any null-terminator
 #[no_mangle]
 pub extern "C" fn gosling_context_open_endpoint_channel(
     context: *mut GoslingContext,
@@ -1287,10 +1327,10 @@ pub extern "C" fn gosling_context_open_endpoint_channel(
 }
 
 
-// Update the internal gosling context state and Process event callbacks
-//
-// @param context : the context object we are updating
-// @param error : filled on error
+/// Update the internal gosling context state and process event callbacks
+///
+/// @param context : the context object we are updating
+/// @param error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_context_poll_events(
     context: *mut GoslingContext,
@@ -1523,27 +1563,39 @@ pub type GoslingEndpointServerRequestCompletedCallback = extern fn (
     client_service_id: *const GoslingV3OnionServiceId,
     client_auth_public_key: *const GoslingX25519PublicKey) -> ();
 
-/// The function pointer type for the client handshake started callback. This
-/// callback is called when a client starts a handshake with an identity server.
+/// The function pointer type for the client handshake init callback. This callback
+/// is called when a clielnt starts a handshake with an identity server. The user
+/// must return a handle to some resource which will be passed as the first argument
+/// to all subsequent client handshake callbacks. On handshake completion, this
+/// handle will be released with the user-provided client handshake free callback.
 ///
-/// @param handshake_handle : a unique identifier for callbacks associated with this
-///  ongoing client handshake
-pub type GoslingIdentityClientHandshakeStartedCallback = extern fn(
+/// @return : a user defined client resource handle for use with the client handshake
+///  callbacks
+pub type GoslingIdentityClientHandshakeInitCallback = extern "C" fn() -> usize;
+
+/// The function pointer type for the clilent handshake free callback. This callback
+/// is called when the client hand shake completes. The user may release any resources
+/// acquired during init in the client handshake free callback.
+///
+/// @param server_handshake : a clilent handshake handle as returned by the client
+///  handshake init callback
+pub type GoslingIdentityClientHandshakeFreeCallback = extern fn(
     handshake_handle: usize) -> ();
 
 /// The function pointer type for the client handshake challenge response size
 /// callback. This callback is called when a client needs to know how much memory
 /// to allocate for a challenge response.
 ///
-/// @param handshake_handle : the client handshake session this callback invocation
-///  is associated with
+/// @param handshake_handle : pointer to the client handshake handle this callback
+///  invocation is associated with; null if no client handshake init callback was
+///  provided
 /// @param endpoint_name : a null terminated ASCII string containing the name of the
 ///  enpdoint being requested
 /// @param endpoint_name_length : the number of chars in endpoint_name, not
 ///  including the null terminator
 /// @return : the number of bytes required to store the challenge response object
 pub type GoslingIdentityClientHandshakeChallengeResponseSizeCallback = extern fn(
-    handshake_handle: usize,
+    handshake_handle: *const usize,
     endpoint_name: *const c_char,
     endpoint_name_length: usize) -> usize;
 
@@ -1551,8 +1603,9 @@ pub type GoslingIdentityClientHandshakeChallengeResponseSizeCallback = extern fn
 /// callback. This callback is called when a client is ready to build a challenge
 /// response object.
 ///
-/// @param handshake_handle : the client handshake session this callback invocation
-///  is associated with
+/// @param handshake_handle : pointer to the client handshake handle this callback
+///  invocation is associated with; null if no client handshake init callback was
+///  provided
 /// @param endpoint_name : a null terminated ASCII string containing the name of the
 ///  endpoint being requested
 /// @param endpoint_name_length : the number of chars in endpoint_name, not
@@ -1566,7 +1619,7 @@ pub type GoslingIdentityClientHandshakeChallengeResponseSizeCallback = extern fn
 /// @param challenge_response_buffer_size : the number of bytes allocated in
 ///  out_challenge_response_buffer
 pub type GoslingIdentityClientHandshakeBuildChallengeResponseCallback = extern fn(
-    handshake_handle: usize,
+    handshake_handle: *const usize,
     endpoint_name: *const c_char,
     endpoint_name_length: usize,
     challenge_buffer: *const u8,
@@ -1575,21 +1628,32 @@ pub type GoslingIdentityClientHandshakeBuildChallengeResponseCallback = extern f
     challenge_response_buffer_size: usize) -> ();
 
 
-
-/// The function pointer type for the server handshake started callback. This
-/// callback is called when a server starts a handshake with an identity client.
+/// The function pointer type for the server handshake init callback. This callback
+/// is called when a server starts a handshake with an identity client. The user
+/// must return a handle to some resource which will be passed as the first argument
+/// to all subsequent server handshake callbacks. On handshake completion, this
+/// handle will be released with the user-provided server handshake free callback.
 ///
-/// @param handshake_handle : a unique identifier for callbacks associted with this
-///  ongoing server handshake
-pub type GoslingIdentityServerHandshakeStartedCallback = extern "C" fn(
+/// @return : a user defined server resource handle for use with the server handshake
+///  callbacks
+pub type GoslingIdentityServerHandshakeInitCallback = extern "C" fn() -> usize;
+
+/// The function pointer type for the server handshake free callback. This callback
+/// is called when the server hand shake completes. The user may release any resources
+/// acquired during init in the server handshake free callback.
+///
+/// @param server_handshake : a server handshake handle as returned by the server
+///  handshake init callback
+pub type GoslingIdentityServerHandshakeFreeCallback = extern fn(
     handshake_handle: usize) -> ();
 
 /// The function pointer type of the server endpoint supported callback. This
 /// callback is called when the server needs to determine if the client's requested
 /// endpoint is supported.
 ///
-/// @param handshake_handle : the server handshake session this callback invocation
-///  is associated with
+/// @param handshake_handle : pointer to the server handshake handle this callback
+///  invocation is associated with; null if no server handshake init callback was
+///  provided
 /// @param endpoint_name : a null terminated ASCII string containing the name of the
 ///  endpoint being requested
 /// @param endpoint_name_length : the number of chars in endpoint_name, not
@@ -1597,7 +1661,7 @@ pub type GoslingIdentityServerHandshakeStartedCallback = extern "C" fn(
 /// @return : true if the server can handle requests for the requested endpoint,
 ///  false otherwise
 pub type GoslingIdentityServerHandshakeEndpointSupportedCallback = extern "C" fn(
-    handshake_handle: usize,
+    handshake_handle: *const usize,
     endpoint_name: *const c_char,
     endpoint_name_length: usize) -> bool;
 
@@ -1605,23 +1669,25 @@ pub type GoslingIdentityServerHandshakeEndpointSupportedCallback = extern "C" fn
 /// This callback is called when a server needs to know how much memory to allocate
 /// for a challenge.
 ///
-/// @param handshake_handle : the server handshake session this callback invocation
-///  is associated with
+/// @param handshake_handle : pointer to the server handshake handle this callback
+///  invocation is associated with; null if no server handshake init callback was
+///  provided
 /// @param endpoint_name : a null terminated ASCII string containing the name of the
 ///  endpoint being requested
 /// @param endpoint_name_length : the number of chars in endpoint_name, not
 ///  including the null terminator
 /// @return : the number of bytes required to store the challenge object
 pub type GoslingIdentityServerHandshakeChallengeSizeCallback = extern "C" fn(
-    handshake_handle: usize,
+    handshake_handle: *const usize,
     endpoint_name: *const c_char,
     endpoint_name_length: usize) -> usize;
 
 /// The function pointer type for the server handshake build challenge callback.
 /// This callback is called when a server needs to build a challenge object.
 ///
-/// @param handshake_handle : the server handshake session this callback invocation
-///  is associated with
+/// @param handshake_handle : pointer to the server handshake handle this callback
+///  invocation is associated with; null if no server handshake init callback was
+///  provided
 /// @param endpoint_name : a null terminated ASCII string containing the name of the
 ///  endpoint being requested
 /// @param endpoint_name_length : the number of chars in endpoint_name, not
@@ -1631,7 +1697,7 @@ pub type GoslingIdentityServerHandshakeChallengeSizeCallback = extern "C" fn(
 /// @param challenge_buffer_size : the number of bytes allocated in
 ///  out_challenge_buffer
 pub type GoslingIdentityServerHandshakeBuildChallengeCallback = extern "C" fn(
-    handshake_handle: usize,
+    handshake_handle: *const usize,
     endpoint_name: *const c_char,
     endpoint_name_length: usize,
     out_challenge_buffer: *mut u8,
@@ -1653,8 +1719,9 @@ pub type GoslingChallengeResponseResultT = GoslingChallengeResponseResult;
 /// callback. This callback is called when a server needs to verify a challenge
 /// response object.
 ///
-/// @param handshake_handle : the server handshake session this callback invocation
-///  is associated with
+/// @param handshake_handle : pointer to the server handshake handle this callback
+///  invocation is associated with; null if no server handshake init callback was
+///  provided
 /// @param endpoint_name : a null terminated ASCII string containing the name of the
 ///  endpoint being requested
 /// @param endpoint_name_length : the number of chars in endpoint_name, not
@@ -1668,7 +1735,7 @@ pub type GoslingChallengeResponseResultT = GoslingChallengeResponseResult;
 ///  challenge_response_buffer
 /// @return : the result of the challenge response verification
 pub type GoslingIdentityServerHandshakeVerifyChallengeResponseCallback = extern fn(
-    handshake_handle: usize,
+    handshake_handle: *const usize,
     endpoint_name: *const c_char,
     endpoint_name_length: usize,
     challenge_buffer: *const u8,
@@ -1680,11 +1747,12 @@ pub type GoslingIdentityServerHandshakeVerifyChallengeResponseCallback = extern 
 /// callbback. This callback is repeatedly called if the call to the registered server
 /// handshake verify challenge response callback returned gosling_challenge_response_result_pending.
 ///
-/// @param handshake_handle : the server handshake session this callback invocation
-///  is associated with
+/// @param handshake_handle : pointer to the server handshake handle this callback
+///  invocation is associated with; null if no server handshake init callback was
+///  provided
 /// @return : the result of the challenge response verification
 pub type GoslingIdentityServerHandshakePollChallengeResponseResultCallback = extern fn(
-    handshake_handle: usize) -> GoslingChallengeResponseResultT;
+    handshake_handle: *const usize) -> GoslingChallengeResponseResultT;
 
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 pub type GoslingEndpointClientChannelRequestCompletedCallback = extern fn(
@@ -1850,26 +1918,54 @@ pub extern "C" fn gosling_context_set_identity_server_published_callback(
     });
 }
 
-/// Sets the identity client handshake started callback
+/// Sets the identity client handshake init callback
 ///
 /// @param context : the context to register the callback to
 /// @param callback : the callback to register
 /// @param  error : filled on error
 #[no_mangle]
-pub extern "C" fn gosling_context_set_identity_client_handshake_started_callback(
+pub extern "C" fn gosling_context_set_identity_client_handshake_init_callback(
     context: *mut GoslingContext,
-    callback: GoslingIdentityClientHandshakeStartedCallback,
+    callback: GoslingIdentityClientHandshakeInitCallback,
     error: *mut *mut GoslingError) -> () {
     translate_failures((), error, || -> Result<()> {
         let mut context_tuple_registry = get_context_tuple_registry();
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_set_identity_client_handshake_started_callback(): context is invalid");
+                bail!("gosling_context_set_identity_client_handshake_init_callback(): context is invalid");
             }
         };
 
-        context.0.client_handshake_prototype.started_callback = if (callback as *const c_void).is_null() {
+        context.0.client_handshake_prototype.init_callback = if (callback as *const c_void).is_null() {
+            None
+        } else {
+            Some(callback)
+        };
+        Ok(())
+    });
+}
+
+/// Sets the identity client handshake free callback
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on error
+#[no_mangle]
+pub extern "C" fn gosling_context_set_identity_client_handshake_free_callback(
+    context: *mut GoslingContext,
+    callback: GoslingIdentityClientHandshakeFreeCallback,
+    error: *mut *mut GoslingError) -> () {
+    translate_failures((), error, || -> Result<()> {
+        let mut context_tuple_registry = get_context_tuple_registry();
+        let mut context = match context_tuple_registry.get_mut(context as usize) {
+            Some(context) => context,
+            None => {
+                bail!("gosling_context_set_identity_client_handshake_free_callback(): context is invalid");
+            }
+        };
+
+        context.0.client_handshake_prototype.free_callback = if (callback as *const c_void).is_null() {
             None
         } else {
             Some(callback)
@@ -1935,26 +2031,54 @@ pub extern "C" fn gosling_context_set_identity_client_build_challenge_response_c
     });
 }
 
-/// Sets the identity server handshake started callback
+/// Sets the identity server handshake init callback
 ///
 /// @param context : the context to register the callback to
 /// @param callback : the callback to register
 /// @param  error : filled on error
 #[no_mangle]
-pub extern "C" fn gosling_context_set_identity_server_handshake_started_callback(
+pub extern "C" fn gosling_context_set_identity_server_handshake_init_callback(
     context: *mut GoslingContext,
-    callback: GoslingIdentityServerHandshakeStartedCallback,
+    callback: GoslingIdentityServerHandshakeInitCallback,
     error: *mut *mut GoslingError) -> () {
     translate_failures((), error, || -> Result<()> {
         let mut context_tuple_registry = get_context_tuple_registry();
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_set_identity_server_handshake_started_callback(): context is invalid");
+                bail!("gosling_context_set_identity_server_handshake_init_callback(): context is invalid");
             }
         };
 
-        context.0.server_handshake_prototype.started_callback = if (callback as *const c_void).is_null() {
+        context.0.server_handshake_prototype.init_callback = if (callback as *const c_void).is_null() {
+            None
+        } else {
+            Some(callback)
+        };
+        Ok(())
+    });
+}
+
+/// Sets the identity server handshake free callback
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on error
+#[no_mangle]
+pub extern "C" fn gosling_context_set_identity_server_handshake_free_callback(
+    context: *mut GoslingContext,
+    callback: GoslingIdentityServerHandshakeFreeCallback,
+    error: *mut *mut GoslingError) -> () {
+    translate_failures((), error, || -> Result<()> {
+        let mut context_tuple_registry = get_context_tuple_registry();
+        let mut context = match context_tuple_registry.get_mut(context as usize) {
+            Some(context) => context,
+            None => {
+                bail!("gosling_context_set_identity_server_handshake_free_callback(): context is invalid");
+            }
+        };
+
+        context.0.server_handshake_prototype.free_callback = if (callback as *const c_void).is_null() {
             None
         } else {
             Some(callback)
