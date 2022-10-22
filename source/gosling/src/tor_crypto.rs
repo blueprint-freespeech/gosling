@@ -2,6 +2,7 @@ use crypto::digest::Digest;
 use crypto::sha1::Sha1;
 use crypto::sha3::Sha3;
 use data_encoding::{HEXUPPER, BASE32, BASE32_NOPAD, BASE64};
+use data_encoding_macro::new_encoding;
 use rand::RngCore;
 use rand::rngs::OsRng;
 use signature:: Verifier;
@@ -62,15 +63,11 @@ pub const X25519_PUBLIC_KEYBLOB_BASE32_LENGTH: usize = 52;
 /// The number of bytes needed to store bsae32 encoded x25519 public key as an ASCII c-string (including a null terminator)
 pub const X25519_PUBLIC_KEYBLOB_BASE32_SIZE: usize = X25519_PUBLIC_KEYBLOB_BASE32_LENGTH + 1;
 
-// decoder for lowercase base32 (BASE32 object is upper-case)
-lazy_static! {
-    static ref ONION_BASE32: data_encoding::Encoding = {
-        let mut spec = data_encoding::Specification::new();
-        spec.symbols.push_str("abcdefghijklmnopqrstuvwxyz234567");
-        spec.padding = Some('=');
-        spec.encoding().unwrap()
-    };
-}
+const ONION_BASE32: data_encoding::Encoding  = new_encoding!{
+    symbols: "abcdefghijklmnopqrstuvwxyz234567",
+    padding: '=',
+};
+
 
 const SHA1_BYTES: usize = 160/8;
 const S2K_RFC2440_SPECIFIER_LEN: usize = 9;
