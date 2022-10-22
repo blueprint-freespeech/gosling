@@ -117,6 +117,12 @@ namespace std {
     //
     // default_delete implementation for unique_ptr of various gosling types
     //
+    template<> class default_delete<gosling_library> {
+    public:
+        void operator()(gosling_library *val) {
+            gosling_library_free(val);
+        }
+    };
     template<> class default_delete<gosling_ed25519_private_key> {
     public:
         void operator()(gosling_ed25519_private_key *val) {

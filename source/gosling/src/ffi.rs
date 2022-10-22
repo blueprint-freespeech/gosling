@@ -179,6 +179,72 @@ fn translate_failures<R,F>(default: R, out_error: *mut *mut GoslingError, closur
     }
 }
 
+pub struct GoslingLibrary;
+static mut GOSLING_LIBRARY_INITED: bool = false;
+const GOSLING_LIBRARY_HANDLE: usize = {
+    // integer constant in the form 0x6000..5E (GOOOOOSE)
+    (0x60 << (std::mem::size_of::<usize>() - 1) * 8) + 0x5E
+};
+
+/// Initializes the Gosling library. This function must be called before using any of the
+/// other Gosling functions
+///
+/// @return: returns 0 on success
+#[no_mangle]
+pub extern "C" fn gosling_library_init(
+    out_library: *mut *mut GoslingLibrary,
+    error: *mut *mut GoslingError) -> () {
+
+    translate_failures((), error, || -> Result<()> {
+        if out_library.is_null() {
+            bail!("gosling_library_init(): out_library must not be null");
+        }
+
+        unsafe {
+            if GOSLING_LIBRARY_INITED {
+                // error handling
+                bail!("gosling_library_init(): gosling is already initialized");
+            } else {
+                init_error_registry();
+
+                init_ed25519_private_key_registry();
+                init_x25519_private_key_registry();
+                init_x25519_public_key_registry();
+                init_v3_onion_service_id_registry();
+
+                init_context_tuple_registry();
+
+                GOSLING_LIBRARY_INITED = true;
+
+                *out_library = GOSLING_LIBRARY_HANDLE as *mut GoslingLibrary;
+            }
+        }
+
+        Ok(())
+    })
+}
+
+/// Frees all resources associated with the Gosling library. No-op if the library
+/// is not initialized or if it has already been freed
+#[no_mangle]
+pub extern "C" fn gosling_library_free(library: *mut GoslingLibrary) -> () {
+
+    unsafe {
+        if GOSLING_LIBRARY_INITED {
+            drop_error_registry();
+
+            drop_ed25519_private_key_registry();
+            drop_x25519_private_key_registry();
+            drop_x25519_public_key_registry();
+            drop_v3_onion_service_id_registry();
+
+            drop_context_tuple_registry();
+
+            GOSLING_LIBRARY_INITED = false;
+        }
+    }
+}
+
 /// Creation method for securely generating a new gosling_ed25510_private_key
 ///
 /// @param out_private_key : returned generated ed25519 private key

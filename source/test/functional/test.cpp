@@ -201,6 +201,10 @@ static void create_server_handshake(unique_ptr<gosling_context>& ctx) {
 
 // gosling demo
 TEST_CASE("gosling_cpp_demo") {
+    // init gosling library statically so gosling objects with static lifetime destruct
+    // in the right order
+    static unique_ptr<gosling_library> library;
+    REQUIRE_NOTHROW(::gosling_library_init(out(library), throw_on_error()));
 
     // generate private keys
     unique_ptr<gosling_ed25519_private_key> alice_private_key;

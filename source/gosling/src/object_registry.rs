@@ -71,14 +71,30 @@ impl<T> ObjectRegistry<T> where T : HasByteTypeId{
 macro_rules! define_registry {
     ($type:ty, $id:expr) => {
         paste::paste! {
-            // statically allocates our object registry
-            lazy_static! {
-                static ref [<$type:snake:upper _REGISTRY>]: Mutex<ObjectRegistry<$type>> = Mutex::new(ObjectRegistry::new());
+            static mut [<$type:snake:upper _REGISTRY>]: Option<Mutex<ObjectRegistry<$type>>> = None;
+
+            pub fn [<init_ $type:snake _registry>]() -> () {
+                unsafe {
+                    if let None = [<$type:snake:upper _REGISTRY>] {
+                        [<$type:snake:upper _REGISTRY>] = Some(Mutex::new(ObjectRegistry::new()));
+                    }
+                }
+            }
+
+            pub fn [<drop_ $type:snake _registry>]() -> () {
+                unsafe {
+                    [<$type:snake:upper _REGISTRY>] = None;
+                }
             }
 
             // get a mutex guard wrapping the object registry
             pub fn [<get_ $type:snake _registry>]<'a>() -> std::sync::MutexGuard<'a, ObjectRegistry<$type>> {
-                [<$type:snake:upper _REGISTRY>].lock().unwrap()
+                unsafe {
+                    if let Some(registry) = &[<$type:snake:upper _REGISTRY>] {
+                        return registry.lock().unwrap();
+                    }
+                    panic!();
+                }
             }
 
             static_assertions::const_assert!($id as usize <= 0xFF);

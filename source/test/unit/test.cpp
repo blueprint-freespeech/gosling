@@ -4,6 +4,9 @@ using namespace gosling;
 // ed25519 Private Key
 
 TEST_CASE("gosling_ed25519_private_key_generate") {
+    unique_ptr<gosling_library> library;
+    REQUIRE_NOTHROW(::gosling_library_init(out(library), throw_on_error()));
+
     unique_ptr<gosling_ed25519_private_key> privateKeyAlice;
     unique_ptr<gosling_ed25519_private_key> privateKeyPat;
 
@@ -31,6 +34,9 @@ TEST_CASE("gosling_ed25519_private_key_generate") {
 }
 
 TEST_CASE("gosling_ed25519_private_key_from_keyblob") {
+    unique_ptr<gosling_library> library;
+    REQUIRE_NOTHROW(::gosling_library_init(out(library), throw_on_error()));
+
     unique_ptr<gosling_ed25519_private_key> privateKey;
     const std::string keyBlob = "ED25519-V3:YE3GZtDmc+izGijWKgeVRabbXqK456JKKGONDBhV+kPBVKa2mHVQqnRTVuFXe3inU3YW6qvc7glYEwe9rK0LhQ==";
     const std::string invalidKeyBlob = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -69,6 +75,9 @@ TEST_CASE("gosling_ed25519_private_key_from_keyblob") {
 }
 
 TEST_CASE("gosling_ed25519_private_key_to_keyblob") {
+    unique_ptr<gosling_library> library;
+    REQUIRE_NOTHROW(::gosling_library_init(out(library), throw_on_error()));
+
     unique_ptr<gosling_ed25519_private_key> privateKey;
     const std::string keyBlob = "ED25519-V3:YE3GZtDmc+izGijWKgeVRabbXqK456JKKGONDBhV+kPBVKa2mHVQqnRTVuFXe3inU3YW6qvc7glYEwe9rK0LhQ==";
     char keyBlobRaw[ED25519_PRIVATE_KEYBLOB_SIZE] = {0};
@@ -98,6 +107,9 @@ TEST_CASE("gosling_ed25519_private_key_to_keyblob") {
 // x25519 Private Key
 
 TEST_CASE("gosling_x25519_private_key_from_base64") {
+    unique_ptr<gosling_library> library;
+    REQUIRE_NOTHROW(::gosling_library_init(out(library), throw_on_error()));
+
     unique_ptr<gosling_x25519_private_key> privateKey;
     const std::string base64 = "0GeSReJXdNcgvWRQdnDXhJGdu5UiwP2fefgT93/oqn0=";
     const std::string invalidBase64 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -136,6 +148,9 @@ TEST_CASE("gosling_x25519_private_key_from_base64") {
 }
 
 TEST_CASE("gosling_x25519_private_key_to_base64") {
+    unique_ptr<gosling_library> library;
+    REQUIRE_NOTHROW(::gosling_library_init(out(library), throw_on_error()));
+
     unique_ptr<gosling_x25519_private_key> privateKey;
     const std::string base64 = "0GeSReJXdNcgvWRQdnDXhJGdu5UiwP2fefgT93/oqn0=";
     char base64Raw[X25519_PRIVATE_KEYBLOB_BASE64_SIZE] = {0};
@@ -165,6 +180,8 @@ TEST_CASE("gosling_x25519_private_key_to_base64") {
 // x25519 Public Key
 
 TEST_CASE("gosling_x25519_public_key_from_base32") {
+    unique_ptr<gosling_library> library;
+    REQUIRE_NOTHROW(::gosling_library_init(out(library), throw_on_error()));
 
     unique_ptr<gosling_x25519_public_key> publicKey;
     const std::string base32 = "AEXCBCEDJ5KU34YGGMZ7PVHVDEA7D7YB7VQAPJTMTZGRJLN3JASA";
@@ -204,6 +221,8 @@ TEST_CASE("gosling_x25519_public_key_from_base32") {
 }
 
 TEST_CASE("gosling_x25519_public_key_to_base32") {
+    unique_ptr<gosling_library> library;
+    REQUIRE_NOTHROW(::gosling_library_init(out(library), throw_on_error()));
 
     unique_ptr<gosling_x25519_public_key> publicKey;
     const std::string base32 = "AEXCBCEDJ5KU34YGGMZ7PVHVDEA7D7YB7VQAPJTMTZGRJLN3JASA";
@@ -234,6 +253,8 @@ TEST_CASE("gosling_x25519_public_key_to_base32") {
 // v3 onion service id
 
 TEST_CASE("gosling_v3_onion_service_id_from_string") {
+    unique_ptr<gosling_library> library;
+    REQUIRE_NOTHROW(::gosling_library_init(out(library), throw_on_error()));
 
     unique_ptr<gosling_v3_onion_service_id> serviceId;
     const std::string serviceIdString = "6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd";
@@ -273,6 +294,9 @@ TEST_CASE("gosling_v3_onion_service_id_from_string") {
 }
 
 TEST_CASE("gosling_v3_onion_service_id_from_ed25519_private_key") {
+    unique_ptr<gosling_library> library;
+    REQUIRE_NOTHROW(::gosling_library_init(out(library), throw_on_error()));
+
     const std::string privateKeyBlob = "ED25519-V3:YE3GZtDmc+izGijWKgeVRabbXqK456JKKGONDBhV+kPBVKa2mHVQqnRTVuFXe3inU3YW6qvc7glYEwe9rK0LhQ==";
     const std::string serviceIdString = "6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd";
 
@@ -295,6 +319,8 @@ TEST_CASE("gosling_v3_onion_service_id_from_ed25519_private_key") {
 }
 
 TEST_CASE("gosling_v3_onion_service_id_to_string") {
+    unique_ptr<gosling_library> library;
+    REQUIRE_NOTHROW(::gosling_library_init(out(library), throw_on_error()));
 
     unique_ptr<gosling_v3_onion_service_id> serviceId;
     const std::string serviceIdString = "6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd";

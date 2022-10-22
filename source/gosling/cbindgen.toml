@@ -50,6 +50,7 @@ prefix_with_name = true
 "RawFd" = "int"
 
 # structs
+"GoslingLibrary" = "gosling_library"
 "GoslingError" = "gosling_error"
 "GoslingEd25519PrivateKey" = "gosling_ed25519_private_key"
 "GoslingEd25519PublicKey" = "gosling_ed25519_public_key"
