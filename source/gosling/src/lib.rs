@@ -13,6 +13,7 @@
 #![allow(clippy::neg_cmp_op_on_partial_ord)]
 #![allow(clippy::nonminimal_bool)]
 
+mod error;
 mod ffi;
 mod tor_crypto;
 mod object_registry;

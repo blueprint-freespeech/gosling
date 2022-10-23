@@ -5,7 +5,6 @@ use std::io::{Cursor, ErrorKind};
 use std::option::Option;
 
 // extern crates
-use anyhow::{bail, ensure, Result};
 use bson::document::{ValueAccessError};
 use bson::doc;
 #[cfg(test)]
@@ -14,6 +13,8 @@ use crypto::sha3::Sha3;
 use crypto::digest::Digest;
 
 // internal crates
+use crate::*;
+use crate::error::Result;
 #[cfg(test)]
 use crate::test_utils::MemoryStream;
 
@@ -519,7 +520,7 @@ impl Session {
                             self.pending_data = cursor.into_inner();
                             self.pending_data.clear();
 
-                            Ok(Some(Message::try_from(bson)?))
+                            Ok(Some(resolve!(Message::try_from(bson))))
                         } else {
                             bail!("failed to deserialize bson");
                             // handle error
@@ -629,11 +630,11 @@ impl Session {
     fn send_message_impl(&mut self, message: &mut bson::document::Document) -> Result<()> {
 
         self.message_write_buffer.clear();
-        message.to_writer(&mut self.message_write_buffer)?;
+        resolve!(message.to_writer(&mut self.message_write_buffer));
 
         if self.message_write_buffer.len() > DEFAULT_MAX_MESSAGE_SIZE {
             // if we can't split a message anymore then we have a problem
-            let sections = message.get_array_mut("sections")?;
+            let sections = resolve!(message.get_array_mut("sections"));
             ensure!(sections.len() > 1);
 
             let mut right = doc!{
@@ -645,7 +646,7 @@ impl Session {
             self.send_message_impl(left)?;
             self.send_message_impl(&mut right)?;
         } else {
-            self.writer.write_all(&self.message_write_buffer)?;
+            resolve!(self.writer.write_all(&self.message_write_buffer));
         }
         Ok(())
     }

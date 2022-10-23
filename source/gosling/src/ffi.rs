@@ -15,15 +15,57 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 
 // extern crates
-use anyhow::{Result, bail, ensure};
+// use anyhow::{Result, bail, ensure};
 use bson::doc;
 
 // internal crates
+use crate::*;
+use crate::error::Result;
 use crate::object_registry::*;
-use crate::define_registry;
 use crate::tor_crypto::*;
 use crate::tor_controller::*;
 use crate::gosling::*;
+
+macro_rules! define_registry {
+    ($type:ty, $id:expr) => {
+        paste::paste! {
+            static mut [<$type:snake:upper _REGISTRY>]: Option<Mutex<ObjectRegistry<$type>>> = None;
+
+            pub fn [<init_ $type:snake _registry>]() -> () {
+                unsafe {
+                    if let None = [<$type:snake:upper _REGISTRY>] {
+                        [<$type:snake:upper _REGISTRY>] = Some(Mutex::new(ObjectRegistry::new()));
+                    }
+                }
+            }
+
+            pub fn [<drop_ $type:snake _registry>]() -> () {
+                unsafe {
+                    [<$type:snake:upper _REGISTRY>] = None;
+                }
+            }
+
+            // get a mutex guard wrapping the object registry
+            pub fn [<get_ $type:snake _registry>]<'a>() -> std::sync::MutexGuard<'a, ObjectRegistry<$type>> {
+                unsafe {
+                    if let Some(registry) = &[<$type:snake:upper _REGISTRY>] {
+                        return registry.lock().unwrap();
+                    }
+                    panic!();
+                }
+            }
+
+            static_assertions::const_assert!($id as usize <= 0xFF);
+            const [<$type:snake:upper _BYTE_TYPE_ID>]: usize = $id as usize;
+
+            impl HasByteTypeId for $type {
+                fn get_byte_type_id() -> usize {
+                    [<$type:snake:upper _BYTE_TYPE_ID>]
+                }
+            }
+        }
+    }
+}
 
 /// Error Handling
 pub struct Error {
@@ -321,7 +363,7 @@ pub extern "C" fn gosling_ed25519_private_key_from_keyblob(
         }
 
         let key_blob_view = unsafe { std::slice::from_raw_parts(key_blob as *const u8, key_blob_length) };
-        let key_blob_str = std::str::from_utf8(key_blob_view)?;
+        let key_blob_str = resolve!(std::str::from_utf8(key_blob_view));
         let private_key = Ed25519PrivateKey::from_key_blob(key_blob_str)?;
 
         let handle = get_ed25519_private_key_registry().insert(private_key);
@@ -435,7 +477,7 @@ pub extern "C" fn gosling_x25519_private_key_from_base64(
         }
 
         let base64_view = unsafe { std::slice::from_raw_parts(base64 as *const u8, base64_length) };
-        let base64_str = std::str::from_utf8(base64_view)?;
+        let base64_str = resolve!(std::str::from_utf8(base64_view));
         let private_key = X25519PrivateKey::from_base64(base64_str)?;
 
         let handle = get_x25519_private_key_registry().insert(private_key);
@@ -548,7 +590,7 @@ pub extern "C" fn gosling_x25519_public_key_from_base32(
         }
 
         let base32_view = unsafe { std::slice::from_raw_parts(base32 as *const u8, base32_length) };
-        let base32_str = std::str::from_utf8(base32_view)?;
+        let base32_str = resolve!(std::str::from_utf8(base32_view));
         let public_key = X25519PublicKey::from_base32(base32_str)?;
 
         let handle = get_x25519_public_key_registry().insert(public_key);
@@ -662,7 +704,7 @@ pub extern "C" fn gosling_v3_onion_service_id_from_string(
         }
 
         let service_id_view = unsafe { std::slice::from_raw_parts(service_id_string as *const u8, service_id_string_length) };
-        let service_id_str = std::str::from_utf8(service_id_view)?;
+        let service_id_str = resolve!(std::str::from_utf8(service_id_view));
         let service_id = V3OnionServiceId::from_string(service_id_str)?;
 
         let handle = get_v3_onion_service_id_registry().insert(service_id);
@@ -776,7 +818,7 @@ pub extern "C" fn gosling_string_is_valid_v3_onion_service_id(
         }
 
         let service_id_string_slice = unsafe { std::slice::from_raw_parts(service_id_string as *const u8, service_id_string_length) };
-        Ok(V3OnionServiceId::is_valid(str::from_utf8(service_id_string_slice)?))
+        Ok(V3OnionServiceId::is_valid(resolve!(str::from_utf8(service_id_string_slice))))
     })
 }
 
@@ -1073,7 +1115,7 @@ pub extern "C" fn gosling_context_init(
 
         // tor working dir
         let tor_working_directory = unsafe { std::slice::from_raw_parts(tor_working_directory as *const u8, tor_working_directory_length) };
-        let tor_working_directory = std::str::from_utf8(tor_working_directory)?;
+        let tor_working_directory = resolve!(std::str::from_utf8(tor_working_directory));
         let tor_working_directory = Path::new(tor_working_directory);
 
         // get our identity key
@@ -1225,7 +1267,7 @@ pub extern "C" fn gosling_context_start_endpoint_server(
         };
 
         let endpoint_name = unsafe { std::slice::from_raw_parts(endpoint_name as *const u8, endpoint_name_length) };
-        let endpoint_name = std::str::from_utf8(endpoint_name)?.to_string();
+        let endpoint_name = resolve!(std::str::from_utf8(endpoint_name)).to_string();
         ensure!(endpoint_name.is_ascii(), "gosling_context_start_endpoint_server(): endpoint_name must be an ascii string");
 
         let ed25519_private_key_registry = get_ed25519_private_key_registry();
@@ -1330,7 +1372,7 @@ pub extern "C" fn gosling_context_request_remote_endpoint(
         };
 
         let endpoint_name = unsafe { std::slice::from_raw_parts(endpoint_name as *const u8, endpoint_name_length) };
-        let endpoint_name = std::str::from_utf8(endpoint_name)?.to_string();
+        let endpoint_name = resolve!(std::str::from_utf8(endpoint_name)).to_string();
         ensure!(endpoint_name.is_ascii(), "gosling_context_request_remote_endpoint(): endpoint_name must be an ascii string");
 
         context.0.request_remote_endpoint(identity_service_id.clone(), &endpoint_name)
@@ -1385,7 +1427,7 @@ pub extern "C" fn gosling_context_open_endpoint_channel(
         };
 
         let channel_name = unsafe { std::slice::from_raw_parts(channel_name as *const u8, channel_name_length) };
-        let channel_name = std::str::from_utf8(channel_name)?.to_string();
+        let channel_name = resolve!(std::str::from_utf8(channel_name)).to_string();
         ensure!(channel_name.is_ascii(), "gosling_context_open_endpoint_channel(): channel_name must be an ascii string");
 
         context.0.open_endpoint_channel(endpoint_service_id.clone(), client_auth_private_key.clone(), &channel_name)

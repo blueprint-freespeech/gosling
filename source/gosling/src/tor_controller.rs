@@ -18,7 +18,6 @@ use std::sync::{atomic, Arc, Mutex};
 use std::time::{Duration, Instant};
 
 // extern crates
-use anyhow::{bail, ensure, Result};
 use rand::Rng;
 use rand::rngs::OsRng;
 use rand::distributions::Alphanumeric;
@@ -29,6 +28,8 @@ use socks::Socks5Stream;
 use url::Host;
 
 // internal crates
+use crate::*;
+use crate::error::Result;
 use crate::tor_crypto::*;
 
 // get the name of our tor executable
@@ -53,19 +54,19 @@ fn generate_password(length: usize) -> String {
 
 fn read_control_port_file(control_port_file: &Path) -> Result<SocketAddr> {
     // open file
-    let mut file = File::open(&control_port_file)?;
+    let mut file = resolve!(File::open(&control_port_file));
 
     // bail if the file is larger than expected
-    let metadata = file.metadata()?;
+    let metadata = resolve!(file.metadata());
     ensure!(metadata.len() < 1024, "read_control_port_file(): control port file larger than expected: {} bytes", metadata.len());
 
     // read contents to string
     let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
+    resolve!(file.read_to_string(&mut contents));
 
     if contents.starts_with("PORT=") {
         let addr_string = &contents.trim_end()["PORT=".len()..];
-        return Ok(SocketAddr::from_str(addr_string)?);
+        return Ok(resolve!(SocketAddr::from_str(addr_string)));
     }
     bail!("read_control_port_file(): could not parse '{}' as control port file", control_port_file.display());
 }
@@ -86,7 +87,7 @@ impl TorProcess {
 
         // create data directory if it doesn't exist
         if !data_directory.exists() {
-            fs::create_dir_all(&data_directory)?;
+            resolve!(fs::create_dir_all(&data_directory));
         } else {
             ensure!(!data_directory.is_file(), "TorProcess::new(): received data_directory '{}' is a file not a path", data_directory.display());
         }
@@ -108,8 +109,8 @@ impl TorProcess {
             AvoidDiskWrites 1\n\
             DisableNetwork 1\n\n";
 
-            let mut default_torrc_file = File::create(&default_torrc)?;
-            default_torrc_file.write_all(DEFAULT_TORRC_CONTENT.as_bytes())?;
+            let mut default_torrc_file = resolve!(File::create(&default_torrc));
+            resolve!(default_torrc_file.write_all(DEFAULT_TORRC_CONTENT.as_bytes()));
         }
 
         // create empty torrc for user
@@ -120,7 +121,7 @@ impl TorProcess {
         // remove any existing control_port_file
         if control_port_file.exists() {
             ensure!(control_port_file.is_file(), "TorProcess::new(): control port file '{}' exists but is a directory", control_port_file.display());
-            fs::remove_file(&control_port_file)?;
+            resolve!(fs::remove_file(&control_port_file));
         }
 
         const CONTROL_PORT_PASSWORD_LENGTH: usize = 32usize;
@@ -128,7 +129,7 @@ impl TorProcess {
         let password_hash = hash_tor_password(&password)?;
 
         let executable_path = system_tor();
-        let mut process = Command::new(executable_path)
+        let mut process = resolve!(Command::new(executable_path)
             .stdout(Stdio::piped())
             .stdin(Stdio::null())
             .stderr(Stdio::null())
@@ -149,7 +150,7 @@ impl TorProcess {
             // tor process will shut down after this process shuts down
             // to avoid orphaned tor daemon
             .arg("__OwningControllerProcess").arg(process::id().to_string())
-            .spawn()?;
+            .spawn());
 
         let mut control_addr = None;
         let start = Instant::now();
@@ -161,7 +162,7 @@ impl TorProcess {
               start.elapsed() < Duration::from_secs(5) {
             if control_port_file.exists() {
                 control_addr = Some(read_control_port_file(control_port_file.as_path())?);
-                fs::remove_file(&control_port_file)?;
+                resolve!(fs::remove_file(&control_port_file));
             }
         }
         ensure!(control_addr != None, "TorProcess::new(): failed to read control addr from '{}'", control_port_file.display());
@@ -173,11 +174,11 @@ impl TorProcess {
             let stdout_lines = Arc::downgrade(&stdout_lines);
             let stdout = Arc::downgrade(&stdout);
 
-            std::thread::Builder::new()
+            resolve!(std::thread::Builder::new()
             .name("tor_stdout_reader".to_string())
             .spawn(move || {
                 TorProcess::read_stdout_task(&stdout_lines, &stdout);
-            })?
+            }))
         };
 
         Ok(TorProcess{
@@ -244,8 +245,8 @@ impl ControlStream {
 
         ensure!(read_timeout != Duration::ZERO, "ControlStream::new(): read_timeout must not be zero");
 
-        let stream = TcpStream::connect(&addr)?;
-        stream.set_read_timeout(Some(read_timeout))?;
+        let stream = resolve!(TcpStream::connect(&addr));
+        resolve!(stream.set_read_timeout(Some(read_timeout)));
 
         // pre-allocate a kilobyte for the read buffer
         const READ_BUFFER_SIZE: usize = 1024;
@@ -304,7 +305,7 @@ impl ControlStream {
                     // view into byte vec of just the found line
                     let line_view: &[u8] = &self.pending_data[begin..end];
                     // convert to string
-                    let line_string = std::str::from_utf8(line_view)?.to_string();
+                    let line_string = resolve!(std::str::from_utf8(line_view)).to_string();
 
                     // save in pending list
                     self.pending_lines.push_back(line_string);
@@ -370,7 +371,7 @@ impl ControlStream {
 
         // parse out the response code for easier matching
         let status_code_string = reply_lines.first().unwrap()[0..3].to_string();
-        let status_code: u32 = status_code_string.parse()?;
+        let status_code: u32 = resolve!(status_code_string.parse());
 
         // strip the redundant status code form start of lines
         for line in reply_lines.iter_mut() {
@@ -452,7 +453,7 @@ impl Version {
 }
 
 impl FromStr for Version {
-    type Err = anyhow::Error;
+    type Err = error::Error;
 
     fn from_str(s: &str) -> Result<Version> {
         // MAJOR.MINOR.MICRO[.PATCHLEVEL][-STATUS_TAG][ (EXTRA_INFO)]*
@@ -1004,7 +1005,7 @@ impl TorController {
 
                     // remove leading/trailing double quote
                     let stripped = &socket_addr[1..socket_addr.len() - 1];
-                    result.push(SocketAddr::from_str(stripped)?);
+                    result.push(resolve!(SocketAddr::from_str(stripped)));
                 }
                 return Ok(result);
             }
@@ -1108,7 +1109,7 @@ impl OnionStream {
     pub fn try_clone(&self) -> Result<OnionStream> {
         Ok(
             OnionStream{
-                stream: self.stream.try_clone()?,
+                stream: resolve!(self.stream.try_clone()),
                 peer_addr: self.peer_addr.clone()
             })
     }
@@ -1146,7 +1147,7 @@ pub struct OnionListener {
 
 impl OnionListener {
     pub fn set_nonblocking(&self, nonblocking: bool) -> Result<()> {
-        self.listener.set_nonblocking(nonblocking)?;
+        resolve!(self.listener.set_nonblocking(nonblocking));
         Ok(())
     }
 
@@ -1240,7 +1241,7 @@ impl TorManager {
                         let mut summary: String = Default::default();
                         for (key,val) in arguments.iter() {
                             match key.as_str() {
-                                "PROGRESS" => progress = val.parse()?,
+                                "PROGRESS" => progress = resolve!(val.parse()),
                                 "TAG" => tag = val.to_string(),
                                 "SUMMARY" => summary = val.to_string(),
                                 _ => {}, // ignore unexpected arguments
@@ -1302,8 +1303,8 @@ impl TorManager {
         let target = socks::TargetAddr::Domain(format!("{}.onion", service_id.to_string()), virt_port);
         // readwrite stream
         let mut stream = match &circuit {
-            None => Socks5Stream::connect(self.socks_listener.unwrap(), target)?,
-            Some(circuit) => Socks5Stream::connect_with_password(self.socks_listener.unwrap(), target, &circuit.username, &circuit.password)?,
+            None => resolve!(Socks5Stream::connect(self.socks_listener.unwrap(), target)),
+            Some(circuit) => resolve!(Socks5Stream::connect_with_password(self.socks_listener.unwrap(), target, &circuit.username, &circuit.password)),
         };
 
         Ok(OnionStream{stream: stream.into_inner(), peer_addr: Some(service_id.clone())})
@@ -1314,8 +1315,8 @@ impl TorManager {
 
         // try to bind to a local address, let OS pick our port
         let socket_addr = SocketAddr::from(([127,0,0,1],0u16));
-        let mut listener = TcpListener::bind(socket_addr)?;
-        let socket_addr = listener.local_addr()?;
+        let mut listener = resolve!(TcpListener::bind(socket_addr));
+        let socket_addr = resolve!(listener.local_addr());
 
         let mut flags: AddOnionFlags = Default::default();
         flags.discard_pk = true;
@@ -1384,7 +1385,7 @@ fn test_tor_controller() -> Result<()> {
         expected_control_port_path.push("control_port");
         for (key, value) in vals.iter() {
             match key.as_str() {
-                "version" => ensure!(Regex::new(r"\d+\.\d+\.\d+\.\d+")?.is_match(&value)),
+                "version" => ensure!(resolve!(Regex::new(r"\d+\.\d+\.\d+\.\d+")).is_match(&value)),
                 "config-file" => ensure!(Path::new(&value) == expected_torrc_path),
                 "config-text" => ensure!(value.to_string() == format!("\nControlPort auto\nControlPortWriteToFile {}\nDataDirectory {}", expected_control_port_path.display(), tor_path.display())),
                 _ => bail!("Unexpected returned key: {}", key),
@@ -1618,16 +1619,16 @@ fn test_onion_service() -> Result<()> {
             println!("Connecting to onion service");
             let mut client = tor.connect(&service_id, VIRT_PORT, None)?;
             println!("Client writing message: '{}'", MESSAGE);
-            client.write_all(MESSAGE.as_bytes())?;
-            client.flush()?;
+            resolve!(client.write_all(MESSAGE.as_bytes()));
+            resolve!(client.flush());
             println!("End of client scope");
         }
 
         if let Some(mut server) = listener.accept()? {
             println!("Server reading message");
             let mut buffer = Vec::new();
-            server.read_to_end(&mut buffer)?;
-            let msg = String::from_utf8(buffer)?;
+            resolve!(server.read_to_end(&mut buffer));
+            let msg = resolve!(String::from_utf8(buffer));
 
             ensure!(MESSAGE == msg);
             println!("Message received: '{}'", msg);
@@ -1684,8 +1685,8 @@ fn test_onion_service() -> Result<()> {
             let mut client = tor.connect(&service_id, VIRT_PORT, None)?;
 
             println!("Client writing message: '{}'", MESSAGE);
-            client.write_all(MESSAGE.as_bytes())?;
-            client.flush()?;
+            resolve!(client.write_all(MESSAGE.as_bytes()));
+            resolve!(client.flush());
             println!("End of client scope");
 
             println!("Remove auth key for onion service");
@@ -1695,8 +1696,8 @@ fn test_onion_service() -> Result<()> {
         if let Some(mut server) = listener.accept()? {
             println!("Server reading message");
             let mut buffer = Vec::new();
-            server.read_to_end(&mut buffer)?;
-            let msg = String::from_utf8(buffer)?;
+            resolve!(server.read_to_end(&mut buffer));
+            let msg = resolve!(String::from_utf8(buffer));
 
             ensure!(MESSAGE == msg);
             println!("Message received: '{}'", msg);

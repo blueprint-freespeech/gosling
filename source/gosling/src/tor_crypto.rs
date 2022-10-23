@@ -1,3 +1,8 @@
+// standard
+use std::convert::TryInto;
+use std::str;
+
+// extern crates
 use crypto::digest::Digest;
 use crypto::sha1::Sha1;
 use crypto::sha3::Sha3;
@@ -6,13 +11,13 @@ use data_encoding_macro::new_encoding;
 use rand::RngCore;
 use rand::rngs::OsRng;
 use signature:: Verifier;
-use std::convert::TryInto;
-use std::str;
 use tor_llcrypto::*;
 use tor_llcrypto::pk::keymanip::*;
 use tor_llcrypto::util::rand_compat::RngCompatExt;
 
-use anyhow::{bail, Result, ensure};
+// internal modules
+use crate::*;
+use crate::error::Result;
 
 /// The number of bytes in an ed25519 secret key
 /// cbindgen:ignore
@@ -190,7 +195,7 @@ impl Ed25519PrivateKey {
     // according to nickm, any 64 byte string here is allowed
     pub fn from_raw(raw: &[u8; ED25519_PRIVATE_KEY_SIZE]) -> Result<Ed25519PrivateKey> {
         Ok(Ed25519PrivateKey{
-            expanded_secret_key: pk::ed25519::ExpandedSecretKey::from_bytes(raw)?,
+            expanded_secret_key: resolve!(pk::ed25519::ExpandedSecretKey::from_bytes(raw)),
         })
     }
 
@@ -204,7 +209,7 @@ impl Ed25519PrivateKey {
         }
 
         let base64_key:&str = &key_blob[ED25519_PRIVATE_KEYBLOB_HEADER.len()..];
-        let private_key_data = BASE64.decode(base64_key.as_bytes())?;
+        let private_key_data = resolve!(BASE64.decode(base64_key.as_bytes()));
 
         if private_key_data.len() != ED25519_PRIVATE_KEY_SIZE {
             bail!("Ed25519PrivateKey::from_key_blob(): expects decoded private key length '{}'; actual '{}'", ED25519_PRIVATE_KEY_SIZE, private_key_data.len());
@@ -265,7 +270,7 @@ impl Clone for Ed25519PrivateKey {
 impl Ed25519PublicKey {
     pub fn from_raw(raw: &[u8; ED25519_PUBLIC_KEY_SIZE]) -> Result<Ed25519PublicKey> {
         Ok(Ed25519PublicKey{
-            public_key: pk::ed25519::PublicKey::from_bytes(raw)?,
+            public_key: resolve!(pk::ed25519::PublicKey::from_bytes(raw)),
         })
     }
 
@@ -278,7 +283,7 @@ impl Ed25519PublicKey {
         }
 
         Ok(Ed25519PublicKey{
-            public_key: pk::ed25519::PublicKey::from_bytes(&decoded_service_id[0..ED25519_PUBLIC_KEY_SIZE])?,
+            public_key: resolve!(pk::ed25519::PublicKey::from_bytes(&decoded_service_id[0..ED25519_PUBLIC_KEY_SIZE])),
         })
     }
 
@@ -318,7 +323,7 @@ impl PartialEq for Ed25519PublicKey {
 impl Ed25519Signature {
     pub fn from_raw(raw: &[u8; ED25519_SIGNATURE_SIZE]) -> Result<Ed25519Signature> {
         Ok(Ed25519Signature{
-            signature: pk::ed25519::Signature::from_bytes(raw)?,
+            signature: resolve!(pk::ed25519::Signature::from_bytes(raw)),
         })
     }
 
@@ -373,7 +378,7 @@ impl X25519PrivateKey {
         ensure!(base64.len() == X25519_PRIVATE_KEYBLOB_BASE64_LENGTH,
             "X25519PrivateKey::from_base64(): expects string of length '{}'; received string with length '{}'", X25519_PRIVATE_KEYBLOB_BASE64_LENGTH, base64.len());
 
-        let private_key_data = BASE64.decode(base64.as_bytes())?;
+        let private_key_data = resolve!(BASE64.decode(base64.as_bytes()));
         ensure!(private_key_data.len() == X25519_PRIVATE_KEY_SIZE,
             "X25519PrivateKey::from_base64(): expects decoded private key length '{}'; actual '{}'", X25519_PRIVATE_KEY_SIZE, private_key_data.len());
 
@@ -420,7 +425,7 @@ impl X25519PublicKey {
         ensure!(base32.len() == X25519_PUBLIC_KEYBLOB_BASE32_LENGTH,
             "X25519PublicKey::from_base32(): expects string of length '{}'; received '{}' with length '{}'", X25519_PUBLIC_KEYBLOB_BASE32_LENGTH, base32, base32.len());
 
-        let public_key_data = BASE32_NOPAD.decode(base32.as_bytes())?;
+        let public_key_data = resolve!(BASE32_NOPAD.decode(base32.as_bytes()));
         ensure!(public_key_data.len() == X25519_PUBLIC_KEY_SIZE,
             "X25519PublicKey::from_base32(): expects decoded public key length '{}'; actual '{}'", X25519_PUBLIC_KEY_SIZE, public_key_data.len());
 
@@ -447,7 +452,7 @@ impl V3OnionServiceId {
         if !V3OnionServiceId::is_valid(service_id) {
             bail!("V3OnionServiceId::from_string(): '{}' is not a valid v3 onion service id", &service_id);
         }
-        Ok(V3OnionServiceId{data: service_id.as_bytes().try_into()?})
+        Ok(V3OnionServiceId{data: resolve!(service_id.as_bytes().try_into())})
     }
 
     pub fn from_public_key(public_key: &Ed25519PublicKey) -> V3OnionServiceId {

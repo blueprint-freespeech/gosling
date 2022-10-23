@@ -10,7 +10,6 @@ use std::sync::{Arc};
 
 // extern crates
 
-use anyhow::{bail, ensure, Result};
 use bson::doc;
 use bson::{Binary,Bson};
 use bson::spec::BinarySubtype;
@@ -24,6 +23,8 @@ use rand::rngs::OsRng;
 use serial_test::serial;
 
 // internal crates
+use crate::*;
+use crate::error::Result;
 use crate::honk_rpc::*;
 #[cfg(test)]
 use crate::test_utils::MemoryStream;
@@ -1343,7 +1344,7 @@ impl<CH,SH> Context<CH,SH> where CH : IdentityClientHandshake + Clone, SH : Iden
         ensure!(self.bootstrap_complete);
         // open tcp stream to remove ident server
         let mut stream = self.tor_manager.connect(&identity_server_id, self.identity_port, None)?;
-        stream.set_nonblocking(true)?;
+        resolve!(stream.set_nonblocking(true));
         let client_rpc = Session::new(stream.try_clone()?, stream);
 
         let ident_client = IdentityClient::<CH>::new(
@@ -1365,7 +1366,7 @@ impl<CH,SH> Context<CH,SH> where CH : IdentityClientHandshake + Clone, SH : Iden
         ensure!(self.bootstrap_complete);
         self.tor_manager.add_client_auth(&endpoint_server_id, &client_auth_key)?;
         let stream = self.tor_manager.connect(&endpoint_server_id, self.endpoint_port, None)?;
-        stream.set_nonblocking(true)?;
+        resolve!(stream.set_nonblocking(true));
         let client_rpc = Session::new(stream.try_clone()?, stream.try_clone()?);
 
         let endpoint_client = EndpointClient::new(
@@ -1382,7 +1383,7 @@ impl<CH,SH> Context<CH,SH> where CH : IdentityClientHandshake + Clone, SH : Iden
         // first handle new identity connections
         if let Some(listener) = &mut self.identity_listener {
             if let Some(mut stream) = listener.accept()? {
-                stream.set_nonblocking(true)?;
+                resolve!(stream.set_nonblocking(true));
                 let identity_public_key = Ed25519PublicKey::from_private_key(&self.identity_private_key);
                 let server_service_id = V3OnionServiceId::from_public_key(&identity_public_key);
                 let server_rpc = Session::new(stream.try_clone()?, stream.try_clone()?);
@@ -1399,7 +1400,7 @@ impl<CH,SH> Context<CH,SH> where CH : IdentityClientHandshake + Clone, SH : Iden
         // next handle new endpoint connections
         for (endpoint_service_id, (_endpoint_name, allowed_client, listener)) in self.endpoint_listeners.iter_mut() {
             if let Some(mut stream) = listener.accept()? {
-                stream.set_nonblocking(true)?;
+                resolve!(stream.set_nonblocking(true));
                 let server_rpc = Session::new(stream.try_clone()?, stream.try_clone()?);
                 let endpoint_server = EndpointServer::new(
                     endpoint_service_id.clone(),
@@ -1505,7 +1506,7 @@ impl<CH,SH> Context<CH,SH> where CH : IdentityClientHandshake + Clone, SH : Iden
                             ContextEvent::EndpointClientChannelRequestCompleted{
                                 endpoint_service_id,
                                 channel_name,
-                                stream: self.endpoint_clients[idx].1.try_clone()?});
+                                stream: resolve!(self.endpoint_clients[idx].1.try_clone())});
                         true
                     },
                     Ok(None) => false,
@@ -1531,7 +1532,7 @@ impl<CH,SH> Context<CH,SH> where CH : IdentityClientHandshake + Clone, SH : Iden
                                 endpoint_service_id,
                                 client_service_id,
                                 channel_name,
-                                stream: self.endpoint_servers[idx].1.try_clone()?});
+                                stream: resolve!(self.endpoint_servers[idx].1.try_clone())});
                         true
                     },
                     Ok(None) => false,
@@ -2083,14 +2084,14 @@ fn test_gosling_context() -> Result<()> {
     let mut alice_server_socket = alice_server_socket.take().unwrap();
     let mut pat_client_socket = pat_client_socket.take().unwrap();
 
-    pat_client_socket.write(b"Hello World!\n")?;
-    pat_client_socket.flush()?;
+    resolve!(pat_client_socket.write(b"Hello World!\n"));
+    resolve!(pat_client_socket.flush());
 
-    alice_server_socket.set_nonblocking(false)?;
+    resolve!(alice_server_socket.set_nonblocking(false));
     let mut alice_reader = BufReader::new(alice_server_socket);
 
     let mut response: String = Default::default();
-    alice_reader.read_line(&mut response)?;
+    resolve!(alice_reader.read_line(&mut response));
 
     println!("response: '{}'", response);
     ensure!(response == "Hello World!\n");

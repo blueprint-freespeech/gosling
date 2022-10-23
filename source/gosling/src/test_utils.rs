@@ -3,18 +3,17 @@ use std::convert::From;
 use std::io::{ErrorKind, Read, Write};
 use std::sync::{Arc, Mutex};
 
-// extern crates
-use anyhow::{bail, ensure, Result};
+// internal crates
+use crate::*;
+use crate::error::Result;
 
 // a test-only mock TcpStream
-// #[cfg(test)]
 #[derive(Clone)]
 pub struct MemoryStream {
     stream: Arc<Mutex<Vec<u8>>>,
     read_head: usize,
 }
 
-// #[cfg(test)]
 impl MemoryStream {
     pub fn new() -> Self {
         return Self{
@@ -24,7 +23,6 @@ impl MemoryStream {
     }
 }
 
-// #[cfg(test)]
 impl Read for MemoryStream {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize, std::io::Error> {
         let read_buf = self.stream.lock().unwrap();
@@ -57,7 +55,6 @@ impl Read for MemoryStream {
     }
 }
 
-// #[cfg(test)]
 impl Write for MemoryStream where {
     fn write(&mut self, buf: &[u8]) -> Result<usize, std::io::Error> {
         self.stream.lock().unwrap().extend_from_slice(buf);
@@ -77,16 +74,16 @@ fn test_memory_stream() -> Result<()> {
 
     const MESSAGE: &str = "hello_world!";
 
-    stream1.write_all(MESSAGE.as_bytes())?;
+    resolve!(stream1.write_all(MESSAGE.as_bytes()));
     let mut msg_buff: Vec<u8> = Default::default();
-    ensure!(stream2.read_to_end(&mut msg_buff)? == MESSAGE.len());
+    ensure!(resolve!(stream2.read_to_end(&mut msg_buff)) == MESSAGE.len());
 
     match stream2.read_to_end(&mut msg_buff) {
         Err(err) => ensure!(err.kind() == ErrorKind::WouldBlock),
         Ok(_) => bail!("should have returned ErrorKind::WouldBlock"),
     }
 
-    let msg = std::str::from_utf8(&msg_buff)?;
+    let msg = resolve!(std::str::from_utf8(&msg_buff));
 
     ensure!(msg == MESSAGE);
 

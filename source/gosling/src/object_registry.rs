@@ -2,8 +2,6 @@ use std::collections::BTreeMap;
 use std::option::Option;
 use num_enum::TryFromPrimitive;
 
-use anyhow::Result;
-
 // Ids used for types we put in ObjectRegistrys
 #[derive(Debug, Eq, PartialEq, TryFromPrimitive)]
 #[repr(u8)]
@@ -19,10 +17,6 @@ pub enum ObjectTypes {
 // This trait is required for types we want to keep in an ObjectRegistry
 pub trait HasByteTypeId {
     fn get_byte_type_id() -> usize;
-}
-
-pub fn key_to_object_type(key: usize) -> Result<ObjectTypes> {
-    Ok(ObjectTypes::try_from((key & 0xFF) as u8)?)
 }
 
 // An ObjectRegistry<T> maintains ownership of objects and maps them to usize handles
@@ -64,48 +58,6 @@ impl<T> ObjectRegistry<T> where T : HasByteTypeId{
 
     pub fn get_mut(&mut self, key:usize) -> Option<&mut T> {
         self.map.get_mut(&key)
-    }
-}
-
-#[macro_export]
-macro_rules! define_registry {
-    ($type:ty, $id:expr) => {
-        paste::paste! {
-            static mut [<$type:snake:upper _REGISTRY>]: Option<Mutex<ObjectRegistry<$type>>> = None;
-
-            pub fn [<init_ $type:snake _registry>]() -> () {
-                unsafe {
-                    if let None = [<$type:snake:upper _REGISTRY>] {
-                        [<$type:snake:upper _REGISTRY>] = Some(Mutex::new(ObjectRegistry::new()));
-                    }
-                }
-            }
-
-            pub fn [<drop_ $type:snake _registry>]() -> () {
-                unsafe {
-                    [<$type:snake:upper _REGISTRY>] = None;
-                }
-            }
-
-            // get a mutex guard wrapping the object registry
-            pub fn [<get_ $type:snake _registry>]<'a>() -> std::sync::MutexGuard<'a, ObjectRegistry<$type>> {
-                unsafe {
-                    if let Some(registry) = &[<$type:snake:upper _REGISTRY>] {
-                        return registry.lock().unwrap();
-                    }
-                    panic!();
-                }
-            }
-
-            static_assertions::const_assert!($id as usize <= 0xFF);
-            const [<$type:snake:upper _BYTE_TYPE_ID>]: usize = $id as usize;
-
-            impl HasByteTypeId for $type {
-                fn get_byte_type_id() -> usize {
-                    [<$type:snake:upper _BYTE_TYPE_ID>]
-                }
-            }
-        }
     }
 }
 
