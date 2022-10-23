@@ -87,7 +87,7 @@ pub struct GoslingError;
 /// Get error message from gosling_error
 ///
 /// @param error : the error object to get the message from
-/// @return : null terminated string with error message whose
+/// @return : null-terminated string with error message whose
 ///  lifetime is tied to the source
 pub extern "C" fn gosling_error_get_message(error: *const GoslingError) -> *const c_char {
     if !error.is_null() {
@@ -339,8 +339,7 @@ pub extern "C" fn gosling_ed25519_private_key_clone(
 /// @param out_private_key : returned ed25519 private key
 /// @param key_blob : an ed25519 KeyBlob string in the form
 ///  "ED25519-V3:abcd1234..."
-/// @param key_blob_length : number of characters in keyBlob not counting the
-///  null terminator
+/// @param key_blob_length : number of chars in key_blob not including any null-terminator
 /// @param error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_ed25519_private_key_from_keyblob(
@@ -380,7 +379,7 @@ pub extern "C" fn gosling_ed25519_private_key_from_keyblob(
 /// @param out_key_blob : buffer to be filled with ed25519 KeyBlob in
 ///  the form "ED25519-V3:abcd1234...\0"
 /// @param key_blob_size : size of out_key_blob buffer in bytes, must be at
-///  least 100 characters (99 for string + 1 for null terminator)
+///  least 100 characters (99 for string + 1 for null-terminator)
 /// @param error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_ed25519_private_key_to_keyblob(
@@ -453,8 +452,7 @@ pub extern "C" fn gosling_x25519_private_key_clone(
 ///
 /// @param out_private_key : returned x25519 private key
 /// @param base64 : an x25519 private key encoded as a base64 string
-/// @param base64_length : number of characters in base64 not counting any
-///  terminator
+/// @param base64_length : the number of chars in base64 not including any null-terminator
 /// @param error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_x25519_private_key_from_base64(
@@ -493,7 +491,7 @@ pub extern "C" fn gosling_x25519_private_key_from_base64(
 /// @param private_key : the private key to encode
 /// @param out_base64 : buffer to be filled with x25519 key encoded as base64
 /// @param base64_size : size of out_base64 buffer in bytes, must be at
-///  least 45 characters (44 for string + 1 for null terminator)
+///  least 45 characters (44 for string + 1 for null-terminator)
 /// @param error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_x25519_private_key_to_base64(
@@ -566,8 +564,7 @@ pub extern "C" fn gosling_x25519_public_key_clone(
 ///
 /// @param out_public_key : returned x25519 public key
 /// @param base32 : an x25519 public key encoded as a base32 string
-/// @param base32_length : number of characters in base32 not counting any
-///  terminator
+/// @param base32_length : the number of chars in base32 not including any null-terminator
 /// @param error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_x25519_public_key_from_base32(
@@ -606,7 +603,7 @@ pub extern "C" fn gosling_x25519_public_key_from_base32(
 /// @param public_key : the public key to encode
 /// @param out_base32 : buffer to be filled with x25519 key encoded as base32
 /// @param base32_size : size of out_base32 buffer in bytes, must be at
-///  least 53 characters (52 for string + 1 for null terminator)
+///  least 53 characters (52 for string + 1 for null-terminator)
 /// @param error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_x25519_public_key_to_base32(
@@ -680,8 +677,8 @@ pub extern "C" fn gosling_v3_onion_service_id_clone(
 ///
 /// @param out_service_id : returned service id object
 /// @param service_id_string : a v3 onion service id string
-/// @param service_id_string_length : number of characters in service_id_string
-///  not counting any null terminator
+/// @param service_id_string_length : the number of chars in service_id_string not including any
+///  null-terminator
 /// @param error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_v3_onion_service_id_from_string(
@@ -752,7 +749,7 @@ pub extern "C" fn gosling_v3_onion_service_id_from_ed25519_private_key(
 /// @param service_id : the service id to encode
 /// @param out_service_id_string : buffer to be filled with x25519 key encoded as base32
 /// @param service_id_string_size : size of out_service_id_string buffer in bytes,
-///  must be at least 57 characters (56 for string + 1 for null terminator)
+///  must be at least 57 characters (56 for string + 1 for null-terminator)
 /// @param error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_v3_onion_service_id_to_string(
@@ -799,8 +796,8 @@ pub extern "C" fn gosling_v3_onion_service_id_to_string(
 /// https://gitweb.torproject.org/torspec.git/tree/rend-spec-v3.txt
 ///
 /// @param service_id_string : string containing the v3 service id to be validated
-/// @param service_id_string_length : length of serviceIdString not counting the
-///  null terminator; must be V3_ONION_SERVICE_ID_LENGTH (56)
+/// @param service_id_string_length : the number of chars in service_id_string not including any
+///  null-terminator; must be V3_ONION_SERVICE_ID_LENGTH (56)
 /// @param error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_string_is_valid_v3_onion_service_id(
@@ -1080,7 +1077,8 @@ impl IdentityServerHandshake for NativeIdentityServerHandshake {
 ///
 /// @param out_context : returned initialied gosling context
 /// @param tor_working_directory : the file system path to store tor's data
-/// @param tor_working_directory_length : the length of tork_working_directory not including any null terminator
+/// @param tor_working_directory_length : the number of chars in tor_working_directory not including any
+///  null-terminator
 /// @param identity_port : the tor virtual port the identity server listens on
 /// @param endpoint_port : the tor virtual port endpoint servers listen on
 /// @param identity_private_key : the e25519 private key used to start th identity server's onion service
@@ -1236,8 +1234,7 @@ pub extern "C" fn gosling_context_stop_identity_server(
 /// @param endpoint_private_key : the ed25519 private key needed to start the endpoint
 ///  onion service
 /// @param endpoint_name : the ascii-encoded name of the endpoint server
-/// @param endpoint_name_length : the number of characters in the endpoint name not including any
-///  null terminator
+/// @param endpoint_name_length : the number of chars in endpoint name not including any null-terminator
 /// @param client_identity : the v3 onion service id of the gosling client associated with this endpoint
 /// @param client_auth_public_key : the x25519 public key used to encrypt the onion service descriptor
 /// @param error : filled on error
@@ -1340,7 +1337,7 @@ pub extern "C" fn gosling_context_stop_endpoint_server(
 /// @param identity_service_id : the service id of the identity server we want ot request an endpoint server
 ///  from
 /// @param endpoint_name : the name of the endpoint server to request
-/// @param endpoint_name_length : the length of the endpoint server name not including any null terminator
+/// @param endpoint_name_length : the number of chars in endpoin_name not including any null-terminator
 /// @param error : filled on error
 #[no_mangle]
 pub extern "C" fn gosling_context_request_remote_endpoint(
@@ -1386,7 +1383,7 @@ pub extern "C" fn gosling_context_request_remote_endpoint(
 /// @param client_auth_private_key : the x25519 clienth authorization key needed to decrypt the endpoint server's
 ///  onion service descriptor
 /// @param channel_name : the ascii-encoded name of the channel to open
-/// @param channel_name_length : the length of the channel name not including any null-terminator
+/// @param channel_name_length : the number of chars in channel name not including any null-terminator
 #[no_mangle]
 pub extern "C" fn gosling_context_open_endpoint_channel(
     context: *mut GoslingContext,
@@ -1483,7 +1480,7 @@ pub extern "C" fn gosling_context_poll_events(
                     }
                 },
                 ContextEvent::IdentityServerPublished => {
-                    if let Some(callback) = callbacks.identity_server_published_callbck {
+                    if let Some(callback) = callbacks.identity_server_published_callback {
                         callback(context);
                     }
                 },
@@ -1630,6 +1627,16 @@ pub extern "C" fn gosling_context_poll_events(
 ///
 
 
+/// The function pointer type for the tor bootstrap status received callback. This
+/// callback is called when context's tor daemon's bootstrap status has progressed.
+///
+/// @param context: the context associated with this event
+/// @param progress: an unsigned integer from 0 to 100 indicating the current completion
+///  perentage of the context's bootstrap process
+/// @param tag: the null-terminated short name of the current bootstrap stage
+/// @param tag_length: the number of chrs in tag not including any null-terminator
+/// @param summary: the null-terminated description of the current bootstra stage
+/// @param summmary_length: the number of hcars in summary not including the null-terminator
 pub type GoslingTorBootstrapStatusReceivedCallback = extern fn(
     context: *mut GoslingContext,
     progress: u32,
@@ -1638,23 +1645,61 @@ pub type GoslingTorBootstrapStatusReceivedCallback = extern fn(
     summary: *const c_char,
     summary_length: usize) -> ();
 
+/// The function pointer type for the tor boootstrap completed callback. This callback
+/// is called when the context's tor daemon's bootstrap process has completed.
+///
+/// @param context: the context associated with this event
 pub type GoslingTorBootstrapCompletedCallback = extern fn(
     context: *mut GoslingContext) -> ();
 
+/// The function pointer type for the tor log received callback. This callback is called
+/// whenever the context's tor daemon prints new log lines.
+///
+/// @param context: the context associated with this event
+/// @param line: the null-terminated received log line
+/// @param line_length: the number of chars in line not including the null-terminator
 pub type GoslingTorLogRecieved = extern fn(
     context: *mut GoslingContext,
     line: *const c_char,
     line_length: usize) -> ();
 
+/// The function pointer type for the identity server published callback. This callback
+/// is called whenever the onion service of the identity server associated with the given
+/// context is published and should be reachable by clients.
+///
+/// @param context: the context associated with this event
 pub type GoslingIdentityServerPublishedCallback = extern fn(
     context: *mut GoslingContext) -> ();
 
+/// The function pointer type for the endpoint server published callback. This callbcak
+/// is called whenever the onion service of the indicated endpoint server associted with
+/// the given context is published and should be reachable by clients.
+///
+/// @param context: the context associated with this event
+/// @param endpoint_service_id: the onion service id of the published endpoint server
+/// @param endpoint_name: the null-terminated name of the endpoint server published
+/// @param endpoint_name_length: the number of chars in endpoint_name string not including the
+///  null-terminator
 pub type GoslingEndpointServerPublishedCallback = extern fn(
     context: *mut GoslingContext,
     enpdoint_service_id: *const GoslingV3OnionServiceId,
     endpoint_name: *const c_char,
     endpoint_name_length: usize) -> ();
 
+/// The function pointer type for the endpoint client request completed callback. This
+/// callback is called whenever the client successfully completes a handshake with an
+/// identity server and is granted access to an endpoint server.
+///
+/// @param context: the context associated with this event
+/// @param identity_service_id: the onion service id of the identity server the client
+///  has successfully completed a hadshake with
+/// @param endpoint_service_id: the onion service id of the endpoint server the client
+///  now has access to
+/// @param endpoint_name: the null-terminated name of the provided endpoint server
+/// @param endpoint_name_length: the number of chars in endpoint_name string not including
+///  the null-terminator
+/// @param client_auth_private_key: the client's x25519 private required to connect to
+///  the provided endpoint server
 pub type GoslingEndpointClientRequestCompletedCallback = extern fn (
     context: *mut GoslingContext,
     identity_service_id: *const GoslingV3OnionServiceId,
@@ -1663,6 +1708,20 @@ pub type GoslingEndpointClientRequestCompletedCallback = extern fn (
     endpoint_name_length: usize,
     client_auth_private_key: *const GoslingX25519PrivateKey) -> ();
 
+/// The function pointer type for the endpoint server request completed callback. This
+/// callback is called whenever the identity server has successfully completed a
+/// handshake with and granted to a connecting identity client.
+///
+/// @param context: the context associated with this event
+/// @param endpoint_private_key: the ed25519 private key of the endpoint server to host
+///  for the client
+/// @param endoint_name: the null-terminated name of the new endpoint server
+/// @param endpoint_name_lenght: thelength of the endpoint_name string not including
+///  the null-terminator
+/// @param client_service_id: the onion service id of the client we have granted
+///  access to
+/// @param client_auth_public_key: the x25519 public key to use to encrypt the endpoint
+///  server's service descriptor as provided by the connecting client
 pub type GoslingEndpointServerRequestCompletedCallback = extern fn (
     context: *mut GoslingContext,
     endpoint_private_key: *const GoslingEd25519PrivateKey,
@@ -1672,22 +1731,23 @@ pub type GoslingEndpointServerRequestCompletedCallback = extern fn (
     client_auth_public_key: *const GoslingX25519PublicKey) -> ();
 
 /// The function pointer type for the client handshake init callback. This callback
-/// is called when a clielnt starts a handshake with an identity server. The user
+/// is called when a client starts a handshake with an identity server. The user
 /// must return a handle to some resource which will be passed as the first argument
 /// to all subsequent client handshake callbacks. On handshake completion, this
 /// handle will be released with the user-provided client handshake free callback.
 ///
 /// @return : a user defined client resource handle for use with the client handshake
 ///  callbacks
-pub type GoslingIdentityClientHandshakeInitCallback = extern "C" fn() -> usize;
+pub type GoslingIdentityClientHandshakeInitCallback = extern "C" fn(
+    ) -> usize;
 
-/// The function pointer type for the clilent handshake free callback. This callback
+/// The function pointer type for the client handshake free callback. This callback
 /// is called when the client hand shake completes. The user may release any resources
 /// acquired during init in the client handshake free callback.
 ///
-/// @param server_handshake : a clilent handshake handle as returned by the client
+/// @param server_handshake : a client handshake handle as returned by the client
 ///  handshake init callback
-pub type GoslingIdentityClientHandshakeFreeCallback = extern fn(
+pub type GoslingIdentityClientHandshakeFreeCallback = extern "C" fn(
     handshake_handle: usize) -> ();
 
 /// The function pointer type for the client handshake challenge response size
@@ -1697,10 +1757,10 @@ pub type GoslingIdentityClientHandshakeFreeCallback = extern fn(
 /// @param handshake_handle : pointer to the client handshake handle this callback
 ///  invocation is associated with; null if no client handshake init callback was
 ///  provided
-/// @param endpoint_name : a null terminated ASCII string containing the name of the
+/// @param endpoint_name : a null-terminated ASCII string containing the name of the
 ///  enpdoint being requested
 /// @param endpoint_name_length : the number of chars in endpoint_name, not
-///  including the null terminator
+///  including the null-terminator
 /// @return : the number of bytes required to store the challenge response object
 pub type GoslingIdentityClientHandshakeChallengeResponseSizeCallback = extern fn(
     handshake_handle: *const usize,
@@ -1714,10 +1774,10 @@ pub type GoslingIdentityClientHandshakeChallengeResponseSizeCallback = extern fn
 /// @param handshake_handle : pointer to the client handshake handle this callback
 ///  invocation is associated with; null if no client handshake init callback was
 ///  provided
-/// @param endpoint_name : a null terminated ASCII string containing the name of the
+/// @param endpoint_name : a null-terminated ASCII string containing the name of the
 ///  endpoint being requested
 /// @param endpoint_name_length : the number of chars in endpoint_name, not
-///  including the null terminator
+///  including the null-terminator
 /// @param challenge_buffer : the source buffer containing a BSON document received
 ///  from the  identity server to serve as an endpoint request challenge
 /// @param challenge_buffer_size : the number of bytes in challenge_buffer
@@ -1762,10 +1822,10 @@ pub type GoslingIdentityServerHandshakeFreeCallback = extern fn(
 /// @param handshake_handle : pointer to the server handshake handle this callback
 ///  invocation is associated with; null if no server handshake init callback was
 ///  provided
-/// @param endpoint_name : a null terminated ASCII string containing the name of the
+/// @param endpoint_name : a null-terminated ASCII string containing the name of the
 ///  endpoint being requested
 /// @param endpoint_name_length : the number of chars in endpoint_name, not
-///  including the null terminator
+///  including the null-terminator
 /// @return : true if the server can handle requests for the requested endpoint,
 ///  false otherwise
 pub type GoslingIdentityServerHandshakeEndpointSupportedCallback = extern "C" fn(
@@ -1780,10 +1840,10 @@ pub type GoslingIdentityServerHandshakeEndpointSupportedCallback = extern "C" fn
 /// @param handshake_handle : pointer to the server handshake handle this callback
 ///  invocation is associated with; null if no server handshake init callback was
 ///  provided
-/// @param endpoint_name : a null terminated ASCII string containing the name of the
+/// @param endpoint_name : a null-terminated ASCII string containing the name of the
 ///  endpoint being requested
 /// @param endpoint_name_length : the number of chars in endpoint_name, not
-///  including the null terminator
+///  including the null-terminator
 /// @return : the number of bytes required to store the challenge object
 pub type GoslingIdentityServerHandshakeChallengeSizeCallback = extern "C" fn(
     handshake_handle: *const usize,
@@ -1796,10 +1856,10 @@ pub type GoslingIdentityServerHandshakeChallengeSizeCallback = extern "C" fn(
 /// @param handshake_handle : pointer to the server handshake handle this callback
 ///  invocation is associated with; null if no server handshake init callback was
 ///  provided
-/// @param endpoint_name : a null terminated ASCII string containing the name of the
+/// @param endpoint_name : a null-terminated ASCII string containing the name of the
 ///  endpoint being requested
 /// @param endpoint_name_length : the number of chars in endpoint_name, not
-///  including the null terminator
+///  including the null-terminator
 /// @param out_challenge_buffer : the destination buffer for the callback
 ///  to write a BSON document representing the endpoint request challenge object
 /// @param challenge_buffer_size : the number of bytes allocated in
@@ -1830,10 +1890,10 @@ pub type GoslingChallengeResponseResultT = GoslingChallengeResponseResult;
 /// @param handshake_handle : pointer to the server handshake handle this callback
 ///  invocation is associated with; null if no server handshake init callback was
 ///  provided
-/// @param endpoint_name : a null terminated ASCII string containing the name of the
+/// @param endpoint_name : a null-terminated ASCII string containing the name of the
 ///  endpoint being requested
 /// @param endpoint_name_length : the number of chars in endpoint_name, not
-///  including the null terminator
+///  including the null-terminator
 /// @param challenge_buffer : a buffer containing the BSON document representing
 ///  the endpoint request challenge object
 /// @param challenge_buffer_size : the number of bytes in challenge_buffer
@@ -1862,6 +1922,18 @@ pub type GoslingIdentityServerHandshakeVerifyChallengeResponseCallback = extern 
 pub type GoslingIdentityServerHandshakePollChallengeResponseResultCallback = extern fn(
     handshake_handle: *const usize) -> GoslingChallengeResponseResultT;
 
+/// The function pointer type for the endpoint client channel request completed callback.
+/// This callack is called when the client successfully connects to an endpoint server.
+///
+/// @param context: the context associated with this event
+/// @param endpoint_service_id: the onion service id of the endpoint server the client
+///  has connected to
+/// @param channel_name: the null-terminated name of the channel name requested by the
+///  the client
+/// @param channel_name_length: the number of chars in channel_name not including the
+///  null-terminator
+/// @param stream: the tcp socket file descriptor associated with the connection to the
+///  endpoint server
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 pub type GoslingEndpointClientChannelRequestCompletedCallback = extern fn(
     context: *mut GoslingContext,
@@ -1870,6 +1942,19 @@ pub type GoslingEndpointClientChannelRequestCompletedCallback = extern fn(
     channel_name_length: usize,
     stream: RawFd);
 
+/// The function pointer type for the endpoint server channel request completed callback.
+/// This callback is called when an endpoint server completes a handshake with an
+/// endpoint client.
+///
+/// @param context: the context associated with this event
+/// @param endpoint_service_id: the onion service id of the endpoint server the
+///  endpoint client has connected to
+/// @param client_service_id: the onion service id of the connected endpoint client
+/// @param channel_name: the null-terminated name of the channel requested by the client
+/// @param channel_name_length: the number of chars in channel_name not including the
+///  null-terminator
+/// @param stream: the tcp socket file descriptor associated with the connection to the
+///  endpoint client
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 pub type GoslingEndpointServerChannelRequestCompletedCallback = extern fn(
     context: *mut GoslingContext,
@@ -1879,6 +1964,18 @@ pub type GoslingEndpointServerChannelRequestCompletedCallback = extern fn(
     channel_name_length: usize,
     stream: RawFd);
 
+/// The function pointer type for the endpoint client channel request complete callback.
+/// This callack is called when the client successfully connects to an endpoint server.
+///
+/// @param context: the context associated with this event
+/// @param endpoint_service_id: the onion service id of the endpoint server the client
+///  has connected to
+/// @param channel_name: the null-terminated name of the channel name requested by the
+///  the client
+/// @param channel_name_length: the number of chars in channel_name not including the
+///  null-terminator
+/// @param stream: the tcp SOCKET object associated with the connection to the endpoint
+///  server
 #[cfg(target_os = "windows")]
 pub type GoslingEndpointClientChannelRequestCompletedCallback = extern fn(
     context: *mut GoslingContext,
@@ -1887,6 +1984,19 @@ pub type GoslingEndpointClientChannelRequestCompletedCallback = extern fn(
     channel_name_length: usize,
     stream: RawSocket);
 
+/// The function pointer type for the endpoint server channel request completed callback.
+/// This callback is called when an endpoint server completes a handshake with an
+/// endpoint client.
+///
+/// @param context: the context associated with this event
+/// @param endpoint_service_id: the onion service id of the endpoint server the
+///  endpoint client has connected to
+/// @param client_service_id: the onion service id of the connected endpoint client
+/// @param channel_name: the null-terminated name of the channel requested by the client
+/// @param channel_name_length: the number of chars in channel_name not including the
+///  null-terminator
+/// @param stream: the tcp SOCKET object associated with the connection to the endpoint
+///  client
 #[cfg(target_os = "windows")]
 pub type GoslingEndpointServerChannelRequestCompletedCallback = extern fn(
     context: *mut GoslingContext,
@@ -1901,7 +2011,7 @@ pub struct EventCallbacks {
     tor_bootstrap_status_received_callback: Option<GoslingTorBootstrapStatusReceivedCallback>,
     tor_bootstrap_completed_callback: Option<GoslingTorBootstrapCompletedCallback>,
     tor_log_received_callback: Option<GoslingTorLogRecieved>,
-    identity_server_published_callbck: Option<GoslingIdentityServerPublishedCallback>,
+    identity_server_published_callback: Option<GoslingIdentityServerPublishedCallback>,
     endpoint_server_published_callback: Option<GoslingEndpointServerPublishedCallback>,
     endpoint_client_request_completed_callback: Option<GoslingEndpointClientRequestCompletedCallback>,
     endpoint_server_request_completed_callback: Option<GoslingEndpointServerRequestCompletedCallback>,
@@ -2017,9 +2127,9 @@ pub extern "C" fn gosling_context_set_identity_server_published_callback(
         };
 
         if (callback as *const c_void).is_null() {
-            context.1.identity_server_published_callbck = None;
+            context.1.identity_server_published_callback = None;
         } else {
-            context.1.identity_server_published_callbck = Some(callback);
+            context.1.identity_server_published_callback = Some(callback);
         }
 
         Ok(())
