@@ -32,7 +32,7 @@ use url::Host;
 use crate::tor_crypto::*;
 
 // get the name of our tor executable
-fn system_tor() -> &'static str {
+const fn system_tor() -> &'static str {
     if cfg!(windows) {
         "tor.exe"
     } else {
@@ -227,13 +227,10 @@ pub struct ControlStream {
     pending_lines: VecDeque<String>,
     pending_reply: Vec<String>,
     reading_multiline_value: bool,
-}
-
-// regexes used to parse control port responses
-lazy_static! {
-    static ref SINGLE_LINE_DATA: Regex = Regex::new(r"^\d\d\d-.*").unwrap();
-    static ref MULTI_LINE_DATA: Regex  = Regex::new(r"^\d\d\d+.*").unwrap();
-    static ref END_REPLY_LINE: Regex   = Regex::new(r"^\d\d\d .*").unwrap();
+    // regexes used to parse control port responses
+    single_line_data: Regex,
+    multi_line_data: Regex,
+    end_reply_line: Regex,
 }
 
 type StatusCode = u32;
@@ -254,6 +251,10 @@ impl ControlStream {
         const READ_BUFFER_SIZE: usize = 1024;
         let pending_data = Vec::with_capacity(READ_BUFFER_SIZE);
 
+        let single_line_data = Regex::new(r"^\d\d\d-.*").unwrap();
+        let multi_line_data = Regex::new(r"^\d\d\d+.*").unwrap();
+        let end_reply_line = Regex::new(r"^\d\d\d .*").unwrap();
+
         Ok(ControlStream{
             stream,
             closed_by_remote: false,
@@ -261,6 +262,10 @@ impl ControlStream {
             pending_lines: Default::default(),
             pending_reply: Default::default(),
             reading_multiline_value: false,
+            // regex
+            single_line_data,
+            multi_line_data,
+            end_reply_line,
         })
     }
 
@@ -332,16 +337,16 @@ impl ControlStream {
             }
 
             // end of a response
-            if END_REPLY_LINE.is_match(&current_line) {
+            if self.end_reply_line.is_match(&current_line) {
                 ensure!(self.reading_multiline_value == false);
                 self.pending_reply.push(current_line);
                 break;
             // single line data from getinfo and friends
-            } else if SINGLE_LINE_DATA.is_match(&current_line) {
+            } else if self.single_line_data.is_match(&current_line) {
                 ensure!(self.reading_multiline_value == false);
                 self.pending_reply.push(current_line);
             // begin of multiline data from getinfo and friends
-            } else if MULTI_LINE_DATA.is_match(&current_line) {
+            } else if self.multi_line_data.is_match(&current_line) {
                 ensure!(self.reading_multiline_value == false);
                 self.pending_reply.push(current_line);
                 self.reading_multiline_value = true;
@@ -413,14 +418,24 @@ pub struct Version {
 }
 
 impl Version {
-    fn new(major: u32, minor: u32, micro: u32, patch_level: Option<u32>, status_tag: Option<&str>) -> Result<Version> {
-
-        lazy_static! {
-            static ref STATUS_TAG_PATTERN: Regex = Regex::new(r"^[^\s]+$").unwrap();
+    fn status_tag_pattern_is_match(status_tag: &str) -> bool {
+        if status_tag.is_empty() {
+            return false;
         }
 
+        for c in status_tag.chars() {
+            if c.is_whitespace() {
+                return false;
+            }
+        }
+        true
+    }
+
+    fn new(major: u32, minor: u32, micro: u32, patch_level: Option<u32>, status_tag: Option<&str>) -> Result<Version> {
+
         let status_tag = if let Some(status_tag) = status_tag {
-            ensure!(STATUS_TAG_PATTERN.is_match(status_tag));
+            // ensure!(STATUS_TAG_PATTERN.is_match(status_tag));
+            ensure!(Self::status_tag_pattern_is_match(status_tag));
             Some(status_tag.to_string())
         } else {
             None
@@ -440,39 +455,63 @@ impl FromStr for Version {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Version> {
-
-        lazy_static! {
-            static ref TOR_VERSION_PATTERN: Regex = Regex::new(r"^(?P<major>\d+)\.(?P<minor>\d+)\.(?P<micro>\d+)(?P<patch_level>\.\d+){0,1}(?P<status_tag>-[^\s]+){0,1}( \([^\s]+\))*$").unwrap();
-        }
-
-        if let Some(caps) = TOR_VERSION_PATTERN.captures(s) {
-            let major = caps.name("major");
-            ensure!(major.is_some());
-            let major: u32 = major.unwrap().as_str().parse()?;
-
-            let minor = caps.name("minor");
-            ensure!(minor.is_some());
-            let minor: u32 = minor.unwrap().as_str().parse()?;
-
-            let micro = caps.name("micro");
-            ensure!(micro.is_some());
-            let micro: u32 = micro.unwrap().as_str().parse()?;
-
-            let patch_level = caps.name("patch_level");
-            let patch_level: u32 = match patch_level {
-                Some(patch_level) => patch_level.as_str()[1..].parse()?,
-                None => 0u32,
+        // MAJOR.MINOR.MICRO[.PATCHLEVEL][-STATUS_TAG][ (EXTRA_INFO)]*
+        let mut tokens = s.split(' ');
+        let (major,minor,micro,patch_level,status_tag) = if let Some(version_status_tag) = tokens.next() {
+            let mut tokens = version_status_tag.split('-');
+            let (major,minor,micro,patch_level) = if let Some(version) = tokens.next() {
+                let mut tokens = version.split('.');
+                let mut major: u32 = if let Some(major) = tokens.next() {
+                    match major.parse() {
+                        Ok(major) => major,
+                        Err(_) => bail!("Version::from_str(): failed to parse '{}' as MAJOR portion of version", major),
+                    }
+                } else {
+                    bail!("Version::from_str(): failed to find MAJOR portion of version");
+                };
+                let mut minor: u32 = if let Some(minor) = tokens.next() {
+                    match minor.parse() {
+                        Ok(minor) => minor,
+                        Err(_) => bail!("Version::from_str(): failed to parse '{}' as MINOR portion of version", minor),
+                    }
+                } else {
+                    bail!("Version::from_str(): failed to find MINOR portion of version");
+                };
+                let mut micro: u32 = if let Some(micro) = tokens.next() {
+                    match micro.parse() {
+                        Ok(micro) => micro,
+                        Err(_) => bail!("Version::from_str(): failed to parse '{}' as MICRO portion of version", micro),
+                    }
+                } else {
+                    bail!("Version::from_str(): failed to find MICRO portion of version");
+                };
+                let mut patch_level: u32 = if let Some(patch_level) = tokens.next() {
+                    match patch_level.parse() {
+                        Ok(patch_level) => patch_level,
+                        Err(_) => bail!("Version::from_str(): failed to parse '{}' as PATCHLEVEL portion of version", patch_level),
+                    }
+                } else {
+                    0u32
+                };
+                (major, minor, micro, patch_level)
+            } else {
+                unreachable!();
             };
-
-            let status_tag = caps.name("status_tag");
-            let status_tag: Option<String> = match status_tag {
-                Some(status_tag) => Some(status_tag.as_str()[1..].to_string()),
-                None => None,
+            let status_tag = if let Some(status_tag) = tokens.next() {
+                Some(status_tag.to_string())
+            } else {
+                None
             };
-
-            return Ok(Version{major, minor, micro, patch_level, status_tag});
+            (major,minor,micro,patch_level,status_tag)
+        } else {
+            bail!("Version::from_str(): failed to find MAJOR.MINOR.MICRO.[PATCH_LEVEL][-STATUS_TAG] portion of version");
+        };
+        while let Some(extra_info) = tokens.next() {
+            if !extra_info.starts_with('(') || !extra_info.ends_with(')') {
+                bail!("Version::from_str(): failed to parse '{}' as [ (EXTRA_INFO)]", extra_info);
+            }
         }
-        bail!("Version::from_str(): failed to parse '{}' as Version", s);
+        return Ok(Version{major, minor, micro, patch_level, status_tag});
     }
 }
 
@@ -548,13 +587,25 @@ struct TorController {
     control_stream: ControlStream,
     // list of async replies to be handled
     async_replies: Vec<Reply>,
+    // regex for parsing events
+    status_event_pattern: Regex,
+    status_event_argument_pattern: Regex,
+    hs_desc_pattern: Regex,
 }
 
 impl TorController {
     pub fn new(control_stream: ControlStream) -> TorController {
+        let status_event_pattern =  Regex::new(r#"^STATUS_CLIENT (?P<severity>NOTICE|WARN|ERR) (?P<action>[A-Za-z]+)"#).unwrap();
+        let status_event_argument_pattern = Regex::new(r#"(?P<key>[A-Z]+)=(?P<value>[A-Za-z0-9_]+|"[^"]+")"#).unwrap();
+        let hs_desc_pattern = Regex::new(r#"HS_DESC (?P<action>REQUESTED|UPLOAD|RECEIVED|UPLOADED|IGNORE|FAILED|CREATED) (?P<hsaddress>[a-z2-7]{56})"#).unwrap();
+
         TorController{
             control_stream,
             async_replies: Default::default(),
+            // regex
+            status_event_pattern,
+            status_event_argument_pattern,
+            hs_desc_pattern,
         }
     }
 
@@ -577,24 +628,17 @@ impl TorController {
         }
     }
 
-    fn reply_to_event(reply: &mut Reply) -> Result<AsyncEvent> {
+    fn reply_to_event(&self, reply: &mut Reply) -> Result<AsyncEvent> {
         ensure!(reply.status_code == 650u32, "TorController::reply_to_event(): received unexpected synchrynous reply");
-
-        lazy_static! {
-            // STATUS_EVENT replies
-            static ref STATUS_EVENT_PATTERN: Regex = Regex::new(r#"^STATUS_CLIENT (?P<severity>NOTICE|WARN|ERR) (?P<action>[A-Za-z]+)"#).unwrap();
-            static ref STATUS_EVENT_ARGUMENT_PATTERN: Regex = Regex::new(r#"(?P<key>[A-Z]+)=(?P<value>[A-Za-z0-9_]+|"[^"]+")"#).unwrap();
-            static ref HS_DESC_PATTERN: Regex = Regex::new(r#"HS_DESC (?P<action>REQUESTED|UPLOAD|RECEIVED|UPLOADED|IGNORE|FAILED|CREATED) (?P<hsaddress>[a-z2-7]{56})"#).unwrap();
-        }
 
         // not sure this is what we want but yolo
         let reply_text = reply.reply_lines.join(" ");
-        if let Some(caps) = STATUS_EVENT_PATTERN.captures(&reply_text) {
+        if let Some(caps) = self.status_event_pattern.captures(&reply_text) {
             let severity = caps.name("severity").unwrap().as_str();
             let action = caps.name("action").unwrap().as_str();
 
             let mut arguments: Vec<(String,String)> = Default::default();
-            for caps in STATUS_EVENT_ARGUMENT_PATTERN.captures_iter(&reply_text) {
+            for caps in self.status_event_argument_pattern.captures_iter(&reply_text) {
                 let key = caps.name("key").unwrap().as_str().to_string();
                 let value = {
                     let value = caps.name("value").unwrap().as_str();
@@ -614,7 +658,7 @@ impl TorController {
             });
         }
 
-        if let Some(caps) = HS_DESC_PATTERN.captures(&reply_text) {
+        if let Some(caps) = self.hs_desc_pattern.captures(&reply_text) {
             let action = caps.name("action").unwrap().as_str();
             let hs_address = caps.name("hsaddress").unwrap().as_str();
 
@@ -640,7 +684,7 @@ impl TorController {
         let mut async_events: Vec<AsyncEvent> = Default::default();
 
         for mut reply in async_replies.iter_mut() {
-            async_events.push(TorController::reply_to_event(reply)?);
+            async_events.push(self.reply_to_event(reply)?);
         }
 
         Ok(async_events)
