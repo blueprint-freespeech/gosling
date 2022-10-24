@@ -1457,10 +1457,7 @@ impl<CH,SH> Context<CH,SH> where CH : IdentityClientHandshake + Clone, SH : Iden
                         true
                     },
                     Ok(None) => false,
-                    Err(err) => {
-                        println!("error? : {}", err.to_string());
-                        true
-                    },
+                    Err(err) => true,
                 };
                 if remove {
                     self.identity_clients.remove(idx);
@@ -1728,7 +1725,7 @@ fn identity_test<CH, SH>(should_fail: bool, client_blocked: bool, endpoint: &str
                 },
                 Ok(None) => {},
                 Err(err) => {
-                    println!("server failure: {}", err);
+                    println!("server failure: {:?}", err);
                     server_complete = true;
                     failure_ocurred = true;
                 },
@@ -1745,7 +1742,7 @@ fn identity_test<CH, SH>(should_fail: bool, client_blocked: bool, endpoint: &str
                 },
                 Ok(None) => {},
                 Err(err) => {
-                    println!("client failure: {}", err);
+                    println!("client failure: {:?}", err);
                     client_complete = true;
                     failure_ocurred = true;
                 },
@@ -1834,7 +1831,7 @@ fn endpoint_test(should_fail: bool, client_allowed: bool) -> Result<()> {
                 },
                 Ok(None) => {},
                 Err(err) => {
-                    println!("server failure: {}", err);
+                    println!("server failure: {:?}", err);
                     server_complete = true;
                     failure_ocurred = true;
                 },
@@ -1850,7 +1847,7 @@ fn endpoint_test(should_fail: bool, client_allowed: bool) -> Result<()> {
                 },
                 Ok(None) => {},
                 Err(err) => {
-                    println!("client failure: {}", err);
+                    println!("client failure: {:?}", err);
                     client_complete = true;
                     failure_ocurred = true;
                 },

@@ -326,7 +326,7 @@ impl ControlStream {
             let current_line =  match self.read_line() {
                 Ok(Some(line)) => line,
                 Ok(None) => return Ok(None),
-                Err(err) => bail!(err),
+                Err(err) => return Err(err),
             };
 
             // make sure the status code matches (if we are not in the
@@ -1464,42 +1464,42 @@ fn test_version() -> Result<()>
 
     match Version::new(1,2,3,Some(4),Some("spaced tag")) {
         Ok(_) => bail!("expected failure"),
-        Err(err) => println!("{}", err),
+        Err(err) => println!("{:?}", err),
     }
 
     match Version::new(1,2,3,Some(4),Some("" /* empty tag */)) {
         Ok(_) => bail!("expected failure"),
-        Err(err) => println!("{}", err),
+        Err(err) => println!("{:?}", err),
     }
 
     match Version::from_str("") {
         Ok(_) => bail!("expected failure"),
-        Err(err) => println!("{}", err),
+        Err(err) => println!("{:?}", err),
     }
 
     match Version::from_str("1.2") {
         Ok(_) => bail!("expected failure"),
-        Err(err) => println!("{}", err),
+        Err(err) => println!("{:?}", err),
     }
 
     match Version::from_str("1.2-foo") {
         Ok(_) => bail!("expected failure"),
-        Err(err) => println!("{}", err),
+        Err(err) => println!("{:?}", err),
     }
 
     match Version::from_str("1.2.3.4-foo bar") {
         Ok(_) => bail!("expected failure"),
-        Err(err) => println!("{}", err),
+        Err(err) => println!("{:?}", err),
     }
 
     match Version::from_str("1.2.3.4-foo bar (extra_info)") {
         Ok(_) => bail!("expected failure"),
-        Err(err) => println!("{}", err),
+        Err(err) => println!("{:?}", err),
     }
 
     match Version::from_str("1.2.3.4-foo (extra_info) badtext") {
         Ok(_) => bail!("expected failure"),
-        Err(err) => println!("{}", err),
+        Err(err) => println!("{:?}", err),
     }
 
     ensure!(Version::new(0,0,0,Some(0),None)? < Version::new(1,0,0,Some(0),None)?);
