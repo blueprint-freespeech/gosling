@@ -103,7 +103,7 @@ macro_rules! resolve {
 macro_rules! ensure {
     ($condition:expr) => {
         if !$condition {
-            bail!(std::format!("`{}` requirement failed", std::stringify!($condition)));
+            bail!(std::format!("requirement `{}` failed", std::stringify!($condition)));
         }
     };
     ($condition:expr, $msg:literal) => {
@@ -114,6 +114,15 @@ macro_rules! ensure {
     ($condition:expr, $fmt:literal, $($arg:tt)*) => {
         if !$condition {
             bail!($fmt, $($arg)*);
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! ensure_not_null {
+    ($ptr:expr) => {
+        if $ptr.is_null() {
+            bail!(std::format!("`{}` must not be null", std::stringify!($ptr)));
         }
     };
 }

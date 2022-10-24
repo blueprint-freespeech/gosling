@@ -507,7 +507,7 @@ impl Session {
                     } else {
                         bail!(err);
                     }
-                Ok(0) => bail!("Client::wait_message(): no more available bytes; expecting {} bytes", remaining),
+                Ok(0) => bail!("no more available bytes; expecting {} bytes", remaining),
                 Ok(count) => {
                     self.pending_data.extend_from_slice(&buffer[0..count]);
                     if remaining == count {
@@ -544,7 +544,7 @@ impl Session {
                     } else {
                         bail!(err);
                     }
-                Ok(0) => bail!("Client::wait_message(): no more available bytes"),
+                Ok(0) => bail!("no more available bytes"),
                 Ok(count) => {
                     self.pending_data.extend_from_slice(&buffer[0..count]);
                     // all bytes required for i32 have been read
@@ -597,7 +597,7 @@ impl Session {
                             });
                     } else {
                         // some other error
-                        bail!("Session::process_sections(): unexpected error '{}'", error.code);
+                        bail!("unexpected error '{}'", error.code);
                     }
                 },
                 Section::Request(request) => {
@@ -864,8 +864,8 @@ fn test_honk_client_read_write() -> Result<()> {
                 ensure!(section.code == ErrorCode::Runtime(1));
                 ensure!(section.message.is_some() && section.message.unwrap() == CUSTOM_ERROR);
             },
-            Some(_) => bail!("Was expecting an Error section"),
-            None => bail!("We should have a message"),
+            Some(_) => bail!("was expecting an Error section"),
+            None => bail!("we should have a message"),
         }
     }
 

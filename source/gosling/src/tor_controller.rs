@@ -58,7 +58,7 @@ fn read_control_port_file(control_port_file: &Path) -> Result<SocketAddr> {
 
     // bail if the file is larger than expected
     let metadata = resolve!(file.metadata());
-    ensure!(metadata.len() < 1024, "read_control_port_file(): control port file larger than expected: {} bytes", metadata.len());
+    ensure!(metadata.len() < 1024, "control port file larger than expected: {} bytes", metadata.len());
 
     // read contents to string
     let mut contents = String::new();
@@ -68,7 +68,7 @@ fn read_control_port_file(control_port_file: &Path) -> Result<SocketAddr> {
         let addr_string = &contents.trim_end()["PORT=".len()..];
         return Ok(resolve!(SocketAddr::from_str(addr_string)));
     }
-    bail!("read_control_port_file(): could not parse '{}' as control port file", control_port_file.display());
+    bail!("could not parse '{}' as control port file", control_port_file.display());
 }
 
 // Encapsulates the tor daemon process
@@ -89,7 +89,7 @@ impl TorProcess {
         if !data_directory.exists() {
             resolve!(fs::create_dir_all(&data_directory));
         } else {
-            ensure!(!data_directory.is_file(), "TorProcess::new(): received data_directory '{}' is a file not a path", data_directory.display());
+            ensure!(!data_directory.is_file(), "received data_directory '{}' is a file not a path", data_directory.display());
         }
 
         // construct paths to torrc files
@@ -120,7 +120,7 @@ impl TorProcess {
 
         // remove any existing control_port_file
         if control_port_file.exists() {
-            ensure!(control_port_file.is_file(), "TorProcess::new(): control port file '{}' exists but is a directory", control_port_file.display());
+            ensure!(control_port_file.is_file(), "control port file '{}' exists but is a directory", control_port_file.display());
             resolve!(fs::remove_file(&control_port_file));
         }
 
@@ -165,7 +165,7 @@ impl TorProcess {
                 resolve!(fs::remove_file(&control_port_file));
             }
         }
-        ensure!(control_addr != None, "TorProcess::new(): failed to read control addr from '{}'", control_port_file.display());
+        ensure!(control_addr != None, "failed to read control addr from '{}'", control_port_file.display());
 
         let stdout_lines: Arc<Mutex<Vec<String>>> = Default::default();
         let stdout = Arc::new(Mutex::new(BufReader::new(process.stdout.take().unwrap())));
@@ -243,7 +243,7 @@ struct Reply {
 impl ControlStream {
     pub fn new(addr: &SocketAddr, read_timeout: Duration) -> Result<ControlStream> {
 
-        ensure!(read_timeout != Duration::ZERO, "ControlStream::new(): read_timeout must not be zero");
+        ensure!(read_timeout != Duration::ZERO, "read_timeout must not be zero");
 
         let stream = resolve!(TcpStream::connect(&addr));
         resolve!(stream.set_read_timeout(Some(read_timeout)));
@@ -290,7 +290,7 @@ impl ControlStream {
                 },
                 Ok(0usize) => {
                     self.closed_by_remote = true;
-                    bail!("ControlStream::read_line(): stream closed by remote")
+                    bail!("stream closed by remote")
                 },
                 Ok(_count) => (),
             }
@@ -465,31 +465,31 @@ impl FromStr for Version {
                 let mut major: u32 = if let Some(major) = tokens.next() {
                     match major.parse() {
                         Ok(major) => major,
-                        Err(_) => bail!("Version::from_str(): failed to parse '{}' as MAJOR portion of version", major),
+                        Err(_) => bail!("failed to parse '{}' as MAJOR portion of version", major),
                     }
                 } else {
-                    bail!("Version::from_str(): failed to find MAJOR portion of version");
+                    bail!("failed to find MAJOR portion of version");
                 };
                 let mut minor: u32 = if let Some(minor) = tokens.next() {
                     match minor.parse() {
                         Ok(minor) => minor,
-                        Err(_) => bail!("Version::from_str(): failed to parse '{}' as MINOR portion of version", minor),
+                        Err(_) => bail!("failed to parse '{}' as MINOR portion of version", minor),
                     }
                 } else {
-                    bail!("Version::from_str(): failed to find MINOR portion of version");
+                    bail!("failed to find MINOR portion of version");
                 };
                 let mut micro: u32 = if let Some(micro) = tokens.next() {
                     match micro.parse() {
                         Ok(micro) => micro,
-                        Err(_) => bail!("Version::from_str(): failed to parse '{}' as MICRO portion of version", micro),
+                        Err(_) => bail!("failed to parse '{}' as MICRO portion of version", micro),
                     }
                 } else {
-                    bail!("Version::from_str(): failed to find MICRO portion of version");
+                    bail!("failed to find MICRO portion of version");
                 };
                 let mut patch_level: u32 = if let Some(patch_level) = tokens.next() {
                     match patch_level.parse() {
                         Ok(patch_level) => patch_level,
-                        Err(_) => bail!("Version::from_str(): failed to parse '{}' as PATCHLEVEL portion of version", patch_level),
+                        Err(_) => bail!("failed to parse '{}' as PATCHLEVEL portion of version", patch_level),
                     }
                 } else {
                     0u32
@@ -505,11 +505,11 @@ impl FromStr for Version {
             };
             (major,minor,micro,patch_level,status_tag)
         } else {
-            bail!("Version::from_str(): failed to find MAJOR.MINOR.MICRO.[PATCH_LEVEL][-STATUS_TAG] portion of version");
+            bail!("failed to find MAJOR.MINOR.MICRO.[PATCH_LEVEL][-STATUS_TAG] portion of version");
         };
         while let Some(extra_info) = tokens.next() {
             if !extra_info.starts_with('(') || !extra_info.ends_with(')') {
-                bail!("Version::from_str(): failed to parse '{}' as [ (EXTRA_INFO)]", extra_info);
+                bail!("failed to parse '{}' as [ (EXTRA_INFO)]", extra_info);
             }
         }
         return Ok(Version{major, minor, micro, patch_level, status_tag});
@@ -630,7 +630,7 @@ impl TorController {
     }
 
     fn reply_to_event(&self, reply: &mut Reply) -> Result<AsyncEvent> {
-        ensure!(reply.status_code == 650u32, "TorController::reply_to_event(): received unexpected synchrynous reply");
+        ensure!(reply.status_code == 650u32, "received unexpected synchrynous reply");
 
         // not sure this is what we want but yolo
         let reply_text = reply.reply_lines.join(" ");
@@ -952,28 +952,28 @@ impl TorController {
             250u32 => {
                 for line in reply.reply_lines {
                     if let Some(mut index) = line.find("ServiceID=") {
-                        ensure!(service_id.is_none(), "TorController::add_onion(): received duplicate service ids");
+                        ensure!(service_id.is_none(), "received duplicate service ids");
                         index = index + "ServiceId=".len();
                         service_id = Some(V3OnionServiceId::from_string(&line[index..])?);
                     } else if let Some(mut index) = line.find("PrivateKey=") {
-                        ensure!(private_key.is_none(), "TorController::add_onion(): received duplicate private keys");
+                        ensure!(private_key.is_none(), "received duplicate private keys");
                         index = index + "PrivateKey=".len();
                         private_key = Some(Ed25519PrivateKey::from_key_blob(&line[index..])?);
                     } else if line.contains("ClientAuthV3=") {
-                        ensure!(client_auth.is_some() && client_auth.unwrap().len() > 0, "TorController::add_onion(): received unexpected ClientAuthV3 keys");
+                        ensure!(client_auth.is_some() && client_auth.unwrap().len() > 0, "received unexpected ClientAuthV3 keys");
                     } else if !line.contains("OK") {
-                        bail!("TorController::add_onion(): received unexpected reply line: '{}'", line);
+                        bail!("received unexpected reply line: '{}'", line);
                     }
                 }
             },
             code => bail!("{} {}", code, reply.reply_lines.join("\n")),
         }
 
-        ensure!(service_id != None, "TorController::add_onion(): did not receive a service id");
+        ensure!(service_id != None, "did not receive a service id");
         if flags.discard_pk {
-            ensure!(private_key.is_none(), "TorController::add_onion(): private key should have been discarded");
+            ensure!(private_key.is_none(), "private key should have been discarded");
         } else {
-            ensure!(private_key.is_some(), "TorController::add_onion(): did not return private key");
+            ensure!(private_key.is_some(), "did not return private key");
         }
 
         Ok((private_key, service_id.unwrap()))
@@ -1010,7 +1010,7 @@ impl TorController {
                 return Ok(result);
             }
         }
-        bail!("TorController::getinfo_net_listeners_socks(): did not find a 'net/listeners/socks' key/value");
+        bail!("did not find a 'net/listeners/socks' key/value");
     }
 
     pub fn getinfo_version(&mut self) -> Result<Version> {
@@ -1020,7 +1020,7 @@ impl TorController {
                 return Version::from_str(value);
             }
         }
-        bail!("TorController::getinfo_version(): did not find a 'version' key/value");
+        bail!("did not find a 'version' key/value");
     }
 
     pub fn onion_client_auth_add(&mut self, service_id: &V3OnionServiceId, private_key: &X25519PrivateKey, client_name: Option<String>, flags: &OnionClientAuthAddFlags) -> Result<()> {
@@ -1203,7 +1203,7 @@ impl TorManager {
 
         let version = controller.getinfo_version()?;
 
-        ensure!(version >= min_required_version, "TorManager::new(): tor daemon not new enough; must be at least version {}", min_required_version.to_string());
+        ensure!(version >= min_required_version, "tor daemon not new enough; must be at least version {}", min_required_version.to_string());
 
         // register for STATUS_CLIENT async events
         controller.setevents(&["STATUS_CLIENT", "HS_DESC"])?;
@@ -1295,7 +1295,7 @@ impl TorManager {
 
         if self.socks_listener.is_none() {
             let mut listeners = self.controller.getinfo_net_listeners_socks()?;
-            ensure!(!listeners.is_empty(), "TorManager::connect(): no available socks listener to connect through");
+            ensure!(!listeners.is_empty(), "no available socks listener to connect through");
             self.socks_listener = Some(listeners.swap_remove(0));
         }
 
@@ -1353,7 +1353,7 @@ fn test_tor_controller() -> Result<()> {
 
         // tor controller should have shutdown the connection after failed authentication
         if tor_controller.authenticate_cmd(&tor_process.password).is_ok() {
-            bail!("Expected failure due to closed connection");
+            bail!("expected failure due to closed connection");
         }
         ensure!(tor_controller.control_stream.closed_by_remote());
     }
@@ -1373,7 +1373,7 @@ fn test_tor_controller() -> Result<()> {
                 "SocksPort" => "auto OnionTrafficOnly",
                 "AvoidDiskWrites" => "1",
                 "DisableNetwork" => "1",
-                _ => bail!("Unexpected returned key: {}", key),
+                _ => bail!("unexpected returned key: {}", key),
             };
             ensure!(value == expected);
         }
@@ -1388,7 +1388,7 @@ fn test_tor_controller() -> Result<()> {
                 "version" => ensure!(resolve!(Regex::new(r"\d+\.\d+\.\d+\.\d+")).is_match(&value)),
                 "config-file" => ensure!(Path::new(&value) == expected_torrc_path),
                 "config-text" => ensure!(value.to_string() == format!("\nControlPort auto\nControlPortWriteToFile {}\nDataDirectory {}", expected_control_port_path.display(), tor_path.display())),
-                _ => bail!("Unexpected returned key: {}", key),
+                _ => bail!("unexpected returned key: {}", key),
             }
         }
 
@@ -1403,7 +1403,7 @@ fn test_tor_controller() -> Result<()> {
         println!("service_id: {}", service_id.to_string());
 
         if let Ok(()) = tor_controller.del_onion(&V3OnionServiceId::from_string("6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd")?) {
-            bail!("Deleting unknown onion should have failed");
+            bail!("deleting unknown onion should have failed");
         }
 
         // delete our new onion
@@ -1633,7 +1633,7 @@ fn test_onion_service() -> Result<()> {
             ensure!(MESSAGE == msg);
             println!("Message received: '{}'", msg);
         } else {
-            bail!("No listener?");
+            bail!("no listener");
         }
     }
 
@@ -1675,7 +1675,7 @@ fn test_onion_service() -> Result<()> {
 
             println!("Connecting to onion service (should fail)");
             if tor.connect(&service_id, VIRT_PORT, None).is_ok() {
-                bail!("Should not able to connect to an authenticated onion service without auth key");
+                bail!("should not able to connect to an authenticated onion service without auth key");
             }
 
             println!("Add auth key for onion service");
@@ -1702,7 +1702,7 @@ fn test_onion_service() -> Result<()> {
             ensure!(MESSAGE == msg);
             println!("Message received: '{}'", msg);
         } else {
-            bail!("No listener?");
+            bail!("no listener");
         }
     }
     Ok(())

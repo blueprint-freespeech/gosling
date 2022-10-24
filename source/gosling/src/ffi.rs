@@ -238,14 +238,12 @@ pub extern "C" fn gosling_library_init(
     error: *mut *mut GoslingError) -> () {
 
     translate_failures((), error, || -> Result<()> {
-        if out_library.is_null() {
-            bail!("gosling_library_init(): out_library must not be null");
-        }
+        ensure_not_null!(out_library);
 
         unsafe {
             if GOSLING_LIBRARY_INITED {
                 // error handling
-                bail!("gosling_library_init(): gosling is already initialized");
+                bail!("gosling is already initialized");
             } else {
                 init_error_registry();
 
@@ -296,9 +294,7 @@ pub extern "C" fn gosling_ed25519_private_key_generate(
     out_private_key: *mut *mut GoslingEd25519PrivateKey,
     error: *mut *mut GoslingError) {
     translate_failures((), error, || -> Result<()> {
-        if out_private_key.is_null() {
-            bail!("gosling_ed25519_private_key_generate(): out_private_key must not be null");
-        }
+        ensure_not_null!(out_private_key);
 
         let private_key = Ed25519PrivateKey::generate();
         let handle = get_ed25519_private_key_registry().insert(private_key);
@@ -319,12 +315,12 @@ pub extern "C" fn gosling_ed25519_private_key_clone(
     private_key: *const GoslingEd25519PrivateKey,
     error: *mut *mut GoslingError) {
     translate_failures((), error, || -> Result<()> {
-        ensure!(!out_private_key.is_null(), "gosling_ed25519_private_key_clone(): out_private_key must not be null");
-        ensure!(!private_key.is_null(), "gosling_ed25519_private_key_clone(): private_key must not be null");
+        ensure_not_null!(out_private_key);
+        ensure_not_null!(private_key);
 
         let private_key = match get_ed25519_private_key_registry().get(private_key as usize) {
             Some(private_key) => private_key.clone(),
-            None => bail!("gosling_ed25519_private_key_clone(): private key is invalid"),
+            None => bail!("private key is invalid"),
         };
         let handle = get_ed25519_private_key_registry().insert(private_key);
         unsafe { *out_private_key = handle as *mut GoslingEd25519PrivateKey };
@@ -349,16 +345,11 @@ pub extern "C" fn gosling_ed25519_private_key_from_keyblob(
     error: *mut *mut GoslingError) {
 
     translate_failures((), error, || -> Result<()> {
-        if out_private_key.is_null() {
-            bail!("gosling_ed25519_private_key_from_keyblob(): out_private_key must not be null");
-        }
-
-        if key_blob.is_null() {
-            bail!("gosling_ed25519_private_key_from_keyblob(): key_blob must not not be null");
-        }
+        ensure_not_null!(out_private_key);
+        ensure_not_null!(key_blob);
 
         if key_blob_length != ED25519_PRIVATE_KEYBLOB_LENGTH {
-            bail!("gosling_ed25519_private_key_from_keyblob(): key_blob_length must be exactly ED25519_PRIVATE_KEYBLOB_LENGTH ({}); received '{}'", ED25519_PRIVATE_KEYBLOB_LENGTH, key_blob_length);
+            bail!("key_blob_length must be exactly ED25519_PRIVATE_KEYBLOB_LENGTH ({}); received '{}'", ED25519_PRIVATE_KEYBLOB_LENGTH, key_blob_length);
         }
 
         let key_blob_view = unsafe { std::slice::from_raw_parts(key_blob as *const u8, key_blob_length) };
@@ -389,16 +380,11 @@ pub extern "C" fn gosling_ed25519_private_key_to_keyblob(
     error: *mut *mut GoslingError) {
 
     translate_failures((), error, || -> Result<()> {
-        if private_key.is_null() {
-            bail!("gosling_ed25519_private_key_to_keyblob(): private_key must not be null");
-        }
-
-        if out_key_blob.is_null() {
-            bail!("gosling_ed25519_private_key_to_keyblob(): out_key_blob must not be null");
-        }
+        ensure_not_null!(private_key);
+        ensure_not_null!(out_key_blob);
 
         if key_blob_size < ED25519_PRIVATE_KEYBLOB_SIZE {
-            bail!("gosling_ed25519_private_key_to_keyblob(): key_blob_size must be at least ED25519_PRIVATE_KEYBLOB_SIZE ('{}'), received '{}'", ED25519_PRIVATE_KEYBLOB_SIZE, key_blob_size);
+            bail!("key_blob_size must be at least ED25519_PRIVATE_KEYBLOB_SIZE ('{}'), received '{}'", ED25519_PRIVATE_KEYBLOB_SIZE, key_blob_size);
         }
 
         let registry = get_ed25519_private_key_registry();
@@ -414,7 +400,7 @@ pub extern "C" fn gosling_ed25519_private_key_to_keyblob(
                 };
             },
             None => {
-                bail!("gosling_ed25519_private_key_to_keyblob(): private_key is invalid");
+                bail!("private_key is invalid");
             },
         };
 
@@ -433,12 +419,12 @@ pub extern "C" fn gosling_x25519_private_key_clone(
     private_key: *const GoslingX25519PrivateKey,
     error: *mut *mut GoslingError) {
     translate_failures((), error, || -> Result<()> {
-        ensure!(!out_private_key.is_null(), "gosling_x25519_private_key_clone(): out_private_key must not be null");
-        ensure!(!private_key.is_null(), "gosling_x25519_private_key_clone(): private_key must not be null");
+        ensure_not_null!(out_private_key);
+        ensure_not_null!(private_key);
 
         let private_key = match get_x25519_private_key_registry().get(private_key as usize) {
             Some(private_key) => private_key.clone(),
-            None => bail!("gosling_x25519_private_key_clone(): private key is invalid"),
+            None => bail!("private key is invalid"),
         };
         let handle = get_x25519_private_key_registry().insert(private_key);
         unsafe { *out_private_key = handle as *mut GoslingX25519PrivateKey };
@@ -462,16 +448,11 @@ pub extern "C" fn gosling_x25519_private_key_from_base64(
     error: *mut *mut GoslingError) {
 
     translate_failures((), error, || -> Result<()> {
-        if out_private_key.is_null() {
-            bail!("gosling_x25519_private_key_from_base64(): out_private_key must not be null");
-        }
-
-        if base64.is_null() {
-            bail!("gosling_x25519_private_key_from_base64(): base64 must not not be null");
-        }
+        ensure_not_null!(out_private_key);
+        ensure_not_null!(base64);
 
         if base64_length != X25519_PRIVATE_KEYBLOB_BASE64_LENGTH {
-            bail!("gosling_x25519_private_key_from_base64(): base64_length must be exactly X25519_PRIVATE_KEYBLOB_BASE64_LENGTH ({}); received '{}'", X25519_PRIVATE_KEYBLOB_BASE64_LENGTH, base64_length);
+            bail!("base64_length must be exactly X25519_PRIVATE_KEYBLOB_BASE64_LENGTH ({}); received '{}'", X25519_PRIVATE_KEYBLOB_BASE64_LENGTH, base64_length);
         }
 
         let base64_view = unsafe { std::slice::from_raw_parts(base64 as *const u8, base64_length) };
@@ -501,16 +482,11 @@ pub extern "C" fn gosling_x25519_private_key_to_base64(
     error: *mut *mut GoslingError) {
 
     translate_failures((), error, || -> Result<()> {
-        if private_key.is_null() {
-            bail!("gosling_x25519_private_key_to_base64(): private_key must not be null");
-        }
-
-        if out_base64.is_null() {
-            bail!("gosling_x25519_private_key_to_base64(): out_base64 must not be null");
-        }
+        ensure_not_null!(private_key);
+        ensure_not_null!(out_base64);
 
         if base64_size < X25519_PRIVATE_KEYBLOB_BASE64_SIZE {
-            bail!("gosling_x25519_private_key_to_base64(): base64_size must be at least '{}', received '{}'", X25519_PRIVATE_KEYBLOB_BASE64_SIZE, base64_size);
+            bail!("base64_size must be at least '{}', received '{}'", X25519_PRIVATE_KEYBLOB_BASE64_SIZE, base64_size);
         }
 
         let registry = get_x25519_private_key_registry();
@@ -526,7 +502,7 @@ pub extern "C" fn gosling_x25519_private_key_to_base64(
                 };
             },
             None => {
-                bail!("gosling_x25519_private_key_to_base64(): private_key is invalid");
+                bail!("private_key is invalid");
             },
         };
 
@@ -545,12 +521,12 @@ pub extern "C" fn gosling_x25519_public_key_clone(
     public_key: *const GoslingX25519PublicKey,
     error: *mut *mut GoslingError) {
     translate_failures((), error, || -> Result<()> {
-        ensure!(!out_public_key.is_null(), "gosling_x25519_publice_key_clone(): out_public_key must not be null");
-        ensure!(!public_key.is_null(), "gosling_x25519_publice_key_clone(): public_key must not be null");
+        ensure_not_null!(out_public_key);
+        ensure_not_null!(public_key);
 
         let public_key = match get_x25519_public_key_registry().get(public_key as usize) {
             Some(public_key) => public_key.clone(),
-            None => bail!("gosling_x25519_publice_key_clone(): public key is invalid"),
+            None => bail!("public key is invalid"),
         };
         let handle = get_x25519_public_key_registry().insert(public_key);
         unsafe { *out_public_key = handle as *mut GoslingX25519PublicKey };
@@ -574,16 +550,11 @@ pub extern "C" fn gosling_x25519_public_key_from_base32(
     error: *mut *mut GoslingError) {
 
     translate_failures((), error, || -> Result<()> {
-        if out_public_key.is_null() {
-            bail!("gosling_x25519_public_key_from_base32(): out_public_key must not be null");
-        }
-
-        if base32.is_null() {
-            bail!("gosling_x25519_public_key_from_base32(): base32 must not not be null");
-        }
+        ensure_not_null!(out_public_key);
+        ensure_not_null!(base32);
 
         if base32_length != X25519_PUBLIC_KEYBLOB_BASE32_LENGTH {
-            bail!("gosling_x25519_public_key_from_base32(): base32_length must be exactly X25519_PUBLIC_KEYBLOB_BASE32_LENGTH ({}); received '{}'", X25519_PUBLIC_KEYBLOB_BASE32_LENGTH, base32_length);
+            bail!("base32_length must be exactly X25519_PUBLIC_KEYBLOB_BASE32_LENGTH ({}); received '{}'", X25519_PUBLIC_KEYBLOB_BASE32_LENGTH, base32_length);
         }
 
         let base32_view = unsafe { std::slice::from_raw_parts(base32 as *const u8, base32_length) };
@@ -613,16 +584,11 @@ pub extern "C" fn gosling_x25519_public_key_to_base32(
     error: *mut *mut GoslingError) {
 
     translate_failures((), error, || -> Result<()> {
-        if public_key.is_null() {
-            bail!("gosling_x25519_public_key_to_base32(): public must not be null");
-        }
-
-        if out_base32.is_null() {
-            bail!("gosling_x25519_public_key_to_base32(): out_base32 must not be null");
-        }
+        ensure_not_null!(public_key);
+        ensure_not_null!(out_base32);
 
         if base32_size < X25519_PUBLIC_KEYBLOB_BASE32_SIZE {
-            bail!("gosling_x25519_public_key_to_base32(): base32_size must be at least '{}', received '{}'", X25519_PUBLIC_KEYBLOB_BASE32_SIZE, base32_size);
+            bail!("base32_size must be at least '{}', received '{}'", X25519_PUBLIC_KEYBLOB_BASE32_SIZE, base32_size);
         }
 
         let registry = get_x25519_public_key_registry();
@@ -638,7 +604,7 @@ pub extern "C" fn gosling_x25519_public_key_to_base32(
                 };
             },
             None => {
-                bail!("gosling_x25519_public_key_to_base32(): public_key is invalid");
+                bail!("public_key is invalid");
             },
         };
 
@@ -657,12 +623,12 @@ pub extern "C" fn gosling_v3_onion_service_id_clone(
     service_id: *const GoslingV3OnionServiceId,
     error: *mut *mut GoslingError) {
     translate_failures((), error, || -> Result<()> {
-        ensure!(!out_service_id.is_null(), "gosling_v3_onion_service_id_clone(): out_service_id must not be null");
-        ensure!(!service_id.is_null(), "gosling_v3_onion_service_id_clone(): service_id must not be null");
+        ensure_not_null!(out_service_id);
+        ensure_not_null!(service_id);
 
         let service_id = match get_v3_onion_service_id_registry().get(service_id as usize) {
             Some(service_id) => service_id.clone(),
-            None => bail!("gosling_v3_onion_service_id_clone(): service_id key is invalid"),
+            None => bail!("service_id is invalid"),
         };
         let handle = get_v3_onion_service_id_registry().insert(service_id);
         unsafe { *out_service_id = handle as *mut GoslingV3OnionServiceId };
@@ -688,16 +654,11 @@ pub extern "C" fn gosling_v3_onion_service_id_from_string(
     error: *mut *mut GoslingError) {
 
     translate_failures((), error, || -> Result<()> {
-        if out_service_id.is_null() {
-            bail!("gosling_v3_onion_service_id_from_string(): out_service_id must not be null");
-        }
-
-        if service_id_string.is_null() {
-            bail!("gosling_v3_onion_service_id_from_string(): service_id_string must not not be null");
-        }
+        ensure_not_null!(out_service_id);
+        ensure_not_null!(service_id_string);
 
         if service_id_string_length != V3_ONION_SERVICE_ID_LENGTH {
-            bail!("gosling_v3_onion_service_id_from_string(): base32_length must be exactly V3_ONION_SERVICE_ID_LENGTH ({}); received '{}'", V3_ONION_SERVICE_ID_LENGTH, service_id_string_length);
+            bail!("service_id_string_length must be exactly V3_ONION_SERVICE_ID_LENGTH ({}); received '{}'", V3_ONION_SERVICE_ID_LENGTH, service_id_string_length);
         }
 
         let service_id_view = unsafe { std::slice::from_raw_parts(service_id_string as *const u8, service_id_string_length) };
@@ -724,14 +685,14 @@ pub extern "C" fn gosling_v3_onion_service_id_from_ed25519_private_key(
     error: *mut *mut GoslingError)  -> () {
 
     translate_failures((), error, || -> Result<()> {
-        ensure!(!out_service_id.is_null(), "gosling_v3_onion_service_id_from_ed25519_private_key(): out_service_id must not be null");
-        ensure!(!ed25519_private_key.is_null(), "gosling_v3_onion_service_id_from_ed25519_private_key(): ed25519_private_key must not be null");
+        ensure_not_null!(out_service_id);
+        ensure_not_null!(ed25519_private_key);
 
         let service_id = {
             let ed25519_private_key_registry = get_ed25519_private_key_registry();
             let ed25519_private_key = match ed25519_private_key_registry.get(ed25519_private_key as usize) {
                 Some(ed25519_private_key) => ed25519_private_key,
-                None => bail!("gosling_v3_onion_service_id_from_ed25519_private_key(): ed25519_private_key is invalid"),
+                None => bail!("ed25519_private_key is invalid"),
             };
             V3OnionServiceId::from_private_key(&ed25519_private_key)
         };
@@ -759,16 +720,11 @@ pub extern "C" fn gosling_v3_onion_service_id_to_string(
     error: *mut *mut GoslingError) {
 
     translate_failures((), error, || -> Result<()> {
-        if service_id.is_null() {
-            bail!("gosling_v3_onion_service_id_to_string(): service_id must not be null");
-        }
-
-        if out_service_id_string.is_null() {
-            bail!("gosling_v3_onion_service_id_to_string(): out_service_id_string must not be null");
-        }
+        ensure_not_null!(service_id);
+        ensure_not_null!(out_service_id_string);
 
         if service_id_string_size < V3_ONION_SERVICE_ID_SIZE {
-            bail!("gosling_v3_onion_service_id_to_string(): service_id_string_size must be at least '{}', received '{}'", V3_ONION_SERVICE_ID_SIZE, service_id_string_size);
+            bail!("service_id_string_size must be at least '{}', received '{}'", V3_ONION_SERVICE_ID_SIZE, service_id_string_size);
         }
 
         let registry = get_v3_onion_service_id_registry();
@@ -784,7 +740,7 @@ pub extern "C" fn gosling_v3_onion_service_id_to_string(
                 };
             },
             None => {
-                bail!("gosling_v3_onion_service_id_to_string(): service_id is invalid");
+                bail!("service_id is invalid");
             },
         };
 
@@ -806,12 +762,10 @@ pub extern "C" fn gosling_string_is_valid_v3_onion_service_id(
     error: *mut *mut GoslingError) -> bool {
 
     translate_failures(false, error, || -> Result<bool> {
-        if service_id_string.is_null() {
-            bail!("gosling_string_is_valid_v3_onion_service_id(): service_id_string must not be null");
-        }
+        ensure_not_null!(service_id_string);
 
         if service_id_string_length != V3_ONION_SERVICE_ID_LENGTH {
-            bail!("gosling_string_is_valid_v3_onion_service_id(): service_id_string_length must be V3_ONION_SERVICE_ID_LENGTH (56); received '{}'", service_id_string_length);
+            bail!("service_id_string_length must be V3_ONION_SERVICE_ID_LENGTH (56); received '{}'", service_id_string_length);
         }
 
         let service_id_string_slice = unsafe { std::slice::from_raw_parts(service_id_string as *const u8, service_id_string_length) };
@@ -1103,13 +1057,13 @@ pub extern "C" fn gosling_context_init(
         // validate params
 
         // data
-        ensure!(!out_context.is_null(), "gosling_context_init(): out_context must not be null");
-        ensure!(!tor_working_directory.is_null(), "gosling_context_init(): tor_working_directory must not be null");
-        ensure!(tor_working_directory_length > 0, "gosling_context_init(): tor_working_directory_length must not be 0");
-        ensure!(identity_port != 0u16, "gosling_context_init(): identity_port must not be 0");
-        ensure!(endpoint_port != 0u16, "gosling_context_init(): endpoint_port must not be 0");
-        ensure!(!identity_private_key.is_null(), "gosling_context_init(): identity_private_key may not be null");
-        ensure!((blocked_clients.is_null() && blocked_clients_count == 0) || (!blocked_clients.is_null() && blocked_clients_count > 0), "gosling_context_init(): blocked_clients must not be null or blocked_clients_count must not be 0");
+        ensure_not_null!(out_context);
+        ensure_not_null!(tor_working_directory);
+        ensure!(tor_working_directory_length > 0, "tor_working_directory_length must not be 0");
+        ensure!(identity_port != 0u16, "identity_port must not be 0");
+        ensure!(endpoint_port != 0u16, "endpoint_port must not be 0");
+        ensure_not_null!(identity_private_key);
+        ensure!((blocked_clients.is_null() && blocked_clients_count == 0) || (!blocked_clients.is_null() && blocked_clients_count > 0), "blocked_clients must not be null or blocked_clients_count must not be 0");
 
         // tor working dir
         let tor_working_directory = unsafe { std::slice::from_raw_parts(tor_working_directory as *const u8, tor_working_directory_length) };
@@ -1120,7 +1074,7 @@ pub extern "C" fn gosling_context_init(
         let ed25519_private_key_registry = get_ed25519_private_key_registry();
         let identity_private_key = match ed25519_private_key_registry.get(identity_private_key as usize) {
             Some(identity_private_key) => identity_private_key,
-            None => bail!("gosling_context_init(): identity_private_key is invalid"),
+            None => bail!("identity_private_key is invalid"),
         };
 
         let blocked_clients: HashSet<V3OnionServiceId> = if blocked_clients.is_null() {
@@ -1133,7 +1087,7 @@ pub extern "C" fn gosling_context_init(
             for blocked_client in blocked_clients_slice.iter() {
                 let blocked_client = match v3_onion_service_id_registry.get(*blocked_client as usize) {
                     Some(blocked_client) => blocked_client,
-                    None => bail!("gosling_context_init(): invalid gosling_v3_onion_service_id in blocked_clients ( {:?} )", *blocked_client as *const c_void),
+                    None => bail!("invalid gosling_v3_onion_service_id in blocked_clients ( {:?} )", *blocked_client as *const c_void),
                 };
                 blocked_clients.insert(blocked_client.clone());
             }
@@ -1170,13 +1124,13 @@ pub extern "C" fn gosling_context_bootstrap_tor(
     error: *mut *mut GoslingError) -> () {
     translate_failures((), error, || -> Result<()> {
 
-        ensure!(!context.is_null(), "gosling_context_bootstrap_tor(): context must not be null");
+        ensure_not_null!(context);
 
         let mut context_tuple_registry = get_context_tuple_registry();
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_bootstrap_tor(): context is invalid");
+                bail!("context is invalid");
             }
         };
         context.0.bootstrap()
@@ -1193,13 +1147,13 @@ pub extern "C" fn gosling_context_start_identity_server(
     context: *mut GoslingContext,
     error: *mut *mut GoslingError) -> () {
     translate_failures((), error, || -> Result<()> {
-        ensure!(!context.is_null(), "gosling_context_start_identity_server(): context must not be null");
+        ensure_not_null!(context);
 
         let mut context_tuple_registry = get_context_tuple_registry();
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_start_identity_server(): context is invalid");
+                bail!("context is invalid");
             }
         };
         context.0.start_identity_server()
@@ -1215,13 +1169,13 @@ pub extern "C" fn gosling_context_stop_identity_server(
     context: *mut GoslingContext,
     error: *mut *mut GoslingError) ->() {
     translate_failures((), error, || -> Result<()> {
-        ensure!(!context.is_null(), "gosling_context_stop_identity_server(): context must not be null");
+        ensure_not_null!(context);
 
         let mut context_tuple_registry = get_context_tuple_registry();
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_stop_identity_server(): context is invalid");
+                bail!("context is invalid");
             }
         };
         context.0.stop_identity_server()
@@ -1248,30 +1202,30 @@ pub extern "C" fn gosling_context_start_endpoint_server(
     client_auth_public_key: *const GoslingX25519PublicKey,
     error: *mut *mut GoslingError) -> () {
     translate_failures((), error, || -> Result<()> {
-        ensure!(!context.is_null(), "gosling_context_start_endpoint_server(): context must not be null");
-        ensure!(!endpoint_private_key.is_null(), "gosling_context_start_endpoint_server(): endpoint_private_key must not be null");
-        ensure!(!endpoint_name.is_null(), "gosling_context_start_endpoint_server(): endpoint_name must not be null");
-        ensure!(endpoint_name_length > 0, "gosling_context_start_endpoint_server(): endpoint_name_length must not be 0");
-        ensure!(!client_identity.is_null(), "gosling_context_start_endpoint_server(): client_identity must not be null");
-        ensure!(!client_auth_public_key.is_null(), "gosling_context_start_endpoint_server(): client_auth_public_key must not be null");
+        ensure_not_null!(context);
+        ensure_not_null!(endpoint_private_key);
+        ensure_not_null!(endpoint_name);
+        ensure!(endpoint_name_length > 0, "endpoint_name_length must not be 0");
+        ensure_not_null!(client_identity);
+        ensure_not_null!(client_auth_public_key);
 
         let mut context_tuple_registry = get_context_tuple_registry();
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_start_endpoint_server(): context is invalid");
+                bail!("context is invalid");
             }
         };
 
         let endpoint_name = unsafe { std::slice::from_raw_parts(endpoint_name as *const u8, endpoint_name_length) };
         let endpoint_name = resolve!(std::str::from_utf8(endpoint_name)).to_string();
-        ensure!(endpoint_name.is_ascii(), "gosling_context_start_endpoint_server(): endpoint_name must be an ascii string");
+        ensure!(endpoint_name.is_ascii(), "endpoint_name must be an ascii string");
 
         let ed25519_private_key_registry = get_ed25519_private_key_registry();
         let endpoint_private_key = match ed25519_private_key_registry.get(endpoint_private_key as usize) {
             Some(ed25519_private_key) => ed25519_private_key,
             None => {
-                bail!("gosling_context_start_endpoint_server(): endpoint_private_key is invalid");
+                bail!("endpoint_private_key is invalid");
             }
         };
 
@@ -1279,7 +1233,7 @@ pub extern "C" fn gosling_context_start_endpoint_server(
         let client_identity = match v3_onion_service_id_registry.get(client_identity as usize) {
             Some(v3_onion_service_id) => v3_onion_service_id,
             None => {
-                bail!("gosling_context_start_endpoint_server(): client_identity is invalid");
+                bail!("client_identity is invalid");
             }
         };
 
@@ -1287,7 +1241,7 @@ pub extern "C" fn gosling_context_start_endpoint_server(
         let client_auth_public_key = match x25519_public_key_registry.get(client_auth_public_key as usize) {
             Some(x25519_public_key) => x25519_public_key,
             None => {
-                bail!("gosling_context_start_endpoint_server(): client_auth_public_key is invalid");
+                bail!("client_auth_public_key is invalid");
             }
         };
 
@@ -1307,14 +1261,14 @@ pub extern "C" fn gosling_context_stop_endpoint_server(
     endpoint_private_key: *const GoslingEd25519PrivateKey,
     error: *mut *mut GoslingError) -> () {
     translate_failures((), error, || -> Result<()> {
-        ensure!(!context.is_null(), "gosling_context_stop_endpoint_server(): context must not be null");
-        ensure!(!endpoint_private_key.is_null(), "gosling_context_stop_endpoint_server(): endpoint_private_key must not be null");
+        ensure_not_null!(context);
+        ensure_not_null!(endpoint_private_key);
 
         let mut context_tuple_registry = get_context_tuple_registry();
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_stop_endpoint_server(): context is invalid");
+                bail!("context is invalid");
             }
         };
 
@@ -1322,7 +1276,7 @@ pub extern "C" fn gosling_context_stop_endpoint_server(
         let endpoint_private_key = match ed25519_private_key_registry.get(endpoint_private_key as usize) {
             Some(ed25519_private_key) => ed25519_private_key,
             None => {
-                bail!("gosling_context_stop_endpoint_server(): endpoint_private_key is invalid");
+                bail!("endpoint_private_key is invalid");
             }
         };
 
@@ -1347,16 +1301,16 @@ pub extern "C" fn gosling_context_request_remote_endpoint(
     endpoint_name_length: usize,
     error: *mut *mut GoslingError) -> () {
     translate_failures((), error, || -> Result<()> {
-        ensure!(!context.is_null(), "gosling_context_request_remote_endpoint(): context must not be null");
-        ensure!(!identity_service_id.is_null(), "gosling_context_request_remote_endpoint(): identity_service_id must not be null");
-        ensure!(!endpoint_name.is_null(), "gosling_context_request_remote_endpoint(): endpoint_name must not be null");
-        ensure!(endpoint_name_length > 0, "gosling_context_request_remote_endpoint(): endpoint_name_length must not be 0");
+        ensure_not_null!(context);
+        ensure_not_null!(identity_service_id);
+        ensure_not_null!(endpoint_name);
+        ensure!(endpoint_name_length > 0, "endpoint_name_length must not be 0");
 
         let mut context_tuple_registry = get_context_tuple_registry();
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_request_remote_endpoint(): context is invalid");
+                bail!("context is invalid");
             }
         };
 
@@ -1364,13 +1318,13 @@ pub extern "C" fn gosling_context_request_remote_endpoint(
         let identity_service_id = match v3_onion_service_id_registry.get(identity_service_id as usize) {
             Some(v3_onion_service_id) => v3_onion_service_id,
             None => {
-                bail!("gosling_context_request_remote_endpoint(): identity_service_id is invalid");
+                bail!("identity_service_id is invalid");
             }
         };
 
         let endpoint_name = unsafe { std::slice::from_raw_parts(endpoint_name as *const u8, endpoint_name_length) };
         let endpoint_name = resolve!(std::str::from_utf8(endpoint_name)).to_string();
-        ensure!(endpoint_name.is_ascii(), "gosling_context_request_remote_endpoint(): endpoint_name must be an ascii string");
+        ensure!(endpoint_name.is_ascii(), "endpoint_name must be an ascii string");
 
         context.0.request_remote_endpoint(identity_service_id.clone(), &endpoint_name)
     });
@@ -1393,17 +1347,17 @@ pub extern "C" fn gosling_context_open_endpoint_channel(
     channel_name_length: usize,
     error: *mut *mut GoslingError) -> () {
     translate_failures((), error, || -> Result<()> {
-        ensure!(!context.is_null(), "gosling_context_open_endpoint_channel(): context must not be null");
-        ensure!(!endpoint_service_id.is_null(), "gosling_context_open_endpoint_channel(): endpoint_service_id must not be null");
-        ensure!(!client_auth_private_key.is_null(), "gosling_context_open_endpoint_channel(): client_auth_private_key must not be null");
-        ensure!(!channel_name.is_null(), "gosling_context_open_endpoint_channel(): channel_name must not be null");
-        ensure!(channel_name_length > 0, "gosling_context_open_endpoint_channel(): channel_name_length must not be 0");
+        ensure_not_null!(context);
+        ensure_not_null!(endpoint_service_id);
+        ensure_not_null!(client_auth_private_key);
+        ensure_not_null!(channel_name);
+        ensure!(channel_name_length > 0, "channel_name_length must not be 0");
 
         let mut context_tuple_registry = get_context_tuple_registry();
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_open_endpoint_channel(): context is invalid");
+                bail!("context is invalid");
             }
         };
 
@@ -1411,7 +1365,7 @@ pub extern "C" fn gosling_context_open_endpoint_channel(
         let endpoint_service_id = match v3_onion_service_id_registry.get(endpoint_service_id as usize) {
             Some(v3_onion_service_id) => v3_onion_service_id,
             None => {
-                bail!("gosling_context_open_endpoint_channel(): endpoint_service_id is invalid");
+                bail!("endpoint_service_id is invalid");
             }
         };
 
@@ -1419,13 +1373,13 @@ pub extern "C" fn gosling_context_open_endpoint_channel(
         let client_auth_private_key = match x25519_private_key_registry.get(client_auth_private_key as usize) {
             Some(x25519_private_key) => x25519_private_key,
             None => {
-                bail!("gosling_context_open_endpoint_channel(): client_auth_private_key is invalid");
+                bail!("client_auth_private_key is invalid");
             }
         };
 
         let channel_name = unsafe { std::slice::from_raw_parts(channel_name as *const u8, channel_name_length) };
         let channel_name = resolve!(std::str::from_utf8(channel_name)).to_string();
-        ensure!(channel_name.is_ascii(), "gosling_context_open_endpoint_channel(): channel_name must be an ascii string");
+        ensure!(channel_name.is_ascii(), "channel_name must be an ascii string");
 
         context.0.open_endpoint_channel(endpoint_service_id.clone(), client_auth_private_key.clone(), &channel_name)
     });
@@ -1451,7 +1405,7 @@ pub extern "C" fn gosling_context_poll_events(
             let mut context = match context_tuple_registry.get_mut(context as usize) {
                 Some(context) => context,
                 None => {
-                    bail!("gosling_context_poll_events(): context is invalid");
+                    bail!("context is invalid");
                 }
             };
             let mut context_events = context.0.update()?;
@@ -2035,7 +1989,7 @@ pub extern "C" fn gosling_context_set_tor_bootstrap_status_received_callback(
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_set_tor_bootstrap_status_received_callback(): context is invalid");
+                bail!("context is invalid");
             }
         };
 
@@ -2064,7 +2018,7 @@ pub extern "C" fn gosling_context_set_tor_bootstrap_completed_callback(
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_set_tor_bootstrap_completed_callback(): context is invalid");
+                bail!("context is invalid");
             }
         };
 
@@ -2093,7 +2047,7 @@ pub extern "C" fn gosling_context_set_tor_log_received_callback(
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_set_tor_log_received_callback(): context is invalid");
+                bail!("context is invalid");
             }
         };
 
@@ -2122,7 +2076,7 @@ pub extern "C" fn gosling_context_set_identity_server_published_callback(
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_set_identity_server_published_callback(): context is invalid");
+                bail!("context is invalid");
             }
         };
 
@@ -2151,7 +2105,7 @@ pub extern "C" fn gosling_context_set_identity_client_handshake_init_callback(
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_set_identity_client_handshake_init_callback(): context is invalid");
+                bail!("context is invalid");
             }
         };
 
@@ -2179,7 +2133,7 @@ pub extern "C" fn gosling_context_set_identity_client_handshake_free_callback(
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_set_identity_client_handshake_free_callback(): context is invalid");
+                bail!("context is invalid");
             }
         };
 
@@ -2207,7 +2161,7 @@ pub extern "C" fn gosling_context_set_identity_client_challenge_response_size_ca
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_set_identity_client_challenge_response_size_callback(): context is invalid");
+                bail!("context is invalid");
             }
         };
 
@@ -2236,7 +2190,7 @@ pub extern "C" fn gosling_context_set_identity_client_build_challenge_response_c
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_set_identity_client_build_challenge_response_callback(): context is invalid");
+                bail!("context is invalid");
             }
         };
 
@@ -2264,7 +2218,7 @@ pub extern "C" fn gosling_context_set_identity_server_handshake_init_callback(
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_set_identity_server_handshake_init_callback(): context is invalid");
+                bail!("context is invalid");
             }
         };
 
@@ -2292,7 +2246,7 @@ pub extern "C" fn gosling_context_set_identity_server_handshake_free_callback(
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_set_identity_server_handshake_free_callback(): context is invalid");
+                bail!("context is invalid");
             }
         };
 
@@ -2320,7 +2274,7 @@ pub extern "C" fn gosling_context_set_identity_server_endpoint_supported_callbac
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_set_identity_server_endpoint_supported_callback(): context is invalid");
+                bail!("context is invalid");
             }
         };
 
@@ -2348,7 +2302,7 @@ pub extern "C" fn gosling_context_set_identity_server_challenge_size_callack(
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_set_identity_server_challenge_size_callack(): context is invalid");
+                bail!("context is invalid");
             }
         };
 
@@ -2376,7 +2330,7 @@ pub extern "C" fn gosling_context_set_identity_server_build_challenge_callback(
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_set_identity_server_build_challenge_callback(): context is invalid");
+                bail!("context is invalid");
             }
         };
 
@@ -2404,7 +2358,7 @@ pub extern "C" fn gosling_context_set_identity_server_verify_challenge_response_
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_set_identity_server_verify_challenge_response_callback(): context is invalid");
+                bail!("context is invalid");
             }
         };
 
@@ -2432,7 +2386,7 @@ pub extern "C" fn gosling_context_set_identity_server_poll_challenge_response_re
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_set_identity_server_poll_challenge_response_result_callback(): context is invalid");
+                bail!("context is invalid");
             }
         };
 
@@ -2460,7 +2414,7 @@ pub extern "C" fn gosling_context_set_endpoint_server_published_callback(
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_set_endpoint_server_published_callback(): context is invalid");
+                bail!("context is invalid");
             }
         };
 
@@ -2489,7 +2443,7 @@ pub extern "C" fn gosling_context_set_endpoint_client_request_completed_callback
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_set_endpoint_client_request_completed_callback(): context is invalid");
+                bail!("context is invalid");
             }
         };
 
@@ -2518,7 +2472,7 @@ pub extern "C" fn gosling_context_set_endpoint_server_request_completed_callback
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_set_endpoint_server_request_completed_callback(): context is invalid");
+                bail!("context is invalid");
             }
         };
 
@@ -2547,7 +2501,7 @@ pub extern "C" fn gosling_context_set_endpoint_client_channel_request_completed_
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_set_endpoint_client_channel_request_completed_callback(): context is invalid");
+                bail!("context is invalid");
             }
         };
 
@@ -2576,7 +2530,7 @@ pub extern "C" fn gosling_context_set_endpoint_server_channel_request_completed_
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => {
-                bail!("gosling_context_set_endpoint_server_channel_request_completed_callback(): context is invalid");
+                bail!("context is invalid");
             }
         };
 

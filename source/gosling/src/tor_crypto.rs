@@ -100,7 +100,7 @@ fn calc_truncated_checksum(public_key: &[u8; ED25519_PUBLIC_KEY_SIZE]) -> [u8; T
 fn hash_tor_password_with_salt(salt: &[u8; S2K_RFC2440_SPECIFIER_LEN], password: &str) -> Result<String> {
 
     if salt[S2K_RFC2440_SPECIFIER_LEN - 1] != 0x60 {
-        bail!("hash_tor_password_with_salt(): last byte in salt must be '0x60', received '{:#02X}'", salt[S2K_RFC2440_SPECIFIER_LEN - 1]);
+        bail!("last byte in salt must be '0x60', received '{:#02X}'", salt[S2K_RFC2440_SPECIFIER_LEN - 1]);
     }
 
     // tor-specific rfc 2440 constants
@@ -201,18 +201,18 @@ impl Ed25519PrivateKey {
 
     pub fn from_key_blob(key_blob: &str) -> Result<Ed25519PrivateKey> {
         if key_blob.len() != ED25519_PRIVATE_KEYBLOB_LENGTH {
-            bail!("Ed25519PrivateKey::from_key_blob(): expects string of length '{}'; received string with length '{}'", ED25519_PRIVATE_KEYBLOB_LENGTH, key_blob.len());
+            bail!("expects string of length '{}'; received string with length '{}'", ED25519_PRIVATE_KEYBLOB_LENGTH, key_blob.len());
         }
 
         if !key_blob.starts_with(&ED25519_PRIVATE_KEYBLOB_HEADER) {
-            bail!("Ed25519PrivateKey::from_key_blob(): expects string that begins with '{}'; received '{}'", &ED25519_PRIVATE_KEYBLOB_HEADER, &key_blob);
+            bail!("expects string that begins with '{}'; received '{}'", &ED25519_PRIVATE_KEYBLOB_HEADER, &key_blob);
         }
 
         let base64_key:&str = &key_blob[ED25519_PRIVATE_KEYBLOB_HEADER.len()..];
         let private_key_data = resolve!(BASE64.decode(base64_key.as_bytes()));
 
         if private_key_data.len() != ED25519_PRIVATE_KEY_SIZE {
-            bail!("Ed25519PrivateKey::from_key_blob(): expects decoded private key length '{}'; actual '{}'", ED25519_PRIVATE_KEY_SIZE, private_key_data.len());
+            bail!("expects decoded private key length '{}'; actual '{}'", ED25519_PRIVATE_KEY_SIZE, private_key_data.len());
         }
         let private_key_data: [u8; ED25519_PRIVATE_KEY_SIZE] = private_key_data.try_into().unwrap();
 
@@ -279,7 +279,7 @@ impl Ed25519PublicKey {
         let mut decoded_service_id = [0u8; V3_ONION_SERVICE_ID_RAW_SIZE];
         let decoded_byte_count = ONION_BASE32.decode_mut(service_id.as_bytes(), &mut decoded_service_id).unwrap();
         if decoded_byte_count != V3_ONION_SERVICE_ID_RAW_SIZE {
-            bail!("Ed25519PublicKey::from_service_id(): decoded byte count is '{}', expected '{}'", decoded_byte_count, V3_ONION_SERVICE_ID_RAW_SIZE);
+            bail!("decoded byte count is '{}', expected '{}'", decoded_byte_count, V3_ONION_SERVICE_ID_RAW_SIZE);
         }
 
         Ok(Ed25519PublicKey{
@@ -450,7 +450,7 @@ impl X25519PublicKey {
 impl V3OnionServiceId {
     pub fn from_string(service_id: &str) -> Result<V3OnionServiceId> {
         if !V3OnionServiceId::is_valid(service_id) {
-            bail!("V3OnionServiceId::from_string(): '{}' is not a valid v3 onion service id", &service_id);
+            bail!("'{}' is not a valid v3 onion service id", &service_id);
         }
         Ok(V3OnionServiceId{data: resolve!(service_id.as_bytes().try_into())})
     }
