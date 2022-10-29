@@ -542,9 +542,10 @@ impl Session {
                 Err(err) => if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut {
                         Ok(None)
                     } else {
+                        println!("!!! error: {:?}", err.kind());
                         bail!(err);
                     }
-                Ok(0) => bail!("no more available bytes"),
+                Ok(0) => Ok(None),
                 Ok(count) => {
                     self.pending_data.extend_from_slice(&buffer[0..count]);
                     // all bytes required for i32 have been read
@@ -646,8 +647,11 @@ impl Session {
             self.send_message_impl(left)?;
             self.send_message_impl(&mut right)?;
         } else {
+            println!("sent: {}", message);
             resolve!(self.writer.write_all(&self.message_write_buffer));
+            resolve!(self.writer.flush());
         }
+
         Ok(())
     }
 

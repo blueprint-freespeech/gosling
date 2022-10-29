@@ -49,6 +49,9 @@ prefix_with_name = true
 "RawSocket" = "SOCKET"
 "RawFd" = "int"
 
+# typedef
+GoslingHandshakehandle = "gosling_handshake_handle_t"
+
 # structs
 "GoslingLibrary" = "gosling_library"
 "GoslingError" = "gosling_error"

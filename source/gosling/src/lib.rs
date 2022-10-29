@@ -1,4 +1,18 @@
-#![allow(dead_code)]
+// ABI BREAKING
+
+// INTERNAL
+
+// TODO: re-do endpoin server/client logic in similar safer fashion as identity server/client
+// TODO: translate_failures should be able to handle error'ing when library not yet init'd
+// TODO: FFI functions should catch all errors and return nice error messages, no '?' or unwrap()'s here
+// TODO: implement a customizable logger for internal debug logging and purge printlns throughout the library
+// TODO: print some warning when starting a server with callbacks missing
+// TODO: review all `unwrap() calls
+// TODO: add more ensure_*! rules to error and simplify some of our error handling
+// TODO: We should remove all of these "allows" eventually.  This one
+//  is something to be expected on work-in-progress code...
+
+// #![allow(dead_code)]
 // These are bad style at best and can conceal problems.
 #![allow(unused_imports)]
 #![allow(unused_mut)]

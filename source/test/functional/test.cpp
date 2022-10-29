@@ -28,23 +28,14 @@ constexpr static uint8_t  challenge_response_bson[] = {
 };
 
 static void create_client_handshake(unique_ptr<gosling_context>& ctx) {
-    const auto init_callback = []() -> size_t {
-        auto handshake_handle = 0;
-        cout << "--- started_callback: { handshake_handle: " << handshake_handle << " }" <<endl;
-        return handshake_handle;
-    };
-    REQUIRE_NOTHROW(::gosling_context_set_identity_client_handshake_init_callback(
-        ctx.get(),
-        init_callback,
-        throw_on_error()));
 
     const auto challenge_response_size_callback = [](
-        const size_t* handshake_handle,
-        const char* endpoint_name,
-        size_t endpoint_name_length) -> size_t {
-        REQUIRE(handshake_handle != nullptr);
-        REQUIRE(*handshake_handle == 0);
-        cout << "--- challenge_response_size_callback: { handshake_handle: " << *handshake_handle << " }" <<endl;
+        gosling_context* context,
+        size_t handshake_handle,
+        const uint8_t* challenge_buffer,
+        size_t challenge_buffer_size) -> size_t {
+        REQUIRE(context != nullptr);
+        cout << "--- challenge_response_size_callback: { context: " << static_cast<void*>(context) << ", handshake_handle: " << handshake_handle << " }" <<endl;
         return sizeof(challenge_response_bson);
     };
 
@@ -54,18 +45,15 @@ static void create_client_handshake(unique_ptr<gosling_context>& ctx) {
         throw_on_error()));
 
     const auto build_challenge_response_callback = [](
-        const size_t* handshake_handle,
-        const char *endpoint_name,
-        size_t endpoint_name_length,
-        const uint8_t *challenge_buffer,
+        gosling_context* context,
+        size_t handshake_handle,
+        const uint8_t* challenge_buffer,
         size_t challenge_buffer_size,
         uint8_t *out_challenge_response_buffer,
         size_t challenge_response_buffer_size) -> void {
-        REQUIRE(handshake_handle != nullptr);
-        REQUIRE(*handshake_handle == 0);
-        cout << "--- build_challenge_response_callback: { handshake_handle: " << *handshake_handle << " }" <<endl;
+        REQUIRE(context != nullptr);
+        cout << "--- build_challenge_response_callback: { context: " << static_cast<void*>(context) << ", handshake_handle: " << handshake_handle << " }" <<endl;
 
-        REQUIRE(string(endpoint_name, endpoint_name_length) == "default");
         REQUIRE(challenge_buffer_size == sizeof(challenge_bson));
         REQUIRE(std::equal(challenge_buffer, challenge_buffer + challenge_buffer_size, challenge_bson));
         REQUIRE(challenge_response_buffer_size == sizeof(challenge_response_bson));
@@ -81,25 +69,14 @@ static void create_client_handshake(unique_ptr<gosling_context>& ctx) {
 }
 
 static void create_server_handshake(unique_ptr<gosling_context>& ctx) {
-    const auto init_callback = []() -> size_t {
-        auto handshake_handle = 0;
-        cout << "--- started_callback: { handshake_handle: " << handshake_handle << " }" <<endl;
-        return handshake_handle;
-    };
-
-    REQUIRE_NOTHROW(::gosling_context_set_identity_server_handshake_init_callback(
-        ctx.get(),
-        init_callback,
-        throw_on_error()));
 
     const auto endpoint_supported_callback = [](
-        const size_t* handshake_handle,
+        gosling_context* context,
+        size_t handshake_handle,
         const char* endpoint_name,
         size_t endpoint_name_length) -> bool {
-        REQUIRE(handshake_handle != nullptr);
-        REQUIRE(*handshake_handle == 0);
-        cout << "--- endpoint_supported_callback: { handshake_handle: " << *handshake_handle << " }" <<endl;
-
+        REQUIRE(context !=  nullptr);
+        cout << "--- endpoint_supported_callback: { context: " << context << ", handshake_handle: " << handshake_handle << " }" <<endl;
 
         if (string(endpoint_name, endpoint_name_length) == "default") {
             return true;
@@ -114,12 +91,10 @@ static void create_server_handshake(unique_ptr<gosling_context>& ctx) {
         throw_on_error()));
 
     const auto challenge_size_callback = [](
-        const size_t* handshake_handle,
-        const char* endpoint_name,
-        size_t endpoint_name_length) -> size_t {
-        REQUIRE(handshake_handle != nullptr);
-        REQUIRE(*handshake_handle == 0);
-        cout << "--- challenge_size_callback: { handshake_handle: " << *handshake_handle << " }" <<endl;
+        gosling_context* context,
+        size_t handshake_handle) -> size_t {
+        REQUIRE(context != nullptr);
+        cout << "--- challenge_size_callback: { context: " << context << ", handshake_handle: " << handshake_handle << " }" << endl;
         return sizeof(challenge_bson);
     };
 
@@ -129,16 +104,13 @@ static void create_server_handshake(unique_ptr<gosling_context>& ctx) {
         throw_on_error()));
 
     const auto build_challenge_callback = [](
-        const size_t* handshake_handle,
-        const char* endpoint_name,
-        size_t endpoint_name_length,
+        gosling_context* context,
+        size_t handshake_handle,
         uint8_t* out_challenge_buffer,
         size_t challenge_buffer_size) -> void {
-        REQUIRE(handshake_handle != nullptr);
-        REQUIRE(*handshake_handle == 0);
-        cout << "--- build_challenge_callback: { handshake_handle: " << *handshake_handle << " }" <<endl;
+        REQUIRE(context != nullptr);
+        cout << "--- build_challenge_callback: { context: " << context << ", handshake_handle: " << handshake_handle << " }" << endl;
 
-        REQUIRE(string(endpoint_name, endpoint_name_length) == "default");
         REQUIRE(out_challenge_buffer != nullptr);
         REQUIRE(challenge_buffer_size == sizeof(challenge_bson));
 
@@ -151,52 +123,30 @@ static void create_server_handshake(unique_ptr<gosling_context>& ctx) {
         throw_on_error()));
 
     const auto verify_challenge_response_callback = [](
-        const size_t* handshake_handle,
-        const char* endpoint_name,
-        size_t endpoint_name_length,
-        const uint8_t* challenge_buffer,
-        size_t challenge_buffer_size,
+        gosling_context* context,
+        size_t handshake_handle,
         const uint8_t* challenge_response_buffer,
-        size_t challenge_response_buffer_size) -> gosling_challenge_response_result_t {
-        REQUIRE(handshake_handle != nullptr);
-        REQUIRE(*handshake_handle == 0);
-        cout << "--- verify_challenge_response_callback: { handshake_handle: " << *handshake_handle << " }" <<endl;
+        size_t challenge_response_buffer_size) -> bool {
+        REQUIRE(context != nullptr);
+        cout << "--- verify_challenge_response_callback: { context: " << context << ", handshake_handle: " << handshake_handle << " }" <<endl;
 
-        REQUIRE(string(endpoint_name, endpoint_name_length) == "default");
-        REQUIRE(challenge_buffer != nullptr);
-        REQUIRE(challenge_buffer_size == sizeof(challenge_bson));
-        REQUIRE(std::equal(challenge_buffer, challenge_buffer + challenge_buffer_size, challenge_bson));
         REQUIRE(challenge_response_buffer != nullptr);
 
         if (challenge_response_buffer_size != sizeof(challenge_response_bson)) {
-            return gosling_challenge_response_result_invalid;
+            return false;
         }
 
         if (!std::equal(challenge_response_buffer, challenge_response_buffer + challenge_response_buffer_size, challenge_response_bson)) {
-            return gosling_challenge_response_result_invalid;
+            return false;
         }
 
-        return gosling_challenge_response_result_valid;
+        return true;
     };
 
     REQUIRE_NOTHROW(::gosling_context_set_identity_server_verify_challenge_response_callback(
         ctx.get(),
         verify_challenge_response_callback,
         throw_on_error()));
-
-    const auto poll_challenge_response_result_callback = [](
-        const size_t* handshake_handle) -> gosling_challenge_response_result_t {
-        REQUIRE(handshake_handle != nullptr);
-        REQUIRE(*handshake_handle == 0);
-        cout << "--- poll_challenge_response_result_callback: { handshake_handle: " << *handshake_handle << " }" <<endl;
-        return gosling_challenge_response_result_pending;
-    };
-
-    REQUIRE_NOTHROW(::gosling_context_set_identity_server_poll_challenge_response_result_callback(
-        ctx.get(),
-        poll_challenge_response_result_callback,
-        throw_on_error()));
-
 }
 
 // gosling demo
@@ -312,7 +262,7 @@ TEST_CASE("gosling_cpp_demo") {
     static unique_ptr<gosling_v3_onion_service_id> alice_endpoint_service_id;
     static unique_ptr<gosling_x25519_private_key> pat_onion_auth_private_key;
     std::string endpointName = "default";
-    REQUIRE_NOTHROW(::gosling_context_set_endpoint_client_request_completed_callback(pat_context.get(),
+    REQUIRE_NOTHROW(::gosling_context_set_identity_client_request_completed_callback(pat_context.get(),
         [](
             gosling_context* context,
             const gosling_v3_onion_service_id* identity_service_id,
@@ -334,7 +284,7 @@ TEST_CASE("gosling_cpp_demo") {
     static unique_ptr<gosling_ed25519_private_key> alice_endpoint_private_key;
     static unique_ptr<gosling_v3_onion_service_id> pat_identity_service_id;
     static unique_ptr<gosling_x25519_public_key> pat_onion_auth_public_key;
-    REQUIRE_NOTHROW(::gosling_context_set_endpoint_server_request_completed_callback(alice_context.get(),
+    REQUIRE_NOTHROW(::gosling_context_set_identity_server_request_completed_callback(alice_context.get(),
         [](
             gosling_context* context,
             const gosling_ed25519_private_key* endpoint_private_key,
@@ -353,7 +303,7 @@ TEST_CASE("gosling_cpp_demo") {
             cout << "--- alice endpoint request completed" << endl;
         },
         throw_on_error()));
-    REQUIRE_NOTHROW(::gosling_context_request_remote_endpoint(pat_context.get(), alice_identity.get(), endpointName.data(), endpointName.size(), throw_on_error()));
+    REQUIRE_NOTHROW(::gosling_context_begin_identity_handshake(pat_context.get(), alice_identity.get(), endpointName.data(), endpointName.size(), throw_on_error()));
 
     while(!alice_endpoint_request_complete) {
         REQUIRE_NOTHROW(::gosling_context_poll_events(alice_context.get(), throw_on_error()));
