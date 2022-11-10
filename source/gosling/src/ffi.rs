@@ -1180,6 +1180,7 @@ pub extern "C" fn gosling_context_poll_events(
                 },
                 ContextEvent::IdentityServerRequestReceived{
                     handle,
+                    client_service_id,
                     endpoint_name} => {
                     let endpoint_supported = match callbacks.identity_server_endpoint_supported_callback {
                         Some(callback) => {
@@ -1211,7 +1212,6 @@ pub extern "C" fn gosling_context_poll_events(
                 },
                 ContextEvent::IdentityServerChallengeResponseReceived{
                     handle,
-                    client_identity,
                     challenge_response} => {
 
                     let challenge_response_valid = match callbacks.identity_server_verify_challenge_response_callback {

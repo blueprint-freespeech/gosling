@@ -140,6 +140,7 @@ struct IdentityClient {
     rpc: Session,
     server_service_id: V3OnionServiceId,
     requested_endpoint: String,
+    client_service_id: V3OnionServiceId,
     client_ed25519_private: Ed25519PrivateKey,
     client_x25519_private: X25519PrivateKey,
 
@@ -163,6 +164,7 @@ impl IdentityClient {
             rpc,
             server_service_id,
             requested_endpoint,
+            client_service_id: V3OnionServiceId::from_private_key(&client_ed25519_private),
             client_ed25519_private,
             client_x25519_private,
 
@@ -191,6 +193,7 @@ impl IdentityClient {
                     0,
                     doc!{
                         "version" : bson::Bson::String(GOSLING_VERSION.to_string()),
+                        "client_identity" : bson::Bson::String(self.client_service_id.to_string()),
                         "endpoint" : bson::Bson::String(self.requested_endpoint.clone()),
                     })?);
                 self.state = IdentityClientState::WaitingForChallenge;
@@ -244,15 +247,11 @@ impl IdentityClient {
                 OsRng.fill_bytes(&mut client_cookie);
                 let client_cookie = client_cookie;
 
-                // client_identity
-                let client_service_id = V3OnionServiceId::from_private_key(&self.client_ed25519_private);
-                let client_identity = client_service_id.to_string();
-
                 // client_identity_proof_signature
                 let client_identity_proof = build_client_proof(
                     DomainSeparator::GoslingIdentity,
                     &self.requested_endpoint,
-                    &client_service_id,
+                    &self.client_service_id,
                     &self.server_service_id,
                     &client_cookie,
                     &server_cookie,
@@ -263,6 +262,7 @@ impl IdentityClient {
                  let client_authorization_key = X25519PublicKey::from_private_key(&self.client_x25519_private);
 
                 // client_authorization_signature
+                let client_identity = self.client_service_id.to_string();
                 let (client_authorization_signature, signbit) = self.client_x25519_private.sign_message(client_identity.as_bytes())?;
 
                 // client_authorization_key_signbit
@@ -275,7 +275,6 @@ impl IdentityClient {
                // build our args object for rpc call
                 let args = doc!{
                     "client_cookie" : bson::Bson::Binary(bson::Binary{subtype: BinarySubtype::Generic, bytes: client_cookie.to_vec()}),
-                    "client_identity" : bson::Bson::String(client_identity),
                     "client_identity_proof_signature" : bson::Bson::Binary(bson::Binary{subtype: BinarySubtype::Generic, bytes: client_identity_proof_signature.to_bytes().to_vec()}),
                     "client_authorization_key" : bson::Bson::Binary(bson::Binary{subtype: BinarySubtype::Generic, bytes: client_authorization_key.as_bytes().to_vec()}),
                     "client_authorization_key_signbit" : bson::Bson::Boolean(client_authorization_key_signbit),
@@ -333,11 +332,11 @@ impl IdentityClient {
 
 enum IdentityServerEvent {
     RequestReceived{
+        client_service_id: V3OnionServiceId,
         endpoint_name: String,
     },
 
     ChallengeResponseReceived{
-        client_identity: V3OnionServiceId,
         challenge_response: bson::document::Document,
     },
 
@@ -418,11 +417,11 @@ impl IdentityServer {
             // State Machine Data
             state: IdentityServerState::WaitingForBeginHandshake,
             begin_handshake_request_cookie: None,
+            client_identity: None,
             endpoint_name: None,
             server_cookie: None,
             endpoint_challenge: None,
             send_response_request_cookie: None,
-            client_identity: None,
             client_auth_key: None,
             challenge_response: None,
             endpoint_private_key: None,
@@ -445,52 +444,51 @@ impl IdentityServer {
 
         match(&self.state,
               self.begin_handshake_request_cookie,
+              self.client_identity.as_ref(),
               self.endpoint_name.as_ref(),
               self.server_cookie.as_ref(),
               self.endpoint_challenge.as_ref(),
               self.send_response_request_cookie,
-              self.client_identity.as_ref(),
               self.client_auth_key.as_ref(),
               self.challenge_response.as_mut(),
               self.endpoint_private_key.as_ref()) {
             (&IdentityServerState::WaitingForBeginHandshake,
              Some(_begin_handshake_request_cookie),
+             Some(client_identity),
              Some(endpoint_name),
              None, // server_cookie
              None, // endpoint_challenge
              None, // send_response_request_cookie
-             None, // client_identity
              None, // client_auth_key
              None, // challenge_response
              None) // endpoint_private_key
             => {
                 self.state = IdentityServerState::GettingChallenge;
-                return Ok(Some(IdentityServerEvent::RequestReceived{endpoint_name: endpoint_name.clone()}));
+                return Ok(Some(IdentityServerEvent::RequestReceived{client_service_id: client_identity.clone(), endpoint_name: endpoint_name.clone()}));
             },
             (&IdentityServerState::WaitingForSendResponse,
              Some(_begin_handshake_request_cookie),
+             Some(_client_identity),
              Some(_endpoint_name),
              Some(_server_cookie),
              Some(_endpoint_challenge),
              Some(_send_response_request_cookie),
-             Some(client_identity),
              Some(_client_auth_key),
              Some(challenge_response),
              None) // endpoint_private_key
             => {
                 self.state = IdentityServerState::GettingChallengeVerification;
                 return Ok(Some(IdentityServerEvent::ChallengeResponseReceived{
-                    client_identity: client_identity.clone(),
                     challenge_response: std::mem::take(challenge_response),
                 }));
             },
             (&IdentityServerState::ChallengeVerificationResponseSent,
              Some(_begin_handshake_request_cookie),
+             Some(client_identity),
              Some(endpoint_name),
              Some(_server_cookie),
              Some(_endpoint_challenge),
              Some(_send_response_request_cookie),
-             Some(client_identity),
              Some(client_auth_key),
              Some(_challenge_response),
              Some(endpoint_private_key))
@@ -505,11 +503,11 @@ impl IdentityServer {
             },
             (&IdentityServerState::ChallengeVerificationResponseSent,
              Some(_begin_handshake_request_cookie),
+             Some(client_identity),
              Some(endpoint_name),
              Some(_server_cookie),
              Some(_endpoint_challenge),
              Some(_send_response_request_cookie),
-             Some(client_identity),
              Some(client_auth_key),
              Some(_challenge_response),
              None) // endpoint_private_key
@@ -550,19 +548,19 @@ impl IdentityServer {
 
         match (&self.state,
                self.begin_handshake_request_cookie,
+               self.client_identity.as_ref(),
                self.endpoint_name.as_ref(),
                self.server_cookie.as_ref(),
                self.endpoint_challenge.as_ref(),
-               self.client_identity.as_ref(),
                self.client_auth_key.as_ref(),
                self.challenge_response.as_ref(),
                self.endpoint_private_key.as_ref()) {
               (&IdentityServerState::GettingChallenge,
                Some(_begin_handshake_request_cookie),
+               Some(_client_identity),
                Some(_endpoint_name),
                None, // server_cookie
                None, // endpoint_challenge
-               None, // client_identity
                None, // client_auth_key
                None, // challenge_response
                None) => // endpoint_private_key
@@ -612,8 +610,6 @@ impl IdentityServer {
         // evaluate the client authorization signature
         self.client_auth_signature_valid = client_authorization_signature.verify_x25519(client_identity.as_bytes(), &client_authorization_key, client_authorization_key_signbit);
 
-        // save off client identity
-        self.client_identity = Some(client_identity);
         // save off client auth key for future endpoint generation
         self.client_auth_key = Some(client_authorization_key);
 
@@ -628,19 +624,19 @@ impl IdentityServer {
 
         match (&self.state,
                self.begin_handshake_request_cookie,
+               self.client_identity.as_ref(),
                self.endpoint_name.as_ref(),
                self.server_cookie.as_ref(),
                self.endpoint_challenge.as_ref(),
-               self.client_identity.as_ref(),
                self.client_auth_key.as_ref(),
                self.challenge_response.as_ref(),
                self.endpoint_private_key.as_ref()) {
               (&IdentityServerState::GettingChallengeVerification,
                Some(_begin_handshake_request_cookie),
+               Some(_client_identity),
                Some(_endpoint_name),
                Some(_server_cookie),
                Some(_endpoint_challenge),
-               Some(_client_identity),
                Some(_client_auth_key),
                Some(_challenge_response),
                None) => // endpoint_private_key
@@ -670,10 +666,10 @@ impl ApiSet for IdentityServer {
         match (name, version,
                &self.state,
                self.begin_handshake_request_cookie,
+               self.client_identity.as_ref(),
                self.endpoint_name.as_ref(),
                self.server_cookie.as_ref(),
                self.endpoint_challenge.as_ref(),
-               self.client_identity.as_ref(),
                self.client_auth_key.as_ref(),
                self.challenge_response.as_ref(),
                self.endpoint_private_key.as_ref()) {
@@ -681,19 +677,28 @@ impl ApiSet for IdentityServer {
             ("begin_handshake", 0,
              &IdentityServerState::WaitingForBeginHandshake,
              None, // begin_handshake_request_cookie
+             None, // client_identity
              None, // endpoint_name
              None, // server_cookie
              None, // endpoint_challenge
-             None, // client_identity
              None, // client_auth_key
              None, // challenge_response
              None) => // endpoint_private_key
             {
                 if let (Some(Bson::String(version)),
+                        Some(Bson::String(client_identity)),
                         Some(Bson::String(endpoint_name))) =
                        (args.remove("version"),
+                        args.remove("client_identity"),
                         args.remove("endpoint")) {
                     self.begin_handshake_request_cookie = Some(request_cookie);
+
+                    // client_identiity
+                    self.client_identity = match V3OnionServiceId::from_string(&client_identity) {
+                        Ok(client_identity) => Some(client_identity),
+                        Err(_) => return Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32)),
+                    };
+
                     match self.handle_begin_handshake(version, endpoint_name) {
                         Ok(()) => Ok(None),
                         Err(err) => Err(ErrorCode::Runtime(err as i32)),
@@ -706,24 +711,22 @@ impl ApiSet for IdentityServer {
             ("send_response", 0,
              &IdentityServerState::WaitingForSendResponse,
              Some(_begin_handshake_request_cookie),
+             Some(client_identity),
              Some(_endpoint_name),
              Some(_server_cookie),
              Some(_endpoint_challenge),
-             None, // client_identity
              None, // client_auth_key
              None, // challenge_response
              None) => // endpoint_private_key
             {
                 // arg validation
                 if let (Some(Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: client_cookie})),
-                        Some(Bson::String(client_identity)),
                         Some(Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: client_identity_proof_signature})),
                         Some(Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: client_authorization_key})),
                         Some(Bson::Boolean(client_authorization_key_signbit)),
                         Some(Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: client_authorization_signature})),
                         Some(Bson::Document(challenge_response))) =
                        (args.remove("client_cookie"),
-                        args.remove("client_identity"),
                         args.remove("client_identity_proof_signature"),
                         args.remove("client_authorization_key"),
                         args.remove("client_authorization_key_signbit"),
@@ -734,12 +737,6 @@ impl ApiSet for IdentityServer {
                     // client_cookie
                     let client_cookie : ClientCookie = match client_cookie.try_into() {
                         Ok(client_cookie) => client_cookie,
-                        Err(_) => return Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32)),
-                    };
-
-                    // client_identiity
-                    let client_identity = match V3OnionServiceId::from_string(&client_identity) {
-                        Ok(client_identity) => client_identity,
                         Err(_) => return Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32)),
                     };
 
@@ -777,7 +774,7 @@ impl ApiSet for IdentityServer {
                     };
                     match self.handle_send_response(
                             client_cookie,
-                            client_identity,
+                            client_identity.clone(),
                             client_identity_proof_signature,
                             client_authorization_key,
                             client_authorization_key_signbit,
@@ -797,21 +794,21 @@ impl ApiSet for IdentityServer {
     fn next_result(&mut self) -> Option<(RequestCookie, Option<bson::Bson>, ErrorCode)> {
         match (&self.state,
                self.begin_handshake_request_cookie,
+               self.client_identity.as_ref(),
                self.endpoint_name.as_ref(),
                self.server_cookie.as_ref(),
                self.endpoint_challenge.as_mut(),
                self.send_response_request_cookie,
-               self.client_identity.as_ref(),
                self.client_auth_key.as_ref(),
                self.challenge_response.as_ref()) {
             // return challenge from begin_handshake
             (&IdentityServerState::ChallengeReady,
              Some(begin_handshake_request_cookie),
+             Some(_client_identity),
              Some(_endpoint_name),
              Some(server_cookie),
              Some(endpoint_challenge),
              None, // send_response_request_cookie
-             None, // client_identity
              None, // client_auth_key
              None) => // challenge_response
             {
@@ -827,11 +824,11 @@ impl ApiSet for IdentityServer {
             (&IdentityServerState::ChallengeReady, _, _, _, _, _, _, _, _) => unreachable!(),
             (&IdentityServerState::ChallengeVerificationReady,
              Some(_begin_handshake_request_cookie),
+             Some(_client_identity),
              Some(_endpoint_name),
              Some(_server_cookie),
              Some(_endpoint_challenge),
              Some(send_response_request_cookie),
-             Some(_client_identity),
              Some(_client_auth_key),
              Some(_challenge_response)) =>
             {
@@ -844,7 +841,6 @@ impl ApiSet for IdentityServer {
 
                 self.state = IdentityServerState::ChallengeVerificationResponseSent;
                 if success {
-
                     let endpoint_private_key = Ed25519PrivateKey::generate();
                     let endpoint_service_id = V3OnionServiceId::from_private_key(&endpoint_private_key);
                     self.endpoint_private_key = Some(endpoint_private_key);
@@ -1316,13 +1312,13 @@ pub enum ContextEvent {
     // identity server receives request from identity client
     IdentityServerRequestReceived{
         handle: HandshakeHandle,
+        client_service_id: V3OnionServiceId,
         endpoint_name: String,
     },
 
     // identity server receives challenge response from identity client
     IdentityServerChallengeResponseReceived{
         handle: HandshakeHandle,
-        client_identity: V3OnionServiceId,
         challenge_response: bson::document::Document,
     },
 
@@ -1694,20 +1690,19 @@ impl Context {
             for handle in handles {
                 let mut identity_server = self.identity_servers.get_mut(&handle).unwrap();
                 let remove = match identity_server.update() {
-                    Ok(Some(IdentityServerEvent::RequestReceived{endpoint_name})) => {
+                    Ok(Some(IdentityServerEvent::RequestReceived{client_service_id, endpoint_name})) => {
                         events.push(
                             ContextEvent::IdentityServerRequestReceived{
                                 handle,
+                                client_service_id,
                                 endpoint_name});
                         false
                     },
                     Ok(Some(IdentityServerEvent::ChallengeResponseReceived{
-                        client_identity,
                         challenge_response})) => {
                         events.push(
                             ContextEvent::IdentityServerChallengeResponseReceived{
                                 handle,
-                                client_identity,
                                 challenge_response});
                         false
                     },
@@ -1871,10 +1866,12 @@ fn identity_test(
     while !server_complete && !client_complete {
         if !server_complete {
             match ident_server.update() {
-                Ok(Some(IdentityServerEvent::RequestReceived{endpoint_name})) => {
+                Ok(Some(IdentityServerEvent::RequestReceived{client_service_id, endpoint_name})) => {
+                    println!("server challenge send");
                     ident_server.send_challenge(client_requested_endpoint_valid, server_challenge.clone())?;
                 },
-                Ok(Some(IdentityServerEvent::ChallengeResponseReceived{client_identity, challenge_response})) => {
+                Ok(Some(IdentityServerEvent::ChallengeResponseReceived{challenge_response})) => {
+                    println!("server challenge repsonse received");
                     ident_server.send_challenge_verification(challenge_response == server_expected_response)?;
                 },
                 Ok(Some(IdentityServerEvent::RequestCompleted{endpoint_private_key,endpoint_name,client_service_id,client_auth_public_key})) => {
@@ -1899,6 +1896,7 @@ fn identity_test(
         if !client_complete {
             match ident_client.update() {
                 Ok(Some(IdentityClientEvent::ChallengeRequestReceived{identity_service_id, endpoint_name, endpoint_challenge})) => {
+                    println!("client challenge request received");
                     ident_client.send_response(client_response.clone())?;
                 },
                 Ok(Some(IdentityClientEvent::RequestCompleted{identity_service_id,endpoint_service_id,endpoint_name,client_auth_private_key})) => {
@@ -2206,12 +2204,12 @@ fn test_gosling_context() -> Result<()> {
                         }
                     }
                 },
-                ContextEvent::IdentityServerRequestReceived{handle, endpoint_name} => {
+                ContextEvent::IdentityServerRequestReceived{handle, client_service_id, endpoint_name} => {
                     println!("Alice: endpoint request received");
                     // auto accept endpoint request, send empty challenge
-                    alice.server_handle_request_reveived(handle, true, doc!{})?;
+                    alice.server_handle_request_received(handle, true, doc!{})?;
                 },
-                ContextEvent::IdentityServerChallengeResponseReceived{handle, client_identity, challenge_response} => {
+                ContextEvent::IdentityServerChallengeResponseReceived{handle, challenge_response} => {
                     println!("Alice: challenge response received");
                     // auto accept challenge response
                     alice.server_handle_challenge_response_received(handle, true)?;
