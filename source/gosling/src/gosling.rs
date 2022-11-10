@@ -377,7 +377,6 @@ enum IdentityServerState {
 struct IdentityServer {
     // Session Data
     rpc: Option<Session>,
-    blocked_clients: HashSet<V3OnionServiceId>,
     server_identity: V3OnionServiceId,
 
     // State Machine Data
@@ -407,11 +406,10 @@ struct IdentityServer {
 }
 
 impl IdentityServer {
-    pub fn new(rpc: Session, blocked_clients: HashSet<V3OnionServiceId>, server_identity: V3OnionServiceId) -> Self {
+    pub fn new(rpc: Session, server_identity: V3OnionServiceId) -> Self {
         IdentityServer{
             // Session Data
             rpc: Some(rpc),
-            blocked_clients,
             server_identity,
 
             // State Machine Data
@@ -543,6 +541,7 @@ impl IdentityServer {
 
     pub fn send_challenge(
         &mut self,
+        client_allowed: bool,
         endpoint_valid: bool,
         endpoint_challenge: bson::document::Document) -> Result<(), error::Error> {
 
@@ -569,6 +568,7 @@ impl IdentityServer {
                 OsRng.fill_bytes(&mut server_cookie);
                 self.server_cookie = Some(server_cookie);
                 self.endpoint_challenge = Some(endpoint_challenge);
+                self.client_allowed = client_allowed;
                 self.client_requested_endpoint_valid = endpoint_valid;
                 self.state = IdentityServerState::ChallengeReady;
                 Ok(())
@@ -589,9 +589,6 @@ impl IdentityServer {
         client_authorization_key_signbit: u8,
         client_authorization_signature: Ed25519Signature,
         challenge_response: bson::document::Document) -> Result<(), GoslingError> {
-
-        // check our block list and verify the client is even allowed to request
-        self.client_allowed = !self.blocked_clients.contains(&client_identity);
 
         // convert client_identity to client's public ed25519 key
         if let Ok(client_identity_key) = Ed25519PublicKey::from_service_id(&client_identity) {
@@ -1287,9 +1284,6 @@ pub struct Context {
     identity_private_key : Ed25519PrivateKey,
     // Identity server's service id
     identity_service_id : V3OnionServiceId,
-
-    // Clients blocked on the identity server
-    blocked_clients : HashSet<V3OnionServiceId>,
 }
 
 pub enum ContextEvent {
@@ -1388,9 +1382,7 @@ impl Context {
         tor_working_directory: &Path,
         identity_port: u16,
         endpoint_port: u16,
-        identity_private_key: Ed25519PrivateKey,
-        blocked_clients: HashSet<V3OnionServiceId>,
-        ) -> Result<Self> {
+        identity_private_key: Ed25519PrivateKey) -> Result<Self> {
 
         let tor_manager = TorManager::new(tor_working_directory)?;
 
@@ -1413,7 +1405,6 @@ impl Context {
 
             identity_private_key,
             identity_service_id,
-            blocked_clients,
         })
     }
 
@@ -1482,11 +1473,12 @@ impl Context {
     pub fn server_handle_request_received(
         &mut self,
         handle: HandshakeHandle,
+        client_allowed: bool,
         endpoint_supported: bool,
         endpoint_challenge: bson::document::Document) -> Result<()> {
 
         if let Some(identity_server) = self.identity_servers.get_mut(&handle) {
-            identity_server.send_challenge(endpoint_supported, endpoint_challenge)
+            identity_server.send_challenge(client_allowed, endpoint_supported, endpoint_challenge)
         } else {
             bail!("no handshake associated with handle '{}'", handle);
         }
@@ -1578,7 +1570,6 @@ impl Context {
                 let server_rpc = Session::new(stream.try_clone()?, stream.try_clone()?);
                 let ident_server = IdentityServer::new(
                     server_rpc,
-                    self.blocked_clients.clone(),
                     server_service_id);
 
                 let handshake_handle = self.next_handshake_handle;
@@ -1836,12 +1827,6 @@ fn identity_test(
     let server_ed25519_public = Ed25519PublicKey::from_private_key(&server_ed25519_private);
     let server_service_id = V3OnionServiceId::from_public_key(&server_ed25519_public);
 
-    let mut blocked_clients: HashSet<V3OnionServiceId> = Default::default();
-    if client_blocked {
-        // block the client
-        blocked_clients.insert(client_service_id.clone());
-    }
-
     // rpc setup
     let mut client_rpc = Session::new(stream1.clone(), stream2.clone());
     let mut ident_client = IdentityClient::new(
@@ -1854,7 +1839,6 @@ fn identity_test(
     let mut server_rpc = Session::new(stream2, stream1);
     let mut ident_server = IdentityServer::new(
         server_rpc,
-        blocked_clients,
         server_service_id.clone());
 
     let endpoint_private_key: Option<Ed25519PrivateKey> = None;
@@ -1868,7 +1852,8 @@ fn identity_test(
             match ident_server.update() {
                 Ok(Some(IdentityServerEvent::RequestReceived{client_service_id, endpoint_name})) => {
                     println!("server challenge send");
-                    ident_server.send_challenge(client_requested_endpoint_valid, server_challenge.clone())?;
+                    let client_allowed = !client_blocked;
+                    ident_server.send_challenge(client_allowed, client_requested_endpoint_valid, server_challenge.clone())?;
                 },
                 Ok(Some(IdentityServerEvent::ChallengeResponseReceived{challenge_response})) => {
                     println!("server challenge repsonse received");
@@ -2100,8 +2085,7 @@ fn test_gosling_context() -> Result<()> {
         &alice_path,
         420,
         420,
-        alice_private_key,
-        Default::default())?;
+        alice_private_key)?;
     alice.bootstrap()?;
 
     let mut bootstrap_complete = false;
@@ -2131,8 +2115,7 @@ fn test_gosling_context() -> Result<()> {
         &pat_path,
         420,
         420,
-        pat_private_key,
-        Default::default())?;
+        pat_private_key)?;
     pat.bootstrap()?;
 
     let mut bootstrap_complete = false;
@@ -2207,7 +2190,7 @@ fn test_gosling_context() -> Result<()> {
                 ContextEvent::IdentityServerRequestReceived{handle, client_service_id, endpoint_name} => {
                     println!("Alice: endpoint request received");
                     // auto accept endpoint request, send empty challenge
-                    alice.server_handle_request_received(handle, true, doc!{})?;
+                    alice.server_handle_request_received(handle, true, true, doc!{})?;
                 },
                 ContextEvent::IdentityServerChallengeResponseReceived{handle, challenge_response} => {
                     println!("Alice: challenge response received");

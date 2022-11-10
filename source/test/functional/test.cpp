@@ -70,13 +70,28 @@ static void create_client_handshake(unique_ptr<gosling_context>& ctx) {
 
 static void create_server_handshake(unique_ptr<gosling_context>& ctx) {
 
+    const auto client_allowed_callback = [](
+        gosling_context* context,
+        size_t handshake_handle,
+        const gosling_v3_onion_service_id* client_service_id) -> bool {
+        REQUIRE(context != nullptr);
+        cout << "--- client allowed callback: { context: " << context << ", handshake_handle: " << handshake_handle << " }" << endl;
+
+        return true;
+    };
+
+    REQUIRE_NOTHROW(::gosling_context_set_identity_server_client_allowed_callback(
+        ctx.get(),
+        client_allowed_callback,
+        throw_on_error()));
+
     const auto endpoint_supported_callback = [](
         gosling_context* context,
         size_t handshake_handle,
         const char* endpoint_name,
         size_t endpoint_name_length) -> bool {
         REQUIRE(context !=  nullptr);
-        cout << "--- endpoint_supported_callback: { context: " << context << ", handshake_handle: " << handshake_handle << " }" <<endl;
+        cout << "--- endpoint_supported_callback: { context: " << context << ", handshake_handle: " << handshake_handle << " }" << endl;
 
         if (string(endpoint_name, endpoint_name_length) == "default") {
             return true;
@@ -188,8 +203,6 @@ TEST_CASE("gosling_cpp_demo") {
         420,  // identity port
         420,  // endpoint port
         alice_private_key.get(), // identity private key
-        nullptr, // blocked clients,
-        0, // blocked clients count
         throw_on_error()));
 
     create_client_handshake(alice_context); // client callbacks
@@ -204,8 +217,6 @@ TEST_CASE("gosling_cpp_demo") {
         420,  // identity port
         420,  // endpoint port
         alice_private_key.get(), // identity private key
-        nullptr, // blocked clients,
-        0, // blocked clients count
         throw_on_error()));
 
     create_client_handshake(pat_context); // client callbacks
