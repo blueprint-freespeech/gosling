@@ -520,6 +520,8 @@ impl Session {
                             self.pending_data = cursor.into_inner();
                             self.pending_data.clear();
 
+                            println!("recv: {}", bson);
+
                             Ok(Some(resolve!(Message::try_from(bson))))
                         } else {
                             bail!("failed to deserialize bson");
@@ -545,7 +547,10 @@ impl Session {
                         println!("!!! error: {:?}", err.kind());
                         bail!(err);
                     }
-                Ok(0) => Ok(None),
+                Ok(0) => {
+                    println!("no more available bytes");
+                    bail!("no more available bytes")
+                },
                 Ok(count) => {
                     self.pending_data.extend_from_slice(&buffer[0..count]);
                     // all bytes required for i32 have been read
@@ -575,7 +580,9 @@ impl Session {
                 },
                 Ok(None) => return Ok(()),
                 Err(err) => {
-                    if self.pending_sections.is_empty() {
+                    // ensure no pending items to handle
+                    if self.pending_sections.is_empty() &&
+                       self.inbound_responses.is_empty() {
                         bail!(err);
                     }
                     return Ok(());
@@ -813,7 +820,7 @@ impl Session {
         self.inbound_responses.drain(..)
     }
 
-    // gt the nxt response from the client
+    // get the next response from the client
     pub fn client_next_response(&mut self) -> Option<Response> {
         self.take_responses();
         self.inbound_responses.pop_front()
