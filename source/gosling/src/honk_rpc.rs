@@ -444,15 +444,15 @@ impl Default for Context {
     }
 }
 
-pub struct Session {
+pub struct Session<R,W> {
 
     // shared data
     context: Context,
 
     // read stream
-    reader: Box<dyn std::io::Read + Send>,
+    reader: R,
     // write stream
-    writer: Box<dyn std::io::Write + Send>,
+    writer: W,
 
     // message read data
 
@@ -476,16 +476,16 @@ pub struct Session {
     inbound_responses: VecDeque<Response>,
 }
 
-impl Session {
-    pub fn new<R, W>(reader: R, writer: W) -> Session where R : std::io::Read + Send + 'static, W : std::io::Write + Send + 'static {
+impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send  {
+    pub fn new(reader: R, writer: W) -> Self {
 
         let mut message_write_buffer: Vec<u8> = Default::default();
         message_write_buffer.reserve(DEFAULT_MAX_MESSAGE_SIZE);
 
         Session{
             context: Default::default(),
-            reader: Box::new(reader),
-            writer: Box::new(writer),
+            reader,
+            writer,
             remaining_byte_count: None,
             pending_data: Default::default(),
             pending_sections: Default::default(),

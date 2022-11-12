@@ -1,5 +1,4 @@
 // standard
-use std::boxed::Box;
 use std::clone::Clone;
 use std::collections::{BTreeMap,HashMap,HashSet};
 use std::convert::TryInto;
@@ -125,9 +124,9 @@ enum IdentityClientState {
 // An identity client object used for connecting
 // to an identity server
 //
-struct IdentityClient {
+struct IdentityClient<RW> {
     // session data
-    rpc: Session,
+    rpc: Session<RW,RW>,
     server_service_id: V3OnionServiceId,
     requested_endpoint: String,
     client_service_id: V3OnionServiceId,
@@ -143,9 +142,9 @@ struct IdentityClient {
 
 }
 
-impl IdentityClient {
+impl<RW> IdentityClient<RW> where RW : std::io::Read + std::io::Write + Send {
     fn new(
-        rpc: Session,
+        rpc: Session<RW,RW>,
         server_service_id: V3OnionServiceId,
         requested_endpoint: String,
         client_ed25519_private: Ed25519PrivateKey,
@@ -364,9 +363,9 @@ enum IdentityServerState {
     HandshakeComplete,
 }
 
-struct IdentityServer {
+struct IdentityServer<RW> {
     // Session Data
-    rpc: Option<Session>,
+    rpc: Option<Session<RW,RW>>,
     server_identity: V3OnionServiceId,
 
     // State Machine Data
@@ -395,8 +394,8 @@ struct IdentityServer {
     challenge_response_valid: bool,
 }
 
-impl IdentityServer {
-    pub fn new(rpc: Session, server_identity: V3OnionServiceId) -> Self {
+impl<RW> IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
+    pub fn new(rpc: Session<RW,RW>, server_identity: V3OnionServiceId) -> Self {
         IdentityServer{
             // Session Data
             rpc: Some(rpc),
@@ -638,7 +637,7 @@ impl IdentityServer {
     }
 }
 
-impl ApiSet for IdentityServer {
+impl<RW> ApiSet for IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
     fn namespace(&self) -> &str {
         "gosling_identity"
     }
@@ -858,10 +857,10 @@ enum EndpointHandshakeFunction {
 // the underlying tcp stream can be taken
 //
 
-struct EndpointClient {
+struct EndpointClient<RW> {
     // used for state machine
     next_function: Option<EndpointHandshakeFunction>,
-    rpc: Session,
+    rpc: Session<RW,RW>,
 
     // session data
     server_service_id: V3OnionServiceId,
@@ -872,10 +871,10 @@ struct EndpointClient {
     handshake_complete: bool,
 }
 
-impl EndpointClient {
+impl<RW> EndpointClient<RW> where RW : std::io::Read + std::io::Write + Send {
     fn new(
         channel: &str,
-        rpc: Session,
+        rpc: Session<RW,RW>,
         server_service_id: V3OnionServiceId,
         client_ed25519_private: Ed25519PrivateKey) -> Self {
         Self {
@@ -1194,20 +1193,20 @@ impl ApiSet for EndpointServerApiSet {
 // The endpoint server object that handles incoming
 // endpoint requests
 //
-struct EndpointServer {
+struct EndpointServer<RW> {
     // apiset
     apiset: EndpointServerApiSet,
     // rpc
-    rpc: Session,
+    rpc: Session<RW,RW>,
     // set to true once handshake completes
     handshake_complete: bool,
 }
 
-impl EndpointServer {
+impl<RW> EndpointServer<RW> where RW : std::io::Read + std::io::Write + Send{
     fn new(
         service_id: V3OnionServiceId,
         allowed_client: V3OnionServiceId,
-        rpc: Session) -> Self {
+        rpc: Session<RW,RW>) -> Self {
 
         let apiset = EndpointServerApiSet::new(service_id, allowed_client);
 
@@ -1254,10 +1253,10 @@ pub struct Context {
     // Servers and Clients for in-process handshakes
     //
     next_handshake_handle: HandshakeHandle,
-    identity_clients: BTreeMap<HandshakeHandle, IdentityClient>,
-    identity_servers: BTreeMap<HandshakeHandle, IdentityServer>,
-    endpoint_clients : Vec<(EndpointClient, TcpStream)>,
-    endpoint_servers : Vec<(EndpointServer, TcpStream)>,
+    identity_clients: BTreeMap<HandshakeHandle, IdentityClient<OnionStream>>,
+    identity_servers: BTreeMap<HandshakeHandle, IdentityServer<OnionStream>>,
+    endpoint_clients : Vec<(EndpointClient<OnionStream>, TcpStream)>,
+    endpoint_servers : Vec<(EndpointServer<OnionStream>, TcpStream)>,
 
     //
     // Listeners for incoming connections
@@ -2166,8 +2165,6 @@ fn test_gosling_context() -> Result<()> {
 
                         if let Some(saved_endpoint_service_id) = saved_endpoint_service_id.as_ref() {
                             ensure!(*saved_endpoint_service_id == endpoint_service_id);
-                        } else {
-                            bail!("mismatching endpoint service ids");
                         }
 
                         if let Ok(()) = pat.open_endpoint_channel(saved_endpoint_service_id.clone().unwrap(),
