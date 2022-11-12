@@ -232,6 +232,8 @@ TEST_CASE("gosling_cpp_demo") {
             cout << "--- alice bootstrapped" << endl;
         },
         throw_on_error()));
+
+    cout << "--- begin alice bootstrap" << endl;
     REQUIRE_NOTHROW(::gosling_context_bootstrap_tor(alice_context.get(), throw_on_error()));
 
     while(!alice_bootstrap_complete) {
@@ -246,6 +248,8 @@ TEST_CASE("gosling_cpp_demo") {
             cout << "--- alice identity server published" << endl;
         },
         throw_on_error()));
+
+    cout << "--- init alice identity server" << endl;
     REQUIRE_NOTHROW(::gosling_context_start_identity_server(alice_context.get(), throw_on_error()));
 
     while(!alice_identity_server_ready) {
@@ -261,6 +265,7 @@ TEST_CASE("gosling_cpp_demo") {
             cout << "--- pat bootstrapped" << endl;
         },
         throw_on_error()));
+    cout << "--- begin pat bootstrap" << endl;
     REQUIRE_NOTHROW(::gosling_context_bootstrap_tor(pat_context.get(), throw_on_error()));
 
     while(!pat_bootstrap_complete) {
@@ -288,7 +293,7 @@ TEST_CASE("gosling_cpp_demo") {
             REQUIRE_NOTHROW(::gosling_x25519_private_key_clone(out(pat_onion_auth_private_key), client_auth_private_key, throw_on_error()));
 
             pat_endpoint_request_complete = true;
-            cout << "--- pat endpoint request completed" << endl;
+            cout << "--- pat identity handshake completed" << endl;
         },
         throw_on_error()));
     static bool alice_endpoint_request_complete = false;
@@ -311,9 +316,10 @@ TEST_CASE("gosling_cpp_demo") {
             REQUIRE_NOTHROW(::gosling_x25519_public_key_clone(out(pat_onion_auth_public_key), client_auth_public_key, throw_on_error()));
 
             alice_endpoint_request_complete = true;
-            cout << "--- alice endpoint request completed" << endl;
+            cout << "--- alice identity handshake completed" << endl;
         },
         throw_on_error()));
+    cout << "--- pat begin identity handshake";
     REQUIRE_NOTHROW(::gosling_context_begin_identity_handshake(pat_context.get(), alice_identity.get(), endpointName.data(), endpointName.size(), throw_on_error()));
 
     while(!alice_endpoint_request_complete) {
@@ -332,9 +338,11 @@ TEST_CASE("gosling_cpp_demo") {
 
             REQUIRE(string(endpoint_name, endpoint_name_length) == "default");
             alice_endpoint_published = true;
-            cout << "--- alice endpoint published" << endl;
+            cout << "--- alice endpoint server published" << endl;
         },
         throw_on_error()));
+
+    cout << "--- alice endpoint server start" << endl;
     REQUIRE_NOTHROW(::gosling_context_start_endpoint_server(
         alice_context.get(),
         alice_endpoint_private_key.get(),
@@ -345,8 +353,8 @@ TEST_CASE("gosling_cpp_demo") {
         throw_on_error()));
 
     while(!alice_endpoint_published || !pat_endpoint_request_complete) {
-        REQUIRE_NOTHROW(::gosling_context_poll_events(alice_context.get(), throw_on_error()));
         REQUIRE_NOTHROW(::gosling_context_poll_events(pat_context.get(), throw_on_error()));
+        REQUIRE_NOTHROW(::gosling_context_poll_events(alice_context.get(), throw_on_error()));
     }
 
     // pat connects to alice's endpoint
@@ -393,6 +401,7 @@ TEST_CASE("gosling_cpp_demo") {
         throw_on_error()));
 
     // pat opens chanel to alice's endpoint
+    cout << "--- pat begin endpoint channel request" << endl;
     REQUIRE_NOTHROW(::gosling_context_open_endpoint_channel(
         pat_context.get(),
         alice_endpoint_service_id.get(),
