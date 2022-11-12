@@ -77,8 +77,6 @@ struct TorProcess {
     process: Child,
     password: String,
     // stdout data
-    stdout_thread: std::thread::JoinHandle<()>,
-    stdout: Arc<Mutex<BufReader<ChildStdout>>>,
     stdout_lines: Arc<Mutex<Vec<String>>>
 }
 
@@ -168,16 +166,15 @@ impl TorProcess {
         ensure!(control_addr != None, "failed to read control addr from '{}'", control_port_file.display());
 
         let stdout_lines: Arc<Mutex<Vec<String>>> = Default::default();
-        let stdout = Arc::new(Mutex::new(BufReader::new(process.stdout.take().unwrap())));
 
         let stdout_thread = {
             let stdout_lines = Arc::downgrade(&stdout_lines);
-            let stdout = Arc::downgrade(&stdout);
+            let stdout = BufReader::new(process.stdout.take().unwrap());
 
             resolve!(std::thread::Builder::new()
             .name("tor_stdout_reader".to_string())
             .spawn(move || {
-                TorProcess::read_stdout_task(&stdout_lines, &stdout);
+                TorProcess::read_stdout_task(&stdout_lines, stdout);
             }))
         };
 
@@ -185,26 +182,21 @@ impl TorProcess {
             control_addr: control_addr.unwrap(),
             process,
             password,
-            stdout_thread,
-            stdout_lines,
-            stdout,
+            stdout_lines
         })
     }
 
-    fn read_stdout_task(stdout_lines: &std::sync::Weak<Mutex<Vec<String>>>, stdout: &std::sync::Weak<Mutex<BufReader<ChildStdout>>>) -> () {
+    fn read_stdout_task(stdout_lines: &std::sync::Weak<Mutex<Vec<String>>>, mut stdout: BufReader<ChildStdout>) -> () {
 
-        while let Some(stdout) = stdout.upgrade() {
-            if let Some(stdout_lines) = stdout_lines.upgrade() {
-                let mut line = String::default();
-                let mut stdout = stdout.lock().unwrap();
-                // read line
-                if stdout.read_line(&mut line).is_ok() {
-                    // remove trailing '\n'
-                    line.pop();
-                    // then acquire the lock on the line buffer
-                    let mut stdout_lines = stdout_lines.lock().unwrap();
-                    stdout_lines.push(line);
-                }
+        while let Some(stdout_lines) = stdout_lines.upgrade() {
+            let mut line = String::default();
+            // read line
+            if stdout.read_line(&mut line).is_ok() {
+                // remove trailing '\n'
+                line.pop();
+                // then acquire the lock on the line buffer
+                let mut stdout_lines = stdout_lines.lock().unwrap();
+                stdout_lines.push(line);
             }
         }
     }

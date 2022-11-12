@@ -45,16 +45,6 @@ enum GoslingError {
     Failure,
 }
 
-enum IdentityHandshakeFunction {
-    BeginHandshake,
-    SendResponse,
-}
-
-pub enum IdentityHandshakeResult {
-    BuildEndpointChallenge(bson::document::Document),
-    VerifyChallengeResponse(bool),
-}
-
 const GOSLING_VERSION: &str = "0.0.0.1";
 
 const CLIENT_COOKIE_SIZE: usize = 32usize;

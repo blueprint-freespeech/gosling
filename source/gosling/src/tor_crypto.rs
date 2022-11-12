@@ -33,16 +33,13 @@ pub const V3_ONION_SERVICE_ID_LENGTH: usize = 56;
 /// The number of bytes needed to store onion service id as an ASCII c-string (including null-terminator)
 pub const V3_ONION_SERVICE_ID_SIZE: usize = V3_ONION_SERVICE_ID_LENGTH + 1;
 /// The number of bytes needed to store base64 encoded ed25519 private key as an ASCII c-string (not including null-terminator)
-/// cbindgen:ignore
 pub const ED25519_PRIVATE_KEYBLOB_BASE64_LENGTH: usize = 88;
 /// key klob header string
 const ED25519_PRIVATE_KEYBLOB_HEADER: &str = "ED25519-V3:";
 /// The number of bytes needed to store the keyblob header
-/// cbindgen:ignore
 pub const ED25519_PRIVATE_KEYBLOB_HEADER_LENGTH: usize = 11;
 /// The number of bytes needed to store ed25519 private keyblob as an ASCII c-string (not including a null terminator)
-pub const ED25519_PRIVATE_KEYBLOB_LENGTH: usize = 99;
-static_assertions::const_assert!(ED25519_PRIVATE_KEYBLOB_LENGTH == ED25519_PRIVATE_KEYBLOB_HEADER_LENGTH + ED25519_PRIVATE_KEYBLOB_BASE64_LENGTH);
+pub const ED25519_PRIVATE_KEYBLOB_LENGTH: usize = ED25519_PRIVATE_KEYBLOB_HEADER_LENGTH + ED25519_PRIVATE_KEYBLOB_BASE64_LENGTH;
 /// The number of bytes needed to store ed25519 private keyblob as an ASCII c-string (including a null terminator)
 pub const ED25519_PRIVATE_KEYBLOB_SIZE: usize = ED25519_PRIVATE_KEYBLOB_LENGTH + 1;
 // number of bytes in an onion service id after base32 decode
