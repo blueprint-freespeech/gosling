@@ -232,6 +232,7 @@ struct Reply {
     reply_lines: Vec<String>,
 }
 
+#[allow(dead_code)]
 impl ControlStream {
     pub fn new(addr: &SocketAddr, read_timeout: Duration) -> Result<ControlStream> {
 
@@ -586,6 +587,7 @@ struct TorController {
     hs_desc_pattern: Regex,
 }
 
+#[allow(dead_code)]
 impl TorController {
     pub fn new(control_stream: ControlStream) -> TorController {
         let status_event_pattern =  Regex::new(r#"^STATUS_CLIENT (?P<severity>NOTICE|WARN|ERR) (?P<action>[A-Za-z]+)"#).unwrap();
@@ -1040,6 +1042,7 @@ pub struct CircuitToken {
     password: String,
 }
 
+#[allow(dead_code)]
 impl CircuitToken {
     pub fn new(first_party: Host) -> CircuitToken {
         const CIRCUIT_TOKEN_PASSWORD_LENGTH: usize = 32usize;
@@ -1133,7 +1136,6 @@ impl From<OnionStream> for TcpStream {
 
 pub struct OnionListener {
     listener: TcpListener,
-    service_id: V3OnionServiceId,
     is_active: Arc<atomic::AtomicBool>,
 }
 
@@ -1178,6 +1180,7 @@ pub struct TorManager {
     onion_services: Vec<(V3OnionServiceId, Arc<atomic::AtomicBool>)>,
 }
 
+#[allow(dead_code)]
 impl TorManager {
     pub fn new(data_directory: &Path) -> Result<TorManager> {
         // launch tor
@@ -1322,7 +1325,7 @@ impl TorManager {
         let is_active = Arc::new(atomic::AtomicBool::new(true));
         self.onion_services.push((service_id.clone(), Arc::clone(&is_active)));
 
-        Ok(OnionListener{listener, service_id, is_active})
+        Ok(OnionListener{listener, is_active})
     }
 }
 

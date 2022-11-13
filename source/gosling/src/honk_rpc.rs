@@ -452,6 +452,7 @@ pub struct Session<R,W> {
     max_message_size: usize,
 }
 
+#[allow(dead_code)]
 impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send  {
     pub fn new(reader: R, writer: W) -> Self {
 
