@@ -125,16 +125,14 @@ impl TryFrom<bson::document::Document> for Message {
         let mut value = value;
 
         // verify version
-        if let Ok(honk_rpc) = value.get_i32("honk_rpc") {
-            if honk_rpc != HONK_RPC_VERSION {
-                return Err(ErrorCode::MessageVersionIncompatible);
-            }
-        } else {
-            return Err(ErrorCode::MessageParseFailed);
-        }
+        let honk_rpc = match value.get_i32("honk_rpc") {
+            Ok(HONK_RPC_VERSION) => HONK_RPC_VERSION,
+            Ok(_bad_version) => return Err(ErrorCode::MessageVersionIncompatible),
+            Err(_err) => return Err(ErrorCode::MessageParseFailed),
+        };
 
         if let Ok(sections) = value.get_array_mut("sections") {
-            let mut message = Message{honk_rpc: HONK_RPC_VERSION, sections: Default::default()};
+            let mut message = Message{honk_rpc, sections: Default::default()};
             for section in sections.iter_mut() {
                 if let bson::Bson::Document(section) = std::mem::take(section) {
                     message.sections.push(Section::try_from(section)?);
@@ -153,7 +151,7 @@ impl From<Message> for bson::document::Document {
     fn from(value: Message) -> bson::document::Document {
         let mut value = value;
         let mut message = bson::document::Document::new();
-        message.insert("honk_rpc", HONK_RPC_VERSION as i32);
+        message.insert("honk_rpc", value.honk_rpc);
 
         let mut sections = bson::Array::new();
         for section in value.sections.drain(0..) {
