@@ -117,7 +117,6 @@ enum IdentityClientState {
     WaitingForChallengeResponse,
     WaitingForChallengeVerification,
     HandshakeComplete,
-    HandshakeFailed,
 }
 
 //
@@ -359,7 +358,6 @@ enum IdentityServerState {
     GettingChallengeVerification,
     ChallengeVerificationReady,
     ChallengeVerificationResponseSent,
-    HandshakeFailed,
     HandshakeComplete,
 }
 
@@ -1000,14 +998,6 @@ impl<RW> EndpointClient<RW> where RW : std::io::Read + std::io::Write + Send {
 struct EndpointServerApiSet {
 
     //
-    // New Channel Data
-    //
-
-    // Data to save to new_channel on succes
-    new_client_service_id: Option<V3OnionServiceId>,
-    new_channel_name: Option<String>,
-
-    //
     // Handshake Data
     //
 
@@ -1034,8 +1024,6 @@ impl EndpointServerApiSet {
         OsRng.fill_bytes(&mut server_cookie);
 
         EndpointServerApiSet{
-            new_client_service_id: None,
-            new_channel_name: None,
             server_identity,
             allowed_client,
             requested_channel: Default::default(),
