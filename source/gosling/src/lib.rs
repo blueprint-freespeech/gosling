@@ -12,9 +12,7 @@
 // TODO: We should remove all of these "allows" eventually.  This one
 //  is something to be expected on work-in-progress code...
 
-// #![allow(dead_code)]
 // These are bad style at best and can conceal problems.
-#![allow(unused_imports)]
 #![allow(unused_mut)]
 #![allow(unused_variables)]
 #![allow(clippy::assign_op_pattern)]

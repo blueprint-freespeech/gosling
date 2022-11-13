@@ -1,19 +1,17 @@
 // standard
 use std::clone::Clone;
-use std::collections::{BTreeMap,HashMap,HashSet};
+use std::collections::{BTreeMap,HashMap};
 use std::convert::TryInto;
-use std::io::{BufRead, BufReader, Read, Write};
+#[cfg(test)]
+use std::io::{BufRead,BufReader,Write};
 use std::net::TcpStream;
 use std::path::Path;
-use std::sync::{Arc};
 
 // extern crates
 
 use bson::doc;
 use bson::{Binary,Bson};
 use bson::spec::BinarySubtype;
-use crypto::digest::Digest;
-use crypto::sha3::Sha3;
 use data_encoding::{HEXLOWER};
 use num_enum::TryFromPrimitive;
 use rand::RngCore;

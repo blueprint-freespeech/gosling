@@ -1,5 +1,5 @@
 // standard
-use std::collections::{HashMap,VecDeque};
+use std::collections::VecDeque;
 use std::fmt::Debug;
 use std::io::{Cursor, ErrorKind};
 use std::option::Option;

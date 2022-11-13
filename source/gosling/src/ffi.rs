@@ -1,9 +1,8 @@
 // standard
-use std::collections::HashSet;
 use std::ffi::CString;
 use std::ptr;
-use std::io::{Cursor, Read};
-use std::os::raw::{c_void, c_char, c_int};
+use std::io::Cursor;
+use std::os::raw::{c_void, c_char};
 #[cfg(unix)]
 use std::os::unix::io::{IntoRawFd, RawFd};
 #[cfg(windows)]
@@ -11,7 +10,6 @@ use std::os::windows::io::{IntoRawSocket, RawSocket};
 use std::panic;
 use std::path::Path;
 use std::str;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 
 // extern crates
@@ -22,7 +20,6 @@ use crate::*;
 use crate::error::Result;
 use crate::object_registry::*;
 use crate::tor_crypto::*;
-use crate::tor_controller::*;
 use crate::gosling::*;
 
 macro_rules! define_registry {
