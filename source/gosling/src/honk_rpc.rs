@@ -475,79 +475,84 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
         }
     }
 
-    // read a message from reader
-    fn read_message(&mut self) -> Result<Option<Message>> {
+    fn read_message_size(&mut self) -> Result<()> {
+        match self.remaining_byte_count {
+            // we've already read the size header
+            Some(_remaining) => Ok(()),
+            // still need to read the size header
+            None => {
+                // may have been partially read already so ensure it's the right size
+                assert!(self.message_read_buffer.len() < std::mem::size_of::<i32>());
+                let bytes_needed = std::mem::size_of::<i32>() - self.message_read_buffer.len();
+                let mut buffer = [0u8; std::mem::size_of::<i32>()];
+                let mut buffer = &mut buffer[0..bytes_needed];
+                match self.reader.read(buffer) {
+                    Err(err) => if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut {
+                        Ok(())
+                    } else {
+                        bail!(err);
+                    },
+                    Ok(0) => bail!(std::io::Error::from(ErrorKind::UnexpectedEof)),
+                    Ok(count) => {
+                        self.message_read_buffer.extend_from_slice(&buffer[0..count]);
 
-        // read data of bson document
+                        // all bytes required for i32 message size have been read
+                        if self.message_read_buffer.len() == std::mem::size_of::<i32>() {
+                            let size = &self.message_read_buffer.as_slice();
+                            let size: i32 = (size[0] as i32)       |
+                                            (size[1] as i32) << 8  |
+                                            (size[2] as i32) << 16 |
+                                            (size[3] as i32) << 24;
+                            // size should be at least larger than the bytes required for size header
+                            ensure!(size > std::mem::size_of::<i32>() as i32);
+                            // deduct size of i32 header and save
+                            let size = (size - std::mem::size_of::<i32>() as i32) as usize;
+
+                            // ensure size is less than maximum allowed
+                            ensure!(size < self.max_message_size);
+                            self.remaining_byte_count = Some(size);
+                        }
+                        Ok(())
+                    },
+                }
+            }
+        }
+    }
+
+    fn read_message(&mut self) -> Result<Option<Message>> {
+        // update remaining bytes to read for message
+        self.read_message_size()?;
+        // read the message bytes
         if let Some(remaining) = self.remaining_byte_count {
             let mut buffer = vec![0u8; remaining];
             match self.reader.read(&mut buffer) {
                 Err(err) => if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut {
-                        Ok(None)
-                    } else {
-                        bail!(err);
-                    }
+                    Ok(None)
+                } else {
+                    bail!(err);
+                }
                 Ok(0) => bail!("no more available bytes; expecting {} bytes", remaining),
                 Ok(count) => {
+                    // append read bytes
                     self.message_read_buffer.extend_from_slice(&buffer[0..count]);
                     if remaining == count {
                         self.remaining_byte_count = None;
 
                         let mut cursor = Cursor::new(std::mem::take(&mut self.message_read_buffer));
-                        // data read, build bson doc
-                        if let Ok(bson) = bson::document::Document::from_reader(&mut cursor) {
-                            // take back our allocated vec and clear it
-                            self.message_read_buffer = cursor.into_inner();
-                            self.message_read_buffer.clear();
+                        let bson = resolve!(bson::document::Document::from_reader(&mut cursor));
 
-                            println!("recv: {}", bson);
+                        // take back our allocated vec and clear it
+                        self.message_read_buffer = cursor.into_inner();
+                        self.message_read_buffer.clear();
 
-                            Ok(Some(resolve!(Message::try_from(bson))))
-                        } else {
-                            bail!("failed to deserialize bson");
-                            // handle error
-                        }
+                        Ok(Some(resolve!(Message::try_from(bson))))
                     } else {
-                        self.remaining_byte_count = Some(remaining - count);
                         Ok(None)
                     }
-                },
+                }
             }
-        // read size of the bson document
         } else {
-            // read number of bytes remaining to read the i32 in a bson header
-            let mut buffer = [0u8; std::mem::size_of::<i32>()];
-            ensure!(self.message_read_buffer.len() < std::mem::size_of::<i32>());
-            let bytes_needed = std::mem::size_of::<i32>() - self.message_read_buffer.len();
-            let mut buffer = &mut buffer[0..bytes_needed];
-            match self.reader.read(buffer) {
-                Err(err) => if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut {
-                        Ok(None)
-                    } else {
-                        println!("!!! error: {:?}", err.kind());
-                        bail!(err);
-                    }
-                Ok(0) => {
-                    println!("no more available bytes");
-                    bail!("no more available bytes")
-                },
-                Ok(count) => {
-                    self.message_read_buffer.extend_from_slice(&buffer[0..count]);
-                    // all bytes required for i32 have been read
-                    if self.message_read_buffer.len() == std::mem::size_of::<i32>() {
-                        // bson document size is a little-endian byte ordered i32
-                        let buffer = &self.message_read_buffer.as_slice();
-                        let mut size: i32 = ((buffer[0] as i32) << 0) + ((buffer[1] as i32) << 8) + ((buffer[2] as i32) << 16) + ((buffer[3] as i32) << 24);
-
-                        ensure!(size > std::mem::size_of::<i32>() as i32);
-                        size = size - std::mem::size_of::<i32>() as i32;
-                        self.remaining_byte_count = Some(size as usize);
-                        // next call to wait_message() will begin reading the actual message
-                        return self.read_message();
-                    }
-                    Ok(None)
-                },
-            }
+            Ok(None)
         }
     }
 
