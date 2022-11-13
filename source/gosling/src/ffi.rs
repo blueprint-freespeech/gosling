@@ -1027,17 +1027,13 @@ pub extern "C" fn gosling_context_begin_identity_handshake(
         let mut context_tuple_registry = get_context_tuple_registry();
         let mut context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
-            None => {
-                bail!("context is invalid");
-            }
+            None => bail!("context is invalid"),
         };
 
         let v3_onion_service_id_registry = get_v3_onion_service_id_registry();
         let identity_service_id = match v3_onion_service_id_registry.get(identity_service_id as usize) {
             Some(v3_onion_service_id) => v3_onion_service_id,
-            None => {
-                bail!("identity_service_id is invalid");
-            }
+            None => bail!("identity_service_id is invalid"),
         };
 
         let endpoint_name = unsafe { std::slice::from_raw_parts(endpoint_name as *const u8, endpoint_name_length) };
@@ -1045,6 +1041,29 @@ pub extern "C" fn gosling_context_begin_identity_handshake(
         ensure!(endpoint_name.is_ascii(), "endpoint_name must be an ascii string");
 
         context.0.client_begin_identity_handshake(identity_service_id.clone(), &endpoint_name)
+    })
+}
+
+/// Abort an in-progress identity client handshake
+///
+/// @param context : the context associated with the identity client handshake handle
+/// @param handshake_handle : the handle associated with the identity client handshake
+/// @param error : filled on error
+#[no_mangle]
+pub extern "C" fn gosling_context_abort_identity_client_handshake(
+    context: *mut GoslingContext,
+    handshake_handle: GoslingHandshakeHandle,
+    error: *mut *mut GoslingError) -> () {
+    translate_failures((), error, || -> Result<()> {
+        ensure_not_null!(context);
+
+        let mut context_tuple_registry = get_context_tuple_registry();
+        let context = match context_tuple_registry.get_mut(context as usize) {
+            Some(context) => context,
+            None => bail!("context is invalid"),
+        };
+
+        context.0.client_abort_identity_handshake(handshake_handle)
     })
 }
 
