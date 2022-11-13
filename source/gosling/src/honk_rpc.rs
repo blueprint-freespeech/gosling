@@ -420,34 +420,7 @@ pub enum Response {
 // 4 kilobytes per specification
 const DEFAULT_MAX_MESSAGE_SIZE: usize = 4 * 1024 * 1024;
 
-// shared data used between the client and server components
-struct Context {
-    // remote client's inbound remote procedure calls to local server
-    inbound_requests: Vec<RequestSection>,
-    // remote server's respones to local client's remote procedure calls
-    inbound_responses: Vec<Response>,
-    // sections to be sent to the remote server
-    outbound_sections: Vec<Section>,
-
-    // the maximum size of a message we've agreed to allow in the session
-    max_message_size: usize,
-}
-
-impl Default for Context {
-    fn default() -> Self {
-        Context{
-            inbound_requests: Default::default(),
-            inbound_responses: Default::default(),
-            outbound_sections: Default::default(),
-            max_message_size: DEFAULT_MAX_MESSAGE_SIZE,
-        }
-    }
-}
-
 pub struct Session<R,W> {
-
-    // shared data
-    context: Context,
 
     // read stream
     reader: R,
@@ -460,20 +433,25 @@ pub struct Session<R,W> {
     // if None, no message read is in progress
     remaining_byte_count: Option<usize>,
     // data we've read but not yet a full Message object
-    pending_data: Vec<u8>,
+    message_read_buffer: Vec<u8>,
     // received sections to be handled
     pending_sections: VecDeque<Section>,
+    // remote client's inbound remote procedure calls to local server
+    inbound_requests: Vec<RequestSection>,
+    // remote server's responses to local client's remote procedure calls
+    inbound_responses: VecDeque<Response>,
 
     // message write data
 
-    // we write outgoing messages to this buffer first
-    // to verify size limitations
+    // we write outgoing messages to this buffer first to verify size limitations
     message_write_buffer: Vec<u8>,
-
     // the next request cookie to use when making a remote prodedure call
     next_cookie: RequestCookie,
-    // local instance we take from Session
-    inbound_responses: VecDeque<Response>,
+    // sections to be sent to the remote server
+    outbound_sections: Vec<Section>,
+
+    // the maximum size of a message we've agreed to allow in the session
+    max_message_size: usize,
 }
 
 impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send  {
@@ -483,15 +461,17 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
         message_write_buffer.reserve(DEFAULT_MAX_MESSAGE_SIZE);
 
         Session{
-            context: Default::default(),
             reader,
             writer,
             remaining_byte_count: None,
-            pending_data: Default::default(),
+            message_read_buffer: Default::default(),
             pending_sections: Default::default(),
+            inbound_requests: Default::default(),
+            inbound_responses: Default::default(),
             message_write_buffer,
             next_cookie: Default::default(),
-            inbound_responses: Default::default(),
+            outbound_sections: Default::default(),
+            max_message_size: DEFAULT_MAX_MESSAGE_SIZE,
         }
     }
 
@@ -509,16 +489,16 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
                     }
                 Ok(0) => bail!("no more available bytes; expecting {} bytes", remaining),
                 Ok(count) => {
-                    self.pending_data.extend_from_slice(&buffer[0..count]);
+                    self.message_read_buffer.extend_from_slice(&buffer[0..count]);
                     if remaining == count {
                         self.remaining_byte_count = None;
 
-                        let mut cursor = Cursor::new(std::mem::take(&mut self.pending_data));
+                        let mut cursor = Cursor::new(std::mem::take(&mut self.message_read_buffer));
                         // data read, build bson doc
                         if let Ok(bson) = bson::document::Document::from_reader(&mut cursor) {
                             // take back our allocated vec and clear it
-                            self.pending_data = cursor.into_inner();
-                            self.pending_data.clear();
+                            self.message_read_buffer = cursor.into_inner();
+                            self.message_read_buffer.clear();
 
                             println!("recv: {}", bson);
 
@@ -537,8 +517,8 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
         } else {
             // read number of bytes remaining to read the i32 in a bson header
             let mut buffer = [0u8; std::mem::size_of::<i32>()];
-            ensure!(self.pending_data.len() < std::mem::size_of::<i32>());
-            let bytes_needed = std::mem::size_of::<i32>() - self.pending_data.len();
+            ensure!(self.message_read_buffer.len() < std::mem::size_of::<i32>());
+            let bytes_needed = std::mem::size_of::<i32>() - self.message_read_buffer.len();
             let mut buffer = &mut buffer[0..bytes_needed];
             match self.reader.read(buffer) {
                 Err(err) => if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut {
@@ -552,11 +532,11 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
                     bail!("no more available bytes")
                 },
                 Ok(count) => {
-                    self.pending_data.extend_from_slice(&buffer[0..count]);
+                    self.message_read_buffer.extend_from_slice(&buffer[0..count]);
                     // all bytes required for i32 have been read
-                    if self.pending_data.len() == std::mem::size_of::<i32>() {
+                    if self.message_read_buffer.len() == std::mem::size_of::<i32>() {
                         // bson document size is a little-endian byte ordered i32
-                        let buffer = &self.pending_data.as_slice();
+                        let buffer = &self.message_read_buffer.as_slice();
                         let mut size: i32 = ((buffer[0] as i32) << 0) + ((buffer[1] as i32) << 8) + ((buffer[2] as i32) << 16) + ((buffer[3] as i32) << 24);
 
                         ensure!(size > std::mem::size_of::<i32>() as i32);
@@ -598,7 +578,7 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
                 Section::Error(error) => {
                     if error.cookie.is_some() {
                         // error in response to a request
-                        self.context.inbound_responses.push(
+                        self.inbound_responses.push_back(
                             Response::Error{
                                 cookie: error.cookie.unwrap(),
                                 error_code: error.code,
@@ -610,18 +590,18 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
                 },
                 Section::Request(request) => {
                     // request to route to our apisets
-                    self.context.inbound_requests.push(request);
+                    self.inbound_requests.push(request);
                 },
                 Section::Response(response) => {
                     // response to our client
                     if response.result.is_some() {
-                        self.context.inbound_responses.push(
+                        self.inbound_responses.push_back(
                             Response::Success{
                                 cookie: response.cookie,
                                 result: response.result.unwrap(),
                         });
                     } else {
-                        self.context.inbound_responses.push(
+                        self.inbound_responses.push_back(
                             Response::Pending{
                                 cookie: response.cookie,
                         });
@@ -664,14 +644,14 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
 
     fn send_messages(&mut self) -> Result<()> {
         // if no pending sections there is nothing to do
-        if self.context.outbound_sections.is_empty() {
+        if self.outbound_sections.is_empty() {
             return Ok(());
         }
 
         // build message and convert to bson to send
         let message = Message{
             honk_rpc: HONK_RPC_VERSION,
-            sections: std::mem::take(&mut self.context.outbound_sections),
+            sections: std::mem::take(&mut self.outbound_sections),
         };
 
         // chance to early out if no pending sections
@@ -707,14 +687,14 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
     fn handle_requests(&mut self, apisets: &mut [&mut dyn ApiSet]) -> Result<()> {
 
         // first handle all of our inbound requests
-        for mut request in self.context.inbound_requests.drain(..) {
+        for mut request in self.inbound_requests.drain(..) {
             if let Ok(idx) = apisets.binary_search_by(|probe| probe.namespace().cmp(&request.namespace)) {
                 let mut apiset = apisets.get_mut(idx).unwrap();
                 match apiset.exec_function(&request.function, request.version, std::mem::take(&mut request.arguments), request.cookie) {
                     // func found, called, and returned immediately
                     Ok(Some(result)) => {
                         if let Some(cookie) = request.cookie {
-                            self.context.outbound_sections.push(
+                            self.outbound_sections.push(
                                 Section::Response(ResponseSection{
                                     cookie,
                                     state: RequestState::Complete,
@@ -725,7 +705,7 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
                     // func found, called, and result is pending
                     Ok(None) => {
                         if let Some(cookie) = request.cookie {
-                            self.context.outbound_sections.push(
+                            self.outbound_sections.push(
                                 Section::Response(ResponseSection{
                                     cookie,
                                     state: RequestState::Pending,
@@ -735,7 +715,7 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
                     },
                     // some error
                     Err(error_code) => {
-                        self.context.outbound_sections.push(
+                        self.outbound_sections.push(
                             Section::Error(ErrorSection{
                                 cookie: request.cookie,
                                 code: error_code,
@@ -746,7 +726,7 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
                 }
             } else {
                 // invalid namespace
-                self.context.outbound_sections.push(
+                self.outbound_sections.push(
                     Section::Error(ErrorSection{
                         cookie: request.cookie,
                         code: ErrorCode::RequestNamespaceInvalid,
@@ -762,7 +742,7 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
             while let Some((cookie, result, error_code)) = apiset.next_result() {
                 match (cookie, result, error_code) {
                     (cookie, Some(result), ErrorCode::Success) => {
-                        self.context.outbound_sections.push(
+                        self.outbound_sections.push(
                             Section::Response(
                                 ResponseSection{
                                     cookie,
@@ -774,7 +754,7 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
                         if result.is_some() {
                             println!("Server::update(): ApiSet next_result() returned both result and an ErrorCode {{ result : '{}', error : {} }}", result.unwrap(), error_code);
                         }
-                        self.context.outbound_sections.push(
+                        self.outbound_sections.push(
                             Section::Error(
                                 ErrorSection{
                                     cookie: Some(cookie),
@@ -802,7 +782,7 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
         self.next_cookie += 1;
 
         // add request to outgoing buffer
-        self.context.outbound_sections.push(
+        self.outbound_sections.push(
             Section::Request(RequestSection{
                 cookie: Some(cookie),
                 namespace: namespace.to_string(),
@@ -816,21 +796,12 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
 
     // consume all the responses from the client
     pub fn client_drain_responses(&mut self) -> std::collections::vec_deque::Drain<Response> {
-        self.take_responses();
         self.inbound_responses.drain(..)
     }
 
     // get the next response from the client
     pub fn client_next_response(&mut self) -> Option<Response> {
-        self.take_responses();
         self.inbound_responses.pop_front()
-    }
-
-    // migrate any responses from our context to the client for iterators
-    fn take_responses(&mut self) {
-        for response in self.context.inbound_responses.drain(..) {
-            self.inbound_responses.push_back(response);
-        }
     }
 }
 
@@ -858,7 +829,7 @@ fn test_honk_client_read_write() -> Result<()> {
 
     const CUSTOM_ERROR: &str = "Custom Error!";
 
-    pat.context.outbound_sections.push(
+    pat.outbound_sections.push(
         Section::Error(ErrorSection{
                 cookie: Some(42069),
                 code: ErrorCode::Runtime(1),
@@ -880,7 +851,7 @@ fn test_honk_client_read_write() -> Result<()> {
         }
     }
 
-    alice.context.outbound_sections.append(
+    alice.outbound_sections.append(
         &mut vec![
             Section::Error(ErrorSection{
                 cookie: Some(42069),
