@@ -455,7 +455,7 @@ impl FromStr for Version {
             let mut tokens = version_status_tag.split('-');
             let (major,minor,micro,patch_level) = if let Some(version) = tokens.next() {
                 let mut tokens = version.split('.');
-                let mut major: u32 = if let Some(major) = tokens.next() {
+                let major: u32 = if let Some(major) = tokens.next() {
                     match major.parse() {
                         Ok(major) => major,
                         Err(_) => bail!("failed to parse '{}' as MAJOR portion of version", major),
@@ -463,7 +463,7 @@ impl FromStr for Version {
                 } else {
                     bail!("failed to find MAJOR portion of version");
                 };
-                let mut minor: u32 = if let Some(minor) = tokens.next() {
+                let minor: u32 = if let Some(minor) = tokens.next() {
                     match minor.parse() {
                         Ok(minor) => minor,
                         Err(_) => bail!("failed to parse '{}' as MINOR portion of version", minor),
@@ -471,7 +471,7 @@ impl FromStr for Version {
                 } else {
                     bail!("failed to find MINOR portion of version");
                 };
-                let mut micro: u32 = if let Some(micro) = tokens.next() {
+                let micro: u32 = if let Some(micro) = tokens.next() {
                     match micro.parse() {
                         Ok(micro) => micro,
                         Err(_) => bail!("failed to parse '{}' as MICRO portion of version", micro),
@@ -479,7 +479,7 @@ impl FromStr for Version {
                 } else {
                     bail!("failed to find MICRO portion of version");
                 };
-                let mut patch_level: u32 = if let Some(patch_level) = tokens.next() {
+                let patch_level: u32 = if let Some(patch_level) = tokens.next() {
                     match patch_level.parse() {
                         Ok(patch_level) => patch_level,
                         Err(_) => bail!("failed to parse '{}' as PATCHLEVEL portion of version", patch_level),
@@ -678,7 +678,7 @@ impl TorController {
         let mut async_replies = self.wait_async_replies()?;
         let mut async_events: Vec<AsyncEvent> = Default::default();
 
-        for mut reply in async_replies.iter_mut() {
+        for reply in async_replies.iter_mut() {
             async_events.push(self.reply_to_event(reply)?);
         }
 
@@ -1262,7 +1262,7 @@ impl TorManager {
             }
         }
 
-        for mut log_line in self.daemon.wait_log_lines().iter_mut() {
+        for log_line in self.daemon.wait_log_lines().iter_mut() {
             events.push(Event::LogReceived{line: std::mem::take(log_line)});
         }
 
@@ -1297,7 +1297,7 @@ impl TorManager {
         // our onion domain
         let target = socks::TargetAddr::Domain(format!("{}.onion", service_id.to_string()), virt_port);
         // readwrite stream
-        let mut stream = match &circuit {
+        let stream = match &circuit {
             None => resolve!(Socks5Stream::connect(self.socks_listener.unwrap(), target)),
             Some(circuit) => resolve!(Socks5Stream::connect_with_password(self.socks_listener.unwrap(), target, &circuit.username, &circuit.password)),
         };
@@ -1310,7 +1310,7 @@ impl TorManager {
 
         // try to bind to a local address, let OS pick our port
         let socket_addr = SocketAddr::from(([127,0,0,1],0u16));
-        let mut listener = resolve!(TcpListener::bind(socket_addr));
+        let listener = resolve!(TcpListener::bind(socket_addr));
         let socket_addr = resolve!(listener.local_addr());
 
         let mut flags: AddOnionFlags = Default::default();

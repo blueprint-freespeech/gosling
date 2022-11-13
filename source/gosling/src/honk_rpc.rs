@@ -484,7 +484,7 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
                 assert!(self.message_read_buffer.len() < std::mem::size_of::<i32>());
                 let bytes_needed = std::mem::size_of::<i32>() - self.message_read_buffer.len();
                 let mut buffer = [0u8; std::mem::size_of::<i32>()];
-                let mut buffer = &mut buffer[0..bytes_needed];
+                let buffer = &mut buffer[0..bytes_needed];
                 match self.reader.read(buffer) {
                     Err(err) => if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut {
                         Ok(())
@@ -633,7 +633,7 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
                 "honk_rpc" : HONK_RPC_VERSION,
                 "sections" : sections.split_off(sections.len() / 2),
             };
-            let mut left = message;
+            let left = message;
 
             self.send_message_impl(left)?;
             self.send_message_impl(&mut right)?;
@@ -693,7 +693,7 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
         // first handle all of our inbound requests
         for mut request in self.inbound_requests.drain(..) {
             if let Ok(idx) = apisets.binary_search_by(|probe| probe.namespace().cmp(&request.namespace)) {
-                let mut apiset = apisets.get_mut(idx).unwrap();
+                let apiset = apisets.get_mut(idx).unwrap();
                 match apiset.exec_function(&request.function, request.version, std::mem::take(&mut request.arguments), request.cookie) {
                     // func found, called, and returned immediately
                     Ok(Some(result)) => {

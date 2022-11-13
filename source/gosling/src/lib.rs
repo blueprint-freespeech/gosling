@@ -13,7 +13,6 @@
 //  is something to be expected on work-in-progress code...
 
 // These are bad style at best and can conceal problems.
-#![allow(unused_mut)]
 #![allow(unused_variables)]
 #![allow(clippy::assign_op_pattern)]
 #![allow(clippy::char_lit_as_u8)]

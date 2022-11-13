@@ -1391,7 +1391,7 @@ impl Context {
         ensure!(self.bootstrap_complete);
         ensure!(self.identity_listener.is_none());
 
-        let mut identity_listener = self.tor_manager.listener(&self.identity_private_key, self.identity_port, None)?;
+        let identity_listener = self.tor_manager.listener(&self.identity_private_key, self.identity_port, None)?;
         identity_listener.set_nonblocking(true)?;
 
         self.identity_listener = Some(identity_listener);
@@ -1413,7 +1413,7 @@ impl Context {
         endpoint: &str) -> Result<HandshakeHandle> {
         ensure!(self.bootstrap_complete);
         // open tcp stream to remove ident server
-        let mut stream = self.tor_manager.connect(&identity_server_id, self.identity_port, None)?;
+        let stream = self.tor_manager.connect(&identity_server_id, self.identity_port, None)?;
         resolve!(stream.set_nonblocking(true));
         let client_rpc = Session::new(stream.try_clone()?, stream);
 
@@ -1495,7 +1495,7 @@ impl Context {
         client_identity: V3OnionServiceId,
         client_auth: X25519PublicKey) -> Result<()> {
         ensure!(self.bootstrap_complete);
-        let mut endpoint_listener = self.tor_manager.listener(&endpoint_private_key, self.endpoint_port, Some(&[client_auth]))?;
+        let endpoint_listener = self.tor_manager.listener(&endpoint_private_key, self.endpoint_port, Some(&[client_auth]))?;
         endpoint_listener.set_nonblocking(true)?;
 
         let endpoint_public_key = Ed25519PublicKey::from_private_key(&endpoint_private_key);
@@ -1538,7 +1538,7 @@ impl Context {
 
         // first handle new identity connections
         if let Some(listener) = &mut self.identity_listener {
-            if let Some(mut stream) = listener.accept()? {
+            if let Some(stream) = listener.accept()? {
                 resolve!(stream.set_nonblocking(true));
                 let identity_public_key = Ed25519PublicKey::from_private_key(&self.identity_private_key);
                 let server_service_id = V3OnionServiceId::from_public_key(&identity_public_key);
@@ -1555,7 +1555,7 @@ impl Context {
 
         // next handle new endpoint connections
         for (endpoint_service_id, (_endpoint_name, allowed_client, listener)) in self.endpoint_listeners.iter_mut() {
-            if let Some(mut stream) = listener.accept()? {
+            if let Some(stream) = listener.accept()? {
                 resolve!(stream.set_nonblocking(true));
                 let server_rpc = Session::new(stream.try_clone()?, stream.try_clone()?);
                 let endpoint_server = EndpointServer::new(
@@ -1603,7 +1603,7 @@ impl Context {
         {
             let handles : Vec<HandshakeHandle> = self.identity_clients.keys().cloned().collect();
             for handle in handles {
-                let mut identity_client = self.identity_clients.get_mut(&handle).unwrap();
+                let identity_client = self.identity_clients.get_mut(&handle).unwrap();
                 let remove = match identity_client.update() {
                     Ok(Some(IdentityClientEvent::ChallengeRequestReceived{
                         identity_service_id,
@@ -1654,7 +1654,7 @@ impl Context {
             // TODO: switch to drain_filter once it comes out of nightly
             let handles : Vec<HandshakeHandle> = self.identity_servers.keys().cloned().collect();
             for handle in handles {
-                let mut identity_server = self.identity_servers.get_mut(&handle).unwrap();
+                let identity_server = self.identity_servers.get_mut(&handle).unwrap();
                 let remove = match identity_server.update() {
                     Ok(Some(IdentityServerEvent::RequestReceived{client_service_id, endpoint_name})) => {
                         events.push(
@@ -1803,7 +1803,7 @@ fn identity_test(
     let server_service_id = V3OnionServiceId::from_public_key(&server_ed25519_public);
 
     // rpc setup
-    let mut client_rpc = Session::new(stream1.clone(), stream2.clone());
+    let client_rpc = Session::new(stream1.clone(), stream2.clone());
     let mut ident_client = IdentityClient::new(
         client_rpc,
         server_service_id.clone(),
@@ -1811,7 +1811,7 @@ fn identity_test(
         client_ed25519_private,
         X25519PrivateKey::generate());
 
-    let mut server_rpc = Session::new(stream2, stream1);
+    let server_rpc = Session::new(stream2, stream1);
     let mut ident_server = IdentityServer::new(
         server_rpc,
         server_service_id.clone());
@@ -1982,11 +1982,11 @@ fn endpoint_test(should_fail: bool, client_allowed: bool) -> Result<()> {
         V3OnionServiceId::from_public_key(&ed25519_public)
     };
 
-    let mut server_rpc = Session::new(stream1.clone(), stream2.clone());
+    let server_rpc = Session::new(stream1.clone(), stream2.clone());
 
     let mut endpoint_server = EndpointServer::new(server_service_id.clone(), allowed_client, server_rpc);
 
-    let mut client_rpc = Session::new(stream2, stream1);
+    let client_rpc = Session::new(stream2, stream1);
 
     let mut endpoint_client = EndpointClient::new("channel", client_rpc, server_service_id.clone(), client_ed25519_private);
 
@@ -2128,7 +2128,7 @@ fn test_gosling_context() -> Result<()> {
 
         // update alice
         let mut events = alice.update()?;
-        for mut event in events.drain(..) {
+        for event in events.drain(..) {
             match event {
                 ContextEvent::IdentityServerPublished => {
                     if !identity_published {
@@ -2192,7 +2192,7 @@ fn test_gosling_context() -> Result<()> {
 
         // update pat
         let mut events = pat.update()?;
-        for mut event in events.drain(..) {
+        for event in events.drain(..) {
             match event {
                 ContextEvent::IdentityClientChallengeRequestReceived{handle, identity_service_id, endpoint_name, endpoint_challenge} => {
                     ensure!(handle == pat_handshake_handle);
@@ -2228,7 +2228,7 @@ fn test_gosling_context() -> Result<()> {
         }
     }
 
-    let mut alice_server_socket = alice_server_socket.take().unwrap();
+    let alice_server_socket = alice_server_socket.take().unwrap();
     let mut pat_client_socket = pat_client_socket.take().unwrap();
 
     resolve!(pat_client_socket.write(b"Hello World!\n"));

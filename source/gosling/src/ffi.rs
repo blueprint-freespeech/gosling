@@ -842,11 +842,9 @@ pub extern "C" fn gosling_context_bootstrap_tor(
         ensure_not_null!(context);
 
         let mut context_tuple_registry = get_context_tuple_registry();
-        let mut context = match context_tuple_registry.get_mut(context as usize) {
+        let context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
-            None => {
-                bail!("context is invalid");
-            }
+            None => bail!("context is invalid"),
         };
         context.0.bootstrap()
     });
@@ -865,11 +863,9 @@ pub extern "C" fn gosling_context_start_identity_server(
         ensure_not_null!(context);
 
         let mut context_tuple_registry = get_context_tuple_registry();
-        let mut context = match context_tuple_registry.get_mut(context as usize) {
+        let context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
-            None => {
-                bail!("context is invalid");
-            }
+            None => bail!("context is invalid"),
         };
         context.0.start_identity_server()
     });
@@ -887,11 +883,9 @@ pub extern "C" fn gosling_context_stop_identity_server(
         ensure_not_null!(context);
 
         let mut context_tuple_registry = get_context_tuple_registry();
-        let mut context = match context_tuple_registry.get_mut(context as usize) {
+        let context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
-            None => {
-                bail!("context is invalid");
-            }
+            None => bail!("context is invalid"),
         };
         context.0.stop_identity_server()
     });
@@ -925,11 +919,9 @@ pub extern "C" fn gosling_context_start_endpoint_server(
         ensure_not_null!(client_auth_public_key);
 
         let mut context_tuple_registry = get_context_tuple_registry();
-        let mut context = match context_tuple_registry.get_mut(context as usize) {
+        let context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
-            None => {
-                bail!("context is invalid");
-            }
+            None => bail!("context is invalid"),
         };
 
         let endpoint_name = unsafe { std::slice::from_raw_parts(endpoint_name as *const u8, endpoint_name_length) };
@@ -939,25 +931,19 @@ pub extern "C" fn gosling_context_start_endpoint_server(
         let ed25519_private_key_registry = get_ed25519_private_key_registry();
         let endpoint_private_key = match ed25519_private_key_registry.get(endpoint_private_key as usize) {
             Some(ed25519_private_key) => ed25519_private_key,
-            None => {
-                bail!("endpoint_private_key is invalid");
-            }
+            None => bail!("endpoint_private_key is invalid"),
         };
 
         let v3_onion_service_id_registry = get_v3_onion_service_id_registry();
         let client_identity = match v3_onion_service_id_registry.get(client_identity as usize) {
             Some(v3_onion_service_id) => v3_onion_service_id,
-            None => {
-                bail!("client_identity is invalid");
-            }
+            None => bail!("client_identity is invalid"),
         };
 
         let x25519_public_key_registry = get_x25519_public_key_registry();
         let client_auth_public_key = match x25519_public_key_registry.get(client_auth_public_key as usize) {
             Some(x25519_public_key) => x25519_public_key,
-            None => {
-                bail!("client_auth_public_key is invalid");
-            }
+            None => bail!("client_auth_public_key is invalid"),
         };
 
         context.0.start_endpoint_server(endpoint_private_key.clone(), endpoint_name, client_identity.clone(), client_auth_public_key.clone())
@@ -980,19 +966,15 @@ pub extern "C" fn gosling_context_stop_endpoint_server(
         ensure_not_null!(endpoint_private_key);
 
         let mut context_tuple_registry = get_context_tuple_registry();
-        let mut context = match context_tuple_registry.get_mut(context as usize) {
+        let context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
-            None => {
-                bail!("context is invalid");
-            }
+            None => bail!("context is invalid"),
         };
 
         let ed25519_private_key_registry = get_ed25519_private_key_registry();
         let endpoint_private_key = match ed25519_private_key_registry.get(endpoint_private_key as usize) {
             Some(ed25519_private_key) => ed25519_private_key,
-            None => {
-                bail!("endpoint_private_key is invalid");
-            }
+            None => bail!("endpoint_private_key is invalid"),
         };
 
         let endpoint_identity = V3OnionServiceId::from_private_key(endpoint_private_key);
@@ -1022,7 +1004,7 @@ pub extern "C" fn gosling_context_begin_identity_handshake(
         ensure!(endpoint_name_length > 0, "endpoint_name_length must not be 0");
 
         let mut context_tuple_registry = get_context_tuple_registry();
-        let mut context = match context_tuple_registry.get_mut(context as usize) {
+        let context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
             None => bail!("context is invalid"),
         };
@@ -1088,27 +1070,21 @@ pub extern "C" fn gosling_context_open_endpoint_channel(
         ensure!(channel_name_length > 0, "channel_name_length must not be 0");
 
         let mut context_tuple_registry = get_context_tuple_registry();
-        let mut context = match context_tuple_registry.get_mut(context as usize) {
+        let context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
-            None => {
-                bail!("context is invalid");
-            }
+            None => bail!("context is invalid"),
         };
 
         let v3_onion_service_id_registry = get_v3_onion_service_id_registry();
         let endpoint_service_id = match v3_onion_service_id_registry.get(endpoint_service_id as usize) {
             Some(v3_onion_service_id) => v3_onion_service_id,
-            None => {
-                bail!("endpoint_service_id is invalid");
-            }
+            None => bail!("endpoint_service_id is invalid"),
         };
 
         let x25519_private_key_registry = get_x25519_private_key_registry();
         let client_auth_private_key = match x25519_private_key_registry.get(client_auth_private_key as usize) {
             Some(x25519_private_key) => x25519_private_key,
-            None => {
-                bail!("client_auth_private_key is invalid");
-            }
+            None => bail!("client_auth_private_key is invalid"),
         };
 
         let channel_name = unsafe { std::slice::from_raw_parts(channel_name as *const u8, channel_name_length) };
