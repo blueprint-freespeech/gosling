@@ -167,7 +167,7 @@ impl TorProcess {
 
         let stdout_lines: Arc<Mutex<Vec<String>>> = Default::default();
 
-        let stdout_thread = {
+        {
             let stdout_lines = Arc::downgrade(&stdout_lines);
             let stdout = BufReader::new(process.stdout.take().unwrap());
 
@@ -175,8 +175,8 @@ impl TorProcess {
             .name("tor_stdout_reader".to_string())
             .spawn(move || {
                 TorProcess::read_stdout_task(&stdout_lines, stdout);
-            }))
-        };
+            }));
+        }
 
         Ok(TorProcess{
             control_addr: control_addr.unwrap(),

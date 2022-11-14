@@ -1206,7 +1206,7 @@ pub extern "C" fn gosling_context_poll_events(
                     };
                 },
                 ContextEvent::IdentityServerRequestCompleted{
-                    handle,
+                    handle: _,
                     endpoint_private_key,
                     endpoint_name,
                     client_service_id,
@@ -1293,10 +1293,7 @@ pub extern "C" fn gosling_context_poll_events(
 
                         let endpoint_name0 =  CString::new(endpoint_name.as_str()).expect("gosling_context_poll_events(): unexpected null byte in endpoint name");
 
-                        let client_auth_private_key = {
-                            let mut x25519_private_key_registry = get_x25519_private_key_registry();
-                            x25519_private_key_registry.insert(client_auth_private_key)
-                        };
+                        let client_auth_private_key = get_x25519_private_key_registry().insert(client_auth_private_key);
 
                         callback(context, identity_service_id as *const GoslingV3OnionServiceId, endpoint_service_id as *const GoslingV3OnionServiceId, endpoint_name0.as_ptr(), endpoint_name.len(), client_auth_private_key as *const GoslingX25519PrivateKey);
 

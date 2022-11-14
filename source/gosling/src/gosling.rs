@@ -188,10 +188,16 @@ impl<RW> IdentityClient<RW> where RW : std::io::Read + std::io::Write + Send {
                 if let Some(response) = self.rpc.client_next_response() {
                     // check for response for the begin_handshake() call
                     let mut response = match response {
-                        Response::Pending{cookie} => return Ok(None),
-                        Response::Error{cookie, error_code} => bail!("rpc error: {}", error_code),
+                        Response::Pending{cookie} => {
+                            ensure!(cookie == begin_handshake_request_cookie, "received unexpected pending response");
+                            return Ok(None);
+                        },
+                        Response::Error{cookie, error_code} => {
+                            ensure!(cookie == begin_handshake_request_cookie, "received unexpected error response; rpc error_code: {}", error_code);
+                            bail!("rpc error_code: {}", error_code);
+                        },
                         Response::Success{cookie, result} => {
-                            ensure!(cookie == begin_handshake_request_cookie, "received unexpected response");
+                            ensure!(cookie == begin_handshake_request_cookie, "received unexpected success response");
                             match result {
                                 Bson::Document(result) => result,
                                 _ => bail!("received unexpected bson type"),
@@ -279,10 +285,16 @@ impl<RW> IdentityClient<RW> where RW : std::io::Read + std::io::Write + Send {
             (&IdentityClientState::WaitingForChallengeVerification, Some(_begin_handshake_request_cookie), Some(_server_cookie), None, Some(send_response_request_cookie)) => {
                 if let Some(response) = self.rpc.client_next_response() {
                     let endpoint_service_id = match response {
-                        Response::Pending{cookie} => return Ok(None),
-                        Response::Error{cookie, error_code} => bail!("received unexpected error: {}", error_code),
+                        Response::Pending{cookie} => {
+                            ensure!(cookie == send_response_request_cookie, "received unexpected pending response");
+                            return Ok(None);
+                        },
+                        Response::Error{cookie, error_code} => {
+                            ensure!(cookie == send_response_request_cookie, "received unexpected error response; rpc error_code: {}", error_code);
+                            bail!("rpc error_code: {}", error_code);
+                        },
                         Response::Success{cookie, result} => {
-                            ensure!(cookie == send_response_request_cookie, "received unexpected response");
+                            ensure!(cookie == send_response_request_cookie, "received unexpected success response");
                             match result {
                                 Bson::String(endpoint_service_id) => V3OnionServiceId::from_string(&endpoint_service_id)?,
                                 _ => bail!("received unexpected bson type"),
@@ -486,12 +498,12 @@ impl<RW> IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
             },
             (&IdentityServerState::ChallengeVerificationResponseSent,
              Some(_begin_handshake_request_cookie),
-             Some(client_identity),
-             Some(endpoint_name),
+             Some(_client_identity),
+             Some(_endpoint_name),
              Some(_server_cookie),
              Some(_endpoint_challenge),
              Some(_send_response_request_cookie),
-             Some(client_auth_key),
+             Some(_client_auth_key),
              Some(_challenge_response),
              None) // endpoint_private_key
             => {
@@ -1152,7 +1164,7 @@ impl ApiSet for EndpointServerApiSet {
         name: &str,
         version: i32,
         args: bson::document::Document,
-        request_cookie: Option<RequestCookie>) -> Result<Option<bson::Bson>, ErrorCode> {
+        _request_cookie: Option<RequestCookie>) -> Result<Option<bson::Bson>, ErrorCode> {
 
         let retval = match (name, version) {
             ("begin_handshake", 0) => self.begin_handshake(args),
@@ -1733,7 +1745,7 @@ impl Context {
                         true
                     },
                     Ok(None) => false,
-                    Err(err) => true,
+                    Err(_) => true,
                 };
 
                 if remove {
@@ -1759,7 +1771,7 @@ impl Context {
                         true
                     },
                     Ok(None) => false,
-                    Err(err) => true,
+                    Err(_) => true,
                 };
 
                 if remove {
@@ -1794,8 +1806,6 @@ fn identity_test(
 
     // client setup
     let client_ed25519_private = Ed25519PrivateKey::generate();
-    let client_ed25519_public = Ed25519PublicKey::from_private_key(&client_ed25519_private);
-    let client_service_id = V3OnionServiceId::from_public_key(&client_ed25519_public);
 
     // server setup
     let server_ed25519_private = Ed25519PrivateKey::generate();
@@ -1816,9 +1826,6 @@ fn identity_test(
         server_rpc,
         server_service_id.clone());
 
-    let endpoint_private_key: Option<Ed25519PrivateKey> = None;
-    let endpoint_service_id: Option<V3OnionServiceId> = None;
-
     let mut failure_ocurred = false;
     let mut server_complete = false;
     let mut client_complete = false;
@@ -1826,7 +1833,7 @@ fn identity_test(
         if !server_complete {
             match ident_server.update() {
                 Ok(Some(IdentityServerEvent::RequestReceived{client_service_id, endpoint_name})) => {
-                    println!("server challenge send");
+                    println!("server challenge send: client_service_id {}, endpoint_name: {}", client_service_id.to_string(), endpoint_name);
                     let client_allowed = !client_blocked;
                     ident_server.send_challenge(client_allowed, client_requested_endpoint_valid, server_challenge.clone())?;
                 },
@@ -1834,13 +1841,18 @@ fn identity_test(
                     println!("server challenge repsonse received");
                     ident_server.send_challenge_verification(challenge_response == server_expected_response)?;
                 },
-                Ok(Some(IdentityServerEvent::RequestCompleted{endpoint_private_key,endpoint_name,client_service_id,client_auth_public_key})) => {
+                Ok(Some(IdentityServerEvent::RequestCompleted{endpoint_private_key: _, endpoint_name,client_service_id,client_auth_public_key: _})) => {
                     ensure!(endpoint_name == client_requested_endpoint);
                     println!("server complete! client_service_id : {}", client_service_id.to_string());
                     server_complete = true;
                 },
                 Ok(Some(IdentityServerEvent::RequestFailed{client_allowed, client_requested_endpoint_valid, client_proof_signature_valid, client_auth_signature_valid, challenge_response_valid})) => {
                     println!("server complete! handshake failed");
+                    println!(" client_allowed: {}", client_allowed);
+                    println!(" client_requested_endpoint_valid: {}", client_requested_endpoint_valid);
+                    println!(" client_proof_signature_valid: {}", client_proof_signature_valid);
+                    println!(" client_auth_signature_valid: {}", client_auth_signature_valid);
+                    println!(" client_response_valid: {}", challenge_response_valid);
                     server_complete = true;
                     failure_ocurred = true;
                 },
@@ -1856,10 +1868,11 @@ fn identity_test(
         if !client_complete {
             match ident_client.update() {
                 Ok(Some(IdentityClientEvent::ChallengeRequestReceived{identity_service_id, endpoint_name, endpoint_challenge})) => {
-                    println!("client challenge request received");
+                    ensure!(identity_service_id == server_service_id);
+                    println!("client challenge request received: identity_service_id: {}, endpoint_name: {}, endpoint_challenge: {}", identity_service_id.to_string(), endpoint_name, endpoint_challenge);
                     ident_client.send_response(client_response.clone())?;
                 },
-                Ok(Some(IdentityClientEvent::RequestCompleted{identity_service_id,endpoint_service_id,endpoint_name,client_auth_private_key})) => {
+                Ok(Some(IdentityClientEvent::RequestCompleted{identity_service_id,endpoint_service_id,endpoint_name,client_auth_private_key: _})) => {
                     ensure!(identity_service_id == server_service_id);
                     ensure!(endpoint_name == client_requested_endpoint);
                     println!("client complete! endpoint_server : {}", endpoint_service_id.to_string());
@@ -2162,16 +2175,22 @@ fn test_gosling_context() -> Result<()> {
                 },
                 ContextEvent::IdentityServerRequestReceived{handle, client_service_id, endpoint_name} => {
                     println!("Alice: endpoint request received");
+                    println!(" handle: {}", handle);
+                    println!(" client_service_id: {}", client_service_id.to_string());
+                    println!(" endpoint_name: {}", endpoint_name);
                     // auto accept endpoint request, send empty challenge
                     alice.server_handle_request_received(handle, true, true, doc!{})?;
                 },
                 ContextEvent::IdentityServerChallengeResponseReceived{handle, challenge_response} => {
                     println!("Alice: challenge response received");
+                    println!(" handle: {}", handle);
+                    println!(" challenge_response: {}", challenge_response);
                     // auto accept challenge response
                     alice.server_handle_challenge_response_received(handle, true)?;
                 },
                 ContextEvent::IdentityServerRequestCompleted{handle, endpoint_private_key, endpoint_name, client_service_id, client_auth_public_key} => {
                     println!("Alice: endpoint request handled");
+                    println!(" handle: {}", handle);
                     println!(" endpoint_service_id: {}", V3OnionServiceId::from_private_key(&endpoint_private_key).to_string());
                     println!(" endpoint: {}", endpoint_name);
                     println!(" client: {}", client_service_id.to_string());
@@ -2181,6 +2200,9 @@ fn test_gosling_context() -> Result<()> {
                 },
                 ContextEvent::EndpointServerChannelRequestCompleted{endpoint_service_id, client_service_id, channel_name, stream} => {
                     println!("Alice: endpoint channel accepted");
+                    println!(" endpoint_service_id: {}", endpoint_service_id.to_string());
+                    println!(" client_service_id: {}", client_service_id.to_string());
+                    println!(" channel_name: {}", channel_name);
                     alice_server_socket = Some(stream);
                 },
                 ContextEvent::TorLogReceived{line} => {
@@ -2197,11 +2219,16 @@ fn test_gosling_context() -> Result<()> {
                 ContextEvent::IdentityClientChallengeRequestReceived{handle, identity_service_id, endpoint_name, endpoint_challenge} => {
                     ensure!(handle == pat_handshake_handle);
                     println!("Pat: challenge request received");
+                    println!(" handle: {}", handle);
+                    println!(" identity_service_id: {}", identity_service_id.to_string());
+                    println!(" endpoint_name: {}", endpoint_name);
+                    println!(" endpoint_challenge: {}", endpoint_challenge);
                     pat.client_handle_challenge_request_received(handle, doc!())?;
                 },
                 ContextEvent::IdentityClientRequestCompleted{handle, identity_service_id, endpoint_service_id, endpoint_name, client_auth_private_key} => {
                     ensure!(handle == pat_handshake_handle);
                     println!("Pat: endpoint request succeeded");
+                    println!(" handle: {}", handle);
                     println!(" identity_service_id: {}", identity_service_id.to_string());
                     println!(" endpoint_service_id: {}", endpoint_service_id.to_string());
                     println!(" endpoint_name: {}", endpoint_name);
@@ -2210,14 +2237,20 @@ fn test_gosling_context() -> Result<()> {
                 },
                 ContextEvent::IdentityClientHandshakeAborted{handle,reason: Some(reason)} => {
                     println!("Pat: identity handshake aborted {:?}", reason);
+                    println!(" handle: {}", handle);
+                    println!(" reason: {:?}", reason);
                     bail!(reason);
                 },
                 ContextEvent::IdentityClientHandshakeAborted{handle,reason: None} => {
                     println!("Pat: identity handshake aborted");
+                    println!(" handle: {}", handle);
+                    println!(" reason: None");
                     bail!("no reason given");
                 },
                 ContextEvent::EndpointClientChannelRequestCompleted{endpoint_service_id, channel_name, stream} => {
                     println!("Pat: endpoint channel opened");
+                    println!(" endpoint_service_id: {}", endpoint_service_id.to_string());
+                    println!(" channel_name: {}", channel_name);
                     pat_client_socket = Some(stream);
                 },
                 ContextEvent::TorLogReceived{line} => {
