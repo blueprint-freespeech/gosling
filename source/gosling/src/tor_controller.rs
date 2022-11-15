@@ -186,7 +186,7 @@ impl TorProcess {
         })
     }
 
-    fn read_stdout_task(stdout_lines: &std::sync::Weak<Mutex<Vec<String>>>, mut stdout: BufReader<ChildStdout>) -> () {
+    fn read_stdout_task(stdout_lines: &std::sync::Weak<Mutex<Vec<String>>>, mut stdout: BufReader<ChildStdout>) {
 
         while let Some(stdout_lines) = stdout_lines.upgrade() {
             let mut line = String::default();
@@ -291,8 +291,8 @@ impl ControlStream {
             // split our read buffer into individual lines
             let mut begin = 0;
             for index in 1..self.pending_data.len() {
-                if self.pending_data[index-1] == '\r' as u8 &&
-                   self.pending_data[index] == '\n' as u8 {
+                if self.pending_data[index-1] == b'\r' &&
+                   self.pending_data[index] == b'\n' {
 
                     let end = index - 1;
                     // view into byte vec of just the found line
@@ -332,21 +332,21 @@ impl ControlStream {
 
             // end of a response
             if self.end_reply_line.is_match(&current_line) {
-                ensure!(self.reading_multiline_value == false);
+                ensure!(!self.reading_multiline_value);
                 self.pending_reply.push(current_line);
                 break;
             // single line data from getinfo and friends
             } else if self.single_line_data.is_match(&current_line) {
-                ensure!(self.reading_multiline_value == false);
+                ensure!(!self.reading_multiline_value);
                 self.pending_reply.push(current_line);
             // begin of multiline data from getinfo and friends
             } else if self.multi_line_data.is_match(&current_line) {
-                ensure!(self.reading_multiline_value == false);
+                ensure!(!self.reading_multiline_value);
                 self.pending_reply.push(current_line);
                 self.reading_multiline_value = true;
             // multiline data to be squashed to a single entry
             } else {
-                ensure!(self.reading_multiline_value == true);
+                ensure!(self.reading_multiline_value);
                 // don't bother writing the end of multiline token
                 if current_line == "." {
                     self.reading_multiline_value = false;
@@ -491,21 +491,18 @@ impl FromStr for Version {
             } else {
                 unreachable!();
             };
-            let status_tag = if let Some(status_tag) = tokens.next() {
-                Some(status_tag.to_string())
-            } else {
-                None
-            };
+            let status_tag = tokens.next().map(|status_tag| status_tag.to_string());
+
             (major,minor,micro,patch_level,status_tag)
         } else {
             bail!("failed to find MAJOR.MINOR.MICRO.[PATCH_LEVEL][-STATUS_TAG] portion of version");
         };
-        while let Some(extra_info) = tokens.next() {
+        for extra_info in tokens {
             if !extra_info.starts_with('(') || !extra_info.ends_with(')') {
                 bail!("failed to parse '{}' as [ (EXTRA_INFO)]", extra_info);
             }
         }
-        return Ok(Version{major, minor, micro, patch_level, status_tag});
+        Ok(Version{major, minor, micro, patch_level, status_tag})
     }
 }
 
@@ -657,7 +654,7 @@ impl TorController {
             let action = caps.name("action").unwrap().as_str();
             let hs_address = caps.name("hsaddress").unwrap().as_str();
 
-            if let Ok(hs_address) = V3OnionServiceId::from_string(&hs_address) {
+            if let Ok(hs_address) = V3OnionServiceId::from_string(hs_address) {
                 return Ok(AsyncEvent::HsDesc{
                     action: action.to_string(),
                     hs_address
@@ -947,14 +944,14 @@ impl TorController {
                 for line in reply.reply_lines {
                     if let Some(mut index) = line.find("ServiceID=") {
                         ensure!(service_id.is_none(), "received duplicate service ids");
-                        index = index + "ServiceId=".len();
+                        index += "ServiceId=".len();
                         service_id = Some(V3OnionServiceId::from_string(&line[index..])?);
                     } else if let Some(mut index) = line.find("PrivateKey=") {
                         ensure!(private_key.is_none(), "received duplicate private keys");
-                        index = index + "PrivateKey=".len();
+                        index +="PrivateKey=".len();
                         private_key = Some(Ed25519PrivateKey::from_key_blob(&line[index..])?);
                     } else if line.contains("ClientAuthV3=") {
-                        ensure!(client_auth.is_some() && client_auth.unwrap().len() > 0, "received unexpected ClientAuthV3 keys");
+                        ensure!(client_auth.is_some() && !client_auth.unwrap().is_empty(), "received unexpected ClientAuthV3 keys");
                     } else if !line.contains("OK") {
                         bail!("received unexpected reply line: '{}'", line);
                     }
@@ -988,7 +985,7 @@ impl TorController {
         let response = self.getinfo(&["net/listeners/socks"])?;
         for (key, value) in response.iter() {
             if key.as_str() == "net/listeners/socks" {
-                if value.len() == 0 {
+                if value.is_empty() {
                     return Ok(Default::default());
                 }
                 // get our list of double-quoted strings
@@ -1130,7 +1127,7 @@ impl Write for OnionStream {
 
 impl From<OnionStream> for TcpStream {
     fn from(onion_stream: OnionStream) -> Self {
-        return onion_stream.stream;
+        onion_stream.stream
     }
 }
 
@@ -1215,7 +1212,7 @@ impl TorManager {
     pub fn update(&mut self) -> Result<Vec<Event>> {
         let mut i = 0;
         while i < self.onion_services.len() {
-            if self.onion_services[i].1.load(atomic::Ordering::Relaxed) == false {
+            if !self.onion_services[i].1.load(atomic::Ordering::Relaxed) {
                 let entry = self.onion_services.swap_remove(i);
                 let service_id = entry.0;
 
@@ -1313,8 +1310,7 @@ impl TorManager {
         let listener = resolve!(TcpListener::bind(socket_addr));
         let socket_addr = resolve!(listener.local_addr());
 
-        let mut flags: AddOnionFlags = Default::default();
-        flags.discard_pk = true;
+        let mut flags = AddOnionFlags{discard_pk: true, ..Default::default()};
         if authorized_clients.is_some() {
             flags.v3_auth = true;
         }
@@ -1323,7 +1319,7 @@ impl TorManager {
         let (_, service_id) = self.controller.add_onion(Some(private_key), &flags, None, virt_port, Some(socket_addr), authorized_clients)?;
 
         let is_active = Arc::new(atomic::AtomicBool::new(true));
-        self.onion_services.push((service_id.clone(), Arc::clone(&is_active)));
+        self.onion_services.push((service_id, Arc::clone(&is_active)));
 
         Ok(OnionListener{listener, is_active})
     }

@@ -9,20 +9,11 @@
 // TODO: print some warning when starting a server with callbacks missing
 // TODO: review all `unwrap() calls
 // TODO: add more ensure_*! rules to error and simplify some of our error handling
-// TODO: We should remove all of these "allows" eventually.  This one
-//  is something to be expected on work-in-progress code...
 
-// These are bad style at best and can conceal problems.
+// remove this once refactoring is complete
 #![allow(unused_variables)]
-#![allow(clippy::assign_op_pattern)]
-#![allow(clippy::char_lit_as_u8)]
-#![allow(clippy::field_reassign_with_default)]
-#![allow(clippy::identity_op)]
-#![allow(clippy::if_same_then_else)]
-#![allow(clippy::len_zero)]
-#![allow(clippy::manual_map)]
-#![allow(clippy::neg_cmp_op_on_partial_ord)]
-#![allow(clippy::nonminimal_bool)]
+// some internal functions take a lot of args but thats ok
+#![allow(clippy::too_many_arguments)]
 
 mod error;
 mod ffi;

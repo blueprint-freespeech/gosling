@@ -250,10 +250,7 @@ impl TryFrom<bson::document::Document> for ErrorSection {
             Err(_) => return Err(ErrorCode::SectionParseFailed),
         };
 
-        let data = match value.get_mut("data") {
-            Some(data) => Some(std::mem::take(data)),
-            None => None,
-        };
+        let data = value.get_mut("data").map(std::mem::take);
 
         Ok(ErrorSection{cookie, code, message, data})
     }
@@ -367,10 +364,7 @@ impl TryFrom<bson::document::Document> for ResponseSection {
             Err(_) => return Err(ErrorCode::SectionParseFailed),
         };
 
-        let result = match value.get_mut("result") {
-            Some(result) => Some(std::mem::take(result)),
-            None => None,
-        };
+        let result = value.get_mut("result").map(std::mem::take);
 
         // if complete the result must be present
         if state == RequestState::Complete && result == None {
@@ -675,10 +669,7 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
         self.process_sections()?;
 
         // handle incoming api calls
-        let apisets = match apisets {
-            Some(apisets) => apisets,
-            None => &mut [],
-        };
+        let apisets = apisets.unwrap_or(&mut []);
         self.handle_requests(apisets)?;
 
         // send any responses
@@ -795,7 +786,7 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
                 arguments,
             }));
 
-        return Ok(cookie);
+        Ok(cookie)
     }
 
     // consume all the responses from the client

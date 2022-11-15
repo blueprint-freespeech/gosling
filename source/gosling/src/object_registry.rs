@@ -28,7 +28,7 @@ pub struct ObjectRegistry<T> {
 
 impl<T> ObjectRegistry<T> where T : HasByteTypeId{
     fn next_key(&mut self) -> usize {
-        self.counter = self.counter + 1;
+        self.counter += 1;
         (self.counter << 8) + T::get_byte_type_id()
     }
 
@@ -46,7 +46,7 @@ impl<T> ObjectRegistry<T> where T : HasByteTypeId{
 
     pub fn insert(&mut self, val:T) -> usize {
         let key = self.next_key();
-        if !self.map.insert(key, val).is_none() {
+        if self.map.insert(key, val).is_some() {
             panic!();
         }
         key

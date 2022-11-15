@@ -63,7 +63,7 @@ macro_rules! error {
             let function = function!();
             let file = std::file!();
 
-            use crate::error::ToError;
+            use $crate::error::ToError;
             Err($err.to_error(file, line, function))
         }
     };
@@ -102,17 +102,17 @@ macro_rules! resolve {
 #[macro_export]
 macro_rules! ensure {
     ($condition:expr) => {
-        if !$condition {
+        if !($condition as bool) {
             bail!(std::format!("requirement `{}` failed", std::stringify!($condition)));
         }
     };
     ($condition:expr, $msg:literal) => {
-        if !$condition {
+        if !($condition as bool) {
             bail!($msg);
         }
     };
     ($condition:expr, $fmt:literal, $($arg:tt)*) => {
-        if !$condition {
+        if !($condition as bool) {
             bail!($fmt, $($arg)*);
         }
     };

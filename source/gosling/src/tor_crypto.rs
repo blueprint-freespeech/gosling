@@ -120,7 +120,7 @@ fn hash_tor_password_with_salt(salt: &[u8; S2K_RFC2440_SPECIFIER_LEN], password:
     while count > 0 {
         if count > input_len {
             sha1.input(input);
-            count = count - input_len;
+            count -= input_len;
         } else {
             sha1.input(&input[0..count]);
             break;
@@ -456,8 +456,8 @@ impl V3OnionServiceId {
         let mut raw_service_id = [0u8; V3_ONION_SERVICE_ID_RAW_SIZE];
 
         raw_service_id[..ED25519_PUBLIC_KEY_SIZE].copy_from_slice(&public_key.as_bytes()[..]);
-        let truncated_checksum = calc_truncated_checksum(&public_key.as_bytes());
-        raw_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 0] = truncated_checksum[0];
+        let truncated_checksum = calc_truncated_checksum(public_key.as_bytes());
+        raw_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET    ] = truncated_checksum[0];
         raw_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 1] = truncated_checksum[1];
         raw_service_id[V3_ONION_SERVICE_ID_VERSION_OFFSET] = 0x03u8;
 
@@ -469,7 +469,7 @@ impl V3OnionServiceId {
     }
 
     pub fn from_private_key(private_key: &Ed25519PrivateKey) -> V3OnionServiceId {
-        return Self::from_public_key(&Ed25519PublicKey::from_private_key(private_key));
+        Self::from_public_key(&Ed25519PublicKey::from_private_key(private_key))
     }
 
     pub fn is_valid(service_id: &str) -> bool {
@@ -493,7 +493,7 @@ impl V3OnionServiceId {
                 public_key[..].copy_from_slice(&decoded_service_id[..ED25519_PUBLIC_KEY_SIZE]);
                 // ensure checksum is correct
                 let truncated_checksum = calc_truncated_checksum(&public_key);
-                if truncated_checksum[0] != decoded_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 0] ||
+                if truncated_checksum[0] != decoded_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET    ] ||
                    truncated_checksum[1] != decoded_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 1] {
                     return false;
                 }

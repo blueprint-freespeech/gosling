@@ -1037,7 +1037,7 @@ impl EndpointServerApiSet {
             server_identity,
             allowed_client,
             requested_channel: Default::default(),
-            server_cookie: server_cookie,
+            server_cookie,
             new_channel: None,
             handshake_failed: false,
         }
@@ -1057,9 +1057,9 @@ impl EndpointServerApiSet {
         self.requested_channel = channel;
 
         // return result
-        return Ok(doc!{
+        Ok(doc!{
             "server_cookie" : Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: self.server_cookie.to_vec()}),
-        });
+        })
     }
 
     fn send_response_impl(
@@ -1108,7 +1108,7 @@ impl EndpointServerApiSet {
                 Err(err) => Err(ErrorCode::Runtime(err as i32)),
             };
         }
-        return Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32));
+        Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32))
     }
 
     fn send_response(&mut self, mut args: bson::document::Document) -> Result<Option<Bson>, ErrorCode> {
@@ -1150,7 +1150,7 @@ impl EndpointServerApiSet {
                 Err(err) => Err(ErrorCode::Runtime(err as i32)),
             };
         }
-        return Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32));
+        Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32))
     }
 }
 
@@ -1172,13 +1172,7 @@ impl ApiSet for EndpointServerApiSet {
             (_, _) => Err(ErrorCode::RequestFunctionInvalid),
         };
 
-        match retval {
-            Err(_) => {
-                self.handshake_failed = true;
-            },
-            Ok(_) => {},
-        }
-
+        self.handshake_failed = retval.is_err();
         retval
     }
 
@@ -1231,7 +1225,7 @@ impl<RW> EndpointServer<RW> where RW : std::io::Read + std::io::Write + Send{
             self.handshake_complete = true;
             return Ok(Some(retval));
         }
-        return Ok(None);
+        Ok(None)
     }
 }
 
@@ -1598,13 +1592,11 @@ impl Context {
                 Event::OnionServicePublished{service_id} => {
                     if service_id == self.identity_service_id {
                         events.push(ContextEvent::IdentityServerPublished);
-                    } else {
-                        if let Some((endpoint_name, _, _)) = self.endpoint_listeners.get(&service_id) {
-                            events.push(ContextEvent::EndpointServerPublished{
-                                endpoint_service_id: service_id,
-                                endpoint_name: endpoint_name.clone(),
-                            });
-                        }
+                    } else if let Some((endpoint_name, _, _)) = self.endpoint_listeners.get(&service_id) {
+                        events.push(ContextEvent::EndpointServerPublished{
+                            endpoint_service_id: service_id,
+                            endpoint_name: endpoint_name.clone(),
+                        });
                     }
                 },
             }

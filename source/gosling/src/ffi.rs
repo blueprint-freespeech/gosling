@@ -27,7 +27,7 @@ macro_rules! define_registry {
         paste::paste! {
             static mut [<$type:snake:upper _REGISTRY>]: Option<Mutex<ObjectRegistry<$type>>> = None;
 
-            pub fn [<init_ $type:snake _registry>]() -> () {
+            pub fn [<init_ $type:snake _registry>]() {
                 unsafe {
                     if let None = [<$type:snake:upper _REGISTRY>] {
                         [<$type:snake:upper _REGISTRY>] = Some(Mutex::new(ObjectRegistry::new()));
@@ -35,7 +35,7 @@ macro_rules! define_registry {
                 }
             }
 
-            pub fn [<drop_ $type:snake _registry>]() -> () {
+            pub fn [<drop_ $type:snake _registry>]() {
                 unsafe {
                     [<$type:snake:upper _REGISTRY>] = None;
                 }
@@ -223,7 +223,7 @@ pub struct GoslingLibrary;
 static mut GOSLING_LIBRARY_INITED: bool = false;
 const GOSLING_LIBRARY_HANDLE: usize = {
     // integer constant in the form 0x6000..5E (GOOOOOSE)
-    (0x60 << (std::mem::size_of::<usize>() - 1) * 8) + 0x5E
+    (0x60 << ((std::mem::size_of::<usize>() - 1) * 8)) + 0x5E
 };
 
 /// Initializes the Gosling library. This function must be called before using any of the
@@ -233,7 +233,7 @@ const GOSLING_LIBRARY_HANDLE: usize = {
 #[no_mangle]
 pub extern "C" fn gosling_library_init(
     out_library: *mut *mut GoslingLibrary,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
 
     translate_failures((), error, || -> Result<()> {
         ensure_not_null!(out_library);
@@ -265,7 +265,7 @@ pub extern "C" fn gosling_library_init(
 /// Frees all resources associated with the Gosling library. No-op if the library
 /// is not initialized or if it has already been freed
 #[no_mangle]
-pub extern "C" fn gosling_library_free(library: *mut GoslingLibrary) -> () {
+pub extern "C" fn gosling_library_free(library: *mut GoslingLibrary) {
 
     unsafe {
         if GOSLING_LIBRARY_INITED {
@@ -680,7 +680,7 @@ pub extern "C" fn gosling_v3_onion_service_id_from_string(
 pub extern "C" fn gosling_v3_onion_service_id_from_ed25519_private_key(
     out_service_id: *mut *mut GoslingV3OnionServiceId,
     ed25519_private_key: *const GoslingEd25519PrivateKey,
-    error: *mut *mut GoslingError)  -> () {
+    error: *mut *mut GoslingError) {
 
     translate_failures((), error, || -> Result<()> {
         ensure_not_null!(out_service_id);
@@ -692,7 +692,7 @@ pub extern "C" fn gosling_v3_onion_service_id_from_ed25519_private_key(
                 Some(ed25519_private_key) => ed25519_private_key,
                 None => bail!("ed25519_private_key is invalid"),
             };
-            V3OnionServiceId::from_private_key(&ed25519_private_key)
+            V3OnionServiceId::from_private_key(ed25519_private_key)
         };
 
         let handle = get_v3_onion_service_id_registry().insert(service_id);
@@ -791,7 +791,7 @@ pub extern "C" fn gosling_context_init(
     identity_port: u16,
     endpoint_port: u16,
     identity_private_key: *const GoslingEd25519PrivateKey,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
     translate_failures((), error, || -> Result<()> {
         // validate params
 
@@ -836,7 +836,7 @@ pub extern "C" fn gosling_context_init(
 #[no_mangle]
 pub extern "C" fn gosling_context_bootstrap_tor(
     context: *mut GoslingContext,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
     translate_failures((), error, || -> Result<()> {
 
         ensure_not_null!(context);
@@ -858,7 +858,7 @@ pub extern "C" fn gosling_context_bootstrap_tor(
 #[no_mangle]
 pub extern "C" fn gosling_context_start_identity_server(
     context: *mut GoslingContext,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
     translate_failures((), error, || -> Result<()> {
         ensure_not_null!(context);
 
@@ -878,7 +878,7 @@ pub extern "C" fn gosling_context_start_identity_server(
 #[no_mangle]
 pub extern "C" fn gosling_context_stop_identity_server(
     context: *mut GoslingContext,
-    error: *mut *mut GoslingError) ->() {
+    error: *mut *mut GoslingError) {
     translate_failures((), error, || -> Result<()> {
         ensure_not_null!(context);
 
@@ -909,7 +909,7 @@ pub extern "C" fn gosling_context_start_endpoint_server(
     endpoint_name_length: usize,
     client_identity: *const GoslingV3OnionServiceId,
     client_auth_public_key: *const GoslingX25519PublicKey,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
     translate_failures((), error, || -> Result<()> {
         ensure_not_null!(context);
         ensure_not_null!(endpoint_private_key);
@@ -960,7 +960,7 @@ pub extern "C" fn gosling_context_start_endpoint_server(
 pub extern "C" fn gosling_context_stop_endpoint_server(
     context: *mut GoslingContext,
     endpoint_private_key: *const GoslingEd25519PrivateKey,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
     translate_failures((), error, || -> Result<()> {
         ensure_not_null!(context);
         ensure_not_null!(endpoint_private_key);
@@ -1032,7 +1032,7 @@ pub extern "C" fn gosling_context_begin_identity_handshake(
 pub extern "C" fn gosling_context_abort_identity_client_handshake(
     context: *mut GoslingContext,
     handshake_handle: GoslingHandshakeHandle,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
     translate_failures((), error, || -> Result<()> {
         ensure_not_null!(context);
 
@@ -1061,7 +1061,7 @@ pub extern "C" fn gosling_context_open_endpoint_channel(
     client_auth_private_key: *const GoslingX25519PrivateKey,
     channel_name: *const c_char,
     channel_name_length: usize,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
     translate_failures((), error, || -> Result<()> {
         ensure_not_null!(context);
         ensure_not_null!(endpoint_service_id);
@@ -1102,7 +1102,7 @@ pub extern "C" fn gosling_context_open_endpoint_channel(
 #[no_mangle]
 pub extern "C" fn gosling_context_poll_events(
     context: *mut GoslingContext,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
     translate_failures((), error, || -> Result<()> {
 
         // we need to scope the context registry explicitly here
@@ -1787,7 +1787,7 @@ macro_rules! impl_callback_setter {
 pub extern "C" fn gosling_context_set_tor_bootstrap_status_received_callback(
     context: *mut GoslingContext,
     callback: GoslingTorBootstrapStatusReceivedCallback,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
     impl_callback_setter!(tor_bootstrap_status_received_callback, context, callback, error);
 }
 
@@ -1800,7 +1800,7 @@ pub extern "C" fn gosling_context_set_tor_bootstrap_status_received_callback(
 pub extern "C" fn gosling_context_set_tor_bootstrap_completed_callback(
     context: *mut GoslingContext,
     callback: GoslingTorBootstrapCompletedCallback,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
     impl_callback_setter!(tor_bootstrap_completed_callback, context, callback, error);
 }
 
@@ -1813,7 +1813,7 @@ pub extern "C" fn gosling_context_set_tor_bootstrap_completed_callback(
 pub extern "C" fn gosling_context_set_tor_log_received_callback(
     context: *mut GoslingContext,
     callback: GoslingTorLogRecieved,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
     impl_callback_setter!(tor_log_received_callback, context, callback, error);
 }
 
@@ -1826,7 +1826,7 @@ pub extern "C" fn gosling_context_set_tor_log_received_callback(
 pub extern "C" fn gosling_context_set_identity_server_published_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerPublishedCallback,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
     impl_callback_setter!(identity_server_published_callback, context, callback, error);
 }
 
@@ -1839,7 +1839,7 @@ pub extern "C" fn gosling_context_set_identity_server_published_callback(
 pub extern "C" fn gosling_context_set_identity_server_client_allowed_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeClientAllowedCallback,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
     impl_callback_setter!(identity_server_client_allowed_callback, context, callback, error);
 }
 
@@ -1852,7 +1852,7 @@ pub extern "C" fn gosling_context_set_identity_server_client_allowed_callback(
 pub extern "C" fn gosling_context_set_identity_server_endpoint_supported_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeEndpointSupportedCallback,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
     impl_callback_setter!(identity_server_endpoint_supported_callback, context, callback, error);
 }
 
@@ -1865,7 +1865,7 @@ pub extern "C" fn gosling_context_set_identity_server_endpoint_supported_callbac
 pub extern "C" fn gosling_context_set_identity_server_challenge_size_callack(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeChallengeSizeCallback,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
     impl_callback_setter!(identity_server_challenge_size_callback, context, callback, error);
 }
 
@@ -1878,7 +1878,7 @@ pub extern "C" fn gosling_context_set_identity_server_challenge_size_callack(
 pub extern "C" fn gosling_context_set_identity_server_build_challenge_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeBuildChallengeCallback,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
     impl_callback_setter!(identity_server_build_challenge_callback, context, callback, error);
 }
 
@@ -1891,7 +1891,7 @@ pub extern "C" fn gosling_context_set_identity_server_build_challenge_callback(
 pub extern "C" fn gosling_context_set_identity_server_verify_challenge_response_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeVerifyChallengeResponseCallback,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
     impl_callback_setter!(identity_server_verify_challenge_response_callback, context, callback, error);
 }
 
@@ -1904,7 +1904,7 @@ pub extern "C" fn gosling_context_set_identity_server_verify_challenge_response_
 pub extern "C" fn gosling_context_set_identity_server_request_completed_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerRequestCompletedCallback,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
     impl_callback_setter!(identity_server_request_completed_callback, context, callback, error);
 }
 
@@ -1917,7 +1917,7 @@ pub extern "C" fn gosling_context_set_identity_server_request_completed_callback
 pub extern "C" fn gosling_context_set_identity_client_challenge_response_size_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityClientHandshakeChallengeResponseSizeCallback,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
     impl_callback_setter!(identity_client_challenge_response_size_callback, context, callback, error);
 }
 
@@ -1930,7 +1930,7 @@ pub extern "C" fn gosling_context_set_identity_client_challenge_response_size_ca
 pub extern "C" fn gosling_context_set_identity_client_build_challenge_response_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityClientHandshakeBuildChallengeResponseCallback,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
     impl_callback_setter!(identity_client_build_challenge_response_callback, context, callback, error);
 }
 
@@ -1943,7 +1943,7 @@ pub extern "C" fn gosling_context_set_identity_client_build_challenge_response_c
 pub extern "C" fn gosling_context_set_identity_client_request_completed_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityClientRequestCompletedCallback,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
     impl_callback_setter!(identity_client_request_completed_callback, context, callback, error);
 }
 
@@ -1956,7 +1956,7 @@ pub extern "C" fn gosling_context_set_identity_client_request_completed_callback
 pub extern "C" fn gosling_context_set_endpoint_server_published_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointServerPublishedCallback,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
     impl_callback_setter!(endpoint_server_published_callback, context, callback, error);
 }
 
@@ -1969,7 +1969,7 @@ pub extern "C" fn gosling_context_set_endpoint_server_published_callback(
 pub extern "C" fn gosling_context_set_endpoint_server_channel_request_completed_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointServerChannelRequestCompletedCallback,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
     impl_callback_setter!(endpoint_server_channel_request_completed_callback, context, callback, error);
 }
 
@@ -1982,6 +1982,6 @@ pub extern "C" fn gosling_context_set_endpoint_server_channel_request_completed_
 pub extern "C" fn gosling_context_set_endpoint_client_channel_request_completed_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointClientChannelRequestCompletedCallback,
-    error: *mut *mut GoslingError) -> () {
+    error: *mut *mut GoslingError) {
     impl_callback_setter!(endpoint_client_channel_request_completed_callback, context, callback, error);
 }
