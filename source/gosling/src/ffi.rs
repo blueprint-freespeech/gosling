@@ -1091,7 +1091,7 @@ pub extern "C" fn gosling_context_open_endpoint_channel(
         let channel_name = resolve!(std::str::from_utf8(channel_name)).to_string();
         ensure!(channel_name.is_ascii(), "channel_name must be an ascii string");
 
-        context.0.open_endpoint_channel(endpoint_service_id.clone(), client_auth_private_key.clone(), &channel_name)
+        context.0.open_endpoint_channel(endpoint_service_id.clone(), client_auth_private_key.clone(), channel_name)
     });
 }
 

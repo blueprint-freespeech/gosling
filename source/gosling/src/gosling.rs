@@ -854,76 +854,87 @@ impl<RW> ApiSet for IdentityServer<RW> where RW : std::io::Read + std::io::Write
     }
 }
 
-enum EndpointHandshakeFunction {
-    BeginHandshake,
-    SendResponse,
+enum EndpointClientEvent {
+    RequestCompleted,
 }
 
-//
-// An endpoint client object use for connecing to an
-// endpoint server, after the handshake completes
-// the underlying tcp stream can be taken
-//
+#[derive(Debug, PartialEq)]
+enum EndpointClientState {
+    BeginHandshake,
+    WaitingForServerCookie,
+    WaitingForProofVerification,
+    HandshakeComplete,
+}
 
 struct EndpointClient<RW> {
-    // used for state machine
-    next_function: Option<EndpointHandshakeFunction>,
-    rpc: Session<RW,RW>,
-
     // session data
+    rpc: Session<RW,RW>,
     server_service_id: V3OnionServiceId,
     requested_channel: String,
     client_ed25519_private: Ed25519PrivateKey,
 
-    // set to true once handshake completes
-    handshake_complete: bool,
+    // state machine data
+    state: EndpointClientState,
+    begin_handshake_request_cookie: Option<RequestCookie>,
+    send_response_request_cookie: Option<RequestCookie>,
 }
 
 impl<RW> EndpointClient<RW> where RW : std::io::Read + std::io::Write + Send {
     fn new(
-        channel: &str,
         rpc: Session<RW,RW>,
         server_service_id: V3OnionServiceId,
+        requested_channel: String,
         client_ed25519_private: Ed25519PrivateKey) -> Self {
-        Self {
-            next_function: Some(EndpointHandshakeFunction::BeginHandshake),
+        Self{
             rpc,
             server_service_id,
-            requested_channel: channel.to_string(),
+            requested_channel,
             client_ed25519_private,
-            handshake_complete: false,
+            state: EndpointClientState::BeginHandshake,
+            begin_handshake_request_cookie: None,
+            send_response_request_cookie: None,
         }
     }
 
-    // on completion returns tuple containing:
-    // - the endpoint service id we've connected to
-    // - the channel name connected to
-    fn update(&mut self) -> Result<Option<(V3OnionServiceId,String)>> {
-        ensure!(!self.handshake_complete);
+    fn update(&mut self) -> Result<Option<EndpointClientEvent>> {
 
+        ensure!(self.state != EndpointClientState::HandshakeComplete);
+
+        // update our rpc session
         self.rpc.update(None)?;
 
         // client state machine
-        match self.next_function {
-            Some(EndpointHandshakeFunction::BeginHandshake) => {
-                println!("call begin_handshake");
-                self.rpc.client_call(
+        match (
+            &self.state,
+            self.begin_handshake_request_cookie,
+            self.send_response_request_cookie) {
+            (&EndpointClientState::BeginHandshake, None, None) => {
+                self.begin_handshake_request_cookie = Some(self.rpc.client_call(
                     "gosling_endpoint",
                     "begin_handshake",
                     0,
                     doc!{
                         "version" : bson::Bson::String(GOSLING_VERSION.to_string()),
                         "channel" : bson::Bson::String(self.requested_channel.clone()),
-                    })?;
-
-                self.next_function = Some(EndpointHandshakeFunction::SendResponse);
+                    })?);
+                self.state = EndpointClientState::WaitingForServerCookie;
+                Ok(None)
             },
-            Some(EndpointHandshakeFunction::SendResponse) => {
+            (&EndpointClientState::WaitingForServerCookie, Some(begin_handshake_request_cookie), None) => {
                 if let Some(response) = self.rpc.client_next_response() {
                     let result = match response {
-                        Response::Pending{cookie} => return Ok(None),
-                        Response::Error{cookie, error_code} => bail!("received unexpected error: {}", error_code),
-                        Response::Success{cookie, result} => result,
+                        Response::Pending{cookie} => {
+                            ensure!(cookie == begin_handshake_request_cookie, "received unexpected pending response");
+                            return Ok(None);
+                        },
+                        Response::Error{cookie, error_code} => {
+                            ensure!(cookie == begin_handshake_request_cookie, "received unexpected error response; rpc error_code: {}", error_code);
+                            bail!("rpc error_code: {}", error_code);
+                        },
+                        Response::Success{cookie, result} => {
+                            ensure!(cookie == begin_handshake_request_cookie, "received unexpected success response");
+                            result
+                        },
                     };
 
                     if let bson::Bson::Document(result) = result {
@@ -956,47 +967,57 @@ impl<RW> EndpointClient<RW> where RW : std::io::Read + std::io::Write + Send {
 
                             // build our args object for rpc call
                             let args = doc!{
-                                "client_cookie" : bson::Bson::Binary(bson::Binary{subtype: BinarySubtype::Generic, bytes: client_cookie.to_vec()}),
-                                "client_identity" : bson::Bson::String(client_identity),
-                                "client_identity_proof_signature" : bson::Bson::Binary(bson::Binary{subtype: BinarySubtype::Generic, bytes: client_identity_proof_signature.to_bytes().to_vec()}),
+                                "client_cookie" : Bson::Binary(bson::Binary{subtype: BinarySubtype::Generic, bytes: client_cookie.to_vec()}),
+                                "client_identity" : Bson::String(client_identity),
+                                "client_identity_proof_signature" : Bson::Binary(bson::Binary{subtype: BinarySubtype::Generic, bytes: client_identity_proof_signature.to_bytes().to_vec()}),
                             };
 
                             // make rpc call
-                            println!("call send_response");
-                            self.rpc.client_call(
+                            self.send_response_request_cookie = Some(self.rpc.client_call(
                                 "gosling_endpoint",
                                 "send_response",
                                 0,
-                                args)?;
+                                args)?);
 
-                            self.next_function = None;
+                            self.state = EndpointClientState::WaitingForProofVerification;
                         }
+                    } else {
+                        bail!("begin_handshake() returned unexpected value: {}", result);
                     }
                 }
+                Ok(None)
             },
-            // waiting for final response
-            None => {
+            (&EndpointClientState::WaitingForProofVerification, Some(_begin_handshake_request_cookie), Some(send_response_request_cookie)) => {
                 if let Some(response) = self.rpc.client_next_response() {
                     let result = match response {
-                        Response::Pending{cookie} => return Ok(None),
-                        Response::Error{cookie, error_code} => bail!("received unexpected error: {}", error_code),
-                        Response::Success{cookie, result} => result,
+                        Response::Pending{cookie} => {
+                            ensure!(cookie == send_response_request_cookie, "received unexpected pending response");
+                            return Ok(None);
+                        },
+                        Response::Error{cookie, error_code} => {
+                            ensure!(cookie == send_response_request_cookie, "received unexpected error response; rpc error_code: {}", error_code);
+                            bail!("rpc error_code: {}", error_code);
+                        },
+                        Response::Success{cookie, result} => {
+                            ensure!(cookie == send_response_request_cookie, "received unexpected success response");
+                            result
+                        },
                     };
 
-                    // expect an empty doc on success
                     if let Bson::Document(result) = result {
-                        self.handshake_complete = true;
-                        if !result.is_empty() {
-                            bail!("expected empty document response, received: {}", result);
-                        }
+                        ensure!(result.is_empty());
 
-                        return Ok(Some((self.server_service_id.clone(), self.requested_channel.clone())));
+                        self.state = EndpointClientState::HandshakeComplete;
+                        return Ok(Some(EndpointClientEvent::RequestCompleted));
                     }
                 }
+                Ok(None)
+            },
+            _ => {
+                bail!("unexpected state: state: {:?}, begin_handshake_request_cookie: {:?}", self.state, self.begin_handshake_request_cookie);
             },
         }
 
-        Ok(None)
     }
 }
 
@@ -1247,7 +1268,7 @@ pub struct Context {
     next_handshake_handle: HandshakeHandle,
     identity_clients: BTreeMap<HandshakeHandle, IdentityClient<OnionStream>>,
     identity_servers: BTreeMap<HandshakeHandle, IdentityServer<OnionStream>>,
-    endpoint_clients : Vec<(EndpointClient<OnionStream>, TcpStream)>,
+    endpoint_clients : BTreeMap<HandshakeHandle, (EndpointClient<OnionStream>, TcpStream)>,
     endpoint_servers : Vec<(EndpointServer<OnionStream>, TcpStream)>,
 
     //
@@ -1524,7 +1545,7 @@ impl Context {
         &mut self,
         endpoint_server_id: V3OnionServiceId,
         client_auth_key: X25519PrivateKey,
-        channel: &str) -> Result<()> {
+        channel: String) -> Result<()> {
         ensure!(self.bootstrap_complete);
         self.tor_manager.add_client_auth(&endpoint_server_id, &client_auth_key)?;
         let stream = self.tor_manager.connect(&endpoint_server_id, self.endpoint_port, None)?;
@@ -1532,11 +1553,14 @@ impl Context {
         let client_rpc = Session::new(stream.try_clone()?, stream.try_clone()?);
 
         let endpoint_client = EndpointClient::new(
-            channel,
             client_rpc,
             endpoint_server_id,
+            channel,
             self.identity_private_key.clone());
-        self.endpoint_clients.push((endpoint_client, stream.into()));
+               let handshake_handle = self.next_handshake_handle;
+
+        self.next_handshake_handle += 1;
+        self.endpoint_clients.insert(handshake_handle, (endpoint_client, stream.into()));
         Ok(())
     }
 
@@ -1724,26 +1748,30 @@ impl Context {
         }
 
         // update the endpoint client handshakes
+        // TODO: switch to drain_filter once it comes out of nightly
         {
-            let mut idx = 0;
-            while idx < self.endpoint_clients.len() {
-                let remove = match self.endpoint_clients[idx].0.update() {
-                    Ok(Some((endpoint_service_id, channel_name))) => {
+            let handles : Vec<HandshakeHandle> = self.endpoint_clients.keys().cloned().collect();
+            for handle in handles {
+                let (endpoint_client, stream) = self.endpoint_clients.get_mut(&handle).unwrap();
+                let remove = match endpoint_client.update() {
+                    Ok(Some(EndpointClientEvent::RequestCompleted)) => {
                         events.push(
                             ContextEvent::EndpointClientChannelRequestCompleted{
-                                endpoint_service_id,
-                                channel_name,
-                                stream: resolve!(self.endpoint_clients[idx].1.try_clone())});
+                                endpoint_service_id: endpoint_client.server_service_id.clone(),
+                                channel_name: endpoint_client.requested_channel.clone(),
+                                stream: resolve!(stream.try_clone()),
+                            });
                         true
                     },
                     Ok(None) => false,
-                    Err(_) => true,
+                    Err(err) => {
+                        println!("error: {:?}", err);
+                        true
+                    },
                 };
 
                 if remove {
-                    self.endpoint_clients.remove(idx);
-                } else {
-                    idx += 1;
+                    self.endpoint_clients.remove(&handle);
                 }
             }
         }
@@ -1993,12 +2021,12 @@ fn endpoint_test(should_fail: bool, client_allowed: bool) -> Result<()> {
 
     let client_rpc = Session::new(stream2, stream1);
 
-    let mut endpoint_client = EndpointClient::new("channel", client_rpc, server_service_id.clone(), client_ed25519_private);
+    let mut endpoint_client = EndpointClient::new(client_rpc, server_service_id.clone(), "channel".to_string(), client_ed25519_private);
 
     let mut failure_ocurred = false;
     let mut server_complete = false;
     let mut client_complete = false;
-    while !server_complete || !client_complete {
+    while !server_complete && !client_complete {
         if !server_complete {
             match endpoint_server.update() {
                 Ok(Some((ret_server_service_id, ret_client_service_id,ret_channel))) => {
@@ -2018,9 +2046,7 @@ fn endpoint_test(should_fail: bool, client_allowed: bool) -> Result<()> {
 
         if !client_complete {
             match endpoint_client.update() {
-                Ok(Some((ret_server_service_id,ret_channel))) => {
-                    ensure!(ret_server_service_id == server_service_id);
-                    ensure!(ret_channel == "channel");
+                Ok(Some(EndpointClientEvent::RequestCompleted)) => {
                     client_complete = true;
                 },
                 Ok(None) => {},
@@ -2160,7 +2186,7 @@ fn test_gosling_context() -> Result<()> {
 
                         if let Ok(()) = pat.open_endpoint_channel(saved_endpoint_service_id.clone().unwrap(),
                                                                   saved_endpoint_client_auth_key.clone().unwrap(),
-                                                                  "test_channel") {
+                                                                  "test_channel".to_string()) {
                             endpoint_published = true;
                         }
                     }
