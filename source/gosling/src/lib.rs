@@ -2,7 +2,6 @@
 
 // INTERNAL
 
-// TODO: re-do endpoin server/client logic in similar safer fashion as identity server/client
 // TODO: translate_failures should be able to handle error'ing when library not yet init'd
 // TODO: FFI functions should catch all errors and return nice error messages, no '?' or unwrap()'s here
 // TODO: implement a customizable logger for internal debug logging and purge printlns throughout the library
