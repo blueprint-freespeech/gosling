@@ -95,12 +95,12 @@ fn build_client_proof(domain_separator: DomainSeparator,
 //
 
 enum IdentityClientEvent {
-    ChallengeRequestReceived {
+    ChallengeReceived {
         identity_service_id: V3OnionServiceId,
         endpoint_name: String,
         endpoint_challenge: bson::document::Document,
     },
-    RequestCompleted {
+    HandshakeCompleted {
         identity_service_id: V3OnionServiceId,
         endpoint_service_id: V3OnionServiceId,
         endpoint_name: String,
@@ -223,7 +223,7 @@ impl<RW> IdentityClient<RW> where RW : std::io::Read + std::io::Write + Send {
                     };
 
                     self.state = IdentityClientState::WaitingForChallengeResponse;
-                    return Ok(Some(IdentityClientEvent::ChallengeRequestReceived{
+                    return Ok(Some(IdentityClientEvent::ChallengeReceived{
                         identity_service_id: self.server_service_id.clone(),
                         endpoint_name: self.requested_endpoint.clone(),
                         endpoint_challenge,
@@ -302,7 +302,7 @@ impl<RW> IdentityClient<RW> where RW : std::io::Read + std::io::Write + Send {
                         },
                     };
                     self.state = IdentityClientState::HandshakeComplete;
-                    return Ok(Some(IdentityClientEvent::RequestCompleted{
+                    return Ok(Some(IdentityClientEvent::HandshakeCompleted{
                         identity_service_id: self.server_service_id.clone(),
                         endpoint_service_id,
                         endpoint_name: self.requested_endpoint.clone(),
@@ -329,23 +329,23 @@ impl<RW> IdentityClient<RW> where RW : std::io::Read + std::io::Write + Send {
 //
 
 enum IdentityServerEvent {
-    RequestReceived{
+    EndpointRequestReceived{
         client_service_id: V3OnionServiceId,
-        endpoint_name: String,
+        requested_endpoint: String,
     },
 
     ChallengeResponseReceived{
         challenge_response: bson::document::Document,
     },
 
-    RequestCompleted{
+    HandshakeCompleted{
         endpoint_private_key: Ed25519PrivateKey,
         endpoint_name: String,
         client_service_id: V3OnionServiceId,
         client_auth_public_key: X25519PublicKey,
     },
 
-    RequestFailed{
+    HandshakeRejected{
         // Client not on the block-list
         client_allowed: bool,
         // The requested endpoint is valid
@@ -379,7 +379,7 @@ struct IdentityServer<RW> {
     // State Machine Data
     state: IdentityServerState,
     begin_handshake_request_cookie: Option<RequestCookie>,
-    endpoint_name: Option<String>,
+    requested_endpoint: Option<String>,
     server_cookie: Option<ServerCookie>,
     endpoint_challenge: Option<bson::document::Document>,
     send_response_request_cookie: Option<RequestCookie>,
@@ -413,7 +413,7 @@ impl<RW> IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
             state: IdentityServerState::WaitingForBeginHandshake,
             begin_handshake_request_cookie: None,
             client_identity: None,
-            endpoint_name: None,
+            requested_endpoint: None,
             server_cookie: None,
             endpoint_challenge: None,
             send_response_request_cookie: None,
@@ -440,7 +440,7 @@ impl<RW> IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
         match(&self.state,
               self.begin_handshake_request_cookie,
               self.client_identity.as_ref(),
-              self.endpoint_name.as_ref(),
+              self.requested_endpoint.as_ref(),
               self.server_cookie.as_ref(),
               self.endpoint_challenge.as_ref(),
               self.send_response_request_cookie,
@@ -450,7 +450,7 @@ impl<RW> IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
             (&IdentityServerState::WaitingForBeginHandshake,
              Some(_begin_handshake_request_cookie),
              Some(client_identity),
-             Some(endpoint_name),
+             Some(requested_endpoint),
              None, // server_cookie
              None, // endpoint_challenge
              None, // send_response_request_cookie
@@ -459,12 +459,12 @@ impl<RW> IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
              None) // endpoint_private_key
             => {
                 self.state = IdentityServerState::GettingChallenge;
-                return Ok(Some(IdentityServerEvent::RequestReceived{client_service_id: client_identity.clone(), endpoint_name: endpoint_name.clone()}));
+                return Ok(Some(IdentityServerEvent::EndpointRequestReceived{client_service_id: client_identity.clone(), requested_endpoint: requested_endpoint.clone()}));
             },
             (&IdentityServerState::WaitingForSendResponse,
              Some(_begin_handshake_request_cookie),
              Some(_client_identity),
-             Some(_endpoint_name),
+             Some(_requested_endpoint),
              Some(_server_cookie),
              Some(_endpoint_challenge),
              Some(_send_response_request_cookie),
@@ -480,7 +480,7 @@ impl<RW> IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
             (&IdentityServerState::ChallengeVerificationResponseSent,
              Some(_begin_handshake_request_cookie),
              Some(client_identity),
-             Some(endpoint_name),
+             Some(requested_endpoint),
              Some(_server_cookie),
              Some(_endpoint_challenge),
              Some(_send_response_request_cookie),
@@ -489,9 +489,9 @@ impl<RW> IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
              Some(endpoint_private_key))
             => {
                 self.state = IdentityServerState::HandshakeComplete;
-                return Ok(Some(IdentityServerEvent::RequestCompleted{
+                return Ok(Some(IdentityServerEvent::HandshakeCompleted{
                     endpoint_private_key: endpoint_private_key.clone(),
-                    endpoint_name: endpoint_name.clone(),
+                    endpoint_name: requested_endpoint.clone(),
                     client_service_id: client_identity.clone(),
                     client_auth_public_key: client_auth_key.clone(),
                 }));
@@ -499,7 +499,7 @@ impl<RW> IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
             (&IdentityServerState::ChallengeVerificationResponseSent,
              Some(_begin_handshake_request_cookie),
              Some(_client_identity),
-             Some(_endpoint_name),
+             Some(_requested_endpoint),
              Some(_server_cookie),
              Some(_endpoint_challenge),
              Some(_send_response_request_cookie),
@@ -508,7 +508,7 @@ impl<RW> IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
              None) // endpoint_private_key
             => {
                 self.state = IdentityServerState::HandshakeComplete;
-                return Ok(Some(IdentityServerEvent::RequestFailed{
+                return Ok(Some(IdentityServerEvent::HandshakeRejected{
                     client_allowed: self.client_allowed,
                     client_requested_endpoint_valid: self.client_requested_endpoint_valid,
                     client_proof_signature_valid: self.client_proof_signature_valid,
@@ -531,7 +531,7 @@ impl<RW> IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
         if version != GOSLING_VERSION {
             Err(GoslingError::BadVersion)
         } else {
-            self.endpoint_name = Some(endpoint_name);
+            self.requested_endpoint = Some(endpoint_name);
             Ok(())
         }
     }
@@ -545,7 +545,7 @@ impl<RW> IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
         match (&self.state,
                self.begin_handshake_request_cookie,
                self.client_identity.as_ref(),
-               self.endpoint_name.as_ref(),
+               self.requested_endpoint.as_ref(),
                self.server_cookie.as_ref(),
                self.endpoint_challenge.as_ref(),
                self.client_auth_key.as_ref(),
@@ -592,7 +592,7 @@ impl<RW> IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
             // construct + verify client proof
             if let Ok(client_proof) = build_client_proof(
                                             DomainSeparator::GoslingIdentity,
-                                            self.endpoint_name.as_ref().unwrap(),
+                                            self.requested_endpoint.as_ref().unwrap(),
                                             &client_identity,
                                             &self.server_identity,
                                             &client_cookie,
@@ -619,7 +619,7 @@ impl<RW> IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
         match (&self.state,
                self.begin_handshake_request_cookie,
                self.client_identity.as_ref(),
-               self.endpoint_name.as_ref(),
+               self.requested_endpoint.as_ref(),
                self.server_cookie.as_ref(),
                self.endpoint_challenge.as_ref(),
                self.client_auth_key.as_ref(),
@@ -628,7 +628,7 @@ impl<RW> IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
               (&IdentityServerState::GettingChallengeVerification,
                Some(_begin_handshake_request_cookie),
                Some(_client_identity),
-               Some(_endpoint_name),
+               Some(_requested_endpoint),
                Some(_server_cookie),
                Some(_endpoint_challenge),
                Some(_client_auth_key),
@@ -661,7 +661,7 @@ impl<RW> ApiSet for IdentityServer<RW> where RW : std::io::Read + std::io::Write
                &self.state,
                self.begin_handshake_request_cookie,
                self.client_identity.as_ref(),
-               self.endpoint_name.as_ref(),
+               self.requested_endpoint.as_ref(),
                self.server_cookie.as_ref(),
                self.endpoint_challenge.as_ref(),
                self.client_auth_key.as_ref(),
@@ -672,7 +672,7 @@ impl<RW> ApiSet for IdentityServer<RW> where RW : std::io::Read + std::io::Write
              &IdentityServerState::WaitingForBeginHandshake,
              None, // begin_handshake_request_cookie
              None, // client_identity
-             None, // endpoint_name
+             None, // requested_endpoint
              None, // server_cookie
              None, // endpoint_challenge
              None, // client_auth_key
@@ -789,7 +789,7 @@ impl<RW> ApiSet for IdentityServer<RW> where RW : std::io::Read + std::io::Write
         match (&self.state,
                self.begin_handshake_request_cookie,
                self.client_identity.as_ref(),
-               self.endpoint_name.as_ref(),
+               self.requested_endpoint.as_ref(),
                self.server_cookie.as_ref(),
                self.endpoint_challenge.as_mut(),
                self.send_response_request_cookie,
@@ -799,7 +799,7 @@ impl<RW> ApiSet for IdentityServer<RW> where RW : std::io::Read + std::io::Write
             (&IdentityServerState::ChallengeReady,
              Some(begin_handshake_request_cookie),
              Some(_client_identity),
-             Some(_endpoint_name),
+             Some(_requested_endpoint),
              Some(server_cookie),
              Some(endpoint_challenge),
              None, // send_response_request_cookie
@@ -819,7 +819,7 @@ impl<RW> ApiSet for IdentityServer<RW> where RW : std::io::Read + std::io::Write
             (&IdentityServerState::ChallengeVerificationReady,
              Some(_begin_handshake_request_cookie),
              Some(_client_identity),
-             Some(_endpoint_name),
+             Some(_requested_endpoint),
              Some(_server_cookie),
              Some(_endpoint_challenge),
              Some(send_response_request_cookie),
@@ -855,7 +855,7 @@ impl<RW> ApiSet for IdentityServer<RW> where RW : std::io::Read + std::io::Write
 }
 
 enum EndpointClientEvent {
-    RequestCompleted,
+    HandshakeCompleted
 }
 
 #[derive(Debug, PartialEq)]
@@ -1008,7 +1008,7 @@ impl<RW> EndpointClient<RW> where RW : std::io::Read + std::io::Write + Send {
                         ensure!(result.is_empty());
 
                         self.state = EndpointClientState::HandshakeComplete;
-                        return Ok(Some(EndpointClientEvent::RequestCompleted));
+                        return Ok(Some(EndpointClientEvent::HandshakeCompleted));
                     }
                 }
                 Ok(None)
@@ -1026,11 +1026,19 @@ impl<RW> EndpointClient<RW> where RW : std::io::Read + std::io::Write + Send {
 //
 
 enum EndpointServerEvent {
+    ChannelRequestReceived{
+        requested_channel: String
+    },
     // endpoint server has acepted incoming channel request from identity client
-    RequestCompleted{
-        endpoint_service_id: V3OnionServiceId,
+    HandshakeCompleted{
         client_service_id: V3OnionServiceId,
-        channel_name:  String,
+        channel_name: String,
+    },
+    // endpoint server has reject an incoming channel request
+    HandshakeRejected{
+        client_allowed: bool,
+        client_requested_channel_valid: bool,
+        client_proof_signature_valid: bool,
     },
 }
 
@@ -1100,8 +1108,7 @@ impl<RW> EndpointServer<RW> where RW : std::io::Read + std::io::Write + Send {
             => {
                 self.state = EndpointServerState::HandshakeComplete;
                 if handshake_succeeded {
-                    return Ok(Some(EndpointServerEvent::RequestCompleted{
-                        endpoint_service_id: self.server_identity.clone(),
+                    return Ok(Some(EndpointServerEvent::HandshakeCompleted{
                         client_service_id: self.client_identity.clone(),
                         channel_name: requested_channel.clone(),
                     }));
@@ -1296,60 +1303,41 @@ pub struct Context {
 }
 
 pub enum ContextEvent {
+
+    //
+    // Tor Events
+    //
+
     // bootstrap progress
     TorBootstrapStatusReceived{
         progress: u32,
         tag: String,
         summary: String
     },
+
     // bootstrapping finished
     TorBootstrapCompleted,
+
     // tor log
     TorLogReceived{
         line: String
     },
 
-    // identity server published
-    IdentityServerPublished,
-
-    // identity server receives request from identity client
-    IdentityServerRequestReceived{
-        handle: HandshakeHandle,
-        client_service_id: V3OnionServiceId,
-        endpoint_name: String,
-    },
-
-    // identity server receives challenge response from identity client
-    IdentityServerChallengeResponseReceived{
-        handle: HandshakeHandle,
-        challenge_response: bson::document::Document,
-    },
-
-    // identity server supplies a new endpoint server to an identity client
-    IdentityServerRequestCompleted{
-        handle: HandshakeHandle,
-        endpoint_private_key: Ed25519PrivateKey,
-        endpoint_name: String,
-        client_service_id: V3OnionServiceId,
-        client_auth_public_key: X25519PublicKey
-    },
-
-    // identity server handshake aborted
-    IdentityServerHandshakeAborted{
-        handle: HandshakeHandle,
-        reason: Option<error::Error>,
-    },
+    //
+    // Identity Client Events
+    //
 
     // identity client has received a challenge request from an identy server
-    IdentityClientChallengeRequestReceived{
+    // to continue the handshake, call Context::identity_client_handle_challenge_received
+    IdentityClientChallengeReceived{
         handle: HandshakeHandle,
         identity_service_id: V3OnionServiceId,
         endpoint_name: String,
         endpoint_challenge: bson::document::Document,
     },
 
-    // identity client successfully requests an endpoint from an identity erver
-    IdentityClientRequestCompleted{
+    // identity client successfully completes identity handshake
+    IdentityClientHandshakeCompleted{
         handle: HandshakeHandle,
         identity_service_id: V3OnionServiceId,
         endpoint_service_id: V3OnionServiceId,
@@ -1357,31 +1345,123 @@ pub enum ContextEvent {
         client_auth_private_key: X25519PrivateKey
     },
 
-    // identity client handshake aborted
-    IdentityClientHandshakeAborted{
+    // identity client handshake failed
+    IdentityClientHandshakeFailed{
         handle: HandshakeHandle,
         reason: Option<error::Error>,
     },
 
-    // endpoint server published
+    // identity server onion service published
+    IdentityServerPublished,
+
+    // identity server has received incoming connection
+    IdentityServerHandshakeStarted{
+        handle: HandshakeHandle
+    },
+
+    // identity server receives request from identity client
+    // to continue the handshake, call Context::identity_server_handle_endpoint_request_received()
+    IdentityServerEndpointRequestReceived{
+        handle: HandshakeHandle,
+        client_service_id: V3OnionServiceId,
+        requested_endpoint: String,
+    },
+
+    // identity server receives challenge response from identity client
+    // to continue the handshake, call Context::identity_server_handle_challenge_response_received
+    IdentityServerChallengeResponseReceived{
+        handle: HandshakeHandle,
+        challenge_response: bson::document::Document,
+    },
+
+    // identity server supplies a new endpoint server to an identity client
+    IdentityServerHandshakeCompleted{
+        handle: HandshakeHandle,
+        endpoint_private_key: Ed25519PrivateKey,
+        endpoint_name: String,
+        client_service_id: V3OnionServiceId,
+        client_auth_public_key: X25519PublicKey
+    },
+
+    // identity server handshake explicitly rejected client handshake
+    IdentityServerHandshakeRejected{
+        handle: HandshakeHandle,
+        client_allowed: bool,
+        client_requested_endpoint_valid: bool,
+        client_proof_signature_valid: bool,
+        client_auth_signature_valid: bool,
+        challenge_response_valid: bool,
+    },
+
+    // identity server handshake failed due to error
+    IdentityServerHandshakeFailed{
+        handle: HandshakeHandle,
+        reason: Option<error::Error>,
+    },
+
+    //
+    // Endpoint Client Events
+    //
+
+    // endpoint client successfully opens a channel on an endpoint server
+    EndpointClientHandshakeCompleted{
+        // handle: HandshakeHandle,
+        endpoint_service_id: V3OnionServiceId,
+        channel_name: String,
+        stream: TcpStream
+    },
+
+
+    // identity client handshake aborted
+    EndointClientHandshakeFailed{
+        handle: HandshakeHandle,
+        reason: Option<error::Error>,
+    },
+
+    //
+    // Endpint Server Events
+    //
+
+    // endpoint server onion service published
     EndpointServerPublished{
         endpoint_service_id: V3OnionServiceId,
         endpoint_name: String,
     },
 
+    EndpointServerHandshakeStarted{
+        handle: HandshakeHandle,
+    },
+
+    // endpoint server receives request from endpoint client
+    // to continue the handshake, call Context::endpoint_server_handle_channel_request_received()
+    EndpointServerChannelRequestReceived{
+        handle: HandshakeHandle,
+        // client_service_id: V3OnionServiceId,
+        endpoint_service_id: V3OnionServiceId,
+        requested_channel: String,
+    },
+
     // endpoint server has acepted incoming channel request from identity client
-    EndpointServerChannelRequestCompleted{
+    EndpointServerHandshakeCompleted{
+        handle: HandshakeHandle,
         endpoint_service_id: V3OnionServiceId,
         client_service_id: V3OnionServiceId,
         channel_name:  String,
         stream: TcpStream
     },
 
-    // endpoint client successfully opens a channel on an endpoint server
-    EndpointClientChannelRequestCompleted{
-        endpoint_service_id: V3OnionServiceId,
-        channel_name: String,
-        stream: TcpStream
+    // endpoint server handshake explicitly rejected client handshake
+    EndpointServerHandshakeRejected{
+        handle: HandshakeHandle,
+        client_allowed: bool,
+        client_requested_channel_valid: bool,
+        client_proof_signature_valid: bool,
+    },
+
+    // endpoint server request failed
+    EndpointServerRequestFailed{
+        handle: HandshakeHandle,
+        reason: Option<error::Error>,
     },
 
 }
@@ -1421,27 +1501,7 @@ impl Context {
         self.tor_manager.bootstrap()
     }
 
-    pub fn start_identity_server(&mut self) -> Result<()> {
-        ensure!(self.bootstrap_complete);
-        ensure!(self.identity_listener.is_none());
-
-        let identity_listener = self.tor_manager.listener(&self.identity_private_key, self.identity_port, None)?;
-        identity_listener.set_nonblocking(true)?;
-
-        self.identity_listener = Some(identity_listener);
-        Ok(())
-    }
-
-    pub fn stop_identity_server(&mut self) -> Result<()> {
-        ensure!(self.bootstrap_complete);
-        // clear out current identduciton listener
-        self.identity_listener = None;
-        // clear out any in-process identity handshakes
-        self.identity_servers = Default::default();
-        Ok(())
-    }
-
-    pub fn client_begin_identity_handshake(
+    pub fn identity_client_begin_handshake(
         &mut self,
         identity_server_id: V3OnionServiceId,
         endpoint: &str) -> Result<HandshakeHandle> {
@@ -1465,7 +1525,7 @@ impl Context {
         Ok(handshake_handle)
     }
 
-    pub fn client_abort_identity_handshake(
+    pub fn identity_client_abort_identity_handshake(
         &mut self,
         handle: HandshakeHandle) -> Result<()> {
 
@@ -1476,10 +1536,45 @@ impl Context {
         }
     }
 
+    // sends an endpoint challenge response to a connected identity server as
+    // part of an identity handshake session
+    pub fn identity_client_handle_challenge_received(
+        &mut self,
+        handle: HandshakeHandle,
+        challenge_response: bson::document::Document) -> Result<()> {
+
+        if let Some(identity_client) = self.identity_clients.get_mut(&handle) {
+            identity_client.send_response(challenge_response)?;
+            Ok(())
+        } else {
+            bail!("no handshake associaed with handle '{}'", handle);
+        }
+    }
+
+    pub fn identity_server_start(&mut self) -> Result<()> {
+        ensure!(self.bootstrap_complete);
+        ensure!(self.identity_listener.is_none());
+
+        let identity_listener = self.tor_manager.listener(&self.identity_private_key, self.identity_port, None)?;
+        identity_listener.set_nonblocking(true)?;
+
+        self.identity_listener = Some(identity_listener);
+        Ok(())
+    }
+
+    pub fn identity_server_stop(&mut self) -> Result<()> {
+        ensure!(self.bootstrap_complete);
+        // clear out current identduciton listener
+        self.identity_listener = None;
+        // clear out any in-process identity handshakes
+        self.identity_servers = Default::default();
+        Ok(())
+    }
+
     // sends an endpoint challenge to a connected identity client as part of
     // an identity handshake session abd save off wheether the requested endpoint
     // is supported
-    pub fn server_handle_request_received(
+    pub fn identity_server_handle_endpoint_request_received(
         &mut self,
         handle: HandshakeHandle,
         client_allowed: bool,
@@ -1494,23 +1589,8 @@ impl Context {
 
     }
 
-    // sends an endpoint challenge response to a connected identity server as
-    // part of an identity handshake session
-    pub fn client_handle_challenge_request_received(
-        &mut self,
-        handle: HandshakeHandle,
-        challenge_response: bson::document::Document) -> Result<()> {
-
-        if let Some(identity_client) = self.identity_clients.get_mut(&handle) {
-            identity_client.send_response(challenge_response)?;
-            Ok(())
-        } else {
-            bail!("no handshake associaed with handle '{}'", handle);
-        }
-    }
-
     // confirm that a received endpoint challenge response is valid
-    pub fn server_handle_challenge_response_received(
+    pub fn identity_server_handle_challenge_response_received(
         &mut self,
         handle: HandshakeHandle,
         challenge_response_valid: bool) -> Result<()> {
@@ -1522,33 +1602,7 @@ impl Context {
         }
     }
 
-    pub fn start_endpoint_server(
-        &mut self,
-        endpoint_private_key: Ed25519PrivateKey,
-        endpoint_name: String,
-        client_identity: V3OnionServiceId,
-        client_auth: X25519PublicKey) -> Result<()> {
-        ensure!(self.bootstrap_complete);
-        let endpoint_listener = self.tor_manager.listener(&endpoint_private_key, self.endpoint_port, Some(&[client_auth]))?;
-        endpoint_listener.set_nonblocking(true)?;
-
-        let endpoint_public_key = Ed25519PublicKey::from_private_key(&endpoint_private_key);
-        let endpoint_service_id = V3OnionServiceId::from_public_key(&endpoint_public_key);
-
-        self.endpoint_listeners.insert(endpoint_service_id, (endpoint_name, client_identity, endpoint_listener));
-        Ok(())
-    }
-
-    pub fn stop_endpoint_server(
-        &mut self,
-        endpoint_identity: V3OnionServiceId) -> Result<()> {
-        ensure!(self.bootstrap_complete);
-        self.endpoint_listeners.remove(&endpoint_identity);
-
-        Ok(())
-    }
-
-    pub fn open_endpoint_channel(
+    pub fn endpoint_client_begin_handshake(
         &mut self,
         endpoint_server_id: V3OnionServiceId,
         client_auth_key: X25519PrivateKey,
@@ -1569,6 +1623,54 @@ impl Context {
         self.next_handshake_handle += 1;
         self.endpoint_clients.insert(handshake_handle, (endpoint_client, stream.into()));
         Ok(())
+    }
+
+    pub fn endpoint_client_abort_handshake(
+        &mut self,
+        handle: HandshakeHandle) -> Result<()> {
+
+        if let Some(_endpoint_client) = self.endpoint_clients.remove(&handle) {
+            Ok(())
+        } else {
+            bail!("endpoint client with handle {} not found", handle);
+        }
+    }
+
+    pub fn endpoint_server_start(
+        &mut self,
+        endpoint_private_key: Ed25519PrivateKey,
+        endpoint_name: String,
+        client_identity: V3OnionServiceId,
+        client_auth: X25519PublicKey) -> Result<()> {
+        ensure!(self.bootstrap_complete);
+        let endpoint_listener = self.tor_manager.listener(&endpoint_private_key, self.endpoint_port, Some(&[client_auth]))?;
+        endpoint_listener.set_nonblocking(true)?;
+
+        let endpoint_public_key = Ed25519PublicKey::from_private_key(&endpoint_private_key);
+        let endpoint_service_id = V3OnionServiceId::from_public_key(&endpoint_public_key);
+
+        self.endpoint_listeners.insert(endpoint_service_id, (endpoint_name, client_identity, endpoint_listener));
+        Ok(())
+    }
+
+    pub fn endpoint_server_handle_channel_request_received(
+        &mut self,
+        handle: HandshakeHandle,
+        channel_supported: bool) -> Result<()> {
+        // TODO
+        bail!("not implemented");
+    }
+
+    pub fn endpoint_server_stop(
+        &mut self,
+        endpoint_identity: V3OnionServiceId) -> Result<()> {
+        ensure!(self.bootstrap_complete);
+
+        if let Some(_listener) = self.endpoint_listeners.remove(&endpoint_identity) {
+            Ok(())
+        } else {
+            bail!("endpoint server with service id {} not found", endpoint_identity.to_string());
+        }
     }
 
     pub fn update(&mut self) -> Result<Vec<ContextEvent>> {
@@ -1642,27 +1744,27 @@ impl Context {
             for handle in handles {
                 let identity_client = self.identity_clients.get_mut(&handle).unwrap();
                 let remove = match identity_client.update() {
-                    Ok(Some(IdentityClientEvent::ChallengeRequestReceived{
+                    Ok(Some(IdentityClientEvent::ChallengeReceived{
                         identity_service_id,
                         endpoint_name,
                         endpoint_challenge,
                     })) => {
                         events.push(
-                            ContextEvent::IdentityClientChallengeRequestReceived{
+                            ContextEvent::IdentityClientChallengeReceived{
                                 handle,
                                 identity_service_id,
                                 endpoint_name,
                                 endpoint_challenge});
                         false
                     },
-                    Ok(Some(IdentityClientEvent::RequestCompleted{
+                    Ok(Some(IdentityClientEvent::HandshakeCompleted{
                         identity_service_id,
                         endpoint_service_id,
                         endpoint_name,
                         client_auth_private_key,
                     })) => {
                         events.push(
-                            ContextEvent::IdentityClientRequestCompleted{
+                            ContextEvent::IdentityClientHandshakeCompleted{
                                 handle,
                                 identity_service_id,
                                 endpoint_service_id,
@@ -1673,7 +1775,7 @@ impl Context {
                     Ok(None) => false,
                     Err(err) => {
                         events.push(
-                            ContextEvent::IdentityClientHandshakeAborted{
+                            ContextEvent::IdentityClientHandshakeFailed{
                                 handle,
                                 reason: Some(err),
                             });
@@ -1693,12 +1795,12 @@ impl Context {
             for handle in handles {
                 let identity_server = self.identity_servers.get_mut(&handle).unwrap();
                 let remove = match identity_server.update() {
-                    Ok(Some(IdentityServerEvent::RequestReceived{client_service_id, endpoint_name})) => {
+                    Ok(Some(IdentityServerEvent::EndpointRequestReceived{client_service_id, requested_endpoint})) => {
                         events.push(
-                            ContextEvent::IdentityServerRequestReceived{
+                            ContextEvent::IdentityServerEndpointRequestReceived{
                                 handle,
                                 client_service_id,
-                                endpoint_name});
+                                requested_endpoint});
                         false
                     },
                     Ok(Some(IdentityServerEvent::ChallengeResponseReceived{
@@ -1709,14 +1811,14 @@ impl Context {
                                 challenge_response});
                         false
                     },
-                    Ok(Some(IdentityServerEvent::RequestCompleted{
+                    Ok(Some(IdentityServerEvent::HandshakeCompleted{
                         endpoint_private_key,
                         endpoint_name,
                         client_service_id,
                         client_auth_public_key,
                     })) => {
                         events.push(
-                            ContextEvent::IdentityServerRequestCompleted{
+                            ContextEvent::IdentityServerHandshakeCompleted{
                                 handle,
                                 endpoint_private_key,
                                 endpoint_name,
@@ -1724,7 +1826,7 @@ impl Context {
                                 client_auth_public_key});
                         true
                     },
-                    Ok(Some(IdentityServerEvent::RequestFailed{
+                    Ok(Some(IdentityServerEvent::HandshakeRejected{
                         client_allowed,
                         client_requested_endpoint_valid,
                         client_proof_signature_valid,
@@ -1742,7 +1844,7 @@ impl Context {
                     Ok(None) => false,
                     Err(err) => {
                         events.push(
-                            ContextEvent::IdentityServerHandshakeAborted{
+                            ContextEvent::IdentityServerHandshakeFailed{
                                 handle,
                                 reason: Some(err),
                             });
@@ -1763,9 +1865,9 @@ impl Context {
             for handle in handles {
                 let (endpoint_client, stream) = self.endpoint_clients.get_mut(&handle).unwrap();
                 let remove = match endpoint_client.update() {
-                    Ok(Some(EndpointClientEvent::RequestCompleted)) => {
+                    Ok(Some(EndpointClientEvent::HandshakeCompleted)) => {
                         events.push(
-                            ContextEvent::EndpointClientChannelRequestCompleted{
+                            ContextEvent::EndpointClientHandshakeCompleted{
                                 endpoint_service_id: endpoint_client.server_service_id.clone(),
                                 channel_name: endpoint_client.requested_channel.clone(),
                                 stream: resolve!(stream.try_clone()),
@@ -1790,21 +1892,44 @@ impl Context {
         {
             let handles : Vec<HandshakeHandle> = self.endpoint_servers.keys().cloned().collect();
             for handle in handles {
-                let (identity_server, stream) = self.endpoint_servers.get_mut(&handle).unwrap();
-                let remove = match identity_server.update() {
-                    Ok(Some(EndpointServerEvent::RequestCompleted{
-                        endpoint_service_id,
+                let (endpoint_server, stream) = self.endpoint_servers.get_mut(&handle).unwrap();
+                let remove = match endpoint_server.update() {
+                    Ok(Some(EndpointServerEvent::ChannelRequestReceived{
+                        requested_channel
+                    })) => {
+                        events.push(
+                            ContextEvent::EndpointServerChannelRequestReceived{
+                                handle,
+                                endpoint_service_id: endpoint_server.server_identity.clone(),
+                                requested_channel
+                            });
+                        false
+                    },
+                    Ok(Some(EndpointServerEvent::HandshakeCompleted{
                         client_service_id,
                         channel_name})) => {
 
                         if let Ok(stream) = stream.try_clone() {
                             events.push(
-                                ContextEvent::EndpointServerChannelRequestCompleted{
-                                    endpoint_service_id,
+                                ContextEvent::EndpointServerHandshakeCompleted{
+                                    handle,
+                                    endpoint_service_id: endpoint_server.server_identity.clone(),
                                     client_service_id,
                                     channel_name,
                                     stream});
                         }
+                        true
+                    },
+                    Ok(Some(EndpointServerEvent::HandshakeRejected{
+                        client_allowed,
+                        client_requested_channel_valid,
+                        client_proof_signature_valid})) => {
+                        events.push(
+                            ContextEvent::EndpointServerHandshakeRejected{
+                                handle,
+                                client_allowed,
+                                client_requested_channel_valid,
+                                client_proof_signature_valid});
                         true
                     },
                     Ok(None) => false,
@@ -1867,8 +1992,8 @@ fn identity_test(
     while !server_complete && !client_complete {
         if !server_complete {
             match ident_server.update() {
-                Ok(Some(IdentityServerEvent::RequestReceived{client_service_id, endpoint_name})) => {
-                    println!("server challenge send: client_service_id {}, endpoint_name: {}", client_service_id.to_string(), endpoint_name);
+                Ok(Some(IdentityServerEvent::EndpointRequestReceived{client_service_id, requested_endpoint})) => {
+                    println!("server challenge send: client_service_id {}, requested_endpoint: {}", client_service_id.to_string(), requested_endpoint);
                     let client_allowed = !client_blocked;
                     ident_server.send_challenge(client_allowed, client_requested_endpoint_valid, server_challenge.clone())?;
                 },
@@ -1876,13 +2001,13 @@ fn identity_test(
                     println!("server challenge repsonse received");
                     ident_server.send_challenge_verification(challenge_response == server_expected_response)?;
                 },
-                Ok(Some(IdentityServerEvent::RequestCompleted{endpoint_private_key: _, endpoint_name,client_service_id,client_auth_public_key: _})) => {
+                Ok(Some(IdentityServerEvent::HandshakeCompleted{endpoint_private_key: _, endpoint_name,client_service_id,client_auth_public_key: _})) => {
                     ensure!(endpoint_name == client_requested_endpoint);
                     println!("server complete! client_service_id : {}", client_service_id.to_string());
                     server_complete = true;
                 },
-                Ok(Some(IdentityServerEvent::RequestFailed{client_allowed, client_requested_endpoint_valid, client_proof_signature_valid, client_auth_signature_valid, challenge_response_valid})) => {
-                    println!("server complete! handshake failed");
+                Ok(Some(IdentityServerEvent::HandshakeRejected{client_allowed, client_requested_endpoint_valid, client_proof_signature_valid, client_auth_signature_valid, challenge_response_valid})) => {
+                    println!("server complete! client request rejected");
                     println!(" client_allowed: {}", client_allowed);
                     println!(" client_requested_endpoint_valid: {}", client_requested_endpoint_valid);
                     println!(" client_proof_signature_valid: {}", client_proof_signature_valid);
@@ -1902,12 +2027,12 @@ fn identity_test(
 
         if !client_complete {
             match ident_client.update() {
-                Ok(Some(IdentityClientEvent::ChallengeRequestReceived{identity_service_id, endpoint_name, endpoint_challenge})) => {
+                Ok(Some(IdentityClientEvent::ChallengeReceived{identity_service_id, endpoint_name, endpoint_challenge})) => {
                     ensure!(identity_service_id == server_service_id);
                     println!("client challenge request received: identity_service_id: {}, endpoint_name: {}, endpoint_challenge: {}", identity_service_id.to_string(), endpoint_name, endpoint_challenge);
                     ident_client.send_response(client_response.clone())?;
                 },
-                Ok(Some(IdentityClientEvent::RequestCompleted{identity_service_id,endpoint_service_id,endpoint_name,client_auth_private_key: _})) => {
+                Ok(Some(IdentityClientEvent::HandshakeCompleted{identity_service_id,endpoint_service_id,endpoint_name,client_auth_private_key: _})) => {
                     ensure!(identity_service_id == server_service_id);
                     ensure!(endpoint_name == client_requested_endpoint);
                     println!("client complete! endpoint_server : {}", endpoint_service_id.to_string());
@@ -2044,14 +2169,23 @@ fn endpoint_test(should_fail: bool, client_allowed: bool) -> Result<()> {
     while !server_complete && !client_complete {
         if !server_complete {
             match endpoint_server.update() {
-                Ok(Some(EndpointServerEvent::RequestCompleted{
-                    endpoint_service_id: ret_server_service_id,
+                Ok(Some(EndpointServerEvent::ChannelRequestReceived{
+                    requested_channel})) => {
+                    ensure!(requested_channel == "channel");
+                },
+                Ok(Some(EndpointServerEvent::HandshakeCompleted{
                     client_service_id: ret_client_service_id,
                     channel_name: ret_channel})) => {
-                    ensure!(ret_server_service_id == server_service_id);
                     ensure!(ret_client_service_id == client_service_id);
-                    ensure!(ret_channel == "channel");
                     server_complete = true;
+                },
+                Ok(Some(EndpointServerEvent::HandshakeRejected{
+                    client_allowed,
+                    client_requested_channel_valid,
+                    client_proof_signature_valid})) => {
+                    println!("handshake rejected: client_allowed: {}, client_requested_channel_valid: {}, client_proof_signature_valid: {}", client_allowed, client_requested_channel_valid, client_proof_signature_valid);
+                    server_complete = true;
+                    failure_ocurred = true;
                 },
                 Ok(None) => {},
                 Err(err) => {
@@ -2064,7 +2198,7 @@ fn endpoint_test(should_fail: bool, client_allowed: bool) -> Result<()> {
 
         if !client_complete {
             match endpoint_client.update() {
-                Ok(Some(EndpointClientEvent::RequestCompleted)) => {
+                Ok(Some(EndpointClientEvent::HandshakeCompleted)) => {
                     client_complete = true;
                 },
                 Ok(None) => {},
@@ -2160,7 +2294,7 @@ fn test_gosling_context() -> Result<()> {
     }
 
     println!("Starting Alice identity server");
-    alice.start_identity_server()?;
+    alice.identity_server_start()?;
 
     println!("------------ Begin event loop ------------ ");
 
@@ -2184,7 +2318,7 @@ fn test_gosling_context() -> Result<()> {
                         println!("Alice: identity server published");
 
                         // alice has published the identity server, so pat may now request an endpoint
-                        if let Ok(handle) = pat.client_begin_identity_handshake(alice_service_id.clone(), "test_endpoint") {
+                        if let Ok(handle) = pat.identity_client_begin_handshake(alice_service_id.clone(), "test_endpoint") {
                             identity_published = true;
                             pat_handshake_handle = handle;
                         }
@@ -2202,29 +2336,29 @@ fn test_gosling_context() -> Result<()> {
                             ensure!(*saved_endpoint_service_id == endpoint_service_id);
                         }
 
-                        if let Ok(()) = pat.open_endpoint_channel(saved_endpoint_service_id.clone().unwrap(),
-                                                                  saved_endpoint_client_auth_key.clone().unwrap(),
-                                                                  "test_channel".to_string()) {
+                        if let Ok(()) = pat.endpoint_client_begin_handshake(saved_endpoint_service_id.clone().unwrap(),
+                                                                            saved_endpoint_client_auth_key.clone().unwrap(),
+                                                                            "test_channel".to_string()) {
                             endpoint_published = true;
                         }
                     }
                 },
-                ContextEvent::IdentityServerRequestReceived{handle, client_service_id, endpoint_name} => {
+                ContextEvent::IdentityServerEndpointRequestReceived{handle, client_service_id, requested_endpoint} => {
                     println!("Alice: endpoint request received");
                     println!(" handle: {}", handle);
                     println!(" client_service_id: {}", client_service_id.to_string());
-                    println!(" endpoint_name: {}", endpoint_name);
+                    println!(" requested_endpoint: {}", requested_endpoint);
                     // auto accept endpoint request, send empty challenge
-                    alice.server_handle_request_received(handle, true, true, doc!{})?;
+                    alice.identity_server_handle_endpoint_request_received(handle, true, true, doc!{})?;
                 },
                 ContextEvent::IdentityServerChallengeResponseReceived{handle, challenge_response} => {
                     println!("Alice: challenge response received");
                     println!(" handle: {}", handle);
                     println!(" challenge_response: {}", challenge_response);
                     // auto accept challenge response
-                    alice.server_handle_challenge_response_received(handle, true)?;
+                    alice.identity_server_handle_challenge_response_received(handle, true)?;
                 },
-                ContextEvent::IdentityServerRequestCompleted{handle, endpoint_private_key, endpoint_name, client_service_id, client_auth_public_key} => {
+                ContextEvent::IdentityServerHandshakeCompleted{handle, endpoint_private_key, endpoint_name, client_service_id, client_auth_public_key} => {
                     println!("Alice: endpoint request handled");
                     println!(" handle: {}", handle);
                     println!(" endpoint_service_id: {}", V3OnionServiceId::from_private_key(&endpoint_private_key).to_string());
@@ -2232,9 +2366,9 @@ fn test_gosling_context() -> Result<()> {
                     println!(" client: {}", client_service_id.to_string());
 
                     // server handed out endpoint server info, so start the endpoint server
-                    alice.start_endpoint_server(endpoint_private_key, endpoint_name, client_service_id, client_auth_public_key)?;
+                    alice.endpoint_server_start(endpoint_private_key, endpoint_name, client_service_id, client_auth_public_key)?;
                 },
-                ContextEvent::EndpointServerChannelRequestCompleted{endpoint_service_id, client_service_id, channel_name, stream} => {
+                ContextEvent::EndpointServerHandshakeCompleted{handle, endpoint_service_id, client_service_id, channel_name, stream} => {
                     println!("Alice: endpoint channel accepted");
                     println!(" endpoint_service_id: {}", endpoint_service_id.to_string());
                     println!(" client_service_id: {}", client_service_id.to_string());
@@ -2252,16 +2386,16 @@ fn test_gosling_context() -> Result<()> {
         let mut events = pat.update()?;
         for event in events.drain(..) {
             match event {
-                ContextEvent::IdentityClientChallengeRequestReceived{handle, identity_service_id, endpoint_name, endpoint_challenge} => {
+                ContextEvent::IdentityClientChallengeReceived{handle, identity_service_id, endpoint_name, endpoint_challenge} => {
                     ensure!(handle == pat_handshake_handle);
                     println!("Pat: challenge request received");
                     println!(" handle: {}", handle);
                     println!(" identity_service_id: {}", identity_service_id.to_string());
                     println!(" endpoint_name: {}", endpoint_name);
                     println!(" endpoint_challenge: {}", endpoint_challenge);
-                    pat.client_handle_challenge_request_received(handle, doc!())?;
+                    pat.identity_client_handle_challenge_received(handle, doc!())?;
                 },
-                ContextEvent::IdentityClientRequestCompleted{handle, identity_service_id, endpoint_service_id, endpoint_name, client_auth_private_key} => {
+                ContextEvent::IdentityClientHandshakeCompleted{handle, identity_service_id, endpoint_service_id, endpoint_name, client_auth_private_key} => {
                     ensure!(handle == pat_handshake_handle);
                     println!("Pat: endpoint request succeeded");
                     println!(" handle: {}", handle);
@@ -2271,19 +2405,19 @@ fn test_gosling_context() -> Result<()> {
                     saved_endpoint_service_id = Some(endpoint_service_id);
                     saved_endpoint_client_auth_key = Some(client_auth_private_key);
                 },
-                ContextEvent::IdentityClientHandshakeAborted{handle,reason: Some(reason)} => {
+                ContextEvent::IdentityClientHandshakeFailed{handle,reason: Some(reason)} => {
                     println!("Pat: identity handshake aborted {:?}", reason);
                     println!(" handle: {}", handle);
                     println!(" reason: {:?}", reason);
                     bail!(reason);
                 },
-                ContextEvent::IdentityClientHandshakeAborted{handle,reason: None} => {
+                ContextEvent::IdentityClientHandshakeFailed{handle,reason: None} => {
                     println!("Pat: identity handshake aborted");
                     println!(" handle: {}", handle);
                     println!(" reason: None");
                     bail!("no reason given");
                 },
-                ContextEvent::EndpointClientChannelRequestCompleted{endpoint_service_id, channel_name, stream} => {
+                ContextEvent::EndpointClientHandshakeCompleted{endpoint_service_id, channel_name, stream} => {
                     println!("Pat: endpoint channel opened");
                     println!(" endpoint_service_id: {}", endpoint_service_id.to_string());
                     println!(" channel_name: {}", channel_name);

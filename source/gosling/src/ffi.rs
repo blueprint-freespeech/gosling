@@ -867,7 +867,7 @@ pub extern "C" fn gosling_context_start_identity_server(
             Some(context) => context,
             None => bail!("context is invalid"),
         };
-        context.0.start_identity_server()
+        context.0.identity_server_start()
     });
 }
 
@@ -887,7 +887,7 @@ pub extern "C" fn gosling_context_stop_identity_server(
             Some(context) => context,
             None => bail!("context is invalid"),
         };
-        context.0.stop_identity_server()
+        context.0.identity_server_stop()
     });
 }
 
@@ -946,7 +946,7 @@ pub extern "C" fn gosling_context_start_endpoint_server(
             None => bail!("client_auth_public_key is invalid"),
         };
 
-        context.0.start_endpoint_server(endpoint_private_key.clone(), endpoint_name, client_identity.clone(), client_auth_public_key.clone())
+        context.0.endpoint_server_start(endpoint_private_key.clone(), endpoint_name, client_identity.clone(), client_auth_public_key.clone())
     });
 
 }
@@ -978,7 +978,7 @@ pub extern "C" fn gosling_context_stop_endpoint_server(
         };
 
         let endpoint_identity = V3OnionServiceId::from_private_key(endpoint_private_key);
-        context.0.stop_endpoint_server(endpoint_identity)
+        context.0.endpoint_server_stop(endpoint_identity)
     });
 }
 
@@ -1019,7 +1019,7 @@ pub extern "C" fn gosling_context_begin_identity_handshake(
         let endpoint_name = resolve!(std::str::from_utf8(endpoint_name)).to_string();
         ensure!(endpoint_name.is_ascii(), "endpoint_name must be an ascii string");
 
-        context.0.client_begin_identity_handshake(identity_service_id.clone(), &endpoint_name)
+        context.0.identity_client_begin_handshake(identity_service_id.clone(), &endpoint_name)
     })
 }
 
@@ -1042,7 +1042,7 @@ pub extern "C" fn gosling_context_abort_identity_client_handshake(
             None => bail!("context is invalid"),
         };
 
-        context.0.client_abort_identity_handshake(handshake_handle)
+        context.0.identity_client_abort_identity_handshake(handshake_handle)
     })
 }
 
@@ -1091,7 +1091,7 @@ pub extern "C" fn gosling_context_open_endpoint_channel(
         let channel_name = resolve!(std::str::from_utf8(channel_name)).to_string();
         ensure!(channel_name.is_ascii(), "channel_name must be an ascii string");
 
-        context.0.open_endpoint_channel(endpoint_service_id.clone(), client_auth_private_key.clone(), channel_name)
+        context.0.endpoint_client_begin_handshake(endpoint_service_id.clone(), client_auth_private_key.clone(), channel_name)
     });
 }
 
@@ -1138,6 +1138,79 @@ pub extern "C" fn gosling_context_poll_events(
                     }
                 },
                 //
+                // Identity Client Events
+                //
+                ContextEvent::IdentityClientChallengeReceived{
+                    handle,
+                    identity_service_id,
+                    endpoint_name,
+                    endpoint_challenge} => {
+
+                    // construct challenge response
+                    let challenge_response = if let (Some(challenge_response_size_callback), Some(build_challenge_response_callback)) = (callbacks.identity_client_challenge_response_size_callback, callbacks.identity_client_build_challenge_response_callback) {
+
+                        let mut endpoint_challenge_buffer: Vec<u8> = Default::default();
+                        endpoint_challenge.to_writer(&mut endpoint_challenge_buffer).unwrap();
+
+                        // get the size of challenge response bson blob
+                        let challenge_response_size = challenge_response_size_callback(context, handle, endpoint_challenge_buffer.as_ptr(), endpoint_challenge_buffer.len());
+
+                        // get the challenge response bson blob
+                        let mut challenge_response_buffer: Vec<u8> = vec!(0u8; challenge_response_size);
+                        build_challenge_response_callback(context, handle, endpoint_challenge_buffer.as_ptr(), endpoint_challenge_buffer.len(),
+                            challenge_response_buffer.as_mut_ptr(), challenge_response_buffer.len());
+
+                        // convert bson blob to bson object
+                        match bson::document::Document::from_reader(Cursor::new(challenge_response_buffer)) {
+                            Ok(challenge_response) => challenge_response,
+                            Err(_) => panic!(),
+                        }
+                    } else {
+                        doc!{}
+                    };
+
+                    match get_context_tuple_registry().get_mut(context as usize) {
+                        Some(context) => context.0.identity_client_handle_challenge_received(handle, challenge_response)?,
+                        None => bail!("context is invalid"),
+                    };
+                },
+                ContextEvent::IdentityClientHandshakeCompleted{
+                    handle,
+                    identity_service_id,
+                    endpoint_service_id,
+                    endpoint_name,
+                    client_auth_private_key} => {
+                    if let Some(callback) = callbacks.identity_client_request_completed_callback {
+                        let (identity_service_id, endpoint_service_id) = {
+                            let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
+                            let identity_service_id = v3_onion_service_id_registry.insert(identity_service_id);
+                            let endpoint_service_id = v3_onion_service_id_registry.insert(endpoint_service_id);
+                            (identity_service_id, endpoint_service_id)
+                        };
+
+                        let endpoint_name0 =  CString::new(endpoint_name.as_str()).expect("gosling_context_poll_events(): unexpected null byte in endpoint name");
+
+                        let client_auth_private_key = get_x25519_private_key_registry().insert(client_auth_private_key);
+
+                        callback(context, identity_service_id as *const GoslingV3OnionServiceId, endpoint_service_id as *const GoslingV3OnionServiceId, endpoint_name0.as_ptr(), endpoint_name.len(), client_auth_private_key as *const GoslingX25519PrivateKey);
+
+                        {
+                            let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
+                            v3_onion_service_id_registry.remove(identity_service_id);
+                            v3_onion_service_id_registry.remove(endpoint_service_id);
+                        }
+
+                        // cleanup
+                        get_x25519_private_key_registry().remove(client_auth_private_key);
+                    }
+                },
+                ContextEvent::IdentityClientHandshakeFailed{
+                    handle,
+                    reason
+                } => {
+                    // TODO
+                },
+                //
                 // Identity Server Events
                 //
                 ContextEvent::IdentityServerPublished => {
@@ -1145,10 +1218,14 @@ pub extern "C" fn gosling_context_poll_events(
                         callback(context);
                     }
                 },
-                ContextEvent::IdentityServerRequestReceived{
+                ContextEvent::IdentityServerHandshakeStarted{
+                    handle} => {
+                        // TODO
+                },
+                ContextEvent::IdentityServerEndpointRequestReceived{
                     handle,
                     client_service_id,
-                    endpoint_name} => {
+                    requested_endpoint} => {
                     let client_allowed = match callbacks.identity_server_client_allowed_callback {
                         Some(callback) => {
                             let client_service_id = get_v3_onion_service_id_registry().insert(client_service_id);
@@ -1159,8 +1236,8 @@ pub extern "C" fn gosling_context_poll_events(
 
                     let endpoint_supported = match callbacks.identity_server_endpoint_supported_callback {
                         Some(callback) => {
-                            let endpoint_name0 = CString::new(endpoint_name.as_str()).expect("gosling_context_poll_events(): unexpected null byte in endpoint_name");
-                            callback(context, handle, endpoint_name0.as_ptr(), endpoint_name.len())
+                            let requested_endpoint0 = CString::new(requested_endpoint.as_str()).expect("gosling_context_poll_events(): unexpected null byte in requested_endpoint");
+                            callback(context, handle, requested_endpoint0.as_ptr(), requested_endpoint.len())
                         },
                         None => false,
                     };
@@ -1181,7 +1258,7 @@ pub extern "C" fn gosling_context_poll_events(
                     };
 
                     match get_context_tuple_registry().get_mut(context as usize) {
-                        Some(context) => context.0.server_handle_request_received(handle, client_allowed, endpoint_supported, endpoint_challenge)?,
+                        Some(context) => context.0.identity_server_handle_endpoint_request_received(handle, client_allowed, endpoint_supported, endpoint_challenge)?,
                         None => bail!("context is invalid"),
                     };
                 },
@@ -1201,11 +1278,11 @@ pub extern "C" fn gosling_context_poll_events(
                     };
 
                     match get_context_tuple_registry().get_mut(context as usize) {
-                        Some(context) => context.0.server_handle_challenge_response_received(handle, challenge_response_valid)?,
+                        Some(context) => context.0.identity_server_handle_challenge_response_received(handle, challenge_response_valid)?,
                         None => bail!("context is invalid"),
                     };
                 },
-                ContextEvent::IdentityServerRequestCompleted{
+                ContextEvent::IdentityServerHandshakeCompleted{
                     handle: _,
                     endpoint_private_key,
                     endpoint_name,
@@ -1237,81 +1314,48 @@ pub extern "C" fn gosling_context_poll_events(
                         get_x25519_public_key_registry().remove(client_auth_public_key);
                     }
                 },
-                ContextEvent::IdentityServerHandshakeAborted{handle, reason} => {
-
-                },
-                //
-                // Identity Client Events
-                //
-                ContextEvent::IdentityClientChallengeRequestReceived{
+                ContextEvent::IdentityServerHandshakeRejected{
                     handle,
-                    identity_service_id,
-                    endpoint_name,
-                    endpoint_challenge} => {
-
-                    // construct challenge response
-                    let challenge_response = if let (Some(challenge_response_size_callback), Some(build_challenge_response_callback)) = (callbacks.identity_client_challenge_response_size_callback, callbacks.identity_client_build_challenge_response_callback) {
-
-                        let mut endpoint_challenge_buffer: Vec<u8> = Default::default();
-                        endpoint_challenge.to_writer(&mut endpoint_challenge_buffer).unwrap();
-
-                        // get the size of challenge response bson blob
-                        let challenge_response_size = challenge_response_size_callback(context, handle, endpoint_challenge_buffer.as_ptr(), endpoint_challenge_buffer.len());
-
-                        // get the challenge response bson blob
-                        let mut challenge_response_buffer: Vec<u8> = vec!(0u8; challenge_response_size);
-                        build_challenge_response_callback(context, handle, endpoint_challenge_buffer.as_ptr(), endpoint_challenge_buffer.len(),
-                            challenge_response_buffer.as_mut_ptr(), challenge_response_buffer.len());
-
-                        // convert bson blob to bson object
-                        match bson::document::Document::from_reader(Cursor::new(challenge_response_buffer)) {
-                            Ok(challenge_response) => challenge_response,
-                            Err(_) => panic!(),
-                        }
-                    } else {
-                        doc!{}
-                    };
-
-                    match get_context_tuple_registry().get_mut(context as usize) {
-                        Some(context) => context.0.client_handle_challenge_request_received(handle, challenge_response)?,
-                        None => bail!("context is invalid"),
-                    };
-                },
-                ContextEvent::IdentityClientRequestCompleted{
-                    handle,
-                    identity_service_id,
-                    endpoint_service_id,
-                    endpoint_name,
-                    client_auth_private_key} => {
-                    if let Some(callback) = callbacks.identity_client_request_completed_callback {
-                        let (identity_service_id, endpoint_service_id) = {
-                            let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
-                            let identity_service_id = v3_onion_service_id_registry.insert(identity_service_id);
-                            let endpoint_service_id = v3_onion_service_id_registry.insert(endpoint_service_id);
-                            (identity_service_id, endpoint_service_id)
-                        };
-
-                        let endpoint_name0 =  CString::new(endpoint_name.as_str()).expect("gosling_context_poll_events(): unexpected null byte in endpoint name");
-
-                        let client_auth_private_key = get_x25519_private_key_registry().insert(client_auth_private_key);
-
-                        callback(context, identity_service_id as *const GoslingV3OnionServiceId, endpoint_service_id as *const GoslingV3OnionServiceId, endpoint_name0.as_ptr(), endpoint_name.len(), client_auth_private_key as *const GoslingX25519PrivateKey);
-
-                        {
-                            let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
-                            v3_onion_service_id_registry.remove(identity_service_id);
-                            v3_onion_service_id_registry.remove(endpoint_service_id);
-                        }
-
-                        // cleanup
-                        get_x25519_private_key_registry().remove(client_auth_private_key);
-                    }
-                },
-                ContextEvent::IdentityClientHandshakeAborted{
-                    handle,
-                    reason
+                    client_allowed,
+                    client_requested_endpoint_valid,
+                    client_proof_signature_valid,
+                    client_auth_signature_valid,
+                    challenge_response_valid,
                 } => {
 
+                },
+                ContextEvent::IdentityServerHandshakeFailed{handle, reason} => {
+                    // TODO
+                },
+                //
+                // Endpoint Client Events
+                //
+                ContextEvent::EndpointClientHandshakeCompleted{
+                    endpoint_service_id,
+                    channel_name,
+                    stream} => {
+                    if let Some(callback) = callbacks.endpoint_client_channel_request_completed_callback {
+                        let endpoint_service_id = {
+                            let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
+                            v3_onion_service_id_registry.insert(endpoint_service_id)
+                        };
+                        let channel_name0 = CString::new(channel_name.as_str()).expect("gosling_context_poll_events(): unexpected null byte in channel name");
+
+                        #[cfg(any(target_os = "linux", target_os = "macos"))]
+                        let stream = stream.into_raw_fd();
+                        #[cfg(target_os = "windows")]
+                        let stream = stream.into_raw_socket();
+
+                        callback(context, endpoint_service_id as *const GoslingV3OnionServiceId, channel_name0.as_ptr(), channel_name.len(), stream);
+
+                        // cleanup
+                        get_v3_onion_service_id_registry().remove(endpoint_service_id);
+                    }
+                },
+                ContextEvent::EndointClientHandshakeFailed{
+                    handle,
+                    reason} => {
+                    // TODO
                 },
                 //
                 // Endpoint Server Events
@@ -1332,7 +1376,19 @@ pub extern "C" fn gosling_context_poll_events(
                         get_v3_onion_service_id_registry().remove(endpoint_service_id);
                     }
                 },
-                ContextEvent::EndpointServerChannelRequestCompleted{
+                ContextEvent::EndpointServerHandshakeStarted{
+                    handle} => {
+                    // TODO
+                },
+                ContextEvent::EndpointServerChannelRequestReceived{
+                    handle,
+                    // client_service_id,
+                    endpoint_service_id,
+                    requested_channel} => {
+                    // TODO
+                },
+                ContextEvent::EndpointServerHandshakeCompleted{
+                    handle: _handle,
                     endpoint_service_id,
                     client_service_id,
                     channel_name,
@@ -1362,30 +1418,18 @@ pub extern "C" fn gosling_context_poll_events(
                         }
                     }
                 },
-                //
-                // Endpoint Client Events
-                //
-                ContextEvent::EndpointClientChannelRequestCompleted{
-                    endpoint_service_id,
-                    channel_name,
-                    stream} => {
-                    if let Some(callback) = callbacks.endpoint_client_channel_request_completed_callback {
-                        let endpoint_service_id = {
-                            let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
-                            v3_onion_service_id_registry.insert(endpoint_service_id)
-                        };
-                        let channel_name0 = CString::new(channel_name.as_str()).expect("gosling_context_poll_events(): unexpected null byte in channel name");
-
-                        #[cfg(any(target_os = "linux", target_os = "macos"))]
-                        let stream = stream.into_raw_fd();
-                        #[cfg(target_os = "windows")]
-                        let stream = stream.into_raw_socket();
-
-                        callback(context, endpoint_service_id as *const GoslingV3OnionServiceId, channel_name0.as_ptr(), channel_name.len(), stream);
-
-                        // cleanup
-                        get_v3_onion_service_id_registry().remove(endpoint_service_id);
-                    }
+                ContextEvent::EndpointServerHandshakeRejected{
+                    handle,
+                    client_allowed,
+                    client_requested_channel_valid,
+                    client_proof_signature_valid
+                } => {
+                    // TODO
+                },
+                ContextEvent::EndpointServerRequestFailed{
+                    handle,
+                    reason} => {
+                    // TODO
                 },
             }
         }
@@ -1653,7 +1697,7 @@ pub type GoslingEndpointServerPublishedCallback = extern fn(
 /// @param stream: the tcp socket file descriptor associated with the connection to the
 ///  endpoint client
 #[cfg(any(target_os = "linux", target_os = "macos"))]
-pub type GoslingEndpointServerChannelRequestCompletedCallback = extern fn(
+pub type GoslingEndpointServerRequestCompletedCallback = extern fn(
     context: *mut GoslingContext,
     endpoint_service_id: *const GoslingV3OnionServiceId,
     client_service_id: *const GoslingV3OnionServiceId,
@@ -1675,7 +1719,7 @@ pub type GoslingEndpointServerChannelRequestCompletedCallback = extern fn(
 /// @param stream: the tcp SOCKET object associated with the connection to the endpoint
 ///  client
 #[cfg(target_os = "windows")]
-pub type GoslingEndpointServerChannelRequestCompletedCallback = extern fn(
+pub type GoslingEndpointServerRequestCompletedCallback = extern fn(
     context: *mut GoslingContext,
     endpoint_service_id: *const GoslingV3OnionServiceId,
     client_service_id: *const GoslingV3OnionServiceId,
@@ -1749,7 +1793,7 @@ pub struct EventCallbacks {
 
     // endpoint server events
     endpoint_server_published_callback: Option<GoslingEndpointServerPublishedCallback>,
-    endpoint_server_channel_request_completed_callback: Option<GoslingEndpointServerChannelRequestCompletedCallback>,
+    endpoint_server_channel_request_completed_callback: Option<GoslingEndpointServerRequestCompletedCallback>,
 
     // endpoint client events
     endpoint_client_channel_request_completed_callback: Option<GoslingEndpointClientChannelRequestCompletedCallback>,
@@ -1968,7 +2012,7 @@ pub extern "C" fn gosling_context_set_endpoint_server_published_callback(
 #[no_mangle]
 pub extern "C" fn gosling_context_set_endpoint_server_channel_request_completed_callback(
     context: *mut GoslingContext,
-    callback: GoslingEndpointServerChannelRequestCompletedCallback,
+    callback: GoslingEndpointServerRequestCompletedCallback,
     error: *mut *mut GoslingError) {
     impl_callback_setter!(endpoint_server_channel_request_completed_callback, context, callback, error);
 }
