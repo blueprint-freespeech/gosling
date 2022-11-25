@@ -56,7 +56,7 @@ macro_rules! function {
 }
 
 #[macro_export]
-macro_rules! error {
+macro_rules! to_error {
     ($err:tt) => {
         {
             let line = std::line!();
@@ -64,7 +64,7 @@ macro_rules! error {
             let file = std::file!();
 
             use $crate::error::ToError;
-            Err($err.to_error(file, line, function))
+            $err.to_error(file, line, function)
         }
     };
 }
@@ -73,18 +73,18 @@ macro_rules! error {
 macro_rules! bail {
     ($msg:literal) => {
         {
-            return error!($msg);
+            return Err(to_error!($msg));
         }
     };
     ($err:expr) => {
         {
-            return error!($err);
+            return Err(to_error!($err));
         }
     };
     ($fmt:literal, $($arg:tt)*) => {
         {
             let message = std::format!($fmt, $($arg)*);
-            return error!(message);
+            return Err(to_error!(message));
         }
     };
 }
@@ -123,6 +123,16 @@ macro_rules! ensure_not_null {
     ($ptr:expr) => {
         if $ptr.is_null() {
             bail!(std::format!("`{}` must not be null", std::stringify!($ptr)));
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! ensure_ok {
+    ($result:expr) => {
+        match $result {
+            Ok(_) => {},
+            Err(err) => bail!(err),
         }
     };
 }

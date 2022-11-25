@@ -1675,6 +1675,9 @@ impl Context {
 
     pub fn update(&mut self) -> Result<Vec<ContextEvent>> {
 
+        // events to return
+        let mut events : Vec<ContextEvent> = Default::default();
+
         // first handle new identity connections
         if let Some(listener) = &mut self.identity_listener {
             if let Some(stream) = listener.accept()? {
@@ -1708,9 +1711,6 @@ impl Context {
             }
         }
 
-        // events to return
-        let mut events : Vec<ContextEvent> = Default::default();
-
         // consume tor events
         for event in self.tor_manager.update()?.drain(..) {
             match event {
@@ -1738,181 +1738,168 @@ impl Context {
         }
 
         // update the ident client handshakes
-        // TODO: switch to drain_filter once it comes out of nightly
-        {
-            let handles : Vec<HandshakeHandle> = self.identity_clients.keys().cloned().collect();
-            for handle in handles {
-                let identity_client = self.identity_clients.get_mut(&handle).unwrap();
-                let remove = match identity_client.update() {
-                    Ok(Some(IdentityClientEvent::ChallengeReceived{
-                        identity_service_id,
-                        endpoint_name,
-                        endpoint_challenge,
-                    })) => {
-                        events.push(
-                            ContextEvent::IdentityClientChallengeReceived{
-                                handle,
-                                identity_service_id,
-                                endpoint_name,
-                                endpoint_challenge});
-                        false
-                    },
-                    Ok(Some(IdentityClientEvent::HandshakeCompleted{
-                        identity_service_id,
-                        endpoint_service_id,
-                        endpoint_name,
-                        client_auth_private_key,
-                    })) => {
-                        events.push(
-                            ContextEvent::IdentityClientHandshakeCompleted{
-                                handle,
-                                identity_service_id,
-                                endpoint_service_id,
-                                endpoint_name,
-                                client_auth_private_key});
-                        true
-                    },
-                    Ok(None) => false,
-                    Err(err) => {
-                        events.push(
-                            ContextEvent::IdentityClientHandshakeFailed{
-                                handle,
-                                reason: err,
-                            });
-                        true
-                    },
-                };
-                if remove {
-                    self.identity_clients.remove(&handle);
-                }
+        self.identity_clients.retain(|handle, identity_client| -> bool {
+            let handle = *handle;
+            match identity_client.update() {
+                Ok(Some(IdentityClientEvent::ChallengeReceived{
+                    identity_service_id,
+                    endpoint_name,
+                    endpoint_challenge,
+                })) => {
+                    events.push(
+                        ContextEvent::IdentityClientChallengeReceived{
+                            handle,
+                            identity_service_id,
+                            endpoint_name,
+                            endpoint_challenge});
+                    true
+                },
+                Ok(Some(IdentityClientEvent::HandshakeCompleted{
+                    identity_service_id,
+                    endpoint_service_id,
+                    endpoint_name,
+                    client_auth_private_key,
+                })) => {
+                    events.push(
+                        ContextEvent::IdentityClientHandshakeCompleted{
+                            handle,
+                            identity_service_id,
+                            endpoint_service_id,
+                            endpoint_name,
+                            client_auth_private_key});
+                    false
+                },
+                Err(err) => {
+                    events.push(
+                        ContextEvent::IdentityClientHandshakeFailed{
+                            handle,
+                            reason: err,
+                        });
+                    false
+                },
+                Ok(None) => true,
             }
-        }
+        });
 
         // update the ident server handshakes
-        {
-            // TODO: switch to drain_filter once it comes out of nightly
-            let handles : Vec<HandshakeHandle> = self.identity_servers.keys().cloned().collect();
-            for handle in handles {
-                let identity_server = self.identity_servers.get_mut(&handle).unwrap();
-                let remove = match identity_server.update() {
-                    Ok(Some(IdentityServerEvent::EndpointRequestReceived{client_service_id, requested_endpoint})) => {
-                        events.push(
-                            ContextEvent::IdentityServerEndpointRequestReceived{
-                                handle,
-                                client_service_id,
-                                requested_endpoint});
-                        false
-                    },
-                    Ok(Some(IdentityServerEvent::ChallengeResponseReceived{
-                        challenge_response})) => {
-                        events.push(
-                            ContextEvent::IdentityServerChallengeResponseReceived{
-                                handle,
-                                challenge_response});
-                        false
-                    },
-                    Ok(Some(IdentityServerEvent::HandshakeCompleted{
-                        endpoint_private_key,
-                        endpoint_name,
-                        client_service_id,
-                        client_auth_public_key,
-                    })) => {
-                        events.push(
-                            ContextEvent::IdentityServerHandshakeCompleted{
-                                handle,
-                                endpoint_private_key,
-                                endpoint_name,
-                                client_service_id,
-                                client_auth_public_key});
-                        true
-                    },
-                    Ok(Some(IdentityServerEvent::HandshakeRejected{
-                        client_allowed,
-                        client_requested_endpoint_valid,
-                        client_proof_signature_valid,
-                        client_auth_signature_valid,
-                        challenge_response_valid,
-                    })) => {
-                        println!("failure!");
-                        println!(" client_allowed: {}", client_allowed);
-                        println!(" client_requested_endpoint_valid: {}", client_requested_endpoint_valid);
-                        println!(" client_proof_signature_valid: {}", client_proof_signature_valid);
-                        println!(" client_auth_signature_valid: {}", client_auth_signature_valid);
-                        println!(" challenge_response_valid: {}", challenge_response_valid);
-                        true
-                    },
-                    Ok(None) => false,
-                    Err(err) => {
-                        events.push(
-                            ContextEvent::IdentityServerHandshakeFailed{
-                                handle,
-                                reason: err,
-                            });
-                        true
-                    },
-                };
-
-                if remove {
-                    self.identity_servers.remove(&handle);
-                }
+        self.identity_servers.retain(|handle, identity_server| -> bool {
+            let handle = *handle;
+            match identity_server.update() {
+                Ok(Some(IdentityServerEvent::EndpointRequestReceived{client_service_id, requested_endpoint})) => {
+                    events.push(
+                        ContextEvent::IdentityServerEndpointRequestReceived{
+                            handle,
+                            client_service_id,
+                            requested_endpoint});
+                    true
+                },
+                Ok(Some(IdentityServerEvent::ChallengeResponseReceived{
+                    challenge_response})) => {
+                    events.push(
+                        ContextEvent::IdentityServerChallengeResponseReceived{
+                            handle,
+                            challenge_response});
+                    true
+                },
+                Ok(Some(IdentityServerEvent::HandshakeCompleted{
+                    endpoint_private_key,
+                    endpoint_name,
+                    client_service_id,
+                    client_auth_public_key,
+                })) => {
+                    events.push(
+                        ContextEvent::IdentityServerHandshakeCompleted{
+                            handle,
+                            endpoint_private_key,
+                            endpoint_name,
+                            client_service_id,
+                            client_auth_public_key});
+                    false
+                },
+                Ok(Some(IdentityServerEvent::HandshakeRejected{
+                    client_allowed,
+                    client_requested_endpoint_valid,
+                    client_proof_signature_valid,
+                    client_auth_signature_valid,
+                    challenge_response_valid,
+                })) => {
+                    events.push(
+                        ContextEvent::IdentityServerHandshakeRejected{
+                            handle,
+                            client_allowed,
+                            client_requested_endpoint_valid,
+                            client_proof_signature_valid,
+                            client_auth_signature_valid,
+                            challenge_response_valid});
+                    false
+                },
+                Err(err) => {
+                    events.push(
+                        ContextEvent::IdentityServerHandshakeFailed{
+                            handle,
+                            reason: err});
+                    false
+                },
+                Ok(None) => true,
             }
-        }
+        });
 
         // update the endpoint client handshakes
-        // TODO: switch to drain_filter once it comes out of nightly
-        {
-            let handles : Vec<HandshakeHandle> = self.endpoint_clients.keys().cloned().collect();
-            for handle in handles {
-                let (endpoint_client, stream) = self.endpoint_clients.get_mut(&handle).unwrap();
-                let remove = match endpoint_client.update() {
-                    Ok(Some(EndpointClientEvent::HandshakeCompleted)) => {
-                        events.push(
-                            ContextEvent::EndpointClientHandshakeCompleted{
-                                endpoint_service_id: endpoint_client.server_service_id.clone(),
-                                channel_name: endpoint_client.requested_channel.clone(),
-                                stream: resolve!(stream.try_clone()),
-                            });
-                        true
-                    },
-                    Ok(None) => false,
-                    Err(err) => {
-                        events.push(
-                            ContextEvent::EndpointClientHandshakeFailed{
-                                handle,
-                                reason: err,
-                            });
-                        true
-                    },
-                };
+        self.endpoint_clients.retain(|handle, (endpoint_client, stream)| -> bool {
+            let handle = *handle;
+            match endpoint_client.update() {
+                Ok(Some(EndpointClientEvent::HandshakeCompleted)) => {
+                    match stream.try_clone() {
+                        Ok(stream) => {
+                            events.push(
+                                ContextEvent::EndpointClientHandshakeCompleted{
+                                    endpoint_service_id: endpoint_client.server_service_id.clone(),
+                                    channel_name: endpoint_client.requested_channel.clone(),
+                                    stream});
 
-                if remove {
-                    self.endpoint_clients.remove(&handle);
-                }
+                        },
+                        Err(err) => {
+                            events.push(
+                                ContextEvent::EndpointClientHandshakeFailed{
+                                    handle,
+                                    reason: to_error!(err),
+                                });
+                        }
+                    }
+                    false
+                },
+                Err(err) => {
+                    events.push(
+                        ContextEvent::EndpointClientHandshakeFailed{
+                            handle,
+                            reason: err,
+                        });
+                    false
+                },
+                Ok(None) => true,
             }
-        }
+        });
 
         // update the endpoint server handshakes
-        // TODO: switch to drain_filter once it comes out of nightly
-        {
-            let handles : Vec<HandshakeHandle> = self.endpoint_servers.keys().cloned().collect();
-            for handle in handles {
-                let (endpoint_server, stream) = self.endpoint_servers.get_mut(&handle).unwrap();
-                let remove = match endpoint_server.update() {
-                    Ok(Some(EndpointServerEvent::ChannelRequestReceived{
-                        requested_channel
-                    })) => {
-                        events.push(
-                            ContextEvent::EndpointServerChannelRequestReceived{
-                                handle,
-                                endpoint_service_id: endpoint_server.server_identity.clone(),
-                                requested_channel});
-                        false
-                    },
-                    Ok(Some(EndpointServerEvent::HandshakeCompleted{
-                        client_service_id,
-                        channel_name})) => {
+        self.endpoint_servers.retain(|handle, (endpoint_server, stream)| -> bool {
+            let handle = *handle;
+            match endpoint_server.update() {
+                Ok(Some(EndpointServerEvent::ChannelRequestReceived{
+                    requested_channel
+                })) => {
+                    events.push(
+                        ContextEvent::EndpointServerChannelRequestReceived{
+                            handle,
+                            endpoint_service_id: endpoint_server.server_identity.clone(),
+                            requested_channel});
+                    true
+                },
+                Ok(Some(EndpointServerEvent::HandshakeCompleted{
+                    client_service_id,
+                    channel_name})) => {
 
-                        if let Ok(stream) = stream.try_clone() {
+                    match stream.try_clone() {
+                        Ok(stream) => {
                             events.push(
                                 ContextEvent::EndpointServerHandshakeCompleted{
                                     handle,
@@ -1920,36 +1907,38 @@ impl Context {
                                     client_service_id,
                                     channel_name,
                                     stream});
+                        },
+                        Err(err) => {
+                            events.push(
+                                ContextEvent::EndpointServerRequestFailed{
+                                    handle,
+                                    reason: to_error!(err)});
                         }
-                        true
-                    },
-                    Ok(Some(EndpointServerEvent::HandshakeRejected{
-                        client_allowed,
-                        client_requested_channel_valid,
-                        client_proof_signature_valid})) => {
-                        events.push(
-                            ContextEvent::EndpointServerHandshakeRejected{
-                                handle,
-                                client_allowed,
-                                client_requested_channel_valid,
-                                client_proof_signature_valid});
-                        true
-                    },
-                    Ok(None) => false,
-                    Err(err) => {
-                        events.push(
-                            ContextEvent::EndpointServerRequestFailed{
-                                handle,
-                                reason: err});
-                        true
-                    },
-                };
-
-                if remove {
-                    self.endpoint_servers.remove(&handle);
-                }
+                    }
+                    false
+                },
+                Ok(Some(EndpointServerEvent::HandshakeRejected{
+                    client_allowed,
+                    client_requested_channel_valid,
+                    client_proof_signature_valid})) => {
+                    events.push(
+                        ContextEvent::EndpointServerHandshakeRejected{
+                            handle,
+                            client_allowed,
+                            client_requested_channel_valid,
+                            client_proof_signature_valid});
+                    false
+                },
+                Err(err) => {
+                    events.push(
+                        ContextEvent::EndpointServerRequestFailed{
+                            handle,
+                            reason: err});
+                    false
+                },
+                Ok(None) => true,
             }
-        }
+        });
 
         Ok(events)
     }
