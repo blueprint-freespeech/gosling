@@ -1060,7 +1060,16 @@ struct EndpointServer<RW> {
     // State Machine Data
     state: EndpointServerState,
     requested_channel: Option<String>,
-    handshake_succeeded: Option<bool>
+    handshake_succeeded: Option<bool>,
+
+    // Verification flags
+
+    // Client not on the block-list
+    client_allowed: bool,
+    // The requested endpoint is valid
+    client_requested_channel_valid: bool,
+    // The client proof is valid and signed with client's public key
+    client_proof_signature_valid: bool,
 }
 
 impl<RW> EndpointServer<RW> where RW : std::io::Read + std::io::Write + Send {
@@ -1073,7 +1082,6 @@ impl<RW> EndpointServer<RW> where RW : std::io::Read + std::io::Write + Send {
         let mut server_cookie: ServerCookie = Default::default();
         OsRng.fill_bytes(&mut server_cookie);
 
-
         EndpointServer{
             rpc: Some(rpc),
             server_cookie,
@@ -1082,6 +1090,10 @@ impl<RW> EndpointServer<RW> where RW : std::io::Read + std::io::Write + Send {
             state: EndpointServerState::WaitingForBeginHandshake,
             requested_channel: None,
             handshake_succeeded: None,
+            client_allowed: false,
+            // TODO: hookup this to event and callback
+            client_requested_channel_valid: true,
+            client_proof_signature_valid: false,
         }
     }
 
@@ -1109,9 +1121,14 @@ impl<RW> EndpointServer<RW> where RW : std::io::Read + std::io::Write + Send {
                 self.state = EndpointServerState::HandshakeComplete;
                 if handshake_succeeded {
                     return Ok(Some(EndpointServerEvent::HandshakeCompleted{
-                        client_service_id: self.client_identity.clone(),
-                        channel_name: requested_channel.clone(),
-                    }));
+                        client_service_id:
+                        self.client_identity.clone(),
+                        channel_name: requested_channel.clone()}));
+                } else {
+                    return Ok(Some(EndpointServerEvent::HandshakeRejected{
+                        client_allowed: self.client_allowed,
+                        client_requested_channel_valid: self.client_requested_channel_valid,
+                        client_proof_signature_valid: self.client_proof_signature_valid}));
                 }
             },
             _ => {
@@ -1148,7 +1165,7 @@ impl<RW> EndpointServer<RW> where RW : std::io::Read + std::io::Write + Send {
         client_identity_proof_signature: Ed25519Signature) -> Result<bson::Bson, GoslingError> {
 
         // is client on the allow list
-        let client_allowed = client_identity == self.client_identity;
+        self.client_allowed = client_identity == self.client_identity;
 
         // convert client_identity to client's public ed25519 key
         if let (Ok(client_identity_key), Some(requested_channel)) = (Ed25519PublicKey::from_service_id(&client_identity), self.requested_channel.as_ref()) {
@@ -1160,17 +1177,18 @@ impl<RW> EndpointServer<RW> where RW : std::io::Read + std::io::Write + Send {
                                             &self.server_identity,
                                             &client_cookie,
                                             &self.server_cookie) {
-                let client_proof_signature_valid = client_identity_proof_signature.verify(&client_proof, &client_identity_key);
+                self.client_proof_signature_valid = client_identity_proof_signature.verify(&client_proof, &client_identity_key);
 
-                if client_allowed && client_proof_signature_valid {
-                    // return empty doc
+                if self.client_allowed &&
+                   self.client_requested_channel_valid &&
+                   self.client_proof_signature_valid {
                     self.handshake_succeeded = Some(true);
                     self.state = EndpointServerState::HandledSendResponse;
+                    // success, return empty doc
                     return Ok(Bson::Document(doc!{}));
                 }
             };
         }
-
         self.handshake_succeeded = Some(false);
         self.state = EndpointServerState::HandledSendResponse;
         Err(GoslingError::Failure)
