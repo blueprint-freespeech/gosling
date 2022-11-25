@@ -1673,43 +1673,96 @@ impl Context {
         }
     }
 
+    fn identity_server_handle_accept(
+        identity_listener: &OnionListener,
+        identity_private_key: &Ed25519PrivateKey) -> Result<Option<IdentityServer<OnionStream>>> {
+        if let Some(stream) = resolve!(identity_listener.accept()) {
+            if let Err(_) = stream.set_nonblocking(true) {
+                return Ok(None);
+            }
+
+            let reader = match stream.try_clone() {
+                Ok(reader) => reader,
+                Err(_) => return Ok(None),
+            };
+            let writer = stream;
+            let server_rpc = Session::new(reader, writer);
+            let service_id = V3OnionServiceId::from_private_key(identity_private_key);
+            let identity_server = IdentityServer::new(server_rpc, service_id);
+
+            Ok(Some(identity_server))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn endpoint_server_handle_accept(
+        endpoint_listener: &OnionListener,
+        client_service_id: &V3OnionServiceId,
+        endpoint_service_id: &V3OnionServiceId) -> Result<Option<(EndpointServer<OnionStream>, TcpStream)>> {
+
+        if let Some(stream) = resolve!(endpoint_listener.accept()) {
+            if let Err(_) = stream.set_nonblocking(true) {
+                return Ok(None);
+            }
+
+            let reader = match stream.try_clone() {
+                Ok(reader) => reader,
+                Err(_) => return Ok(None),
+            };
+            let writer = match stream.try_clone() {
+                Ok(reader) => reader,
+                Err(_) => return Ok(None),
+            };
+            let server_rpc = Session::new(reader, writer);
+            let endpoint_server = EndpointServer::new(
+                server_rpc,
+                client_service_id.clone(),
+                endpoint_service_id.clone());
+
+            Ok(Some((endpoint_server, stream.into())))
+        } else {
+            Ok(None)
+        }
+    }
+
     pub fn update(&mut self) -> Result<Vec<ContextEvent>> {
 
         // events to return
         let mut events : Vec<ContextEvent> = Default::default();
 
         // first handle new identity connections
-        if let Some(listener) = &mut self.identity_listener {
-            if let Some(stream) = listener.accept()? {
-                resolve!(stream.set_nonblocking(true));
-                let identity_public_key = Ed25519PublicKey::from_private_key(&self.identity_private_key);
-                let server_service_id = V3OnionServiceId::from_public_key(&identity_public_key);
-                let server_rpc = Session::new(stream.try_clone()?, stream.try_clone()?);
-                let ident_server = IdentityServer::new(
-                    server_rpc,
-                    server_service_id);
-
-                let handshake_handle = self.next_handshake_handle;
-                self.next_handshake_handle += 1;
-                self.identity_servers.insert(handshake_handle, ident_server);
+        if let Some(identity_listener) = &self.identity_listener {
+            match Self::identity_server_handle_accept(&identity_listener, &self.identity_private_key) {
+                Ok(Some(identity_server)) => {
+                    let handle = self.next_handshake_handle;
+                    self.next_handshake_handle += 1;
+                    self.identity_servers.insert(handle, identity_server);
+                    events.push(ContextEvent::IdentityServerHandshakeStarted{handle});
+                },
+                Ok(None) => {},
+                // identity listener failed, remove it
+                // TODO; signal caller identity listener is down
+                Err(err) => self.identity_listener = None,
             }
         }
 
         // next handle new endpoint connections
-        for (endpoint_service_id, (_endpoint_name, allowed_client, listener)) in self.endpoint_listeners.iter_mut() {
-            if let Some(stream) = listener.accept()? {
-                resolve!(stream.set_nonblocking(true));
-                let server_rpc = Session::new(stream.try_clone()?, stream.try_clone()?);
-                let endpoint_server = EndpointServer::new(
-                    server_rpc,
-                    allowed_client.clone(),
-                    endpoint_service_id.clone());
-
-                let handshake_handle = self.next_handshake_handle;
-                self.next_handshake_handle += 1;
-                self.endpoint_servers.insert(handshake_handle, (endpoint_server, stream.into()));
+        self.endpoint_listeners.retain(|endpoint_service_id, (_endpoint_name, allowed_client, listener)| -> bool {
+            match Self::endpoint_server_handle_accept(&listener, &allowed_client, &endpoint_service_id) {
+                Ok(Some((endpoint_server, stream))) => {
+                    let handle = self.next_handshake_handle;
+                    self.next_handshake_handle += 1;
+                    self.endpoint_servers.insert(handle, (endpoint_server, stream.into()));
+                    events.push(ContextEvent::EndpointServerHandshakeStarted{handle});
+                    true
+                },
+                Ok(None) => true,
+                // endpoint listener failed, remove it
+                // TODO: signal caller endpoint listener is down
+                Err(err) => false,
             }
-        }
+        });
 
         // consume tor events
         for event in self.tor_manager.update()?.drain(..) {
@@ -2341,6 +2394,10 @@ fn test_gosling_context() -> Result<()> {
                         }
                     }
                 },
+                ContextEvent::IdentityServerHandshakeStarted{handle} => {
+                    println!("Alice: client connected");
+                    println!(" handle: {}", handle);
+                },
                 ContextEvent::IdentityServerEndpointRequestReceived{handle, client_service_id, requested_endpoint} => {
                     println!("Alice: endpoint request received");
                     println!(" handle: {}", handle);
@@ -2365,6 +2422,10 @@ fn test_gosling_context() -> Result<()> {
 
                     // server handed out endpoint server info, so start the endpoint server
                     alice.endpoint_server_start(endpoint_private_key, endpoint_name, client_service_id, client_auth_public_key)?;
+                },
+                ContextEvent::EndpointServerHandshakeStarted{handle} => {
+                    println!("Alice: endpoint handshake started");
+                    println!(" handle: {}", handle);
                 },
                 ContextEvent::EndpointServerHandshakeCompleted{handle, endpoint_service_id, client_service_id, channel_name, stream} => {
                     println!("Alice: endpoint channel accepted");
