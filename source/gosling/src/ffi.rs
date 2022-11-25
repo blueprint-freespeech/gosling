@@ -1208,6 +1208,9 @@ pub extern "C" fn gosling_context_poll_events(
                     handle,
                     reason
                 } => {
+                    // if let Some(callback) = callbacks.identity_client_handshake_failed {
+
+                    // }
                     // TODO
                 },
                 //
@@ -1352,7 +1355,7 @@ pub extern "C" fn gosling_context_poll_events(
                         get_v3_onion_service_id_registry().remove(endpoint_service_id);
                     }
                 },
-                ContextEvent::EndointClientHandshakeFailed{
+                ContextEvent::EndpointClientHandshakeFailed{
                     handle,
                     reason} => {
                     // TODO

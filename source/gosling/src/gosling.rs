@@ -1348,7 +1348,7 @@ pub enum ContextEvent {
     // identity client handshake failed
     IdentityClientHandshakeFailed{
         handle: HandshakeHandle,
-        reason: Option<error::Error>,
+        reason: error::Error,
     },
 
     // identity server onion service published
@@ -1396,7 +1396,7 @@ pub enum ContextEvent {
     // identity server handshake failed due to error
     IdentityServerHandshakeFailed{
         handle: HandshakeHandle,
-        reason: Option<error::Error>,
+        reason: error::Error,
     },
 
     //
@@ -1413,9 +1413,9 @@ pub enum ContextEvent {
 
 
     // identity client handshake aborted
-    EndointClientHandshakeFailed{
+    EndpointClientHandshakeFailed{
         handle: HandshakeHandle,
-        reason: Option<error::Error>,
+        reason: error::Error,
     },
 
     //
@@ -1461,7 +1461,7 @@ pub enum ContextEvent {
     // endpoint server request failed
     EndpointServerRequestFailed{
         handle: HandshakeHandle,
-        reason: Option<error::Error>,
+        reason: error::Error,
     },
 
 }
@@ -1777,7 +1777,7 @@ impl Context {
                         events.push(
                             ContextEvent::IdentityClientHandshakeFailed{
                                 handle,
-                                reason: Some(err),
+                                reason: err,
                             });
                         true
                     },
@@ -1846,7 +1846,7 @@ impl Context {
                         events.push(
                             ContextEvent::IdentityServerHandshakeFailed{
                                 handle,
-                                reason: Some(err),
+                                reason: err,
                             });
                         true
                     },
@@ -1876,7 +1876,11 @@ impl Context {
                     },
                     Ok(None) => false,
                     Err(err) => {
-                        println!("error: {:?}", err);
+                        events.push(
+                            ContextEvent::EndpointClientHandshakeFailed{
+                                handle,
+                                reason: err,
+                            });
                         true
                     },
                 };
@@ -1901,8 +1905,7 @@ impl Context {
                             ContextEvent::EndpointServerChannelRequestReceived{
                                 handle,
                                 endpoint_service_id: endpoint_server.server_identity.clone(),
-                                requested_channel
-                            });
+                                requested_channel});
                         false
                     },
                     Ok(Some(EndpointServerEvent::HandshakeCompleted{
@@ -1933,7 +1936,13 @@ impl Context {
                         true
                     },
                     Ok(None) => false,
-                    Err(_) => true,
+                    Err(err) => {
+                        events.push(
+                            ContextEvent::EndpointServerRequestFailed{
+                                handle,
+                                reason: err});
+                        true
+                    },
                 };
 
                 if remove {
@@ -2405,17 +2414,11 @@ fn test_gosling_context() -> Result<()> {
                     saved_endpoint_service_id = Some(endpoint_service_id);
                     saved_endpoint_client_auth_key = Some(client_auth_private_key);
                 },
-                ContextEvent::IdentityClientHandshakeFailed{handle,reason: Some(reason)} => {
+                ContextEvent::IdentityClientHandshakeFailed{handle,reason} => {
                     println!("Pat: identity handshake aborted {:?}", reason);
                     println!(" handle: {}", handle);
                     println!(" reason: {:?}", reason);
                     bail!(reason);
-                },
-                ContextEvent::IdentityClientHandshakeFailed{handle,reason: None} => {
-                    println!("Pat: identity handshake aborted");
-                    println!(" handle: {}", handle);
-                    println!(" reason: None");
-                    bail!("no reason given");
                 },
                 ContextEvent::EndpointClientHandshakeCompleted{endpoint_service_id, channel_name, stream} => {
                     println!("Pat: endpoint channel opened");
