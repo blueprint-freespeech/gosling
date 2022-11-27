@@ -1423,12 +1423,11 @@ pub enum ContextEvent {
 
     // endpoint client successfully opens a channel on an endpoint server
     EndpointClientHandshakeCompleted{
-        // handle: HandshakeHandle,
+        handle: HandshakeHandle,
         endpoint_service_id: V3OnionServiceId,
         channel_name: String,
         stream: TcpStream
     },
-
 
     // identity client handshake aborted
     EndpointClientHandshakeFailed{
@@ -1477,7 +1476,7 @@ pub enum ContextEvent {
     },
 
     // endpoint server request failed
-    EndpointServerRequestFailed{
+    EndpointServerHandshakeFailed{
         handle: HandshakeHandle,
         reason: error::Error,
     },
@@ -1924,6 +1923,7 @@ impl Context {
                         Ok(stream) => {
                             events.push(
                                 ContextEvent::EndpointClientHandshakeCompleted{
+                                    handle,
                                     endpoint_service_id: endpoint_client.server_service_id.clone(),
                                     channel_name: endpoint_client.requested_channel.clone(),
                                     stream});
@@ -1981,7 +1981,7 @@ impl Context {
                         },
                         Err(err) => {
                             events.push(
-                                ContextEvent::EndpointServerRequestFailed{
+                                ContextEvent::EndpointServerHandshakeFailed{
                                     handle,
                                     reason: to_error!(err)});
                         }
@@ -2002,7 +2002,7 @@ impl Context {
                 },
                 Err(err) => {
                     events.push(
-                        ContextEvent::EndpointServerRequestFailed{
+                        ContextEvent::EndpointServerHandshakeFailed{
                             handle,
                             reason: err});
                     false
@@ -2367,6 +2367,8 @@ fn test_gosling_context() -> Result<()> {
 
     println!("------------ Begin event loop ------------ ");
 
+    let mut identity_retries_remaining = 3;
+    let mut endpoint_retries_remaining = 3;
     let mut identity_published = false;
     let mut endpoint_published = false;
     let mut saved_endpoint_service_id: Option<V3OnionServiceId> = None;
@@ -2387,9 +2389,18 @@ fn test_gosling_context() -> Result<()> {
                         println!("Alice: identity server published");
 
                         // alice has published the identity server, so pat may now request an endpoint
-                        if let Ok(handle) = pat.identity_client_begin_handshake(alice_service_id.clone(), "test_endpoint") {
-                            identity_published = true;
-                            pat_handshake_handle = handle;
+                        match pat.identity_client_begin_handshake(alice_service_id.clone(), "test_endpoint") {
+                            Ok(handle) => {
+                                identity_published = true;
+                                pat_handshake_handle = handle;
+                            },
+                            Err(err) => {
+                                println!("Pat: failed to connect to Alice's identity server\n {:?}", err);
+                                identity_retries_remaining -= 1;
+                                if identity_retries_remaining == 0 {
+                                    bail!("Pat: no more retries remaining");
+                                }
+                            },
                         }
                     }
                 },
@@ -2399,16 +2410,21 @@ fn test_gosling_context() -> Result<()> {
                         println!(" endpoint_service_id: {}", endpoint_service_id.to_string());
                         println!(" endpoint_name: {}", endpoint_name);
 
-                        // alice has published this endpoint, so pat may now connect
-
                         if let Some(saved_endpoint_service_id) = saved_endpoint_service_id.as_ref() {
                             ensure!(*saved_endpoint_service_id == endpoint_service_id);
                         }
 
-                        if let Ok(()) = pat.endpoint_client_begin_handshake(saved_endpoint_service_id.clone().unwrap(),
+                        match pat.endpoint_client_begin_handshake(saved_endpoint_service_id.clone().unwrap(),
                                                                             saved_endpoint_client_auth_key.clone().unwrap(),
                                                                             "test_channel".to_string()) {
-                            endpoint_published = true;
+                            Ok(()) => endpoint_published = true,
+                            Err(err) => {
+                                println!("Pat: failed to connect to Alice's endpoint server\n {:?}", err);
+                                endpoint_retries_remaining -= 1;
+                                if endpoint_retries_remaining == 0 {
+                                    bail!("Pat: no more retries remaining");
+                                }
+                            },
                         }
                     }
                 },
@@ -2488,8 +2504,9 @@ fn test_gosling_context() -> Result<()> {
                     println!(" reason: {:?}", reason);
                     bail!(reason);
                 },
-                ContextEvent::EndpointClientHandshakeCompleted{endpoint_service_id, channel_name, stream} => {
+                ContextEvent::EndpointClientHandshakeCompleted{handle,endpoint_service_id, channel_name, stream} => {
                     println!("Pat: endpoint channel opened");
+                    println!(" handle: {}", handle);
                     println!(" endpoint_service_id: {}", endpoint_service_id.to_string());
                     println!(" channel_name: {}", channel_name);
                     pat_client_socket = Some(stream);

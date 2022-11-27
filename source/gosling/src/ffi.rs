@@ -1180,7 +1180,7 @@ pub extern "C" fn gosling_context_poll_events(
                     endpoint_service_id,
                     endpoint_name,
                     client_auth_private_key} => {
-                    if let Some(callback) = callbacks.identity_client_request_completed_callback {
+                    if let Some(callback) = callbacks.identity_client_handshake_completed_callback {
                         let (identity_service_id, endpoint_service_id) = {
                             let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
                             let identity_service_id = v3_onion_service_id_registry.insert(identity_service_id);
@@ -1192,7 +1192,7 @@ pub extern "C" fn gosling_context_poll_events(
 
                         let client_auth_private_key = get_x25519_private_key_registry().insert(client_auth_private_key);
 
-                        callback(context, identity_service_id as *const GoslingV3OnionServiceId, endpoint_service_id as *const GoslingV3OnionServiceId, endpoint_name0.as_ptr(), endpoint_name.len(), client_auth_private_key as *const GoslingX25519PrivateKey);
+                        callback(context, handle, identity_service_id as *const GoslingV3OnionServiceId, endpoint_service_id as *const GoslingV3OnionServiceId, endpoint_name0.as_ptr(), endpoint_name.len(), client_auth_private_key as *const GoslingX25519PrivateKey);
 
                         {
                             let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
@@ -1208,10 +1208,11 @@ pub extern "C" fn gosling_context_poll_events(
                     handle,
                     reason
                 } => {
-                    // if let Some(callback) = callbacks.identity_client_handshake_failed {
-
-                    // }
-                    // TODO
+                    if let Some(callback) = callbacks.identity_client_handshake_failed_callback {
+                        let key = get_error_registry().insert(Error::new(format!("{:?}", reason).as_str()));
+                        callback(context, handle, unsafe {key as *const GoslingError});
+                        get_error_registry().remove(key);
+                    }
                 },
                 //
                 // Identity Server Events
@@ -1223,7 +1224,9 @@ pub extern "C" fn gosling_context_poll_events(
                 },
                 ContextEvent::IdentityServerHandshakeStarted{
                     handle} => {
-                        // TODO
+                    if let Some(callback) = callbacks.identity_server_handshake_started_callback {
+                        callback(context, handle);
+                    }
                 },
                 ContextEvent::IdentityServerEndpointRequestReceived{
                     handle,
@@ -1286,12 +1289,12 @@ pub extern "C" fn gosling_context_poll_events(
                     };
                 },
                 ContextEvent::IdentityServerHandshakeCompleted{
-                    handle: _,
+                    handle,
                     endpoint_private_key,
                     endpoint_name,
                     client_service_id,
                     client_auth_public_key} => {
-                    if let Some(callback) = callbacks.identity_server_request_completed_callback {
+                    if let Some(callback) = callbacks.identity_server_handshake_completed_callback {
                         let endpoint_private_key = {
                             let mut ed25519_private_key_registry = get_ed25519_private_key_registry();
                             ed25519_private_key_registry.insert(endpoint_private_key)
@@ -1309,7 +1312,7 @@ pub extern "C" fn gosling_context_poll_events(
                             x25519_public_key_registry.insert(client_auth_public_key)
                         };
 
-                        callback(context, endpoint_private_key as *const GoslingEd25519PrivateKey, endpoint_name0.as_ptr(), endpoint_name.len(), client_service_id as *const GoslingV3OnionServiceId, client_auth_public_key as *const GoslingX25519PublicKey);
+                        callback(context, handle, endpoint_private_key as *const GoslingEd25519PrivateKey, endpoint_name0.as_ptr(), endpoint_name.len(), client_service_id as *const GoslingV3OnionServiceId, client_auth_public_key as *const GoslingX25519PublicKey);
 
                         // cleanup
                         get_ed25519_private_key_registry().remove(endpoint_private_key);
@@ -1325,19 +1328,31 @@ pub extern "C" fn gosling_context_poll_events(
                     client_auth_signature_valid,
                     challenge_response_valid,
                 } => {
-
+                    if let Some(callback)= callbacks.identity_server_handshake_rejected_callback {
+                        callback(context, handle,
+                                 client_allowed,
+                                 client_requested_endpoint_valid,
+                                 client_proof_signature_valid,
+                                 client_auth_signature_valid,
+                                 challenge_response_valid);
+                    }
                 },
                 ContextEvent::IdentityServerHandshakeFailed{handle, reason} => {
-                    // TODO
+                    if let Some(callback) = callbacks.identity_server_handshake_failed_callback {
+                        let key = get_error_registry().insert(Error::new(format!("{:?}", reason).as_str()));
+                        callback(context, handle, unsafe {key as *const GoslingError});
+                        get_error_registry().remove(key);
+                    }
                 },
                 //
                 // Endpoint Client Events
                 //
                 ContextEvent::EndpointClientHandshakeCompleted{
                     endpoint_service_id,
+                    handle,
                     channel_name,
                     stream} => {
-                    if let Some(callback) = callbacks.endpoint_client_channel_request_completed_callback {
+                    if let Some(callback) = callbacks.endpoint_client_handshake_completed_callback {
                         let endpoint_service_id = {
                             let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
                             v3_onion_service_id_registry.insert(endpoint_service_id)
@@ -1349,7 +1364,7 @@ pub extern "C" fn gosling_context_poll_events(
                         #[cfg(target_os = "windows")]
                         let stream = stream.into_raw_socket();
 
-                        callback(context, endpoint_service_id as *const GoslingV3OnionServiceId, channel_name0.as_ptr(), channel_name.len(), stream);
+                        callback(context, handle, endpoint_service_id as *const GoslingV3OnionServiceId, channel_name0.as_ptr(), channel_name.len(), stream);
 
                         // cleanup
                         get_v3_onion_service_id_registry().remove(endpoint_service_id);
@@ -1358,7 +1373,11 @@ pub extern "C" fn gosling_context_poll_events(
                 ContextEvent::EndpointClientHandshakeFailed{
                     handle,
                     reason} => {
-                    // TODO
+                    if let Some(callback) = callbacks.endpoint_client_handshake_failed_callback {
+                        let key = get_error_registry().insert(Error::new(format!("{:?}", reason).as_str()));
+                        callback(context, handle, unsafe {key as *const GoslingError});
+                        get_error_registry().remove(key);
+                    }
                 },
                 //
                 // Endpoint Server Events
@@ -1381,7 +1400,9 @@ pub extern "C" fn gosling_context_poll_events(
                 },
                 ContextEvent::EndpointServerHandshakeStarted{
                     handle} => {
-                    // TODO
+                    if let Some(callback) = callbacks.endpoint_server_handshake_started_callback {
+                        callback(context, handle);
+                    }
                 },
                 ContextEvent::EndpointServerChannelRequestReceived{
                     handle,
@@ -1391,12 +1412,12 @@ pub extern "C" fn gosling_context_poll_events(
                     // TODO
                 },
                 ContextEvent::EndpointServerHandshakeCompleted{
-                    handle: _handle,
+                    handle,
                     endpoint_service_id,
                     client_service_id,
                     channel_name,
                     stream} => {
-                    if let Some(callback) = callbacks.endpoint_server_channel_request_completed_callback {
+                    if let Some(callback) = callbacks.endpoint_server_handshake_completed_callback {
                         let (endpoint_service_id, client_service_id) = {
                             let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
                             let endpoint_service_id = v3_onion_service_id_registry.insert(endpoint_service_id);
@@ -1411,7 +1432,7 @@ pub extern "C" fn gosling_context_poll_events(
                         #[cfg(target_os = "windows")]
                         let stream = stream.into_raw_socket();
 
-                        callback(context,  endpoint_service_id as *const GoslingV3OnionServiceId, client_service_id as *const GoslingV3OnionServiceId, channel_name0.as_ptr(), channel_name.len(), stream);
+                        callback(context, handle, endpoint_service_id as *const GoslingV3OnionServiceId, client_service_id as *const GoslingV3OnionServiceId, channel_name0.as_ptr(), channel_name.len(), stream);
 
                         // cleanup
                         {
@@ -1427,12 +1448,21 @@ pub extern "C" fn gosling_context_poll_events(
                     client_requested_channel_valid,
                     client_proof_signature_valid
                 } => {
-                    // TODO
+                    if let Some(callback) = callbacks.endpoint_server_handshake_rejected_callback {
+                        callback(context, handle,
+                                 client_allowed,
+                                 client_requested_channel_valid,
+                                 client_proof_signature_valid);
+                    }
                 },
-                ContextEvent::EndpointServerRequestFailed{
+                ContextEvent::EndpointServerHandshakeFailed{
                     handle,
                     reason} => {
-                    // TODO
+                    if let Some(callback) = callbacks.endpoint_server_handshake_failed_callback {
+                        let key = get_error_registry().insert(Error::new(format!("{:?}", reason).as_str()));
+                        callback(context, handle, unsafe {key as *const GoslingError});
+                        get_error_registry().remove(key);
+                    }
                 },
             }
         }
@@ -1480,129 +1510,6 @@ pub type GoslingTorLogRecieved = extern fn(
     line: *const c_char,
     line_length: usize) -> ();
 
-/// The function pointer type for the identity server published callback. This callback
-/// is called whenever the onion service of the identity server associated with the given
-/// context is published and should be reachable by clients.
-///
-/// @param context: the context associated with this event
-pub type GoslingIdentityServerPublishedCallback = extern fn(
-    context: *mut GoslingContext) -> ();
-
-/// The function pointer type of the server handshake client allowed callback. This
-/// callback is called when the server needs to determine if an incoming client handshake
-/// request is possible to succeed; for instance an implementation of this function may
-/// reference an allow/block list to determime if identity handshakes can succeed. If
-///
-/// @param context: the context associated with this event
-/// @param handshake_handle : pointer to the server handshake handle this callback
-///  invocation is associated with; null if no server handshake init callback was
-///  provided
-
-pub type GoslingIdentityServerHandshakeClientAllowedCallback = extern "C" fn(
-    contex: *mut GoslingContext,
-    handshake_handle: GoslingHandshakeHandle,
-    client_service_id: *const GoslingV3OnionServiceId) -> bool;
-
-/// The function pointer type of the server handshake endpoint supported callback. This
-/// callback is called when the server needs to determine if the client's requested
-/// endpoint is supported. The result of this callback determines determines whether
-///  the identity server handles the requested endpoint type.
-///
-/// @param context: the context associated with this event
-/// @param handshake_handle : pointer to the server handshake handle this callback
-///  invocation is associated with; null if no server handshake init callback was
-///  provided
-/// @param endpoint_name : a null-terminated ASCII string containing the name of the
-///  endpoint being requested
-/// @param endpoint_name_length : the number of chars in endpoint_name, not
-///  including the null-terminator
-/// @return : true if the server can handle requests for the requested endpoint,
-///  false otherwise
-pub type GoslingIdentityServerHandshakeEndpointSupportedCallback = extern "C" fn(
-    context: *mut GoslingContext,
-    handshake_handle: GoslingHandshakeHandle,
-    endpoint_name: *const c_char,
-    endpoint_name_length: usize) -> bool;
-
-/// The function pointer type for the server handshake challenge size callback.
-/// This callback is called when a server needs to know how much memory to allocate
-/// for a challenge.
-///
-/// @param context: the context associated with this event
-/// @param handshake_handle : pointer to the server handshake handle this callback
-///  invocation is associated with; null if no server handshake init callback was
-///  provided
-/// @param endpoint_name : a null-terminated ASCII string containing the name of the
-///  endpoint being requested
-/// @param endpoint_name_length : the number of chars in endpoint_name, not
-///  including the null-terminator
-/// @return : the number of bytes required to store the challenge object
-pub type GoslingIdentityServerHandshakeChallengeSizeCallback = extern "C" fn(
-    context: *mut GoslingContext,
-    handshake_handle: GoslingHandshakeHandle) -> usize;
-
-/// The function pointer type for the server handshake build challenge callback.
-/// This callback is called when a server needs to build a challenge object.
-///
-/// @param context: the context associated with this event
-/// @param handshake_handle : pointer to the server handshake handle this callback
-///  invocation is associated with; null if no server handshake init callback was
-///  provided
-/// @param endpoint_name : a null-terminated ASCII string containing the name of the
-///  endpoint being requested
-/// @param endpoint_name_length : the number of chars in endpoint_name, not
-///  including the null-terminator
-/// @param out_challenge_buffer : the destination buffer for the callback
-///  to write a BSON document representing the endpoint request challenge object
-/// @param challenge_buffer_size : the number of bytes allocated in
-///  out_challenge_buffer
-pub type GoslingIdentityServerHandshakeBuildChallengeCallback = extern "C" fn(
-    context: *mut GoslingContext,
-    handshake_handle: GoslingHandshakeHandle,
-    out_challenge_buffer: *mut u8,
-    challenge_buffer_size: usize) -> ();
-
-/// The function poointer type for the server handshake verify challenge response
-/// callback. This callback is called when a server needs to verify a challenge
-/// response object.
-///
-/// @param context: the context associated with this event
-/// @param handshake_handle : pointer to the server handshake handle this callback
-///  invocation is associated with; null if no server handshake init callback was
-///  provided
-/// @param challenge_response_buffer : a buffer containing the BSON document representing
-///  the endpoint request challenge response object
-/// @param challenge_response_buffer_size : the number of bytes in
-///  challenge_response_buffer
-/// @return : the result of the challenge response verification
-pub type GoslingIdentityServerHandshakeVerifyChallengeResponseCallback = extern fn(
-    context: *mut GoslingContext,
-    handshake_handle: GoslingHandshakeHandle,
-    challenge_response_buffer: *const u8,
-    challenge_response_buffer_size: usize) -> bool;
-
-/// The function pointer type for the endpoint server request completed callback. This
-/// callback is called whenever the identity server has successfully completed a
-/// handshake with and granted to a connecting identity client.
-///
-/// @param context: the context associated with this event
-/// @param endpoint_private_key: the ed25519 private key of the endpoint server to host
-///  for the client
-/// @param endoint_name: the null-terminated name of the new endpoint server
-/// @param endpoint_name_length: the length of the endpoint_name string not including
-///  the null-terminator
-/// @param client_service_id: the onion service id of the client we have granted
-///  access to
-/// @param client_auth_public_key: the x25519 public key to use to encrypt the endpoint
-///  server's service descriptor as provided by the connecting client
-pub type GoslingIdentityServerRequestCompletedCallback = extern fn (
-    context: *mut GoslingContext,
-    endpoint_private_key: *const GoslingEd25519PrivateKey,
-    endpoint_name: *const c_char,
-    endpoint_name_length: usize,
-    client_service_id: *const GoslingV3OnionServiceId,
-    client_auth_public_key: *const GoslingX25519PublicKey) -> ();
-
 /// The function pointer type for the client handshake challenge response size
 /// callback. This callback is called when a client needs to know how much memory
 /// to allocate for a challenge response.
@@ -1621,14 +1528,12 @@ pub type GoslingIdentityClientHandshakeChallengeResponseSizeCallback = extern fn
     challenge_buffer: *const u8,
     challenge_buffer_size: usize) -> usize;
 
-/// The function pointer type for the client handshake build challlenge response
-/// callback. This callback is called when a client is ready to build a challenge
-/// response object.
+/// The function pointer type for the identity client handshake build challlenge
+/// response callback. This callback is called when a client is ready to build a
+/// challenge response object.
 ///
 /// @param context: the context associated with this event
-/// @param handshake_handle : pointer to the client handshake handle this callback
-///  invocation is associated with; null if no client handshake init callback was
-///  provided
+/// @param handshake_handle : the handshake handle this callback is associated with
 /// @param endpoint_name : a null-terminated ASCII string containing the name of the
 ///  endpoint being requested
 /// @param endpoint_name_length : the number of chars in endpoint_name, not
@@ -1649,11 +1554,12 @@ pub type GoslingIdentityClientHandshakeBuildChallengeResponseCallback = extern f
     out_challenge_response_buffer: *mut u8,
     challenge_response_buffer_size: usize) -> ();
 
-/// The function pointer type for the identity client request completed callback. This
+/// The function pointer type for the identity client handshake completed callback. This
 /// callback is called whenever the client successfully completes a handshake with an
 /// identity server and is granted access to an endpoint server.
 ///
 /// @param context: the context associated with this event
+/// @param handshake_handle : the handshake handle this callback is associated with
 /// @param identity_service_id: the onion service id of the identity server the client
 ///  has successfully completed a hadshake with
 /// @param endpoint_service_id: the onion service id of the endpoint server the client
@@ -1663,13 +1569,241 @@ pub type GoslingIdentityClientHandshakeBuildChallengeResponseCallback = extern f
 ///  the null-terminator
 /// @param client_auth_private_key: the client's x25519 private required to connect to
 ///  the provided endpoint server
-pub type GoslingIdentityClientRequestCompletedCallback = extern fn (
+pub type GoslingIdentityClientHandshakeCompletedCallback = extern fn (
     context: *mut GoslingContext,
+    handshake_handle: GoslingHandshakeHandle,
     identity_service_id: *const GoslingV3OnionServiceId,
     endpoint_service_id: *const GoslingV3OnionServiceId,
     endpoint_name: *const c_char,
     endpoint_name_length: usize,
     client_auth_private_key: *const GoslingX25519PrivateKey) -> ();
+
+/// The function pointer type for the identity client handshake handshake failed
+/// callback. This callback is called when a client's identity handshake fails.
+///
+/// @param context: the context associated with this event
+/// @param handshake_handle : the handshake handle this callback is associated with
+/// @param error : error associated with this failure
+pub type GoslingIdentityClientHandshakeFailedCallback = extern fn(
+    context: *mut GoslingContext,
+    handshake_handle: GoslingHandshakeHandle,
+    error: *const GoslingError) -> ();
+
+/// The function pointer type for the identity server published callback. This callback
+/// is called whenever the onion service of the identity server associated with the given
+/// context is published and should be reachable by clients.
+///
+/// @param context: the context associated with this event
+pub type GoslingIdentityServerPublishedCallback = extern fn(
+    context: *mut GoslingContext) -> ();
+
+/// The function pointer type of the identity server handshake started callback. This callback
+/// is called whenever the identity server is initially connected to.
+///
+/// @param context: the context associated with this event
+/// @param handshake_handle : the handshake handle this callback is associated with
+pub type GoslingIdentityServerHandshakeStartedCallback = extern fn(
+    context: *mut GoslingContext,
+    handshake_handle: GoslingHandshakeHandle) -> ();
+
+/// The function pointer type of the identity server handshake client allowed callback.
+/// The result of this callback partially determines if an incoming client handshake
+/// request is possible to complete. For instance an implementation of this function
+//  may reference an allow/block list to determime if identity handshakes can be
+/// completed.
+///
+/// @param context: the context associated with this event
+/// @param handshake_handle : the handshake handle this callback is associated with
+/// @param client_service_id : the v3 onion service id of the connected client
+/// @return : true if the server wants to allow the requesting client to connect client may complete the handshake, false otherwise
+pub type GoslingIdentityServerHandshakeClientAllowedCallback = extern "C" fn(
+    contex: *mut GoslingContext,
+    handshake_handle: GoslingHandshakeHandle,
+    client_service_id: *const GoslingV3OnionServiceId) -> bool;
+
+/// The function pointer type of the server handshake endpoint supported callback. This
+/// callback is called when the server needs to determine if the client's requested
+/// endpoint is supported. The result of this callback partially determines if an
+/// incoming client handshake request is possible to complete.
+///
+/// @param context: the context associated with this event
+/// @param handshake_handle : the handshake handle this callback is associated with
+/// @param endpoint_name : a null-terminated ASCII string containing the name of the
+///  endpoint being requested
+/// @param endpoint_name_length : the number of chars in endpoint_name, not
+///  including the null-terminator
+/// @return : true if the server can handle requests for the requested endpoint,
+///  false otherwise
+pub type GoslingIdentityServerHandshakeEndpointSupportedCallback = extern "C" fn(
+    context: *mut GoslingContext,
+    handshake_handle: GoslingHandshakeHandle,
+    endpoint_name: *const c_char,
+    endpoint_name_length: usize) -> bool;
+
+/// The function pointer type for the server handshake challenge size callback.
+/// This callback is called when a server needs to know how much memory to allocate
+/// for a challenge.
+///
+/// @param context: the context associated with this event
+/// @param handshake_handle : the handshake handle this callback is associated with
+/// @param endpoint_name : a null-terminated ASCII string containing the name of the
+///  endpoint being requested
+/// @param endpoint_name_length : the number of chars in endpoint_name, not
+///  including the null-terminator
+/// @return : the number of bytes required to store the challenge object
+pub type GoslingIdentityServerHandshakeChallengeSizeCallback = extern "C" fn(
+    context: *mut GoslingContext,
+    handshake_handle: GoslingHandshakeHandle) -> usize;
+
+/// The function pointer type for the server handshake build challenge callback.
+/// This callback is called when a server needs to build a challenge object.
+///
+/// @param context: the context associated with this event
+/// @param handshake_handle : the handshake handle this callback is associated with
+/// @param endpoint_name : a null-terminated ASCII string containing the name of the
+///  endpoint being requested
+/// @param endpoint_name_length : the number of chars in endpoint_name, not
+///  including the null-terminator
+/// @param out_challenge_buffer : the destination buffer for the callback
+///  to write a BSON document representing the endpoint request challenge object
+/// @param challenge_buffer_size : the number of bytes allocated in
+///  out_challenge_buffer
+pub type GoslingIdentityServerHandshakeBuildChallengeCallback = extern "C" fn(
+    context: *mut GoslingContext,
+    handshake_handle: GoslingHandshakeHandle,
+    out_challenge_buffer: *mut u8,
+    challenge_buffer_size: usize) -> ();
+
+/// The function poointer type for the server handshake verify challenge response
+/// callback. This callback is called when a server needs to verify a challenge
+/// response object.
+///
+/// @param context: the context associated with this event
+/// @param handshake_handle : the handshake handle this callback is associated with
+/// @param challenge_response_buffer : a buffer containing the BSON document representing
+///  the endpoint request challenge response object
+/// @param challenge_response_buffer_size : the number of bytes in
+///  challenge_response_buffer
+/// @return : the result of the challenge response verification
+pub type GoslingIdentityServerHandshakeVerifyChallengeResponseCallback = extern fn(
+    context: *mut GoslingContext,
+    handshake_handle: GoslingHandshakeHandle,
+    challenge_response_buffer: *const u8,
+    challenge_response_buffer_size: usize) -> bool;
+
+/// The function pointer type for the identity server handshake completed callback. This
+/// callback is called whenever the identity server has successfully completed a
+/// handshake with and granted to a connecting identity client.
+///
+/// @param context: the context associated with this event
+/// @param handshake_handle : the handshake handle this callback is associated with
+/// @param endpoint_private_key: the ed25519 private key of the endpoint server to host
+///  for the client
+/// @param endoint_name: the null-terminated name of the new endpoint server
+/// @param endpoint_name_length: the length of the endpoint_name string not including
+///  the null-terminator
+/// @param client_service_id: the onion service id of the client we have granted
+///  access to
+/// @param client_auth_public_key: the x25519 public key to use to encrypt the endpoint
+///  server's service descriptor as provided by the connecting client
+pub type GoslingIdentityServerHandshakeCompletedCallback = extern fn (
+    context: *mut GoslingContext,
+    handshake_handle: GoslingHandshakeHandle,
+    endpoint_private_key: *const GoslingEd25519PrivateKey,
+    endpoint_name: *const c_char,
+    endpoint_name_length: usize,
+    client_service_id: *const GoslingV3OnionServiceId,
+    client_auth_public_key: *const GoslingX25519PublicKey) -> ();
+
+/// The function pointer type of the identity server handshake rejected callback. This
+/// callback is called whenever the identity server has rejected an identity client's
+/// handshake.
+///
+/// @param context: the context associated with this event
+/// @param handshake_handle : the handshake handle this callback is associated with
+/// @param client_allowed : true if requesting client is allowed, false otherwies
+/// @param client_requested_endpoint_valid : true if requesting client requested a
+///  valid endpoint, false otherwise
+/// @param client_proof_signature_valid : true if the requesting client properly
+///  signed the identity proof, false otherwise
+/// @param client_auth_signature_valid : true if the requesting client properly signed
+///  the authorization proof, false othewise
+/// @param challenge_response_valid : true if the requesting client's challenge
+///  response was accepted by the server, false otherwise
+pub type GoslingIdentityServerHandshakeRejectedCallback = extern fn(
+    context: *mut GoslingContext,
+    handshake_handle: GoslingHandshakeHandle,
+    client_allowed: bool,
+    client_requested_endpoint_valid: bool,
+    client_proof_signature_valid: bool,
+    client_auth_signature_valid: bool,
+    challenge_response_valid: bool) -> ();
+
+/// The function pointer type for the identity server handshake handshake failed
+/// callback. This callback is called when a server's identity handshake fails.
+///
+/// @param context: the context associated with this event
+/// @param handshake_handle : the handshake handle this callback is associated with
+/// @param error : error associated with this failure
+pub type GoslingIdentityServerHandshakeFailedCallback = extern fn(
+    context: *mut GoslingContext,
+    handshake_handle: GoslingHandshakeHandle,
+    error: *const GoslingError) -> ();
+
+/// The function pointer type for the endpoint client handshake completed callback.
+/// This callack is called when the client successfully connects to an endpoint server.
+///
+/// @param context: the context associated with this event
+/// @param handshake_handle : the handshake handle this callback is associated with
+/// @param endpoint_service_id: the onion service id of the endpoint server the client
+///  has connected to
+/// @param channel_name: the null-terminated name of the channel name requested by the
+///  the client
+/// @param channel_name_length: the number of chars in channel_name not including the
+///  null-terminator
+/// @param stream: the tcp socket file descriptor associated with the connection to the
+///  endpoint server
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+pub type GoslingEndpointClientHandshakeCompletedCallback = extern fn(
+    context: *mut GoslingContext,
+    handshake_handle: GoslingHandshakeHandle,
+    endpoint_service_id: *const GoslingV3OnionServiceId,
+    channel_name: *const c_char,
+    channel_name_length: usize,
+    stream: RawFd);
+
+/// The function pointer type for the endpoint client channel request complete callback.
+/// This callack is called when the client successfully connects to an endpoint server.
+///
+/// @param context: the context associated with this event
+/// @param handshake_handle : the handshake handle this callback is associated with
+/// @param endpoint_service_id: the onion service id of the endpoint server the client
+///  has connected to
+/// @param channel_name: the null-terminated name of the channel name requested by the
+///  the client
+/// @param channel_name_length: the number of chars in channel_name not including the
+///  null-terminator
+/// @param stream: the tcp SOCKET object associated with the connection to the endpoint
+///  server
+#[cfg(target_os = "windows")]
+pub type GoslingEndpointClientHandshakeCompletedCallback = extern fn(
+    context: *mut GoslingContext,
+    handshake_handle: GoslingHandshakeHandle,
+    endpoint_service_id: *const GoslingV3OnionServiceId,
+    channel_name: *const c_char,
+    channel_name_length: usize,
+    stream: RawSocket);
+
+/// The function pointer type for the endpoint client handshake handshake failed
+/// callback. This callback is called when a client's endpoint handshake fails.
+///
+/// @param context: the context associated with this event
+/// @param handshake_handle : the handshake handle this callback is associated with
+/// @param error : error associated with this failure
+pub type GoslingEndpointClientHandshakeFailedCallback = extern fn(
+    context: *mut GoslingContext,
+    handshake_handle: GoslingHandshakeHandle,
+    error: *const GoslingError) -> ();
 
 /// The function pointer type for the endpoint server published callback. This callbcak
 /// is called whenever the onion service of the indicated endpoint server associted with
@@ -1686,11 +1820,21 @@ pub type GoslingEndpointServerPublishedCallback = extern fn(
     endpoint_name: *const c_char,
     endpoint_name_length: usize) -> ();
 
-/// The function pointer type for the endpoint server channel request completed callback.
+/// The function pointer type of the endpoint server handshake started callback. This
+/// callback is called whenever the endpoint server is initially connected to.
+///
+/// @param context: the context associated with this event
+/// @param handshake_handle : the handshake handle this callback is associated with
+pub type GoslingEndpointServerHandshakeStartedCallback = extern fn(
+    context: *mut GoslingContext,
+    handshake_handle: GoslingHandshakeHandle) -> ();
+
+/// The function pointer type for the endpoint server handshake completed callback.
 /// This callback is called when an endpoint server completes a handshake with an
 /// endpoint client.
 ///
 /// @param context: the context associated with this event
+/// @param handshake_handle : the handshake handle this callback is associated with
 /// @param endpoint_service_id: the onion service id of the endpoint server the
 ///  endpoint client has connected to
 /// @param client_service_id: the onion service id of the connected endpoint client
@@ -1700,19 +1844,21 @@ pub type GoslingEndpointServerPublishedCallback = extern fn(
 /// @param stream: the tcp socket file descriptor associated with the connection to the
 ///  endpoint client
 #[cfg(any(target_os = "linux", target_os = "macos"))]
-pub type GoslingEndpointServerRequestCompletedCallback = extern fn(
+pub type GoslingEndpointServerHandshakeCompletedCallback = extern fn(
     context: *mut GoslingContext,
+    handshake_handle: GoslingHandshakeHandle,
     endpoint_service_id: *const GoslingV3OnionServiceId,
     client_service_id: *const GoslingV3OnionServiceId,
     channel_name: *const c_char,
     channel_name_length: usize,
     stream: RawFd);
 
-/// The function pointer type for the endpoint server channel request completed callback.
+/// The function pointer type for the endpoint server handshake completed callback.
 /// This callback is called when an endpoint server completes a handshake with an
 /// endpoint client.
 ///
 /// @param context: the context associated with this event
+/// @param handshake_handle : the handshake handle this callback is associated with
 /// @param endpoint_service_id: the onion service id of the endpoint server the
 ///  endpoint client has connected to
 /// @param client_service_id: the onion service id of the connected endpoint client
@@ -1722,53 +1868,43 @@ pub type GoslingEndpointServerRequestCompletedCallback = extern fn(
 /// @param stream: the tcp SOCKET object associated with the connection to the endpoint
 ///  client
 #[cfg(target_os = "windows")]
-pub type GoslingEndpointServerRequestCompletedCallback = extern fn(
+pub type GoslingEndpointServerHandshakeCompletedCallback = extern fn(
     context: *mut GoslingContext,
+    handshake_handle: GoslingHandshakeHandle,
     endpoint_service_id: *const GoslingV3OnionServiceId,
     client_service_id: *const GoslingV3OnionServiceId,
     channel_name: *const c_char,
     channel_name_length: usize,
     stream: RawSocket);
 
-/// The function pointer type for the endpoint client channel request completed callback.
-/// This callack is called when the client successfully connects to an endpoint server.
+/// The function pointer type of the endpoint server handshake rejected callback. This
+/// callback is called whenever the endpoint server has rejected an endpoint client's
+/// handshake.
 ///
 /// @param context: the context associated with this event
-/// @param endpoint_service_id: the onion service id of the endpoint server the client
-///  has connected to
-/// @param channel_name: the null-terminated name of the channel name requested by the
-///  the client
-/// @param channel_name_length: the number of chars in channel_name not including the
-///  null-terminator
-/// @param stream: the tcp socket file descriptor associated with the connection to the
-///  endpoint server
-#[cfg(any(target_os = "linux", target_os = "macos"))]
-pub type GoslingEndpointClientChannelRequestCompletedCallback = extern fn(
+/// @param handshake_handle : the handshake handle this callback is associated with
+/// @param client_allowed : true if requesting client is allowed, false otherwies
+/// @param client_requested_channel_valid : true if requesting client requested a
+///  valid endpoint, false otherwise
+/// @param client_proof_signature_valid : true if the requesting client properly
+///  signed the endpoint proof, false otherwise
+pub type GoslingEndpointServerHandshakeRejectedCallback = extern fn(
     context: *mut GoslingContext,
-    endpoint_service_id: *const GoslingV3OnionServiceId,
-    channel_name: *const c_char,
-    channel_name_length: usize,
-    stream: RawFd);
+    handshake_handle: GoslingHandshakeHandle,
+    client_allowed: bool,
+    client_requested_channel_valid: bool,
+    client_proof_signature_valid: bool) -> ();
 
-/// The function pointer type for the endpoint client channel request complete callback.
-/// This callack is called when the client successfully connects to an endpoint server.
+/// The function pointer type for the endpoint server handshake handshake failed
+/// callback. This callback is called when a server's endpoint handshake fails.
 ///
 /// @param context: the context associated with this event
-/// @param endpoint_service_id: the onion service id of the endpoint server the client
-///  has connected to
-/// @param channel_name: the null-terminated name of the channel name requested by the
-///  the client
-/// @param channel_name_length: the number of chars in channel_name not including the
-///  null-terminator
-/// @param stream: the tcp SOCKET object associated with the connection to the endpoint
-///  server
-#[cfg(target_os = "windows")]
-pub type GoslingEndpointClientChannelRequestCompletedCallback = extern fn(
+/// @param handshake_handle : the handshake handle this callback is associated with
+/// @param error : error associated with this failure
+pub type GoslingEndpointServerHandshakeFailedCallback = extern fn(
     context: *mut GoslingContext,
-    endpoint_service_id: *const GoslingV3OnionServiceId,
-    channel_name: *const c_char,
-    channel_name_length: usize,
-    stream: RawSocket);
+    handshake_handle: GoslingHandshakeHandle,
+    error: *const GoslingError) -> ();
 
 #[derive(Default, Clone)]
 pub struct EventCallbacks {
@@ -1777,29 +1913,34 @@ pub struct EventCallbacks {
     tor_bootstrap_completed_callback: Option<GoslingTorBootstrapCompletedCallback>,
     tor_log_received_callback: Option<GoslingTorLogRecieved>,
 
+    // identity client events
+    identity_client_challenge_response_size_callback: Option<GoslingIdentityClientHandshakeChallengeResponseSizeCallback>,
+    identity_client_build_challenge_response_callback: Option<GoslingIdentityClientHandshakeBuildChallengeResponseCallback>,
+    identity_client_handshake_completed_callback: Option<GoslingIdentityClientHandshakeCompletedCallback>,
+    identity_client_handshake_failed_callback: Option<GoslingIdentityClientHandshakeFailedCallback>,
+
     // identity server events
-    // TODO: identity_server_handshake_begin_callback
     identity_server_published_callback: Option<GoslingIdentityServerPublishedCallback>,
+    identity_server_handshake_started_callback: Option<GoslingIdentityServerHandshakeStartedCallback>,
     identity_server_client_allowed_callback: Option<GoslingIdentityServerHandshakeClientAllowedCallback>,
     identity_server_endpoint_supported_callback: Option<GoslingIdentityServerHandshakeEndpointSupportedCallback>,
     identity_server_challenge_size_callback: Option<GoslingIdentityServerHandshakeChallengeSizeCallback>,
     identity_server_build_challenge_callback: Option<GoslingIdentityServerHandshakeBuildChallengeCallback>,
     identity_server_verify_challenge_response_callback: Option<GoslingIdentityServerHandshakeVerifyChallengeResponseCallback>,
-    identity_server_request_completed_callback: Option<GoslingIdentityServerRequestCompletedCallback>,
-    // TODO: request aborted
+    identity_server_handshake_completed_callback: Option<GoslingIdentityServerHandshakeCompletedCallback>,
+    identity_server_handshake_rejected_callback: Option<GoslingIdentityServerHandshakeRejectedCallback>,
+    identity_server_handshake_failed_callback: Option<GoslingIdentityServerHandshakeFailedCallback>,
 
-    // identity client events
-    identity_client_challenge_response_size_callback: Option<GoslingIdentityClientHandshakeChallengeResponseSizeCallback>,
-    identity_client_build_challenge_response_callback: Option<GoslingIdentityClientHandshakeBuildChallengeResponseCallback>,
-    identity_client_request_completed_callback: Option<GoslingIdentityClientRequestCompletedCallback>,
-    // TODO: request aborted
+    // endpoint client events
+    endpoint_client_handshake_completed_callback: Option<GoslingEndpointClientHandshakeCompletedCallback>,
+    endpoint_client_handshake_failed_callback: Option<GoslingEndpointClientHandshakeFailedCallback>,
 
     // endpoint server events
     endpoint_server_published_callback: Option<GoslingEndpointServerPublishedCallback>,
-    endpoint_server_channel_request_completed_callback: Option<GoslingEndpointServerRequestCompletedCallback>,
-
-    // endpoint client events
-    endpoint_client_channel_request_completed_callback: Option<GoslingEndpointClientChannelRequestCompletedCallback>,
+    endpoint_server_handshake_started_callback: Option<GoslingEndpointServerHandshakeStartedCallback>,
+    endpoint_server_handshake_completed_callback: Option<GoslingEndpointServerHandshakeCompletedCallback>,
+    endpoint_server_handshake_rejected_callback: Option<GoslingEndpointServerHandshakeRejectedCallback>,
+    endpoint_server_handshake_failed_callback: Option<GoslingEndpointServerHandshakeFailedCallback>,
 }
 
 macro_rules! impl_callback_setter {
@@ -1825,7 +1966,7 @@ macro_rules! impl_callback_setter {
     }
 }
 
-/// Set the tor bootstrap status received callback for the specified context
+/// Set the tor bootstrap status received callback for the specified context.
 ///
 /// @param context : the context to register the callback to
 /// @param callback : the callback to register
@@ -1838,7 +1979,7 @@ pub extern "C" fn gosling_context_set_tor_bootstrap_status_received_callback(
     impl_callback_setter!(tor_bootstrap_status_received_callback, context, callback, error);
 }
 
-/// Set the tor bootstrap completed callback for the specified context
+/// Set the tor bootstrap completed callback for the specified context.
 ///
 /// @param context : the context to register the callback to
 /// @param callback : the callback to register
@@ -1851,7 +1992,7 @@ pub extern "C" fn gosling_context_set_tor_bootstrap_completed_callback(
     impl_callback_setter!(tor_bootstrap_completed_callback, context, callback, error);
 }
 
-/// Set the tor log received callback for the specified context
+/// Sets the tor log received callback for the specified context.
 ///
 /// @param context : the context to register the callback to
 /// @param callback : the callback to register
@@ -1864,98 +2005,8 @@ pub extern "C" fn gosling_context_set_tor_log_received_callback(
     impl_callback_setter!(tor_log_received_callback, context, callback, error);
 }
 
-/// Set the identity server published callback for the specified context
-///
-/// @param context : the context to register the callback to
-/// @param callback : the callback to register
-/// @param  error : filled on error
-#[no_mangle]
-pub extern "C" fn gosling_context_set_identity_server_published_callback(
-    context: *mut GoslingContext,
-    callback: GoslingIdentityServerPublishedCallback,
-    error: *mut *mut GoslingError) {
-    impl_callback_setter!(identity_server_published_callback, context, callback, error);
-}
-
-/// Sets the identity server client allowed callback
-///
-/// @param context : the context to register the callback to
-/// @param callback : the callback to register
-/// @param  error : filled on error
-#[no_mangle]
-pub extern "C" fn gosling_context_set_identity_server_client_allowed_callback(
-    context: *mut GoslingContext,
-    callback: GoslingIdentityServerHandshakeClientAllowedCallback,
-    error: *mut *mut GoslingError) {
-    impl_callback_setter!(identity_server_client_allowed_callback, context, callback, error);
-}
-
-/// Sets the identity server endpoint supported callback
-///
-/// @param context : the context to register the callback to
-/// @param callback : the callback to register
-/// @param  error : filled on error
-#[no_mangle]
-pub extern "C" fn gosling_context_set_identity_server_endpoint_supported_callback(
-    context: *mut GoslingContext,
-    callback: GoslingIdentityServerHandshakeEndpointSupportedCallback,
-    error: *mut *mut GoslingError) {
-    impl_callback_setter!(identity_server_endpoint_supported_callback, context, callback, error);
-}
-
-/// Sets the identity server challenge size callback
-///
-/// @param context : the context to register the callback to
-/// @param callback : the callback to register
-/// @param  error : filled on erro
-#[no_mangle]
-pub extern "C" fn gosling_context_set_identity_server_challenge_size_callack(
-    context: *mut GoslingContext,
-    callback: GoslingIdentityServerHandshakeChallengeSizeCallback,
-    error: *mut *mut GoslingError) {
-    impl_callback_setter!(identity_server_challenge_size_callback, context, callback, error);
-}
-
-/// Sets the identity server endpoint supported callback
-///
-/// @param context : the context to register the callback to
-/// @param callback : the callback to register
-/// @param  error : filled on erro
-#[no_mangle]
-pub extern "C" fn gosling_context_set_identity_server_build_challenge_callback(
-    context: *mut GoslingContext,
-    callback: GoslingIdentityServerHandshakeBuildChallengeCallback,
-    error: *mut *mut GoslingError) {
-    impl_callback_setter!(identity_server_build_challenge_callback, context, callback, error);
-}
-
-/// Sets the identity server verify challenge response callback
-///
-/// @param context : the context to register the callback to
-/// @param callback : the callback to register
-/// @param  error : filled on erro
-#[no_mangle]
-pub extern "C" fn gosling_context_set_identity_server_verify_challenge_response_callback(
-    context: *mut GoslingContext,
-    callback: GoslingIdentityServerHandshakeVerifyChallengeResponseCallback,
-    error: *mut *mut GoslingError) {
-    impl_callback_setter!(identity_server_verify_challenge_response_callback, context, callback, error);
-}
-
-/// Set the endpoint server request completed callback for the specified context
-///
-/// @param context : the context to register the callback to
-/// @param callback : the callback to register
-/// @param  error : filled on error
-#[no_mangle]
-pub extern "C" fn gosling_context_set_identity_server_request_completed_callback(
-    context: *mut GoslingContext,
-    callback: GoslingIdentityServerRequestCompletedCallback,
-    error: *mut *mut GoslingError) {
-    impl_callback_setter!(identity_server_request_completed_callback, context, callback, error);
-}
-
-/// Sets the identity challenge challenge response size callback
+/// Sets the identity challenge challenge response size callback for the specified
+/// context
 ///
 /// @param context : the context to register the callback to
 /// @param callback : the callback to register
@@ -1968,7 +2019,7 @@ pub extern "C" fn gosling_context_set_identity_client_challenge_response_size_ca
     impl_callback_setter!(identity_client_challenge_response_size_callback, context, callback, error);
 }
 
-/// Sets the identity client build challenge response callback
+/// Sets the identity client build challenge response callback for the specified context.
 ///
 /// @param context : the context to register the callback to
 /// @param callback : the callback to register
@@ -1981,20 +2032,189 @@ pub extern "C" fn gosling_context_set_identity_client_build_challenge_response_c
     impl_callback_setter!(identity_client_build_challenge_response_callback, context, callback, error);
 }
 
-/// Set the endpoint client request completed callback for the specified context
+/// Set the identity client handshake completed callback for the specified context.
 ///
 /// @param context : the context to register the callback to
 /// @param callback : the callback to register
 /// @param  error : filled on error
 #[no_mangle]
-pub extern "C" fn gosling_context_set_identity_client_request_completed_callback(
+pub extern "C" fn gosling_context_set_identity_client_handshake_completed_callback(
     context: *mut GoslingContext,
-    callback: GoslingIdentityClientRequestCompletedCallback,
+    callback: GoslingIdentityClientHandshakeCompletedCallback,
     error: *mut *mut GoslingError) {
-    impl_callback_setter!(identity_client_request_completed_callback, context, callback, error);
+    impl_callback_setter!(identity_client_handshake_completed_callback, context, callback, error);
 }
 
-/// Set the endpoint server published callback for the specified context
+/// Set the identity client handshake failed callback for the specified context.
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on error
+#[no_mangle]
+pub extern "C" fn gosling_context_set_identity_client_handshake_failed_callback(
+    context: *mut GoslingContext,
+    callback: GoslingIdentityClientHandshakeFailedCallback,
+    error: *mut *mut GoslingError) {
+    impl_callback_setter!(identity_client_handshake_failed_callback, context, callback, error);
+}
+
+/// Set the identity server published callback for the specified context.
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on error
+#[no_mangle]
+pub extern "C" fn gosling_context_set_identity_server_published_callback(
+    context: *mut GoslingContext,
+    callback: GoslingIdentityServerPublishedCallback,
+    error: *mut *mut GoslingError) {
+    impl_callback_setter!(identity_server_published_callback, context, callback, error);
+}
+
+/// Set the identity server handshake started callback for the specified context.
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on error
+#[no_mangle]
+pub extern "C" fn gosling_context_set_identity_server_handshake_started_callback(
+    context: *mut GoslingContext,
+    callback: GoslingIdentityServerHandshakeStartedCallback,
+    error: *mut *mut GoslingError) {
+    impl_callback_setter!(identity_server_handshake_started_callback, context, callback, error);
+}
+
+/// Sets the identity server client allowed callback for the specified context.
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on error
+#[no_mangle]
+pub extern "C" fn gosling_context_set_identity_server_client_allowed_callback(
+    context: *mut GoslingContext,
+    callback: GoslingIdentityServerHandshakeClientAllowedCallback,
+    error: *mut *mut GoslingError) {
+    impl_callback_setter!(identity_server_client_allowed_callback, context, callback, error);
+}
+
+/// Sets the identity server endpoint supported callback for the specified context.
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on error
+#[no_mangle]
+pub extern "C" fn gosling_context_set_identity_server_endpoint_supported_callback(
+    context: *mut GoslingContext,
+    callback: GoslingIdentityServerHandshakeEndpointSupportedCallback,
+    error: *mut *mut GoslingError) {
+    impl_callback_setter!(identity_server_endpoint_supported_callback, context, callback, error);
+}
+
+/// Sets the identity server challenge size callback for the specified context.
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on erro
+#[no_mangle]
+pub extern "C" fn gosling_context_set_identity_server_challenge_size_callack(
+    context: *mut GoslingContext,
+    callback: GoslingIdentityServerHandshakeChallengeSizeCallback,
+    error: *mut *mut GoslingError) {
+    impl_callback_setter!(identity_server_challenge_size_callback, context, callback, error);
+}
+
+/// Sets the identity server endpoint supported callback for the specified context.
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on erro
+#[no_mangle]
+pub extern "C" fn gosling_context_set_identity_server_build_challenge_callback(
+    context: *mut GoslingContext,
+    callback: GoslingIdentityServerHandshakeBuildChallengeCallback,
+    error: *mut *mut GoslingError) {
+    impl_callback_setter!(identity_server_build_challenge_callback, context, callback, error);
+}
+
+/// Sets the identity server verify challenge response callback for the specified context.
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on erro
+#[no_mangle]
+pub extern "C" fn gosling_context_set_identity_server_verify_challenge_response_callback(
+    context: *mut GoslingContext,
+    callback: GoslingIdentityServerHandshakeVerifyChallengeResponseCallback,
+    error: *mut *mut GoslingError) {
+    impl_callback_setter!(identity_server_verify_challenge_response_callback, context, callback, error);
+}
+
+/// Set the identity server request completed callback for the specified context.
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on error
+#[no_mangle]
+pub extern "C" fn gosling_context_set_identity_server_handshake_completed_callback(
+    context: *mut GoslingContext,
+    callback: GoslingIdentityServerHandshakeCompletedCallback,
+    error: *mut *mut GoslingError) {
+    impl_callback_setter!(identity_server_handshake_completed_callback, context, callback, error);
+}
+
+/// Set the identity server request rejeced callback for the specified context.
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on error
+#[no_mangle]
+pub extern "C" fn gosling_context_set_identity_server_handshake_rejected_callback(
+    context: *mut GoslingContext,
+    callback: GoslingIdentityServerHandshakeRejectedCallback,
+    error: *mut *mut GoslingError) {
+    impl_callback_setter!(identity_server_handshake_rejected_callback, context, callback, error);
+}
+
+/// Set the identity server request failed callback for the specified context.
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on error
+#[no_mangle]
+pub extern "C" fn gosling_context_set_identity_server_handshake_failed_callback(
+    context: *mut GoslingContext,
+    callback: GoslingIdentityServerHandshakeFailedCallback,
+    error: *mut *mut GoslingError) {
+    impl_callback_setter!(identity_server_handshake_failed_callback, context, callback, error);
+}
+
+/// Set the endpoint client handshake completed callback for the specified context.
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on error
+#[no_mangle]
+pub extern "C" fn gosling_context_set_endpoint_client_handshake_completed_callback(
+    context: *mut GoslingContext,
+    callback: GoslingEndpointClientHandshakeCompletedCallback,
+    error: *mut *mut GoslingError) {
+    impl_callback_setter!(endpoint_client_handshake_completed_callback, context, callback, error);
+}
+
+/// Set the endpoint client handshake failed callback for the specified context.
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on error
+#[no_mangle]
+pub extern "C" fn gosling_context_set_endpoint_client_handshake_failed_callback(
+    context: *mut GoslingContext,
+    callback: GoslingEndpointClientHandshakeFailedCallback,
+    error: *mut *mut GoslingError) {
+    impl_callback_setter!(endpoint_client_handshake_failed_callback, context, callback, error);
+}
+
+/// Set the endpoint server published callback for the specified context.
 ///
 /// @param context : the context to register the callback to
 /// @param callback : the callback to register
@@ -2007,28 +2227,54 @@ pub extern "C" fn gosling_context_set_endpoint_server_published_callback(
     impl_callback_setter!(endpoint_server_published_callback, context, callback, error);
 }
 
-/// Set the endpoint server channel request completed callback for the specified context
+/// Set the endpoint server handshake started callback for the specified context.
 ///
 /// @param context : the context to register the callback to
 /// @param callback : the callback to register
 /// @param  error : filled on error
 #[no_mangle]
-pub extern "C" fn gosling_context_set_endpoint_server_channel_request_completed_callback(
+pub extern "C" fn gosling_context_set_endpoint_server_handshake_started_callback(
     context: *mut GoslingContext,
-    callback: GoslingEndpointServerRequestCompletedCallback,
+    callback: GoslingEndpointServerHandshakeStartedCallback,
     error: *mut *mut GoslingError) {
-    impl_callback_setter!(endpoint_server_channel_request_completed_callback, context, callback, error);
+    impl_callback_setter!(identity_server_handshake_started_callback, context, callback, error);
 }
 
-/// Set the endpoint client channel request completed callback for the specified context
+/// Set the endpoint server channel request completed callback for the specified context.
 ///
 /// @param context : the context to register the callback to
 /// @param callback : the callback to register
 /// @param  error : filled on error
 #[no_mangle]
-pub extern "C" fn gosling_context_set_endpoint_client_channel_request_completed_callback(
+pub extern "C" fn gosling_context_set_endpoint_server_handshake_completed_callback(
     context: *mut GoslingContext,
-    callback: GoslingEndpointClientChannelRequestCompletedCallback,
+    callback: GoslingEndpointServerHandshakeCompletedCallback,
     error: *mut *mut GoslingError) {
-    impl_callback_setter!(endpoint_client_channel_request_completed_callback, context, callback, error);
+    impl_callback_setter!(endpoint_server_handshake_completed_callback, context, callback, error);
+}
+
+/// Set the endpoint server channel request completed callback for the specified context.
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on error
+#[no_mangle]
+pub extern "C" fn gosling_context_set_endpoint_server_handshake_rejected_callback(
+    context: *mut GoslingContext,
+    callback: GoslingEndpointServerHandshakeRejectedCallback,
+    error: *mut *mut GoslingError) {
+    impl_callback_setter!(endpoint_server_handshake_rejected_callback, context, callback, error);
+}
+
+/// Set the endpoint server channel request completed callback for the specified context.
+///
+/// @param context : the context to register the callback to
+/// @param callback : the callback to register
+/// @param  error : filled on error
+#[no_mangle]
+pub extern "C" fn gosling_context_set_endpoint_server_handshake_failed_callback(
+    context: *mut GoslingContext,
+    callback: GoslingEndpointServerHandshakeFailedCallback,
+    error: *mut *mut GoslingError) {
+    impl_callback_setter!(endpoint_server_handshake_failed_callback, context, callback, error);
 }
