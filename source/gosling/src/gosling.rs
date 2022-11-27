@@ -145,8 +145,9 @@ impl<RW> IdentityClient<RW> where RW : std::io::Read + std::io::Write + Send {
         server_service_id: V3OnionServiceId,
         requested_endpoint: String,
         client_ed25519_private: Ed25519PrivateKey,
-        client_x25519_private: X25519PrivateKey) -> Self {
-        Self {
+        client_x25519_private: X25519PrivateKey) -> Result<Self> {
+        ensure!(requested_endpoint.is_ascii());
+        Ok(Self {
             rpc,
             server_service_id,
             requested_endpoint,
@@ -159,7 +160,7 @@ impl<RW> IdentityClient<RW> where RW : std::io::Read + std::io::Write + Send {
             server_cookie: None,
             send_response_request_cookie: None,
             endpoint_challenge_response: None,
-        }
+        })
     }
 
     fn update(&mut self) -> Result<Option<IdentityClientEvent>> {
@@ -173,6 +174,7 @@ impl<RW> IdentityClient<RW> where RW : std::io::Read + std::io::Write + Send {
         match (&self.state, self.begin_handshake_request_cookie, self.server_cookie,  self.endpoint_challenge_response.take(), self.send_response_request_cookie) {
             // send initial handshake request
             (&IdentityClientState::BeginHandshake, None, None, None, None) => {
+                ensure!(self.requested_endpoint.is_ascii());
                 self.begin_handshake_request_cookie = Some(self.rpc.client_call(
                     "gosling_identity",
                     "begin_handshake",
@@ -693,6 +695,10 @@ impl<RW> ApiSet for IdentityServer<RW> where RW : std::io::Read + std::io::Write
                         Err(_) => return Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32)),
                     };
 
+                    if !endpoint_name.is_ascii() {
+                        return Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32));
+                    }
+
                     match self.handle_begin_handshake(version, endpoint_name) {
                         Ok(()) => Ok(None),
                         Err(err) => Err(ErrorCode::Runtime(err as i32)),
@@ -884,8 +890,9 @@ impl<RW> EndpointClient<RW> where RW : std::io::Read + std::io::Write + Send {
         rpc: Session<RW,RW>,
         server_service_id: V3OnionServiceId,
         requested_channel: String,
-        client_ed25519_private: Ed25519PrivateKey) -> Self {
-        Self{
+        client_ed25519_private: Ed25519PrivateKey) -> Result<Self> {
+        ensure!(requested_channel.is_ascii());
+        Ok(Self{
             rpc,
             server_service_id,
             requested_channel,
@@ -893,7 +900,7 @@ impl<RW> EndpointClient<RW> where RW : std::io::Read + std::io::Write + Send {
             state: EndpointClientState::BeginHandshake,
             begin_handshake_request_cookie: None,
             send_response_request_cookie: None,
-        }
+        })
     }
 
     fn update(&mut self) -> Result<Option<EndpointClientEvent>> {
@@ -909,6 +916,7 @@ impl<RW> EndpointClient<RW> where RW : std::io::Read + std::io::Write + Send {
             self.begin_handshake_request_cookie,
             self.send_response_request_cookie) {
             (&EndpointClientState::BeginHandshake, None, None) => {
+                ensure!(self.requested_channel.is_ascii());
                 self.begin_handshake_request_cookie = Some(self.rpc.client_call(
                     "gosling_endpoint",
                     "begin_handshake",
@@ -1224,6 +1232,11 @@ impl<RW> ApiSet for EndpointServer<RW> where RW : std::io::Read + std::io::Write
                         Some(Bson::String(channel_name))) =
                        (args.remove("version"),
                         args.remove("channel")) {
+
+                    if !channel_name.is_ascii() {
+                        return Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32));
+                    }
+
                     match self.handle_begin_handshake(version, channel_name) {
                         Ok(result) => Ok(Some(result)),
                         Err(err) => Err(ErrorCode::Runtime(err as i32)),
@@ -1522,6 +1535,7 @@ impl Context {
         &mut self,
         identity_server_id: V3OnionServiceId,
         endpoint: &str) -> Result<HandshakeHandle> {
+        ensure!(endpoint.is_ascii());
         ensure!(self.bootstrap_complete);
         // open tcp stream to remove ident server
         let stream = self.tor_manager.connect(&identity_server_id, self.identity_port, None)?;
@@ -1533,7 +1547,7 @@ impl Context {
             identity_server_id,
             endpoint.to_string(),
             self.identity_private_key.clone(),
-            X25519PrivateKey::generate());
+            X25519PrivateKey::generate())?;
 
         let handshake_handle = self.next_handshake_handle;
         self.next_handshake_handle += 1;
@@ -1624,6 +1638,7 @@ impl Context {
         endpoint_server_id: V3OnionServiceId,
         client_auth_key: X25519PrivateKey,
         channel: String) -> Result<()> {
+
         ensure!(self.bootstrap_complete);
         self.tor_manager.add_client_auth(&endpoint_server_id, &client_auth_key)?;
         let stream = self.tor_manager.connect(&endpoint_server_id, self.endpoint_port, None)?;
@@ -1634,9 +1649,9 @@ impl Context {
             client_rpc,
             endpoint_server_id,
             channel,
-            self.identity_private_key.clone());
-               let handshake_handle = self.next_handshake_handle;
+            self.identity_private_key.clone())?;
 
+        let handshake_handle = self.next_handshake_handle;
         self.next_handshake_handle += 1;
         self.endpoint_clients.insert(handshake_handle, (endpoint_client, stream.into()));
         Ok(())
@@ -2043,12 +2058,18 @@ fn identity_test(
 
     // rpc setup
     let client_rpc = Session::new(stream1.clone(), stream2.clone());
-    let mut ident_client = IdentityClient::new(
+    let mut ident_client = match IdentityClient::new(
         client_rpc,
         server_service_id.clone(),
         client_requested_endpoint.to_string(),
         client_ed25519_private,
-        X25519PrivateKey::generate());
+        X25519PrivateKey::generate()) {
+        Ok(client) => client,
+        Err(err) => {
+            ensure!(should_fail);
+            return Ok(());
+        },
+    };
 
     let server_rpc = Session::new(stream2, stream1);
     let mut ident_server = IdentityServer::new(
@@ -2196,11 +2217,29 @@ fn test_identity_handshake() -> Result<()> {
             server_expected_response,
             should_fail)?;
     }
+    println!("Non-ASCII endpoint ---");
+    {
+        let client_blocked: bool = false;
+        let client_requested_endpoint: &str = "𝕦𝕥𝕗𝟠";
+        let client_requested_endpoint_valid: bool = true;
+        let server_challenge: bson::document::Document = doc!("msg": "Speak friend and enter");
+        let client_response: bson::document::Document = doc!("msg": "Mellon");
+        let server_expected_response: bson::document::Document = doc!("msg": "Mellon");
+        let should_fail: bool = true;
+        identity_test(
+            client_blocked,
+            client_requested_endpoint,
+            client_requested_endpoint_valid,
+            server_challenge,
+            client_response,
+            server_expected_response,
+            should_fail)?;
+    }
     Ok(())
 }
 
 #[cfg(test)]
-fn endpoint_test(should_fail: bool, client_allowed: bool) -> Result<()> {
+fn endpoint_test(should_fail: bool, client_allowed: bool, channel: &str) -> Result<()> {
 
     // test sockets
     let stream1 = MemoryStream::new();
@@ -2230,7 +2269,13 @@ fn endpoint_test(should_fail: bool, client_allowed: bool) -> Result<()> {
 
     let client_rpc = Session::new(stream2, stream1);
 
-    let mut endpoint_client = EndpointClient::new(client_rpc, server_service_id.clone(), "channel".to_string(), client_ed25519_private);
+    let mut endpoint_client = match EndpointClient::new(client_rpc, server_service_id.clone(), channel.to_string(), client_ed25519_private) {
+        Ok(client) => client,
+        Err(err) => {
+            ensure!(should_fail);
+            return Ok(());
+        },
+    };
 
     let mut failure_ocurred = false;
     let mut server_complete = false;
@@ -2240,7 +2285,7 @@ fn endpoint_test(should_fail: bool, client_allowed: bool) -> Result<()> {
             match endpoint_server.update() {
                 Ok(Some(EndpointServerEvent::ChannelRequestReceived{
                     requested_channel})) => {
-                    ensure!(requested_channel == "channel");
+                    ensure!(requested_channel == channel);
                 },
                 Ok(Some(EndpointServerEvent::HandshakeCompleted{
                     client_service_id: ret_client_service_id,
@@ -2290,8 +2335,28 @@ fn endpoint_test(should_fail: bool, client_allowed: bool) -> Result<()> {
 
 #[test]
 fn test_endpoint_handshake() -> Result<()> {
-    endpoint_test(false, true)?;
-    endpoint_test(true, false)?;
+
+    println!("Success ---");
+    {
+        let should_fail = false;
+        let client_allowed = true;
+        let channel = "channel";
+        endpoint_test(should_fail, client_allowed, channel)?;
+    }
+    println!("Client Not Allowed ---");
+    {
+        let should_fail = true;
+        let client_allowed = false;
+        let channel = "channel";
+        endpoint_test(should_fail, client_allowed, channel)?;
+    }
+    println!("Non-Ascii Channel ---");
+    {
+        let should_fail = true;
+        let client_allowed = true;
+        let channel = "𝕦𝕥𝕗𝟠";
+        endpoint_test(should_fail, client_allowed, channel)?;
+    }
 
     Ok(())
 }
