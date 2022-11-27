@@ -775,6 +775,8 @@ pub extern "C" fn gosling_string_is_valid_v3_onion_service_id(
 /// Initialize a gosling context.
 ///
 /// @param out_context : returned initialied gosling context
+/// @param tor_bin_path : the file system path to the tor binary
+/// @param tor_bin_path_length : the number of chars in tor_bin_path not including any null terminator
 /// @param tor_working_directory : the file system path to store tor's data
 /// @param tor_working_directory_length : the number of chars in tor_working_directory not including any
 ///  null-terminator
@@ -786,6 +788,8 @@ pub extern "C" fn gosling_string_is_valid_v3_onion_service_id(
 pub extern "C" fn gosling_context_init(
     // out context
     out_context: *mut *mut GoslingContext,
+    tor_bin_path: *const c_char,
+    tor_bin_path_length: usize,
     tor_working_directory: *const c_char,
     tor_working_directory_length: usize,
     identity_port: u16,
@@ -797,11 +801,25 @@ pub extern "C" fn gosling_context_init(
 
         // data
         ensure_not_null!(out_context);
+        if tor_bin_path.is_null() {
+            ensure!(tor_bin_path_length == 0, "tor_bin_path is null so tor_bin_path_length must be 0");
+        } else {
+            ensure!(tor_bin_path_length > 0, "tor_bin_path is not null so tor_bin_path_lenght must be greater than 0");
+        }
         ensure_not_null!(tor_working_directory);
         ensure!(tor_working_directory_length > 0, "tor_working_directory_length must not be 0");
         ensure!(identity_port != 0u16, "identity_port must not be 0");
         ensure!(endpoint_port != 0u16, "endpoint_port must not be 0");
         ensure_not_null!(identity_private_key);
+
+        let tor_bin_path = if tor_bin_path.is_null() {
+            resolve!(which::which(tor_controller::tor_exe_name()))
+        } else {
+            let tor_bin_path = unsafe { std::slice::from_raw_parts(tor_bin_path as *const u8, tor_bin_path_length) };
+            let tor_bin_path = resolve!(std::str::from_utf8(tor_bin_path));
+            let tor_bin_path = Path::new(tor_bin_path);
+            resolve!(tor_bin_path.canonicalize())
+        };
 
         // tor working dir
         let tor_working_directory = unsafe { std::slice::from_raw_parts(tor_working_directory as *const u8, tor_working_directory_length) };
@@ -817,6 +835,7 @@ pub extern "C" fn gosling_context_init(
 
         // construct context
         let context = Context::new(
+            &tor_bin_path,
             tor_working_directory,
             identity_port,
             endpoint_port,

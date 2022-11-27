@@ -1498,12 +1498,13 @@ pub enum ContextEvent {
 
 impl Context {
     pub fn new(
+        tor_bin_path: &Path,
         tor_working_directory: &Path,
         identity_port: u16,
         endpoint_port: u16,
         identity_private_key: Ed25519PrivateKey) -> Result<Self> {
 
-        let tor_manager = TorManager::new(tor_working_directory)?;
+        let tor_manager = TorManager::new(tor_bin_path, tor_working_directory)?;
 
         let identity_service_id = V3OnionServiceId::from_private_key(&identity_private_key);
 
@@ -2366,6 +2367,7 @@ fn test_endpoint_handshake() -> Result<()> {
 #[test]
 #[serial]
 fn test_gosling_context() -> Result<()> {
+    let tor_path = resolve!(which::which("tor"));
 
     let alice_private_key = Ed25519PrivateKey::generate();
     let alice_service_id = V3OnionServiceId::from_private_key(&alice_private_key);
@@ -2374,6 +2376,7 @@ fn test_gosling_context() -> Result<()> {
 
     println!("Starting Alice gosling context ({})", alice_service_id.to_string());
     let mut alice = Context::new(
+        &tor_path,
         &alice_path,
         420,
         420,
@@ -2404,6 +2407,7 @@ fn test_gosling_context() -> Result<()> {
 
     println!("Starting Pat gosling context ({})", pat_service_id.to_string());
     let mut pat = Context::new(
+        &tor_path,
         &pat_path,
         420,
         420,

@@ -533,6 +533,7 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
 
                         let mut cursor = Cursor::new(std::mem::take(&mut self.message_read_buffer));
                         let bson = resolve!(bson::document::Document::from_reader(&mut cursor));
+                        // println!("recv: {}", bson);
 
                         // take back our allocated vec and clear it
                         self.message_read_buffer = cursor.into_inner();
@@ -632,7 +633,7 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
             self.send_message_impl(left)?;
             self.send_message_impl(&mut right)?;
         } else {
-            println!("sent: {}", message);
+            // println!("sent: {}", message);
             resolve!(self.writer.write_all(&self.message_write_buffer));
             resolve!(self.writer.flush());
         }

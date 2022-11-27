@@ -198,6 +198,8 @@ TEST_CASE("gosling_cpp_demo") {
     string_view alice_working_dir = "/tmp/gosling_context_test_alice";
     REQUIRE_NOTHROW(::gosling_context_init(
         out(alice_context), // out_context
+        nullptr, // tor bin path
+        0, // tor bin path len
         alice_working_dir.data(), // tor working dirctory
         alice_working_dir.size(), // tor working directory len
         420,  // identity port
@@ -212,6 +214,8 @@ TEST_CASE("gosling_cpp_demo") {
     string_view pat_working_dir = "/tmp/gosling_context_test_pat";
     REQUIRE_NOTHROW(::gosling_context_init(
         out(pat_context), // out_context
+        nullptr, // tor bin path
+        0, // tor bin path len
         pat_working_dir.data(), // tor working dirctory
         pat_working_dir.size(), // tor working directory len
         420,  // identity port
