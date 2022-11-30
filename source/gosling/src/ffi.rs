@@ -1229,7 +1229,7 @@ pub extern "C" fn gosling_context_poll_events(
                 } => {
                     if let Some(callback) = callbacks.identity_client_handshake_failed_callback {
                         let key = get_error_registry().insert(Error::new(format!("{:?}", reason).as_str()));
-                        callback(context, handle, unsafe {key as *const GoslingError});
+                        callback(context, handle, key as *const GoslingError);
                         get_error_registry().remove(key);
                     }
                 },
@@ -1359,7 +1359,7 @@ pub extern "C" fn gosling_context_poll_events(
                 ContextEvent::IdentityServerHandshakeFailed{handle, reason} => {
                     if let Some(callback) = callbacks.identity_server_handshake_failed_callback {
                         let key = get_error_registry().insert(Error::new(format!("{:?}", reason).as_str()));
-                        callback(context, handle, unsafe {key as *const GoslingError});
+                        callback(context, handle, key as *const GoslingError);
                         get_error_registry().remove(key);
                     }
                 },
@@ -1394,7 +1394,7 @@ pub extern "C" fn gosling_context_poll_events(
                     reason} => {
                     if let Some(callback) = callbacks.endpoint_client_handshake_failed_callback {
                         let key = get_error_registry().insert(Error::new(format!("{:?}", reason).as_str()));
-                        callback(context, handle, unsafe {key as *const GoslingError});
+                        callback(context, handle, key as *const GoslingError);
                         get_error_registry().remove(key);
                     }
                 },
@@ -1479,7 +1479,7 @@ pub extern "C" fn gosling_context_poll_events(
                     reason} => {
                     if let Some(callback) = callbacks.endpoint_server_handshake_failed_callback {
                         let key = get_error_registry().insert(Error::new(format!("{:?}", reason).as_str()));
-                        callback(context, handle, unsafe {key as *const GoslingError});
+                        callback(context, handle, key as *const GoslingError);
                         get_error_registry().remove(key);
                     }
                 },
