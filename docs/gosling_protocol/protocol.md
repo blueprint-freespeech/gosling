@@ -1,4 +1,4 @@
-# Gosling Protocol v1.0.0
+# Gosling Protocol v0.0.0.1
 
 The Gosling protocol allows for the creation of Tor onion-service based peer-to-peer (onion-to-onion) applications. Initial inspiration came from the Ricochet instant messenger's peer-to-peer onion service architecture. Improvements have been made and some privacy issues have been addressed and fixed.
 
@@ -225,6 +225,6 @@ Creation of innovative free software needs support. We thank the NGI Assure Fund
 
 [^4]: see: [Onion Service Client Authorization](https://community.torproject.org/onion-services/advanced/client-auth/)
 
-[^5]: see [rpc.md](./rpc.md)
+[^5]: see [rpc.md](../honk_rpc/rpc.md)
 
 [^6]: see [BSON spec](https://bsonspec.org/spec.html)

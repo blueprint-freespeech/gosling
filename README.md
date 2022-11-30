@@ -1,10 +1,15 @@
 # Description
 
-Gosling is a protocol specification and reference library implementation for said protocol. The protocol is meant to solve the problem of building anonymous, metadata-resistant, and secure peer-to-peer applications using tor onion services.
+Gosling is a protocol and reference library implementation of said protocol. The protocol enables building peer-to-peer applications over the tor network whereby each node's connection has the following properties:
 
-It is meant to generalize (and improve upon) the authentication scheme used by [Ricochet-Refresh](https://github.com/blueprint-freespeech/ricochet-refresh) clients use to talk to each other. Details can be found in the protocol specification here:
+- **anonymous:** the real identity of a node is hidden using tor onion services
+- **secure:** all network traffic is end-to-end encrypted by virtue of using tor and tor onion services
+- **private+meta-data resistant:** nodes have fine control over their visibility/online-status to other nodes
 
-- [Gosling Protocol](./docs/protocol.md)
+It is meant to generalize (and improve upon) the authentication scheme [Ricochet-Refresh](https://github.com/blueprint-freespeech/ricochet-refresh) clients use to verify to each other. Details can be found in the protocol specification here:
+
+- [Gosling Protocol](./docs/gosling_protocol/protocol.md)
+
 
 ## Dependencies
 
@@ -16,7 +21,7 @@ Libgosling currently has the following build dependencies:
 
 Cargo will automatically download and build the required Rust crates. The list of current dependencies can be found in [Cargo.toml](https://github.com/blueprint-freespeech/gosling/blob/main/source/gosling/Cargo.toml)
 
-The functional tests additionally depend on:
+The C++ functional tests additionally depend on:
 
 - boost >= [1.66](https://github.com/blueprint-freespeech/gosling/blob/main/source/test/functional/CMakeLists.txt#L1)
 
