@@ -411,6 +411,7 @@ pub enum Response {
 
 // 4 kilobytes per specification
 const DEFAULT_MAX_MESSAGE_SIZE: usize = 4 * 1024 * 1024;
+const DEFAULT_MAX_WAIT_TIME: std::time::Duration = std::time::Duration::from_secs(60);
 
 pub struct Session<R,W> {
 
@@ -444,6 +445,12 @@ pub struct Session<R,W> {
 
     // the maximum size of a message we've agreed to allow in the session
     max_message_size: usize,
+    // the maximum amount of time the session is willing to wait to receive a message
+    // before terminating the session
+    max_wait_time: std::time::Duration,
+    // last time a new message read began
+    read_timestamp: std::time::Instant,
+
 }
 
 #[allow(dead_code)]
@@ -465,6 +472,8 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
             next_cookie: Default::default(),
             outbound_sections: Default::default(),
             max_message_size: DEFAULT_MAX_MESSAGE_SIZE,
+            max_wait_time: DEFAULT_MAX_WAIT_TIME,
+            read_timestamp: std::time::Instant::now(),
         }
     }
 
@@ -491,6 +500,9 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
 
                         // all bytes required for i32 message size have been read
                         if self.message_read_buffer.len() == std::mem::size_of::<i32>() {
+                            // update read_timestamp
+                            self.read_timestamp = std::time::Instant::now();
+
                             let size = &self.message_read_buffer.as_slice();
                             let size: i32 = (size[0] as i32)       |
                                             (size[1] as i32) << 8  |
@@ -664,6 +676,9 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
     }
 
     pub fn update(&mut self, apisets: Option<&mut [&mut dyn ApiSet]>) -> Result<()> {
+        // abort if we've gone too long without a new message
+        ensure!(std::time::Instant::now().duration_since(self.read_timestamp) <= self.max_wait_time);
+
         // read sections from remote
         self.read_sections()?;
         // route sections to buffers
@@ -900,6 +915,41 @@ fn test_honk_client_read_write() -> Result<()> {
         }
     }
 
+    Ok(())
+}
+
+#[test]
+fn test_honk_timeout() -> Result<()> {
+
+    let stream1 = MemoryStream::new();
+    let stream2 = MemoryStream::new();
+
+    let mut alice = Session::new(stream1.clone(), stream2.clone());
+    let mut pat = Session::new(stream2, stream1);
+
+    ensure_ok!(alice.update(None));
+    alice.max_wait_time = std::time::Duration::from_secs(2);
+    ensure_ok!(alice.update(None));
+
+    // a read will happen so time should reset
+    std::thread::sleep(std::time::Duration::from_secs(1));
+    pat.client_call("namespace", "function", 0, doc!{})?;
+    ensure_ok!(pat.update(None));
+    ensure_ok!(alice.update(None));
+
+    // a read will happen so time should reset
+    std::thread::sleep(std::time::Duration::from_secs(1));
+    pat.client_call("namespace", "function", 0, doc!{})?;
+    ensure_ok!(pat.update(None));
+    ensure_ok!(alice.update(None));
+
+    // on reads occur so alice should timeout
+    std::thread::sleep(std::time::Duration::from_secs(3));
+    ensure_ok!(pat.update(None));
+    match alice.update(None) {
+        Ok(()) => bail!("should have timed out"),
+        Err(err) => (),
+    }
     Ok(())
 }
 
