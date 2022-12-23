@@ -221,7 +221,7 @@ Creation of innovative free software needs support. We thank the NGI Assure Fund
 
 [^2]: see [About Tor](https://support.torproject.org/about/)
 
-[^3]: see [Onion Sevices](https://support.torproject.org/onionservices/)
+[^3]: see [Onion Sevices](https://community.torproject.org/onion-services/overview/)
 
 [^4]: see: [Onion Service Client Authorization](https://community.torproject.org/onion-services/advanced/client-auth/)
 
