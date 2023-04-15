@@ -25,6 +25,11 @@ The C++ functional tests additionally depend on:
 
 - boost >= [1.66](https://github.com/blueprint-freespeech/gosling/blob/main/source/test/functional/CMakeLists.txt#L1)
 
+The documentation has the following build dependencies:
+
+- [plantuml](https://github.com/plantuml/plantuml)
+- [tidy](https://github.com/htacg/tidy-html5)
+
 ## Building
 
 The reference implementation is a work-in-progress and the API is not yet fully stable.
