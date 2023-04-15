@@ -16,6 +16,7 @@ Client<-Server: return {    server cookie}
 Client->Server: send_response(...)
 
     note over Server: Check Client Allow-List
+    note over Server: Check Requested Channel
     note over Server: Check Client Proof
 
     alt Any Check Failed

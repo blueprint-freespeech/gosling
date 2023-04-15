@@ -13,14 +13,22 @@ The purpose of Gosling is to standardize a privacy-preserving architecture for p
 Each node has three components: a **client**, an **identity server**, and at least one **endpoint server**. A node can simultaneously have all three components running at the same time on a single computer, or each component could be split across multiple real computers on the tor network. A node is primarily identified by the onion-service id of its identity server.
 
   - **Client**  - A **node's** component making an outgoing connection to another **node**
-  - **Identity Server** - A **node's** onion-service which listens for requests coming from **clients** who have never connected before that wish to become 'friends'. The **identity server** and a **client** perform a handshake and exchange information required to reach the **node's** **endpoint server(s)**. An **identity server** may serve multiple endpoint applications.
+  - **Identity Server** - A **node's** onion-service which listens for requests coming from **clients** who have never connected before that wish to become 'friends'. The **identity server** and a **client** perform a handshake and exchange information required to reach the **node's** **endpoint server(s)**.
   - **Endpoint Server** - A **node's** onion-service(s) which listen for connections coming from **clients**. The route to this server is protected with onion service client authorization[^4], so only trusted Gosling **clients** are able to connect. A **node** may have multiple simultaneous **endpoint servers** (each with a different onion-service id), as tor only supports a finite number of authorized clients per onion service.
 
-  For some applications, it may make sense to provide each authorized client their own onion service while for others, it may make more sense to batch clients together on a single onion service.
+For the rest of this document we'll also use instant messenger term **contact**.
 
-For the rest of this document we'll use instant messenger term **contact**.
+  - **Contact** - a Gosling **node** that has successfully completed the authentication handshake with another **node's** **identity server** and is allowed to connect to said **node's** **endpoint server**.
 
-- **Contact** - a Gosling **node** that has successfully completed the authentication handshake with another **node's** **identity server** and is allowed to connect to said **node's** **endpoint server**.
+The protocol supports a single **identity server** serving multiple endpoint applications. For example, an application ecosystem may want a single identifier for **nodes** which are part of both a peer-to-peer instant messaging and a file sharing network. This type of arrangement is supported by having each different application using a different endpoint name.
+
+The protocol *technically* supports a single **endpoint server** serving multiple **clients** concurrently. The **identity server** could simply always return the same **endpoint server** service id after a successful introductory handshake. However, the reference implementation here does not implement this architecture for the following reasons:
+
+ - There is currently no way to update a running tor onion-service's set of client authorization keys (used to encrypt onion-service's onion descriptor) without restarting the onion-service. This means we cannot add a new authorized **client** nor revoke the access of a previously authorized **client** to the **endpoint server** without severing all existing **endpoint server** sessions.
+ - **Clients** would be able to determine the online/offline status of **endpoint servers** after their access has been revoked. This is because tor does not provide a way to have a 'hidden' onion-service (even when using client authorization). All of the existing authorized **clients** with access to a common **endpoint server** would need to be migrated to a new **endpoint server** if any of their access were to be revoked. This migration would also necessarily sever any existing **endpoint server** sessions. This issue is being tracked upstream in [torspec#119](https://gitlab.torproject.org/tpo/core/torspec/-/issues/119).
+ - **Endpoint servers** make use of client authorization as an extra layer of security. An onion-service must upload an encrypted copy of its onion descriptor for each of its authorized clients to the tor-network. The maximum number of authorized clients an individual onion-service may have is not precisely defined or documented, but is estimated to be on the order of about a thousand clients. This is a practical limitation on the number of **clients** an individual **endpoint server** can have.
+
+Due to the above considerations, the reference Gosling implementation will only ever assign one **client** per **endpoint server**.
 
 ### Background
 
@@ -149,6 +157,7 @@ namespace gosling_endpoint {
   //
   // Parameters:
   // - string version : the requested version of the Gosling protocol to use
+  // - string client_identity : the client's identity server v3 onion service id
   // - string channel : the application channel the client wants to open; this
   //   value must be encodable as ASCII.
   //
@@ -157,6 +166,7 @@ namespace gosling_endpoint {
   //
   // An error is raised if an invalid version is provided.
   begin_handshake(string version,
+                  string client_identity,
                   string channel) -> document
 
   // Submits the client proof for server verification. If this function is called
@@ -164,7 +174,6 @@ namespace gosling_endpoint {
   //
   // Parameters:
   // - binary client_cookie : 32-byte cookie randomly generated by the client
-  // - string client_identity : the client's identity server v3 onion service id
   // - binary client_identity_proof_signature : 64-byte ed25519 signature of the
   //   client proof, signed with the ed25519 private key used to generate the
   //   client's v3 onion service id (see 'Client Identity Proof Calculation and
@@ -174,7 +183,6 @@ namespace gosling_endpoint {
   //
   // An error is raised if any of the associated checks or signature verifications fail
   send_response(binary client_cookie,
-                string client_identity,
                 binary client_identity_proof_signature) -> document;
 }
 ```
