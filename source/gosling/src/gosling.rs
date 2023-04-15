@@ -538,7 +538,7 @@ impl<RW> IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
         }
     }
 
-    pub fn send_challenge(
+    pub fn handle_endpoint_request_received(
         &mut self,
         client_allowed: bool,
         endpoint_valid: bool,
@@ -614,7 +614,7 @@ impl<RW> IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
         Ok(())
     }
 
-    pub fn send_challenge_verification(
+    pub fn handle_challenge_response_received(
         &mut self,
         challenge_response_valid: bool) -> Result<(), error::Error> {
 
@@ -877,6 +877,7 @@ struct EndpointClient<RW> {
     rpc: Session<RW,RW>,
     server_service_id: V3OnionServiceId,
     requested_channel: String,
+    client_service_id: V3OnionServiceId,
     client_ed25519_private: Ed25519PrivateKey,
 
     // state machine data
@@ -896,6 +897,7 @@ impl<RW> EndpointClient<RW> where RW : std::io::Read + std::io::Write + Send {
             rpc,
             server_service_id,
             requested_channel,
+            client_service_id: V3OnionServiceId::from_private_key(&client_ed25519_private),
             client_ed25519_private,
             state: EndpointClientState::BeginHandshake,
             begin_handshake_request_cookie: None,
@@ -923,6 +925,7 @@ impl<RW> EndpointClient<RW> where RW : std::io::Read + std::io::Write + Send {
                     0,
                     doc!{
                         "version" : bson::Bson::String(GOSLING_VERSION.to_string()),
+                        "client_identity" : bson::Bson::String(self.client_service_id.to_string()),
                         "channel" : bson::Bson::String(self.requested_channel.clone()),
                     })?);
                 self.state = EndpointClientState::WaitingForServerCookie;
@@ -953,11 +956,6 @@ impl<RW> EndpointClient<RW> where RW : std::io::Read + std::io::Write + Send {
                             let mut client_cookie: ClientCookie = Default::default();
                             OsRng.fill_bytes(&mut client_cookie);
 
-                            // client_identity
-                            let client_ed25519_public = Ed25519PublicKey::from_private_key(&self.client_ed25519_private);
-                            let client_service_id = V3OnionServiceId::from_public_key(&client_ed25519_public);
-                            let client_identity = client_service_id.to_string();
-
                             // client_identity_proof_signature
                             let server_cookie: ServerCookie = match server_cookie.clone().try_into() {
                                 Ok(server_cookie) => server_cookie,
@@ -966,7 +964,7 @@ impl<RW> EndpointClient<RW> where RW : std::io::Read + std::io::Write + Send {
                             let client_identity_proof = build_client_proof(
                                 DomainSeparator::GoslingEndpoint,
                                 &self.requested_channel,
-                                &client_service_id,
+                                &self.client_service_id,
                                 &self.server_service_id,
                                 &client_cookie,
                                 &server_cookie,
@@ -976,7 +974,6 @@ impl<RW> EndpointClient<RW> where RW : std::io::Read + std::io::Write + Send {
                             // build our args object for rpc call
                             let args = doc!{
                                 "client_cookie" : Bson::Binary(bson::Binary{subtype: BinarySubtype::Generic, bytes: client_cookie.to_vec()}),
-                                "client_identity" : Bson::String(client_identity),
                                 "client_identity_proof_signature" : Bson::Binary(bson::Binary{subtype: BinarySubtype::Generic, bytes: client_identity_proof_signature.to_bytes().to_vec()}),
                             };
 
@@ -1035,6 +1032,7 @@ impl<RW> EndpointClient<RW> where RW : std::io::Read + std::io::Write + Send {
 
 enum EndpointServerEvent {
     ChannelRequestReceived{
+        client_service_id: V3OnionServiceId,
         requested_channel: String
     },
     // endpoint server has acepted incoming channel request from identity client
@@ -1053,6 +1051,8 @@ enum EndpointServerEvent {
 #[derive(Debug, PartialEq)]
 enum EndpointServerState {
     WaitingForBeginHandshake,
+    ValidatingChannelRequest,
+    ChannelRequestValidated,
     WaitingForSendResponse,
     HandledSendResponse,
     HandshakeComplete,
@@ -1061,13 +1061,15 @@ enum EndpointServerState {
 struct EndpointServer<RW> {
     // Session Data
     rpc: Option<Session<RW,RW>>,
-    server_cookie: ServerCookie,
-    client_identity: V3OnionServiceId,
     server_identity: V3OnionServiceId,
+    allowed_client_identity: V3OnionServiceId,
 
     // State Machine Data
     state: EndpointServerState,
+    begin_handshake_request_cookie: Option<RequestCookie>,
+    client_identity: Option<V3OnionServiceId>,
     requested_channel: Option<String>,
+    server_cookie: Option<ServerCookie>,
     handshake_succeeded: Option<bool>,
 
     // Verification flags
@@ -1092,11 +1094,13 @@ impl<RW> EndpointServer<RW> where RW : std::io::Read + std::io::Write + Send {
 
         EndpointServer{
             rpc: Some(rpc),
-            server_cookie,
-            client_identity,
             server_identity,
+            allowed_client_identity: client_identity,
             state: EndpointServerState::WaitingForBeginHandshake,
+            begin_handshake_request_cookie: None,
             requested_channel: None,
+            client_identity: None,
+            server_cookie: None,
             handshake_succeeded: None,
             client_allowed: false,
             // TODO: hookup this to event and callback
@@ -1112,25 +1116,62 @@ impl<RW> EndpointServer<RW> where RW : std::io::Read + std::io::Write + Send {
         }
 
         match(&self.state,
+              self.begin_handshake_request_cookie,
+              self.client_identity.as_ref(),
               self.requested_channel.as_ref(),
+              self.server_cookie.as_ref(),
               self.handshake_succeeded) {
             (&EndpointServerState::WaitingForBeginHandshake,
-             None, // requesed channel
+             None, // begin_handshake_request_cookie
+             None, // client_identity
+             None, // requested_channel
+             None, // server_cookie
+             None) // handshake_succeeded
+            => {},
+            (&EndpointServerState::WaitingForBeginHandshake,
+             Some(_begin_handshake_request_cookie),
+             Some(client_identity),
+             Some(requested_channel),
+             None, // server_cookie
+             None) // handshake_succeeded
+            => {
+                self.state = EndpointServerState::ValidatingChannelRequest;
+                return Ok(Some(EndpointServerEvent::ChannelRequestReceived{
+                    client_service_id: client_identity.clone(),
+                    requested_channel: requested_channel.clone()}));
+            },
+            (&EndpointServerState::ValidatingChannelRequest,
+             Some(_begin_handshake_request_cookie),
+             Some(_client_identity),
+             Some(_requested_channel),
+             None, // server_cookie
+             None) // handshake_succeeded
+            => {},
+            (&EndpointServerState::ChannelRequestValidated,
+             Some(_begin_handshake_request_cookie),
+             Some(_client_identity),
+             Some(_requested_channel),
+             Some(_server_cookie),
              None) // handshake_succeeded
             => {},
             (&EndpointServerState::WaitingForSendResponse,
+             Some(_begin_handshake_request_cookie),
+             Some(_client_identity),
              Some(_requested_channel),
+             Some(_server_cookie),
              None) // handshake_succeeded
             => {},
             (&EndpointServerState::HandledSendResponse,
+             Some(_begin_handshake_request_cookie),
+             Some(client_identity),
              Some(requested_channel),
+             Some(_server_cookie),
              Some(handshake_succeeded))
             => {
                 self.state = EndpointServerState::HandshakeComplete;
                 if handshake_succeeded {
                     return Ok(Some(EndpointServerEvent::HandshakeCompleted{
-                        client_service_id:
-                        self.client_identity.clone(),
+                        client_service_id: client_identity.clone(),
                         channel_name: requested_channel.clone()}));
                 } else {
                     return Ok(Some(EndpointServerEvent::HandshakeRejected{
@@ -1140,40 +1181,76 @@ impl<RW> EndpointServer<RW> where RW : std::io::Read + std::io::Write + Send {
                 }
             },
             _ => {
-                bail!("unexpected state: state: {:?}, requested_channel: {:?}, handshake_succeeded: {:?}", self.state, self.requested_channel, self.handshake_succeeded);
+                bail!("unexpected state: {{state: {:?}, begin_handshake_request_cookie: {:?}, client_identity: {:?}, requested_channel: {:?}, server_cookie: {:?}, handshake_succeeded: {:?} }}",
+                    self.state,
+                    self.begin_handshake_request_cookie,
+                    self.client_identity,
+                    self.requested_channel,
+                    self.server_cookie,
+                    self.handshake_succeeded);
             }
         }
 
         Ok(None)
     }
 
+    // internal use
     fn handle_begin_handshake(
         &mut self,
         version: String,
-        channel: String) -> Result<bson::Bson, GoslingError> {
+        channel_name: String) -> Result<(), GoslingError> {
 
         if version != GOSLING_VERSION {
             return Err(GoslingError::BadVersion);
+        } else {
+            self.requested_channel = Some(channel_name);
+            Ok(())
         }
-
-        // save off requested channel
-        self.requested_channel = Some(channel);
-
-        // return result
-        let retval = doc!{"server_cookie" : Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: self.server_cookie.to_vec()})};
-        self.state = EndpointServerState::WaitingForSendResponse;
-
-        Ok(Bson::Document(retval))
     }
 
+    pub fn handle_channel_request_received(
+        &mut self,
+        client_requested_channel_valid: bool) -> Result<(), error::Error> {
+
+        match(&self.state,
+              self.begin_handshake_request_cookie,
+              self.client_identity.as_ref(),
+              self.requested_channel.as_ref(),
+              self.server_cookie.as_ref(),
+              self.handshake_succeeded) {
+        (&EndpointServerState::ValidatingChannelRequest,
+         Some(_begin_handshake_request_cookie),
+         Some(client_identity),
+         Some(_requested_channel),
+         None, // server_cookie
+         None) // handshake_succeeded
+        => {
+            let mut server_cookie: ServerCookie = Default::default();
+            OsRng.fill_bytes(&mut server_cookie);
+            self.server_cookie = Some(server_cookie);
+            self.client_allowed = *client_identity == self.allowed_client_identity;
+            self.client_requested_channel_valid = client_requested_channel_valid;
+            self.state = EndpointServerState::ChannelRequestValidated;
+            Ok(())
+        },
+        _ => {
+            bail!("unexpected state: {{state: {:?}, begin_handshake_request_cookie: {:?}, client_identity: {:?}, requested_channel: {:?}, server_cookie: {:?}, handshake_succeeded: {:?} }}",
+                self.state,
+                self.begin_handshake_request_cookie,
+                self.client_identity,
+                self.requested_channel,
+                self.server_cookie,
+                self.handshake_succeeded);
+            }
+        }
+    }
+
+    // internal use
     fn handle_send_response(
         &mut self,
         client_cookie: ClientCookie,
         client_identity: V3OnionServiceId,
         client_identity_proof_signature: Ed25519Signature) -> Result<bson::Bson, GoslingError> {
-
-        // is client on the allow list
-        self.client_allowed = client_identity == self.client_identity;
 
         // convert client_identity to client's public ed25519 key
         if let (Ok(client_identity_key), Some(requested_channel)) = (Ed25519PublicKey::from_service_id(&client_identity), self.requested_channel.as_ref()) {
@@ -1184,7 +1261,7 @@ impl<RW> EndpointServer<RW> where RW : std::io::Read + std::io::Write + Send {
                                             &client_identity,
                                             &self.server_identity,
                                             &client_cookie,
-                                            &self.server_cookie) {
+                                            &self.server_cookie.as_ref().unwrap()) {
                 self.client_proof_signature_valid = client_identity_proof_signature.verify(&client_proof, &client_identity_key);
 
                 if self.client_allowed &&
@@ -1223,22 +1300,34 @@ impl<RW> ApiSet for EndpointServer<RW> where RW : std::io::Read + std::io::Write
         match
             (name, version,
              &self.state,
+             self.client_identity.as_ref(),
              self.requested_channel.as_ref()) {
+            // handle begin_handshake call
             ("begin_handshake", 0,
             &EndpointServerState::WaitingForBeginHandshake,
+            None, // client_identity
             None) // requested_channel
             => {
                 if let (Some(Bson::String(version)),
+                        Some(Bson::String(client_identity)),
                         Some(Bson::String(channel_name))) =
                        (args.remove("version"),
+                        args.remove("client_identity"),
                         args.remove("channel")) {
+                    self.begin_handshake_request_cookie = Some(request_cookie);
+
+                    // client_identiity
+                    self.client_identity = match V3OnionServiceId::from_string(&client_identity) {
+                        Ok(client_identity) => Some(client_identity),
+                        Err(_) => return Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32)),
+                    };
 
                     if !channel_name.is_ascii() {
                         return Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32));
                     }
 
                     match self.handle_begin_handshake(version, channel_name) {
-                        Ok(result) => Ok(Some(result)),
+                        Ok(result) => Ok(None),
                         Err(err) => Err(ErrorCode::Runtime(err as i32)),
                     }
                 } else {
@@ -1247,23 +1336,16 @@ impl<RW> ApiSet for EndpointServer<RW> where RW : std::io::Read + std::io::Write
             },
             ("send_response", 0,
             &EndpointServerState::WaitingForSendResponse,
+            Some(client_identity),
             Some(_requested_channel))
             => {
                 if let (Some(Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: client_cookie})),
-                        Some(Bson::String(client_identity)),
                         Some(Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: client_identity_proof_signature}))) =
                        (args.remove("client_cookie"),
-                        args.remove("client_identity"),
                         args.remove("client_identity_proof_signature")) {
                     // client_cookie
                     let client_cookie : ClientCookie = match client_cookie.try_into() {
                         Ok(client_cookie) => client_cookie,
-                        Err(_) => return Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32)),
-                    };
-
-                    // client_identiity
-                    let client_identity = match V3OnionServiceId::from_string(&client_identity) {
-                        Ok(client_identity) => client_identity,
                         Err(_) => return Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32)),
                     };
 
@@ -1278,7 +1360,7 @@ impl<RW> ApiSet for EndpointServer<RW> where RW : std::io::Read + std::io::Write
                         Err(_) => return Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32)),
                     };
 
-                    match self.handle_send_response(client_cookie, client_identity, client_identity_proof_signature) {
+                    match self.handle_send_response(client_cookie, client_identity.clone(), client_identity_proof_signature) {
                         Ok(result) => Ok(Some(result)),
                         Err(err) => Err(ErrorCode::Runtime(err as i32)),
                     }
@@ -1291,7 +1373,22 @@ impl<RW> ApiSet for EndpointServer<RW> where RW : std::io::Read + std::io::Write
     }
 
     fn next_result(&mut self) -> Option<(RequestCookie, Option<bson::Bson>, ErrorCode)> {
-        None
+        match (&self.state,
+               self.begin_handshake_request_cookie,
+               self.server_cookie.as_ref()) {
+            (&EndpointServerState::ChannelRequestValidated,
+             Some(begin_handshake_request_cookie),
+             Some(server_cookie)) => {
+                self.state = EndpointServerState::WaitingForSendResponse;
+                Some((
+                    begin_handshake_request_cookie,
+                    Some(Bson::Document(doc!{
+                        "server_cookie" : Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: server_cookie.to_vec()}),
+                    })),
+                    ErrorCode::Success))
+            },
+            _ => None,
+        }
     }
 }
 
@@ -1399,7 +1496,7 @@ pub enum ContextEvent {
     },
 
     // identity server receives challenge response from identity client
-    // to continue the handshake, call Context::identity_server_handle_challenge_response_received
+    // to continue the handshake, call Context::identity_server_handle_challenge_response_received()
     IdentityServerChallengeResponseReceived{
         handle: HandshakeHandle,
         challenge_response: bson::document::Document,
@@ -1466,8 +1563,8 @@ pub enum ContextEvent {
     // to continue the handshake, call Context::endpoint_server_handle_channel_request_received()
     EndpointServerChannelRequestReceived{
         handle: HandshakeHandle,
-        // client_service_id: V3OnionServiceId,
         endpoint_service_id: V3OnionServiceId,
+        client_service_id: V3OnionServiceId,
         requested_channel: String,
     },
 
@@ -1614,11 +1711,10 @@ impl Context {
         endpoint_challenge: bson::document::Document) -> Result<()> {
 
         if let Some(identity_server) = self.identity_servers.get_mut(&handle) {
-            identity_server.send_challenge(client_allowed, endpoint_supported, endpoint_challenge)
+            identity_server.handle_endpoint_request_received(client_allowed, endpoint_supported, endpoint_challenge)
         } else {
             bail!("no handshake associated with handle '{}'", handle);
         }
-
     }
 
     // confirm that a received endpoint challenge response is valid
@@ -1628,7 +1724,7 @@ impl Context {
         challenge_response_valid: bool) -> Result<()> {
 
         if let Some(identity_server) = self.identity_servers.get_mut(&handle) {
-            identity_server.send_challenge_verification(challenge_response_valid)
+            identity_server.handle_challenge_response_received(challenge_response_valid)
         } else {
             bail!("no handshake associated with handle '{}'", handle);
         }
@@ -1690,8 +1786,11 @@ impl Context {
         &mut self,
         handle: HandshakeHandle,
         channel_supported: bool) -> Result<()> {
-        // TODO
-        bail!("not implemented");
+        if let Some((endpoint_server, _stream)) = self.endpoint_servers.get_mut(&handle) {
+            endpoint_server.handle_channel_request_received(channel_supported)
+        } else {
+            bail!("no handshake associated with handle '{}'", handle);
+        }
     }
 
     pub fn endpoint_server_stop(
@@ -1972,11 +2071,13 @@ impl Context {
             let handle = *handle;
             match endpoint_server.update() {
                 Ok(Some(EndpointServerEvent::ChannelRequestReceived{
+                    client_service_id,
                     requested_channel
                 })) => {
                     events.push(
                         ContextEvent::EndpointServerChannelRequestReceived{
                             handle,
+                            client_service_id,
                             endpoint_service_id: endpoint_server.server_identity.clone(),
                             requested_channel});
                     true
@@ -2086,11 +2187,11 @@ fn identity_test(
                 Ok(Some(IdentityServerEvent::EndpointRequestReceived{client_service_id, requested_endpoint})) => {
                     println!("server challenge send: client_service_id {}, requested_endpoint: {}", client_service_id.to_string(), requested_endpoint);
                     let client_allowed = !client_blocked;
-                    ident_server.send_challenge(client_allowed, client_requested_endpoint_valid, server_challenge.clone())?;
+                    ident_server.handle_endpoint_request_received(client_allowed, client_requested_endpoint_valid, server_challenge.clone())?;
                 },
                 Ok(Some(IdentityServerEvent::ChallengeResponseReceived{challenge_response})) => {
                     println!("server challenge repsonse received");
-                    ident_server.send_challenge_verification(challenge_response == server_expected_response)?;
+                    ident_server.handle_challenge_response_received(challenge_response == server_expected_response)?;
                 },
                 Ok(Some(IdentityServerEvent::HandshakeCompleted{endpoint_private_key: _, endpoint_name,client_service_id,client_auth_public_key: _})) => {
                     ensure!(endpoint_name == client_requested_endpoint);
@@ -2240,7 +2341,7 @@ fn test_identity_handshake() -> Result<()> {
 }
 
 #[cfg(test)]
-fn endpoint_test(should_fail: bool, client_allowed: bool, channel: &str) -> Result<()> {
+fn endpoint_test(should_fail: bool, client_allowed: bool, channel: &str, channel_allowed: bool) -> Result<()> {
 
     // test sockets
     let stream1 = MemoryStream::new();
@@ -2266,7 +2367,7 @@ fn endpoint_test(should_fail: bool, client_allowed: bool, channel: &str) -> Resu
 
     let server_rpc = Session::new(stream1.clone(), stream2.clone());
 
-    let mut endpoint_server = EndpointServer::new(server_rpc, allowed_client, server_service_id.clone());
+    let mut endpoint_server = EndpointServer::new(server_rpc, allowed_client.clone(), server_service_id.clone());
 
     let client_rpc = Session::new(stream2, stream1);
 
@@ -2285,8 +2386,11 @@ fn endpoint_test(should_fail: bool, client_allowed: bool, channel: &str) -> Resu
         if !server_complete {
             match endpoint_server.update() {
                 Ok(Some(EndpointServerEvent::ChannelRequestReceived{
+                    client_service_id,
                     requested_channel})) => {
+                    ensure!((allowed_client == client_service_id) == client_allowed);
                     ensure!(requested_channel == channel);
+                    endpoint_server.handle_channel_request_received(channel_allowed)?;
                 },
                 Ok(Some(EndpointServerEvent::HandshakeCompleted{
                     client_service_id: ret_client_service_id,
@@ -2342,21 +2446,40 @@ fn test_endpoint_handshake() -> Result<()> {
         let should_fail = false;
         let client_allowed = true;
         let channel = "channel";
-        endpoint_test(should_fail, client_allowed, channel)?;
+        let channel_allowed = true;
+        endpoint_test(should_fail, client_allowed, channel, channel_allowed)?;
     }
     println!("Client Not Allowed ---");
     {
         let should_fail = true;
         let client_allowed = false;
         let channel = "channel";
-        endpoint_test(should_fail, client_allowed, channel)?;
+        let channel_allowed = true;
+        endpoint_test(should_fail, client_allowed, channel, channel_allowed)?;
+    }
+    println!("Channel Not Allowed ---");
+    {
+        let should_fail = true;
+        let client_allowed = true;
+        let channel = "channel";
+        let channel_allowed = false;
+        endpoint_test(should_fail, client_allowed, channel, channel_allowed)?;
+    }
+    println!("Client and Channel Not Allowed ---");
+    {
+        let should_fail = true;
+        let client_allowed = false;
+        let channel = "channel";
+        let channel_allowed = false;
+        endpoint_test(should_fail, client_allowed, channel, channel_allowed)?;
     }
     println!("Non-Ascii Channel ---");
     {
         let should_fail = true;
         let client_allowed = true;
         let channel = "𝕦𝕥𝕗𝟠";
-        endpoint_test(should_fail, client_allowed, channel)?;
+        let channel_allowed = true;
+        endpoint_test(should_fail, client_allowed, channel, channel_allowed)?;
     }
 
     Ok(())
@@ -2529,6 +2652,14 @@ fn test_gosling_context() -> Result<()> {
                 ContextEvent::EndpointServerHandshakeStarted{handle} => {
                     println!("Alice: endpoint handshake started");
                     println!(" handle: {}", handle);
+                },
+                ContextEvent::EndpointServerChannelRequestReceived{handle, endpoint_service_id, client_service_id, requested_channel} => {
+                    println!("Alice: endpoint channel request received");
+                    println!(" endpoint_service_id: {}", endpoint_service_id.to_string());
+                    println!(" client_service_id: {}", client_service_id.to_string());
+                    println!(" requested_channel: {}", requested_channel);
+                    let channel_supported: bool = true;
+                    alice.endpoint_server_handle_channel_request_received(handle, channel_supported)?;
                 },
                 ContextEvent::EndpointServerHandshakeCompleted{handle, endpoint_service_id, client_service_id, channel_name, stream} => {
                     println!("Alice: endpoint channel accepted");

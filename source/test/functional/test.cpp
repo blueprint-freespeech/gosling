@@ -21,7 +21,7 @@ constexpr static uint8_t challenge_bson[] = {
     0x00
 };
 
-// empty document
+// empty bson document
 constexpr static uint8_t  challenge_response_bson[] = {
     0x05,0x00,0x00,0x00,
     0x00
@@ -422,6 +422,22 @@ TEST_CASE("gosling_cpp_demo") {
 
             cout << "--- pat endpoint handshake failed: " << gosling_error_get_message(error) << endl;
             REQUIRE(false);
+        },
+        throw_on_error()));
+    REQUIRE_NOTHROW(::gosling_context_set_endpoint_server_channel_supported_callback(alice_context.get(),
+        [](
+            gosling_context* context,
+            size_t handshake_handle,
+            const char* channel_name,
+            size_t channel_name_length) -> bool {
+            REQUIRE(context !=  nullptr);
+            cout << "--- channel_supported_callback: { context: " << context << ", handshake_handle: " << handshake_handle << ", channel_name: '" << channel_name << "' }" << endl;
+
+            if (string(channel_name, channel_name_length) == "funky") {
+                return true;
+            }
+
+            return false;
         },
         throw_on_error()));
     REQUIRE_NOTHROW(::gosling_context_set_endpoint_server_handshake_completed_callback(alice_context.get(),
