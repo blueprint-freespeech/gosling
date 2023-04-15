@@ -514,6 +514,12 @@ impl ToString for V3OnionServiceId {
     }
 }
 
+impl std::fmt::Debug for V3OnionServiceId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_string())
+    }
+}
+
 #[test]
 fn test_ed25519() -> Result<()> {
     let private_key_blob = "ED25519-V3:YE3GZtDmc+izGijWKgeVRabbXqK456JKKGONDBhV+kPBVKa2mHVQqnRTVuFXe3inU3YW6qvc7glYEwe9rK0LhQ==";
