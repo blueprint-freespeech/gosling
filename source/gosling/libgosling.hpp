@@ -24,6 +24,7 @@ namespace gosling {
                 std::runtime_error ex(gosling_error_get_message(error_));
                 gosling_error_free(error_);
                 error_ = nullptr;
+                // cppcheck-suppress exceptThrowInDestructor
                 throw ex;
             }
         }
@@ -49,7 +50,7 @@ namespace gosling {
         out_unique_ptr& operator=(const out_unique_ptr&) = delete;
         out_unique_ptr& operator=(out_unique_ptr&&) = delete;
 
-        out_unique_ptr(std::unique_ptr<T>& u) : u_(u) {}
+        explicit out_unique_ptr(std::unique_ptr<T>& u) : u_(u) {}
         ~out_unique_ptr()
         {
             u_.reset(t_);
@@ -77,7 +78,7 @@ namespace gosling {
     template<typename T>
     out_unique_ptr<T> out(std::unique_ptr<T>& ptr)
     {
-        return {ptr};
+        return out_unique_ptr<T>{ptr};
     }
 
     //
