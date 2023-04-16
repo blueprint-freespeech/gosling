@@ -24,9 +24,13 @@ Cargo will automatically download and build the required Rust crates. The list o
 
 ## Optional Dependencis
 
-The **format** make target has the following dependencies:
+The **format** make target has the following additional dependencies:
 
 - clang-format
+
+The **lint** make target has the following additional dependencies:
+
+- [cppcheck](https://cppcheck.sourceforge.io/)
 
 The documentation has the following build dependencies:
 
@@ -49,7 +53,8 @@ The following make targets are supported:
 - **release** - corresponds to the **RelWithDebInfo** CMake build type: optimize for speed, asserts disabled, debug symbols generated; build artifacts placed in out/release
 - **test-debug** - builds debug target and runs all tests
 - **test-release** - builds release target and runs all tests
-- **format** - runs cargo fmt on Rust source
+- **format** - runs `cargo fmt` on Rust source and `clang-format` on the C++ source
+- **lint** - runs `cargo clippy` on the Rust source and `cppcheck` on the C++ source
 - **clean** - deletes build artifacts
 
 Further information about CMake build types can be found in the CMake documentation:
