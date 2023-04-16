@@ -25,7 +25,10 @@ impl MemoryStream {
 
 impl Read for MemoryStream {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize, std::io::Error> {
-        let read_buf = self.stream.lock().unwrap();
+        let read_buf = match self.stream.lock() {
+            Ok(read_buf) => read_buf,
+            Err(_) => unreachable!(),
+        };
         let read_head = self.read_head;
         let read_tail: usize = (read_head + buf.len()).min(read_buf.len());
 
@@ -42,7 +45,10 @@ impl Read for MemoryStream {
     }
 
     fn read_to_end(&mut self, buf: &mut Vec<u8>) -> Result<usize, std::io::Error> {
-        let read_buf = self.stream.lock().unwrap();
+        let read_buf = match self.stream.lock() {
+            Ok(read_buf) => read_buf,
+            Err(_) => unreachable!(),
+        };
         let read_head = self.read_head;
         let read_tail = read_buf.len();
         let byte_count = read_tail - read_head;
@@ -57,7 +63,11 @@ impl Read for MemoryStream {
 
 impl Write for MemoryStream {
     fn write(&mut self, buf: &[u8]) -> Result<usize, std::io::Error> {
-        self.stream.lock().unwrap().extend_from_slice(buf);
+        let mut write_buf = match self.stream.lock() {
+            Ok(read_buf) => read_buf,
+            Err(_) => unreachable!(),
+        };
+        write_buf.extend_from_slice(buf);
         return Ok(buf.len());
     }
 
