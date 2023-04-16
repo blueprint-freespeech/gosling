@@ -2,25 +2,25 @@
 use std::cmp::Ordering;
 use std::collections::VecDeque;
 use std::default::Default;
-use std::fs::File;
 use std::fs;
-use std::io::{ErrorKind, BufReader, BufRead, Read, Write};
+use std::fs::File;
+use std::io::{BufRead, BufReader, ErrorKind, Read, Write};
 use std::iter;
-use std::net::{SocketAddr, TcpStream, TcpListener};
+use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::ops::Drop;
 use std::option::Option;
 use std::path::Path;
-use std::process::{Command, Child, ChildStdout, Stdio};
 use std::process;
+use std::process::{Child, ChildStdout, Command, Stdio};
 use std::str::FromStr;
 use std::string::ToString;
 use std::sync::{atomic, Arc, Mutex};
 use std::time::{Duration, Instant};
 
 // extern crates
-use rand::Rng;
-use rand::rngs::OsRng;
 use rand::distributions::Alphanumeric;
+use rand::rngs::OsRng;
+use rand::Rng;
 use regex::Regex;
 #[cfg(test)]
 use serial_test::serial;
@@ -28,9 +28,9 @@ use socks::Socks5Stream;
 use url::Host;
 
 // internal crates
-use crate::*;
 use crate::error::Result;
 use crate::tor_crypto::*;
+use crate::*;
 
 // get the name of our tor executable
 pub const fn tor_exe_name() -> &'static str {
@@ -44,10 +44,10 @@ pub const fn tor_exe_name() -> &'static str {
 // securely generate password using OsRng
 fn generate_password(length: usize) -> String {
     let password: String = iter::repeat(())
-            .map(|()| OsRng.sample(Alphanumeric))
-            .map(char::from)
-            .take(length)
-            .collect();
+        .map(|()| OsRng.sample(Alphanumeric))
+        .map(char::from)
+        .take(length)
+        .collect();
 
     password
 }
@@ -58,7 +58,11 @@ fn read_control_port_file(control_port_file: &Path) -> Result<SocketAddr> {
 
     // bail if the file is larger than expected
     let metadata = resolve!(file.metadata());
-    ensure!(metadata.len() < 1024, "control port file larger than expected: {} bytes", metadata.len());
+    ensure!(
+        metadata.len() < 1024,
+        "control port file larger than expected: {} bytes",
+        metadata.len()
+    );
 
     // read contents to string
     let mut contents = String::new();
@@ -68,7 +72,10 @@ fn read_control_port_file(control_port_file: &Path) -> Result<SocketAddr> {
         let addr_string = &contents.trim_end()["PORT=".len()..];
         return Ok(resolve!(SocketAddr::from_str(addr_string)));
     }
-    bail!("could not parse '{}' as control port file", control_port_file.display());
+    bail!(
+        "could not parse '{}' as control port file",
+        control_port_file.display()
+    );
 }
 
 // Encapsulates the tor daemon process
@@ -77,13 +84,12 @@ struct TorProcess {
     process: Child,
     password: String,
     // stdout data
-    stdout_lines: Arc<Mutex<Vec<String>>>
+    stdout_lines: Arc<Mutex<Vec<String>>>,
 }
 
 impl TorProcess {
     // pub fn new(data_directory: &Path) -> Result<TorProcess> {
     pub fn new(tor_bin_path: &Path, data_directory: &Path) -> Result<TorProcess> {
-
         ensure!(tor_bin_path.is_absolute());
         ensure!(data_directory.is_absolute());
 
@@ -91,7 +97,11 @@ impl TorProcess {
         if !data_directory.exists() {
             resolve!(fs::create_dir_all(&data_directory));
         } else {
-            ensure!(!data_directory.is_file(), "received data_directory '{}' is a file not a path", data_directory.display());
+            ensure!(
+                !data_directory.is_file(),
+                "received data_directory '{}' is a file not a path",
+                data_directory.display()
+            );
         }
 
         // construct paths to torrc files
@@ -106,8 +116,7 @@ impl TorProcess {
         //  - minimize writes to disk
         //  - start with network disabled by default
         if !default_torrc.exists() {
-            const DEFAULT_TORRC_CONTENT: &str =
-           "SocksPort auto OnionTrafficOnly\n\
+            const DEFAULT_TORRC_CONTENT: &str = "SocksPort auto OnionTrafficOnly\n\
             AvoidDiskWrites 1\n\
             DisableNetwork 1\n\n";
 
@@ -122,7 +131,11 @@ impl TorProcess {
 
         // remove any existing control_port_file
         if control_port_file.exists() {
-            ensure!(control_port_file.is_file(), "control port file '{}' exists but is a directory", control_port_file.display());
+            ensure!(
+                control_port_file.is_file(),
+                "control port file '{}' exists but is a directory",
+                control_port_file.display()
+            );
             resolve!(fs::remove_file(&control_port_file));
         }
 
@@ -135,22 +148,29 @@ impl TorProcess {
             .stdin(Stdio::null())
             .stderr(Stdio::null())
             // point to our above written torrc file
-            .arg("--defaults-torrc").arg(default_torrc)
+            .arg("--defaults-torrc")
+            .arg(default_torrc)
             // location of torrc
-            .arg("--torrc-file").arg(torrc)
+            .arg("--torrc-file")
+            .arg(torrc)
             // root data directory
-            .arg("DataDirectory").arg(data_directory)
+            .arg("DataDirectory")
+            .arg(data_directory)
             // daemon will assign us a port, and we will
             // read it from the control port file
-            .arg("ControlPort").arg("auto")
+            .arg("ControlPort")
+            .arg("auto")
             // control port file destination
-            .arg("ControlPortWriteToFile").arg(control_port_file.clone())
+            .arg("ControlPortWriteToFile")
+            .arg(control_port_file.clone())
             // use password authentication to prevent other apps
             // from modifying our daemon's settings
-            .arg("HashedControlPassword").arg(password_hash)
+            .arg("HashedControlPassword")
+            .arg(password_hash)
             // tor process will shut down after this process shuts down
             // to avoid orphaned tor daemon
-            .arg("__OwningControllerProcess").arg(process::id().to_string())
+            .arg("__OwningControllerProcess")
+            .arg(process::id().to_string())
             .spawn());
 
         let mut control_addr = None;
@@ -159,14 +179,17 @@ impl TorProcess {
         // try and read the control port from the control port file
         // or abort after 5 seconds
         // TODO: make this timeout configurable?
-        while control_addr == None &&
-              start.elapsed() < Duration::from_secs(5) {
+        while control_addr == None && start.elapsed() < Duration::from_secs(5) {
             if control_port_file.exists() {
                 control_addr = Some(read_control_port_file(control_port_file.as_path())?);
                 resolve!(fs::remove_file(&control_port_file));
             }
         }
-        ensure!(control_addr != None, "failed to read control addr from '{}'", control_port_file.display());
+        ensure!(
+            control_addr != None,
+            "failed to read control addr from '{}'",
+            control_port_file.display()
+        );
 
         let stdout_lines: Arc<Mutex<Vec<String>>> = Default::default();
 
@@ -175,22 +198,24 @@ impl TorProcess {
             let stdout = BufReader::new(process.stdout.take().unwrap());
 
             resolve!(std::thread::Builder::new()
-            .name("tor_stdout_reader".to_string())
-            .spawn(move || {
-                TorProcess::read_stdout_task(&stdout_lines, stdout);
-            }));
+                .name("tor_stdout_reader".to_string())
+                .spawn(move || {
+                    TorProcess::read_stdout_task(&stdout_lines, stdout);
+                }));
         }
 
-        Ok(TorProcess{
+        Ok(TorProcess {
             control_addr: control_addr.unwrap(),
             process,
             password,
-            stdout_lines
+            stdout_lines,
         })
     }
 
-    fn read_stdout_task(stdout_lines: &std::sync::Weak<Mutex<Vec<String>>>, mut stdout: BufReader<ChildStdout>) {
-
+    fn read_stdout_task(
+        stdout_lines: &std::sync::Weak<Mutex<Vec<String>>>,
+        mut stdout: BufReader<ChildStdout>,
+    ) {
         while let Some(stdout_lines) = stdout_lines.upgrade() {
             let mut line = String::default();
             // read line
@@ -238,8 +263,10 @@ struct Reply {
 #[allow(dead_code)]
 impl ControlStream {
     pub fn new(addr: &SocketAddr, read_timeout: Duration) -> Result<ControlStream> {
-
-        ensure!(read_timeout != Duration::ZERO, "read_timeout must not be zero");
+        ensure!(
+            read_timeout != Duration::ZERO,
+            "read_timeout must not be zero"
+        );
 
         let stream = resolve!(TcpStream::connect(&addr));
         resolve!(stream.set_read_timeout(Some(read_timeout)));
@@ -252,7 +279,7 @@ impl ControlStream {
         let multi_line_data = Regex::new(r"^\d\d\d+.*").unwrap();
         let end_reply_line = Regex::new(r"^\d\d\d .*").unwrap();
 
-        Ok(ControlStream{
+        Ok(ControlStream {
             stream,
             closed_by_remote: false,
             pending_data,
@@ -271,32 +298,30 @@ impl ControlStream {
     }
 
     fn read_line(&mut self) -> Result<Option<String>> {
-
         // read pending bytes from stream until we have a line to return
         while self.pending_lines.is_empty() {
-
             let byte_count = self.pending_data.len();
             match self.stream.read_to_end(&mut self.pending_data) {
-                Err(err) => if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut {
-                    if byte_count == self.pending_data.len() {
-                        return Ok(None);
+                Err(err) => {
+                    if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut {
+                        if byte_count == self.pending_data.len() {
+                            return Ok(None);
+                        }
+                    } else {
+                        bail!(err);
                     }
-                } else {
-                    bail!(err);
-                },
+                }
                 Ok(0usize) => {
                     self.closed_by_remote = true;
                     bail!("stream closed by remote")
-                },
+                }
                 Ok(_count) => (),
             }
 
             // split our read buffer into individual lines
             let mut begin = 0;
             for index in 1..self.pending_data.len() {
-                if self.pending_data[index-1] == b'\r' &&
-                   self.pending_data[index] == b'\n' {
-
+                if self.pending_data[index - 1] == b'\r' && self.pending_data[index] == b'\n' {
                     let end = index - 1;
                     // view into byte vec of just the found line
                     let line_view: &[u8] = &self.pending_data[begin..end];
@@ -317,9 +342,8 @@ impl ControlStream {
     }
 
     fn read_reply(&mut self) -> Result<Option<Reply>> {
-
         loop {
-            let current_line =  match self.read_line() {
+            let current_line = match self.read_line() {
                 Ok(Some(line)) => line,
                 Ok(None) => return Ok(None),
                 Err(err) => return Err(err),
@@ -377,7 +401,10 @@ impl ControlStream {
             }
         }
 
-        Ok(Some(Reply{status_code, reply_lines}))
+        Ok(Some(Reply {
+            status_code,
+            reply_lines,
+        }))
     }
 
     pub fn write(&mut self, cmd: &str) -> Result<()> {
@@ -428,8 +455,13 @@ impl Version {
         true
     }
 
-    fn new(major: u32, minor: u32, micro: u32, patch_level: Option<u32>, status_tag: Option<&str>) -> Result<Version> {
-
+    fn new(
+        major: u32,
+        minor: u32,
+        micro: u32,
+        patch_level: Option<u32>,
+        status_tag: Option<&str>,
+    ) -> Result<Version> {
         let status_tag = if let Some(status_tag) = status_tag {
             // ensure!(STATUS_TAG_PATTERN.is_match(status_tag));
             ensure!(Self::status_tag_pattern_is_match(status_tag));
@@ -438,7 +470,7 @@ impl Version {
             None
         };
 
-        Ok(Version{
+        Ok(Version {
             major,
             minor,
             micro,
@@ -454,9 +486,11 @@ impl FromStr for Version {
     fn from_str(s: &str) -> Result<Version> {
         // MAJOR.MINOR.MICRO[.PATCHLEVEL][-STATUS_TAG][ (EXTRA_INFO)]*
         let mut tokens = s.split(' ');
-        let (major,minor,micro,patch_level,status_tag) = if let Some(version_status_tag) = tokens.next() {
+        let (major, minor, micro, patch_level, status_tag) = if let Some(version_status_tag) =
+            tokens.next()
+        {
             let mut tokens = version_status_tag.split('-');
-            let (major,minor,micro,patch_level) = if let Some(version) = tokens.next() {
+            let (major, minor, micro, patch_level) = if let Some(version) = tokens.next() {
                 let mut tokens = version.split('.');
                 let major: u32 = if let Some(major) = tokens.next() {
                     match major.parse() {
@@ -485,7 +519,10 @@ impl FromStr for Version {
                 let patch_level: u32 = if let Some(patch_level) = tokens.next() {
                     match patch_level.parse() {
                         Ok(patch_level) => patch_level,
-                        Err(_) => bail!("failed to parse '{}' as PATCHLEVEL portion of version", patch_level),
+                        Err(_) => bail!(
+                            "failed to parse '{}' as PATCHLEVEL portion of version",
+                            patch_level
+                        ),
                     }
                 } else {
                     0u32
@@ -496,7 +533,7 @@ impl FromStr for Version {
             };
             let status_tag = tokens.next().map(|status_tag| status_tag.to_string());
 
-            (major,minor,micro,patch_level,status_tag)
+            (major, minor, micro, patch_level, status_tag)
         } else {
             bail!("failed to find MAJOR.MINOR.MICRO.[PATCH_LEVEL][-STATUS_TAG] portion of version");
         };
@@ -505,32 +542,43 @@ impl FromStr for Version {
                 bail!("failed to parse '{}' as [ (EXTRA_INFO)]", extra_info);
             }
         }
-        Ok(Version{major, minor, micro, patch_level, status_tag})
+        Ok(Version {
+            major,
+            minor,
+            micro,
+            patch_level,
+            status_tag,
+        })
     }
 }
 
 impl ToString for Version {
     fn to_string(&self) -> String {
         match &self.status_tag {
-            Some(status_tag) => format!("{}.{}.{}.{}-{}", self.major, self.minor, self.micro, self.patch_level, status_tag),
-            None => format!("{}.{}.{}.{}", self.major, self.minor, self.micro, self.patch_level),
+            Some(status_tag) => format!(
+                "{}.{}.{}.{}-{}",
+                self.major, self.minor, self.micro, self.patch_level, status_tag
+            ),
+            None => format!(
+                "{}.{}.{}.{}",
+                self.major, self.minor, self.micro, self.patch_level
+            ),
         }
     }
 }
 
 impl PartialEq for Version {
     fn eq(&self, other: &Self) -> bool {
-        self.major == other.major &&
-               self.minor == other.minor &&
-               self.micro == other.micro &&
-               self.patch_level == other.patch_level &&
-               self.status_tag == other.status_tag
+        self.major == other.major
+            && self.minor == other.minor
+            && self.micro == other.micro
+            && self.patch_level == other.patch_level
+            && self.status_tag == other.status_tag
     }
 }
 
 impl PartialOrd for Version {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-
         if let Some(order) = self.major.partial_cmp(&other.major) {
             if order != Ordering::Equal {
                 return Some(order);
@@ -571,9 +619,18 @@ impl PartialOrd for Version {
 }
 
 enum AsyncEvent {
-    Unknown{lines: Vec<String>},
-    StatusClient{severity: String, action: String, arguments: Vec<(String,String)>},
-    HsDesc{action: String, hs_address: V3OnionServiceId},
+    Unknown {
+        lines: Vec<String>,
+    },
+    StatusClient {
+        severity: String,
+        action: String,
+        arguments: Vec<(String, String)>,
+    },
+    HsDesc {
+        action: String,
+        hs_address: V3OnionServiceId,
+    },
 }
 
 struct TorController {
@@ -590,11 +647,14 @@ struct TorController {
 #[allow(dead_code)]
 impl TorController {
     pub fn new(control_stream: ControlStream) -> TorController {
-        let status_event_pattern =  Regex::new(r#"^STATUS_CLIENT (?P<severity>NOTICE|WARN|ERR) (?P<action>[A-Za-z]+)"#).unwrap();
-        let status_event_argument_pattern = Regex::new(r#"(?P<key>[A-Z]+)=(?P<value>[A-Za-z0-9_]+|"[^"]+")"#).unwrap();
+        let status_event_pattern =
+            Regex::new(r#"^STATUS_CLIENT (?P<severity>NOTICE|WARN|ERR) (?P<action>[A-Za-z]+)"#)
+                .unwrap();
+        let status_event_argument_pattern =
+            Regex::new(r#"(?P<key>[A-Z]+)=(?P<value>[A-Za-z0-9_]+|"[^"]+")"#).unwrap();
         let hs_desc_pattern = Regex::new(r#"HS_DESC (?P<action>REQUESTED|UPLOAD|RECEIVED|UPLOADED|IGNORE|FAILED|CREATED) (?P<hsaddress>[a-z2-7]{56})"#).unwrap();
 
-        TorController{
+        TorController {
             control_stream,
             async_replies: Default::default(),
             // regex
@@ -607,7 +667,6 @@ impl TorController {
     // return curently available events, does not block waiting
     // for an event
     fn wait_async_replies(&mut self) -> Result<Vec<Reply>> {
-
         let mut replies: Vec<Reply> = Default::default();
         // take any previously received async replies
         std::mem::swap(&mut self.async_replies, &mut replies);
@@ -624,7 +683,10 @@ impl TorController {
     }
 
     fn reply_to_event(&self, reply: &mut Reply) -> Result<AsyncEvent> {
-        ensure!(reply.status_code == 650u32, "received unexpected synchrynous reply");
+        ensure!(
+            reply.status_code == 650u32,
+            "received unexpected synchrynous reply"
+        );
 
         // not sure this is what we want but yolo
         let reply_text = reply.reply_lines.join(" ");
@@ -632,13 +694,16 @@ impl TorController {
             let severity = caps.name("severity").unwrap().as_str();
             let action = caps.name("action").unwrap().as_str();
 
-            let mut arguments: Vec<(String,String)> = Default::default();
-            for caps in self.status_event_argument_pattern.captures_iter(&reply_text) {
+            let mut arguments: Vec<(String, String)> = Default::default();
+            for caps in self
+                .status_event_argument_pattern
+                .captures_iter(&reply_text)
+            {
                 let key = caps.name("key").unwrap().as_str().to_string();
                 let value = {
                     let value = caps.name("value").unwrap().as_str();
                     if value.starts_with('\"') && value.ends_with('\"') {
-                        value[1..value.len()-1].to_string()
+                        value[1..value.len() - 1].to_string()
                     } else {
                         value.to_string()
                     }
@@ -646,10 +711,10 @@ impl TorController {
                 arguments.push((key, value));
             }
 
-            return Ok(AsyncEvent::StatusClient{
+            return Ok(AsyncEvent::StatusClient {
                 severity: severity.to_string(),
                 action: action.to_string(),
-                arguments
+                arguments,
             });
         }
 
@@ -658,9 +723,9 @@ impl TorController {
             let hs_address = caps.name("hsaddress").unwrap().as_str();
 
             if let Ok(hs_address) = V3OnionServiceId::from_string(hs_address) {
-                return Ok(AsyncEvent::HsDesc{
+                return Ok(AsyncEvent::HsDesc {
                     action: action.to_string(),
-                    hs_address
+                    hs_address,
                 });
             }
         }
@@ -669,9 +734,7 @@ impl TorController {
         let mut reply_lines: Vec<String> = Default::default();
         std::mem::swap(&mut reply_lines, &mut reply.reply_lines);
 
-        Ok(AsyncEvent::Unknown{
-            lines: reply_lines,
-        })
+        Ok(AsyncEvent::Unknown { lines: reply_lines })
     }
 
     pub fn wait_async_events(&mut self) -> Result<Vec<AsyncEvent>> {
@@ -687,7 +750,6 @@ impl TorController {
 
     // wait for a sync reply, save off async replies for later
     fn wait_sync_reply(&mut self) -> Result<Reply> {
-
         loop {
             if let Some(reply) = self.control_stream.read_reply()? {
                 match reply.status_code {
@@ -713,11 +775,11 @@ impl TorController {
     //
 
     // SETCONF (3.1)
-    fn setconf_cmd(&mut self, key_values: &[(&str,&str)]) -> Result<Reply> {
+    fn setconf_cmd(&mut self, key_values: &[(&str, &str)]) -> Result<Reply> {
         ensure!(!key_values.is_empty());
         let mut command_buffer = vec!["SETCONF".to_string()];
 
-        for (key,value) in key_values.iter() {
+        for (key, value) in key_values.iter() {
             command_buffer.push(format!("{}={}", key, value));
         }
         let command = command_buffer.join(" ");
@@ -765,8 +827,7 @@ impl TorController {
         virt_port: u16,
         target: Option<SocketAddr>,
         client_auth: Option<&[X25519PublicKey]>,
-        ) -> Result<Reply> {
-
+    ) -> Result<Reply> {
         let mut command_buffer = vec!["ADD_ONION".to_string()];
 
         // set our key or request a new one
@@ -824,14 +885,19 @@ impl TorController {
 
     // DEL_ONION (3.38)
     fn del_onion_cmd(&mut self, service_id: &V3OnionServiceId) -> Result<Reply> {
-
         let command = format!("DEL_ONION {}", service_id.to_string());
 
         self.write_command(&command)
     }
 
     // ONION_CLIENT_AUTH_ADD (3.30)
-    fn onion_client_auth_add_cmd(&mut self, service_id: &V3OnionServiceId, private_key: &X25519PrivateKey, client_name: Option<String>, flags: &OnionClientAuthAddFlags) -> Result<Reply> {
+    fn onion_client_auth_add_cmd(
+        &mut self,
+        service_id: &V3OnionServiceId,
+        private_key: &X25519PrivateKey,
+        client_name: Option<String>,
+        flags: &OnionClientAuthAddFlags,
+    ) -> Result<Reply> {
         let mut command_buffer = vec!["ONION_CLIENT_AUTH_ADD".to_string()];
 
         // set the onion service id
@@ -856,7 +922,6 @@ impl TorController {
 
     // ONION_CLIENT_AUTH_REMOVE (3.31)
     fn onion_client_auth_remove_cmd(&mut self, service_id: &V3OnionServiceId) -> Result<Reply> {
-
         let command = format!("ONION_CLIENT_AUTH_REMOVE {}", service_id.to_string());
 
         self.write_command(&command)
@@ -866,7 +931,7 @@ impl TorController {
     // Public high-level typesafe command method wrappers
     //
 
-    pub fn setconf(&mut self, key_values: &[(&str,&str)]) -> Result<()> {
+    pub fn setconf(&mut self, key_values: &[(&str, &str)]) -> Result<()> {
         let reply = self.setconf_cmd(key_values)?;
 
         match reply.status_code {
@@ -875,20 +940,21 @@ impl TorController {
         }
     }
 
-    pub fn getconf(&mut self, keywords: &[&str]) -> Result<Vec<(String,String)>> {
+    pub fn getconf(&mut self, keywords: &[&str]) -> Result<Vec<(String, String)>> {
         let reply = self.getconf_cmd(keywords)?;
 
         match reply.status_code {
             250u32 => {
-                let mut key_values: Vec<(String,String)> = Default::default();
+                let mut key_values: Vec<(String, String)> = Default::default();
                 for line in reply.reply_lines {
                     match line.find('=') {
-                        Some(index) => key_values.push((line[0..index].to_string(), line[index+1..].to_string())),
+                        Some(index) => key_values
+                            .push((line[0..index].to_string(), line[index + 1..].to_string())),
                         None => key_values.push((line, String::new())),
                     }
                 }
                 Ok(key_values)
-            },
+            }
             code => bail!("{} {}", code, reply.reply_lines.join("\n")),
         }
     }
@@ -911,20 +977,25 @@ impl TorController {
         }
     }
 
-    pub fn getinfo(&mut self, keywords: &[&str]) -> Result<Vec<(String,String)>> {
+    pub fn getinfo(&mut self, keywords: &[&str]) -> Result<Vec<(String, String)>> {
         let reply = self.getinfo_cmd(keywords)?;
 
         match reply.status_code {
             250u32 => {
-                let mut key_values: Vec<(String,String)> = Default::default();
+                let mut key_values: Vec<(String, String)> = Default::default();
                 for line in reply.reply_lines {
                     match line.find('=') {
-                        Some(index) => key_values.push((line[0..index].to_string(), line[index+1..].to_string())),
-                        None => if line != "OK" { key_values.push((line, String::new())) },
+                        Some(index) => key_values
+                            .push((line[0..index].to_string(), line[index + 1..].to_string())),
+                        None => {
+                            if line != "OK" {
+                                key_values.push((line, String::new()))
+                            }
+                        }
                     }
                 }
                 Ok(key_values)
-            },
+            }
             code => bail!("{} {}", code, reply.reply_lines.join("\n")),
         }
     }
@@ -936,7 +1007,8 @@ impl TorController {
         max_streams: Option<u16>,
         virt_port: u16,
         target: Option<SocketAddr>,
-        client_auth: Option<&[X25519PublicKey]>) -> Result<(Option<Ed25519PrivateKey>, V3OnionServiceId)> {
+        client_auth: Option<&[X25519PublicKey]>,
+    ) -> Result<(Option<Ed25519PrivateKey>, V3OnionServiceId)> {
         let reply = self.add_onion_cmd(key, flags, max_streams, virt_port, target, client_auth)?;
 
         let mut private_key: Option<Ed25519PrivateKey> = None;
@@ -951,21 +1023,27 @@ impl TorController {
                         service_id = Some(V3OnionServiceId::from_string(&line[index..])?);
                     } else if let Some(mut index) = line.find("PrivateKey=") {
                         ensure!(private_key.is_none(), "received duplicate private keys");
-                        index +="PrivateKey=".len();
+                        index += "PrivateKey=".len();
                         private_key = Some(Ed25519PrivateKey::from_key_blob(&line[index..])?);
                     } else if line.contains("ClientAuthV3=") {
-                        ensure!(client_auth.is_some() && !client_auth.unwrap().is_empty(), "received unexpected ClientAuthV3 keys");
+                        ensure!(
+                            client_auth.is_some() && !client_auth.unwrap().is_empty(),
+                            "received unexpected ClientAuthV3 keys"
+                        );
                     } else if !line.contains("OK") {
                         bail!("received unexpected reply line: '{}'", line);
                     }
                 }
-            },
+            }
             code => bail!("{} {}", code, reply.reply_lines.join("\n")),
         }
 
         ensure!(service_id != None, "did not receive a service id");
         if flags.discard_pk {
-            ensure!(private_key.is_none(), "private key should have been discarded");
+            ensure!(
+                private_key.is_none(),
+                "private key should have been discarded"
+            );
         } else {
             ensure!(private_key.is_some(), "did not return private key");
         }
@@ -1017,7 +1095,13 @@ impl TorController {
         bail!("did not find a 'version' key/value");
     }
 
-    pub fn onion_client_auth_add(&mut self, service_id: &V3OnionServiceId, private_key: &X25519PrivateKey, client_name: Option<String>, flags: &OnionClientAuthAddFlags) -> Result<()> {
+    pub fn onion_client_auth_add(
+        &mut self,
+        service_id: &V3OnionServiceId,
+        private_key: &X25519PrivateKey,
+        client_name: Option<String>,
+        flags: &OnionClientAuthAddFlags,
+    ) -> Result<()> {
         let reply = self.onion_client_auth_add_cmd(service_id, private_key, client_name, flags)?;
 
         match reply.status_code {
@@ -1036,7 +1120,6 @@ impl TorController {
     }
 }
 
-
 pub struct CircuitToken {
     username: String,
     password: String,
@@ -1049,9 +1132,8 @@ impl CircuitToken {
         let username = first_party.to_string();
         let password = generate_password(CIRCUIT_TOKEN_PASSWORD_LENGTH);
 
-        CircuitToken{username, password}
+        CircuitToken { username, password }
     }
-
 }
 
 pub struct OnionStream {
@@ -1060,7 +1142,6 @@ pub struct OnionStream {
 }
 
 impl OnionStream {
-
     pub fn nodelay(&self) -> Result<bool, std::io::Error> {
         self.stream.nodelay()
     }
@@ -1102,11 +1183,10 @@ impl OnionStream {
     }
 
     pub fn try_clone(&self) -> Result<OnionStream> {
-        Ok(
-            OnionStream{
-                stream: resolve!(self.stream.try_clone()),
-                peer_addr: self.peer_addr.clone()
-            })
+        Ok(OnionStream {
+            stream: resolve!(self.stream.try_clone()),
+            peer_addr: self.peer_addr.clone(),
+        })
     }
 }
 
@@ -1147,14 +1227,17 @@ impl OnionListener {
 
     pub fn accept(&self) -> Result<Option<OnionStream>> {
         match self.listener.accept() {
-            Ok((stream, _socket_addr)) => {
-                Ok(Some(OnionStream{stream, peer_addr: None}))
-            },
-            Err(err) => if err.kind() == ErrorKind::WouldBlock {
-                Ok(None)
-            } else {
-                bail!(err);
-            },
+            Ok((stream, _socket_addr)) => Ok(Some(OnionStream {
+                stream,
+                peer_addr: None,
+            })),
+            Err(err) => {
+                if err.kind() == ErrorKind::WouldBlock {
+                    Ok(None)
+                } else {
+                    bail!(err);
+                }
+            }
         }
     }
 }
@@ -1166,10 +1249,18 @@ impl Drop for OnionListener {
 }
 
 pub enum Event {
-    BootstrapStatus{progress: u32, tag: String, summary: String },
+    BootstrapStatus {
+        progress: u32,
+        tag: String,
+        summary: String,
+    },
     BootstrapComplete,
-    LogReceived{line: String},
-    OnionServicePublished{service_id: V3OnionServiceId},
+    LogReceived {
+        line: String,
+    },
+    OnionServicePublished {
+        service_id: V3OnionServiceId,
+    },
 }
 
 pub struct TorManager {
@@ -1198,18 +1289,21 @@ impl TorManager {
 
         let version = controller.getinfo_version()?;
 
-        ensure!(version >= min_required_version, "tor daemon not new enough; must be at least version {}", min_required_version.to_string());
+        ensure!(
+            version >= min_required_version,
+            "tor daemon not new enough; must be at least version {}",
+            min_required_version.to_string()
+        );
 
         // register for STATUS_CLIENT async events
         controller.setevents(&["STATUS_CLIENT", "HS_DESC"])?;
 
-        Ok(
-            TorManager{
-                daemon,
-                controller,
-                socks_listener: None,
-                onion_services: Default::default(),
-            })
+        Ok(TorManager {
+            daemon,
+            controller,
+            socks_listener: None,
+            onion_services: Default::default(),
+        })
     }
 
     pub fn update(&mut self) -> Result<Vec<Event>> {
@@ -1229,41 +1323,53 @@ impl TorManager {
         let mut events: Vec<Event> = Default::default();
         for async_event in self.controller.wait_async_events()?.iter() {
             match async_event {
-                AsyncEvent::StatusClient{severity,action,arguments} => {
+                AsyncEvent::StatusClient {
+                    severity,
+                    action,
+                    arguments,
+                } => {
                     if severity == "NOTICE" && action == "BOOTSTRAP" {
                         let mut progress: u32 = 0;
                         let mut tag: String = Default::default();
                         let mut summary: String = Default::default();
-                        for (key,val) in arguments.iter() {
+                        for (key, val) in arguments.iter() {
                             match key.as_str() {
                                 "PROGRESS" => progress = resolve!(val.parse()),
                                 "TAG" => tag = val.to_string(),
                                 "SUMMARY" => summary = val.to_string(),
-                                _ => {}, // ignore unexpected arguments
+                                _ => {} // ignore unexpected arguments
                             }
                         }
-                        events.push(Event::BootstrapStatus{progress, tag, summary});
+                        events.push(Event::BootstrapStatus {
+                            progress,
+                            tag,
+                            summary,
+                        });
                         if progress == 100u32 {
                             events.push(Event::BootstrapComplete);
                         }
                     }
-                },
-                AsyncEvent::HsDesc{action,hs_address} => {
+                }
+                AsyncEvent::HsDesc { action, hs_address } => {
                     if action == "UPLOADED" {
-                        events.push(Event::OnionServicePublished{service_id: hs_address.clone()});
+                        events.push(Event::OnionServicePublished {
+                            service_id: hs_address.clone(),
+                        });
                     }
-                },
-                AsyncEvent::Unknown{lines} => {
+                }
+                AsyncEvent::Unknown { lines } => {
                     println!("Received Unknown Event:");
                     for line in lines.iter() {
                         println!(" {}", line);
                     }
-                },
+                }
             }
         }
 
         for log_line in self.daemon.wait_log_lines().iter_mut() {
-            events.push(Event::LogReceived{line: std::mem::take(log_line)});
+            events.push(Event::LogReceived {
+                line: std::mem::take(log_line),
+            });
         }
 
         Ok(events)
@@ -1277,8 +1383,13 @@ impl TorManager {
         self.controller.setconf(&[("DisableNetwork", "0")])
     }
 
-    pub fn add_client_auth(&mut self, service_id: &V3OnionServiceId, client_auth: &X25519PrivateKey) -> Result<()> {
-        self.controller.onion_client_auth_add(service_id, client_auth, None, &Default::default())
+    pub fn add_client_auth(
+        &mut self,
+        service_id: &V3OnionServiceId,
+        client_auth: &X25519PrivateKey,
+    ) -> Result<()> {
+        self.controller
+            .onion_client_auth_add(service_id, client_auth, None, &Default::default())
     }
 
     pub fn remove_client_auth(&mut self, service_id: &V3OnionServiceId) -> Result<()> {
@@ -1286,48 +1397,81 @@ impl TorManager {
     }
 
     // connect to an onion service and returns OnionStream
-    pub fn connect(&mut self, service_id: &V3OnionServiceId, virt_port: u16, circuit: Option<CircuitToken>) -> Result<OnionStream> {
-
+    pub fn connect(
+        &mut self,
+        service_id: &V3OnionServiceId,
+        virt_port: u16,
+        circuit: Option<CircuitToken>,
+    ) -> Result<OnionStream> {
         if self.socks_listener.is_none() {
             let mut listeners = self.controller.getinfo_net_listeners_socks()?;
-            ensure!(!listeners.is_empty(), "no available socks listener to connect through");
+            ensure!(
+                !listeners.is_empty(),
+                "no available socks listener to connect through"
+            );
             self.socks_listener = Some(listeners.swap_remove(0));
         }
 
         // our onion domain
-        let target = socks::TargetAddr::Domain(format!("{}.onion", service_id.to_string()), virt_port);
+        let target =
+            socks::TargetAddr::Domain(format!("{}.onion", service_id.to_string()), virt_port);
         // readwrite stream
         let stream = match &circuit {
             None => resolve!(Socks5Stream::connect(self.socks_listener.unwrap(), target)),
-            Some(circuit) => resolve!(Socks5Stream::connect_with_password(self.socks_listener.unwrap(), target, &circuit.username, &circuit.password)),
+            Some(circuit) => resolve!(Socks5Stream::connect_with_password(
+                self.socks_listener.unwrap(),
+                target,
+                &circuit.username,
+                &circuit.password
+            )),
         };
 
-        Ok(OnionStream{stream: stream.into_inner(), peer_addr: Some(service_id.clone())})
+        Ok(OnionStream {
+            stream: stream.into_inner(),
+            peer_addr: Some(service_id.clone()),
+        })
     }
 
     // stand up an onion service and return an OnionListener
-    pub fn listener(&mut self, private_key: &Ed25519PrivateKey, virt_port: u16, authorized_clients: Option<&[X25519PublicKey]>) -> Result<OnionListener> {
-
+    pub fn listener(
+        &mut self,
+        private_key: &Ed25519PrivateKey,
+        virt_port: u16,
+        authorized_clients: Option<&[X25519PublicKey]>,
+    ) -> Result<OnionListener> {
         // try to bind to a local address, let OS pick our port
-        let socket_addr = SocketAddr::from(([127,0,0,1],0u16));
+        let socket_addr = SocketAddr::from(([127, 0, 0, 1], 0u16));
         let listener = resolve!(TcpListener::bind(socket_addr));
         let socket_addr = resolve!(listener.local_addr());
 
-        let mut flags = AddOnionFlags{discard_pk: true, ..Default::default()};
+        let mut flags = AddOnionFlags {
+            discard_pk: true,
+            ..Default::default()
+        };
         if authorized_clients.is_some() {
             flags.v3_auth = true;
         }
 
         // start onion service
-        let (_, service_id) = self.controller.add_onion(Some(private_key), &flags, None, virt_port, Some(socket_addr), authorized_clients)?;
+        let (_, service_id) = self.controller.add_onion(
+            Some(private_key),
+            &flags,
+            None,
+            virt_port,
+            Some(socket_addr),
+            authorized_clients,
+        )?;
 
         let is_active = Arc::new(atomic::AtomicBool::new(true));
-        self.onion_services.push((service_id, Arc::clone(&is_active)));
+        self.onion_services
+            .push((service_id, Arc::clone(&is_active)));
 
-        Ok(OnionListener{listener, is_active})
+        Ok(OnionListener {
+            listener,
+            is_active,
+        })
     }
 }
-
 
 #[test]
 #[serial]
@@ -1339,22 +1483,32 @@ fn test_tor_controller() -> Result<()> {
 
     // create a scope to ensure tor_controller is dropped
     {
-        let control_stream = ControlStream::new(&tor_process.control_addr, Duration::from_millis(16))?;
+        let control_stream =
+            ControlStream::new(&tor_process.control_addr, Duration::from_millis(16))?;
 
         // create a tor controller and send authentication command
         let mut tor_controller = TorController::new(control_stream);
         tor_controller.authenticate_cmd(&tor_process.password)?;
-        ensure!(tor_controller.authenticate_cmd("invalid password")?.status_code == 515u32);
+        ensure!(
+            tor_controller
+                .authenticate_cmd("invalid password")?
+                .status_code
+                == 515u32
+        );
 
         // tor controller should have shutdown the connection after failed authentication
-        if tor_controller.authenticate_cmd(&tor_process.password).is_ok() {
+        if tor_controller
+            .authenticate_cmd(&tor_process.password)
+            .is_ok()
+        {
             bail!("expected failure due to closed connection");
         }
         ensure!(tor_controller.control_stream.closed_by_remote());
     }
     // now create a second controller
     {
-        let control_stream = ControlStream::new(&tor_process.control_addr, Duration::from_millis(16))?;
+        let control_stream =
+            ControlStream::new(&tor_process.control_addr, Duration::from_millis(16))?;
 
         // create a tor controller and send authentication command
         // all async events are just printed to stdout
@@ -1382,7 +1536,14 @@ fn test_tor_controller() -> Result<()> {
             match key.as_str() {
                 "version" => ensure!(resolve!(Regex::new(r"\d+\.\d+\.\d+\.\d+")).is_match(&value)),
                 "config-file" => ensure!(Path::new(&value) == expected_torrc_path),
-                "config-text" => ensure!(value.to_string() == format!("\nControlPort auto\nControlPortWriteToFile {}\nDataDirectory {}", expected_control_port_path.display(), data_path.display())),
+                "config-text" => ensure!(
+                    value.to_string()
+                        == format!(
+                            "\nControlPort auto\nControlPortWriteToFile {}\nDataDirectory {}",
+                            expected_control_port_path.display(),
+                            data_path.display()
+                        )
+                ),
                 _ => bail!("unexpected returned key: {}", key),
             }
         }
@@ -1392,12 +1553,15 @@ fn test_tor_controller() -> Result<()> {
         tor_controller.setconf(&[("DisableNetwork", "0")])?;
 
         // add an onoin service
-        let (private_key, service_id) = tor_controller.add_onion(None, &Default::default(), None, 22, None, None)?;
+        let (private_key, service_id) =
+            tor_controller.add_onion(None, &Default::default(), None, 22, None, None)?;
 
         println!("private_key: {}", private_key.unwrap().to_key_blob());
         println!("service_id: {}", service_id.to_string());
 
-        if let Ok(()) = tor_controller.del_onion(&V3OnionServiceId::from_string("6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd")?) {
+        if let Ok(()) = tor_controller.del_onion(&V3OnionServiceId::from_string(
+            "6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd",
+        )?) {
             bail!("deleting unknown onion should have failed");
         }
 
@@ -1424,17 +1588,25 @@ fn test_tor_controller() -> Result<()> {
         while stop_time > Instant::now() {
             for async_event in tor_controller.wait_async_events()?.iter() {
                 match async_event {
-                    AsyncEvent::Unknown{lines} => {
+                    AsyncEvent::Unknown { lines } => {
                         println!("Unknown: {}", lines.join("\n"));
-                    },
-                    AsyncEvent::StatusClient{severity,action,arguments} => {
+                    }
+                    AsyncEvent::StatusClient {
+                        severity,
+                        action,
+                        arguments,
+                    } => {
                         println!("STATUS_CLIENT severity={}, action={}", severity, action);
-                        for (key,value) in arguments.iter() {
+                        for (key, value) in arguments.iter() {
                             println!(" {}='{}'", key, value);
                         }
-                    },
-                    AsyncEvent::HsDesc{action,hs_address} => {
-                        println!("HS_DESC action={}, hsaddress={}", action, hs_address.to_string());
+                    }
+                    AsyncEvent::HsDesc { action, hs_address } => {
+                        println!(
+                            "HS_DESC action={}, hsaddress={}",
+                            action,
+                            hs_address.to_string()
+                        );
                     }
                 }
             }
@@ -1445,24 +1617,29 @@ fn test_tor_controller() -> Result<()> {
 }
 
 #[test]
-fn test_version() -> Result<()>
-{
-    ensure!(Version::from_str("1.2.3")? == Version::new(1,2,3,None,None)?);
-    ensure!(Version::from_str("1.2.3.4")? == Version::new(1,2,3,Some(4),None)?);
-    ensure!(Version::from_str("1.2.3-test")? == Version::new(1,2,3,None,Some("test"))?);
-    ensure!(Version::from_str("1.2.3.4-test")? == Version::new(1,2,3,Some(4),Some("test"))?);
-    ensure!(Version::from_str("1.2.3 (extra_info)")? == Version::new(1,2,3,None,None)?);
-    ensure!(Version::from_str("1.2.3.4 (extra_info)")? == Version::new(1,2,3,Some(4),None)?);
-    ensure!(Version::from_str("1.2.3.4-tag (extra_info)")? == Version::new(1,2,3,Some(4),Some("tag"))?);
+fn test_version() -> Result<()> {
+    ensure!(Version::from_str("1.2.3")? == Version::new(1, 2, 3, None, None)?);
+    ensure!(Version::from_str("1.2.3.4")? == Version::new(1, 2, 3, Some(4), None)?);
+    ensure!(Version::from_str("1.2.3-test")? == Version::new(1, 2, 3, None, Some("test"))?);
+    ensure!(Version::from_str("1.2.3.4-test")? == Version::new(1, 2, 3, Some(4), Some("test"))?);
+    ensure!(Version::from_str("1.2.3 (extra_info)")? == Version::new(1, 2, 3, None, None)?);
+    ensure!(Version::from_str("1.2.3.4 (extra_info)")? == Version::new(1, 2, 3, Some(4), None)?);
+    ensure!(
+        Version::from_str("1.2.3.4-tag (extra_info)")?
+            == Version::new(1, 2, 3, Some(4), Some("tag"))?
+    );
 
-    ensure!(Version::from_str("1.2.3.4-tag (extra_info) (extra_info)")? == Version::new(1,2,3,Some(4),Some("tag"))?);
+    ensure!(
+        Version::from_str("1.2.3.4-tag (extra_info) (extra_info)")?
+            == Version::new(1, 2, 3, Some(4), Some("tag"))?
+    );
 
-    match Version::new(1,2,3,Some(4),Some("spaced tag")) {
+    match Version::new(1, 2, 3, Some(4), Some("spaced tag")) {
         Ok(_) => bail!("expected failure"),
         Err(err) => println!("{:?}", err),
     }
 
-    match Version::new(1,2,3,Some(4),Some("" /* empty tag */)) {
+    match Version::new(1, 2, 3, Some(4), Some("" /* empty tag */)) {
         Ok(_) => bail!("expected failure"),
         Err(err) => println!("{:?}", err),
     }
@@ -1497,14 +1674,14 @@ fn test_version() -> Result<()>
         Err(err) => println!("{:?}", err),
     }
 
-    ensure!(Version::new(0,0,0,Some(0),None)? < Version::new(1,0,0,Some(0),None)?);
-    ensure!(Version::new(0,0,0,Some(0),None)? < Version::new(0,1,0,Some(0),None)?);
-    ensure!(Version::new(0,0,0,Some(0),None)? < Version::new(0,0,1,Some(0),None)?);
+    ensure!(Version::new(0, 0, 0, Some(0), None)? < Version::new(1, 0, 0, Some(0), None)?);
+    ensure!(Version::new(0, 0, 0, Some(0), None)? < Version::new(0, 1, 0, Some(0), None)?);
+    ensure!(Version::new(0, 0, 0, Some(0), None)? < Version::new(0, 0, 1, Some(0), None)?);
 
     // ensure status tags make comparison between equal versions (apart from
     // tags) unknowable
-    let zero_version = Version::new(0,0,0,Some(0),None)?;
-    let zero_version_tag = Version::new(0,0,0,Some(0),Some("tag"))?;
+    let zero_version = Version::new(0, 0, 0, Some(0), None)?;
+    let zero_version_tag = Version::new(0, 0, 0, Some(0), Some("tag"))?;
 
     ensure!(!(zero_version < zero_version_tag));
     ensure!(!(zero_version <= zero_version_tag));
@@ -1530,20 +1707,30 @@ fn test_tor_manager() -> Result<()> {
     while !bootstrap_complete {
         for event in tor.update()?.iter() {
             match event {
-                Event::BootstrapStatus{progress,tag,summary} => println!("BootstrapStatus: {{ progress: {}, tag: {}, summary: '{}' }}", progress, tag, summary),
+                Event::BootstrapStatus {
+                    progress,
+                    tag,
+                    summary,
+                } => println!(
+                    "BootstrapStatus: {{ progress: {}, tag: {}, summary: '{}' }}",
+                    progress, tag, summary
+                ),
                 Event::BootstrapComplete => {
                     println!("Bootstrap Complete!");
                     bootstrap_complete = true;
-                },
-                Event::LogReceived{line} => {
+                }
+                Event::LogReceived { line } => {
                     received_log = true;
                     println!("--- {}", line);
-                },
-                _ => {},
+                }
+                _ => {}
             }
         }
     }
-    ensure!(received_log, "should have received a log line from tor daemon");
+    ensure!(
+        received_log,
+        "should have received a log line from tor daemon"
+    );
 
     Ok(())
 }
@@ -1564,15 +1751,22 @@ fn test_onion_service() -> Result<()> {
     while !bootstrap_complete {
         for event in tor.update()?.iter() {
             match event {
-                Event::BootstrapStatus{progress,tag,summary} => println!("BootstrapStatus: {{ progress: {}, tag: {}, summary: '{}' }}", progress, tag, summary),
-                Event::BootstrapComplete =>     {
+                Event::BootstrapStatus {
+                    progress,
+                    tag,
+                    summary,
+                } => println!(
+                    "BootstrapStatus: {{ progress: {}, tag: {}, summary: '{}' }}",
+                    progress, tag, summary
+                ),
+                Event::BootstrapComplete => {
                     println!("Bootstrap Complete!");
                     bootstrap_complete = true;
-                },
-                Event::LogReceived{line} => {
+                }
+                Event::LogReceived { line } => {
                     println!("--- {}", line);
-                },
-                _ => {},
+                }
+                _ => {}
             }
         }
     }
@@ -1582,7 +1776,6 @@ fn test_onion_service() -> Result<()> {
         // create an onion service for this test
         let private_key = Ed25519PrivateKey::generate();
 
-
         println!("Starting and listening to onion service");
         const VIRT_PORT: u16 = 42069u16;
         let listener = tor.listener(&private_key, VIRT_PORT, None)?;
@@ -1591,17 +1784,17 @@ fn test_onion_service() -> Result<()> {
         while !onion_published {
             for event in tor.update()?.iter() {
                 match event {
-                    Event::LogReceived{line} => {
+                    Event::LogReceived { line } => {
                         println!("--- {}", line);
-                    },
-                    Event::OnionServicePublished{service_id} => {
+                    }
+                    Event::OnionServicePublished { service_id } => {
                         let expected_service_id = V3OnionServiceId::from_private_key(&private_key);
                         if expected_service_id == *service_id {
                             println!("Onion Service {} published", service_id.to_string());
                             onion_published = true;
                         }
-                    },
-                    _ => {},
+                    }
+                    _ => {}
                 }
             }
         }
@@ -1648,17 +1841,20 @@ fn test_onion_service() -> Result<()> {
         while !onion_published {
             for event in tor.update()?.iter() {
                 match event {
-                    Event::LogReceived{line} => {
+                    Event::LogReceived { line } => {
                         println!("--- {}", line);
-                    },
-                    Event::OnionServicePublished{service_id} => {
+                    }
+                    Event::OnionServicePublished { service_id } => {
                         let expected_service_id = V3OnionServiceId::from_private_key(&private_key);
                         if expected_service_id == *service_id {
-                            println!("Authenticated Onion Service {} published", service_id.to_string());
+                            println!(
+                                "Authenticated Onion Service {} published",
+                                service_id.to_string()
+                            );
                             onion_published = true;
                         }
-                    },
-                    _ => {},
+                    }
+                    _ => {}
                 }
             }
         }
@@ -1670,7 +1866,9 @@ fn test_onion_service() -> Result<()> {
 
             println!("Connecting to onion service (should fail)");
             if tor.connect(&service_id, VIRT_PORT, None).is_ok() {
-                bail!("should not able to connect to an authenticated onion service without auth key");
+                bail!(
+                    "should not able to connect to an authenticated onion service without auth key"
+                );
             }
 
             println!("Add auth key for onion service");

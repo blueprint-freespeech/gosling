@@ -1,32 +1,31 @@
 // standard
 use std::clone::Clone;
-use std::collections::{BTreeMap,HashMap};
+use std::collections::{BTreeMap, HashMap};
 use std::convert::TryInto;
 #[cfg(test)]
-use std::io::{BufRead,BufReader,Write};
+use std::io::{BufRead, BufReader, Write};
 use std::net::TcpStream;
 use std::path::Path;
 
 // extern crates
-
 use bson::doc;
-use bson::{Binary,Bson};
 use bson::spec::BinarySubtype;
-use data_encoding::{HEXLOWER};
+use bson::{Binary, Bson};
+use data_encoding::HEXLOWER;
 use num_enum::TryFromPrimitive;
-use rand::RngCore;
 use rand::rngs::OsRng;
+use rand::RngCore;
 #[cfg(test)]
 use serial_test::serial;
 
 // internal crates
-use crate::*;
 use crate::error::Result;
 use crate::honk_rpc::*;
 #[cfg(test)]
 use crate::test_utils::MemoryStream;
-use crate::tor_crypto::*;
 use crate::tor_controller::*;
+use crate::tor_crypto::*;
+use crate::*;
 
 #[derive(Debug, Eq, PartialEq, TryFromPrimitive)]
 #[repr(i32)]
@@ -65,15 +64,17 @@ impl From<DomainSeparator> for &[u8] {
     }
 }
 
-fn build_client_proof(domain_separator: DomainSeparator,
-                      request: &str,
-                      client_service_id: &V3OnionServiceId,
-                      server_service_id: &V3OnionServiceId,
-                      client_cookie: &ClientCookie,
-                      server_cookie: &ServerCookie) -> Result<ClientProof> {
+fn build_client_proof(
+    domain_separator: DomainSeparator,
+    request: &str,
+    client_service_id: &V3OnionServiceId,
+    server_service_id: &V3OnionServiceId,
+    client_cookie: &ClientCookie,
+    server_cookie: &ServerCookie,
+) -> Result<ClientProof> {
     ensure!(request.is_ascii());
 
-    let mut client_proof : ClientProof = Default::default();
+    let mut client_proof: ClientProof = Default::default();
 
     client_proof.extend_from_slice(domain_separator.into());
     client_proof.push(0u8);
@@ -123,7 +124,7 @@ enum IdentityClientState {
 //
 struct IdentityClient<RW> {
     // session data
-    rpc: Session<RW,RW>,
+    rpc: Session<RW, RW>,
     server_service_id: V3OnionServiceId,
     requested_endpoint: String,
     client_service_id: V3OnionServiceId,
@@ -136,16 +137,19 @@ struct IdentityClient<RW> {
     server_cookie: Option<ServerCookie>,
     endpoint_challenge_response: Option<bson::document::Document>,
     send_response_request_cookie: Option<RequestCookie>,
-
 }
 
-impl<RW> IdentityClient<RW> where RW : std::io::Read + std::io::Write + Send {
+impl<RW> IdentityClient<RW>
+where
+    RW: std::io::Read + std::io::Write + Send,
+{
     fn new(
-        rpc: Session<RW,RW>,
+        rpc: Session<RW, RW>,
         server_service_id: V3OnionServiceId,
         requested_endpoint: String,
         client_ed25519_private: Ed25519PrivateKey,
-        client_x25519_private: X25519PrivateKey) -> Result<Self> {
+        client_x25519_private: X25519PrivateKey,
+    ) -> Result<Self> {
         ensure!(requested_endpoint.is_ascii());
         Ok(Self {
             rpc,
@@ -164,14 +168,19 @@ impl<RW> IdentityClient<RW> where RW : std::io::Read + std::io::Write + Send {
     }
 
     fn update(&mut self) -> Result<Option<IdentityClientEvent>> {
-
         ensure!(self.state != IdentityClientState::HandshakeComplete);
 
         // update our rpc session
         self.rpc.update(None)?;
 
         // client state machine
-        match (&self.state, self.begin_handshake_request_cookie, self.server_cookie,  self.endpoint_challenge_response.take(), self.send_response_request_cookie) {
+        match (
+            &self.state,
+            self.begin_handshake_request_cookie,
+            self.server_cookie,
+            self.endpoint_challenge_response.take(),
+            self.send_response_request_cookie,
+        ) {
             // send initial handshake request
             (&IdentityClientState::BeginHandshake, None, None, None, None) => {
                 ensure!(self.requested_endpoint.is_ascii());
@@ -179,63 +188,97 @@ impl<RW> IdentityClient<RW> where RW : std::io::Read + std::io::Write + Send {
                     "gosling_identity",
                     "begin_handshake",
                     0,
-                    doc!{
+                    doc! {
                         "version" : bson::Bson::String(GOSLING_VERSION.to_string()),
                         "client_identity" : bson::Bson::String(self.client_service_id.to_string()),
                         "endpoint" : bson::Bson::String(self.requested_endpoint.clone()),
-                    })?);
+                    },
+                )?);
                 self.state = IdentityClientState::WaitingForChallenge;
-            },
-            (&IdentityClientState::WaitingForChallenge, Some(begin_handshake_request_cookie), None, None, None) => {
+            }
+            (
+                &IdentityClientState::WaitingForChallenge,
+                Some(begin_handshake_request_cookie),
+                None,
+                None,
+                None,
+            ) => {
                 if let Some(response) = self.rpc.client_next_response() {
                     // check for response for the begin_handshake() call
                     let mut response = match response {
-                        Response::Pending{cookie} => {
-                            ensure!(cookie == begin_handshake_request_cookie, "received unexpected pending response");
+                        Response::Pending { cookie } => {
+                            ensure!(
+                                cookie == begin_handshake_request_cookie,
+                                "received unexpected pending response"
+                            );
                             return Ok(None);
-                        },
-                        Response::Error{cookie, error_code} => {
-                            ensure!(cookie == begin_handshake_request_cookie, "received unexpected error response; rpc error_code: {}", error_code);
+                        }
+                        Response::Error { cookie, error_code } => {
+                            ensure!(
+                                cookie == begin_handshake_request_cookie,
+                                "received unexpected error response; rpc error_code: {}",
+                                error_code
+                            );
                             bail!("rpc error_code: {}", error_code);
-                        },
-                        Response::Success{cookie, result} => {
-                            ensure!(cookie == begin_handshake_request_cookie, "received unexpected success response");
+                        }
+                        Response::Success { cookie, result } => {
+                            ensure!(
+                                cookie == begin_handshake_request_cookie,
+                                "received unexpected success response"
+                            );
                             match result {
                                 Bson::Document(result) => result,
                                 _ => bail!("received unexpected bson type"),
                             }
-                        },
+                        }
                     };
 
                     // save off the server cookie
-                    self.server_cookie = match response.get("server_cookie"){
-                        Some(Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: server_cookie})) => match server_cookie.clone().try_into() {
-                                Ok(server_cookie) => Some(server_cookie),
-                                Err(_) => bail!(""),
-                            },
+                    self.server_cookie = match response.get("server_cookie") {
+                        Some(Bson::Binary(Binary {
+                            subtype: BinarySubtype::Generic,
+                            bytes: server_cookie,
+                        })) => match server_cookie.clone().try_into() {
+                            Ok(server_cookie) => Some(server_cookie),
+                            Err(_) => bail!(""),
+                        },
                         Some(_) => bail!("server_cookie is unxpected bson type"),
                         None => bail!("missing server_cookie"),
                     };
 
                     // get the endpoint challenge
                     let endpoint_challenge = match response.get_mut("endpoint_challenge") {
-                        Some(Bson::Document(endpoint_challenge)) => std::mem::take(endpoint_challenge),
+                        Some(Bson::Document(endpoint_challenge)) => {
+                            std::mem::take(endpoint_challenge)
+                        }
                         Some(_) => bail!("endpoint challenge is unexpected bson type"),
                         None => bail!("missing endpoint_challenge"),
                     };
 
                     self.state = IdentityClientState::WaitingForChallengeResponse;
-                    return Ok(Some(IdentityClientEvent::ChallengeReceived{
+                    return Ok(Some(IdentityClientEvent::ChallengeReceived {
                         identity_service_id: self.server_service_id.clone(),
                         endpoint_name: self.requested_endpoint.clone(),
                         endpoint_challenge,
                     }));
                 }
-            },
-            (&IdentityClientState::WaitingForChallengeResponse, Some(_begin_handshake_request_cookie), Some(_server_cookie), None, None) => {
-                return  Ok(None);
-            },
-            (&IdentityClientState::WaitingForChallengeResponse, Some(_begin_handshake_request_cookie), Some(server_cookie), Some(endpoint_challenge_response), None) => {
+            }
+            (
+                &IdentityClientState::WaitingForChallengeResponse,
+                Some(_begin_handshake_request_cookie),
+                Some(_server_cookie),
+                None,
+                None,
+            ) => {
+                return Ok(None);
+            }
+            (
+                &IdentityClientState::WaitingForChallengeResponse,
+                Some(_begin_handshake_request_cookie),
+                Some(server_cookie),
+                Some(endpoint_challenge_response),
+                None,
+            ) => {
                 // client_cookie
                 let mut client_cookie: ClientCookie = Default::default();
                 OsRng.fill_bytes(&mut client_cookie);
@@ -250,14 +293,19 @@ impl<RW> IdentityClient<RW> where RW : std::io::Read + std::io::Write + Send {
                     &client_cookie,
                     &server_cookie,
                 )?;
-                let client_identity_proof_signature = self.client_ed25519_private.sign_message(&client_identity_proof);
+                let client_identity_proof_signature = self
+                    .client_ed25519_private
+                    .sign_message(&client_identity_proof);
 
                 // client_authorization_key
-                 let client_authorization_key = X25519PublicKey::from_private_key(&self.client_x25519_private);
+                let client_authorization_key =
+                    X25519PublicKey::from_private_key(&self.client_x25519_private);
 
                 // client_authorization_signature
                 let client_identity = self.client_service_id.to_string();
-                let (client_authorization_signature, signbit) = self.client_x25519_private.sign_message(client_identity.as_bytes())?;
+                let (client_authorization_signature, signbit) = self
+                    .client_x25519_private
+                    .sign_message(client_identity.as_bytes())?;
 
                 // client_authorization_key_signbit
                 let client_authorization_key_signbit = match signbit {
@@ -266,8 +314,8 @@ impl<RW> IdentityClient<RW> where RW : std::io::Read + std::io::Write + Send {
                     _ => bail!("invalid signbit"),
                 };
 
-               // build our args object for rpc call
-                let args = doc!{
+                // build our args object for rpc call
+                let args = doc! {
                     "client_cookie" : bson::Bson::Binary(bson::Binary{subtype: BinarySubtype::Generic, bytes: client_cookie.to_vec()}),
                     "client_identity_proof_signature" : bson::Bson::Binary(bson::Binary{subtype: BinarySubtype::Generic, bytes: client_identity_proof_signature.to_bytes().to_vec()}),
                     "client_authorization_key" : bson::Bson::Binary(bson::Binary{subtype: BinarySubtype::Generic, bytes: client_authorization_key.as_bytes().to_vec()}),
@@ -277,44 +325,62 @@ impl<RW> IdentityClient<RW> where RW : std::io::Read + std::io::Write + Send {
                 };
 
                 // make rpc call
-                self.send_response_request_cookie = Some(self.rpc.client_call(
-                    "gosling_identity",
-                    "send_response",
-                    0,
-                    args)?);
+                self.send_response_request_cookie =
+                    Some(
+                        self.rpc
+                            .client_call("gosling_identity", "send_response", 0, args)?,
+                    );
                 self.state = IdentityClientState::WaitingForChallengeVerification;
-            },
-            (&IdentityClientState::WaitingForChallengeVerification, Some(_begin_handshake_request_cookie), Some(_server_cookie), None, Some(send_response_request_cookie)) => {
+            }
+            (
+                &IdentityClientState::WaitingForChallengeVerification,
+                Some(_begin_handshake_request_cookie),
+                Some(_server_cookie),
+                None,
+                Some(send_response_request_cookie),
+            ) => {
                 if let Some(response) = self.rpc.client_next_response() {
                     let endpoint_service_id = match response {
-                        Response::Pending{cookie} => {
-                            ensure!(cookie == send_response_request_cookie, "received unexpected pending response");
+                        Response::Pending { cookie } => {
+                            ensure!(
+                                cookie == send_response_request_cookie,
+                                "received unexpected pending response"
+                            );
                             return Ok(None);
-                        },
-                        Response::Error{cookie, error_code} => {
-                            ensure!(cookie == send_response_request_cookie, "received unexpected error response; rpc error_code: {}", error_code);
+                        }
+                        Response::Error { cookie, error_code } => {
+                            ensure!(
+                                cookie == send_response_request_cookie,
+                                "received unexpected error response; rpc error_code: {}",
+                                error_code
+                            );
                             bail!("rpc error_code: {}", error_code);
-                        },
-                        Response::Success{cookie, result} => {
-                            ensure!(cookie == send_response_request_cookie, "received unexpected success response");
+                        }
+                        Response::Success { cookie, result } => {
+                            ensure!(
+                                cookie == send_response_request_cookie,
+                                "received unexpected success response"
+                            );
                             match result {
-                                Bson::String(endpoint_service_id) => V3OnionServiceId::from_string(&endpoint_service_id)?,
+                                Bson::String(endpoint_service_id) => {
+                                    V3OnionServiceId::from_string(&endpoint_service_id)?
+                                }
                                 _ => bail!("received unexpected bson type"),
                             }
-                        },
+                        }
                     };
                     self.state = IdentityClientState::HandshakeComplete;
-                    return Ok(Some(IdentityClientEvent::HandshakeCompleted{
+                    return Ok(Some(IdentityClientEvent::HandshakeCompleted {
                         identity_service_id: self.server_service_id.clone(),
                         endpoint_service_id,
                         endpoint_name: self.requested_endpoint.clone(),
                         client_auth_private_key: self.client_x25519_private.clone(),
                     }));
                 }
-            },
+            }
             _ => {
                 bail!("unexpected state: state: {:?},  begin_handshake_request_cookie: {:?},  server_cookie: {:?}, endpoint_challenge_response: {:?},  send_response_request_cookie: {:?}", self.state,  self.begin_handshake_request_cookie, self.server_cookie, self.endpoint_challenge_response, self.send_response_request_cookie);
-            },
+            }
         }
         Ok(None)
     }
@@ -331,23 +397,23 @@ impl<RW> IdentityClient<RW> where RW : std::io::Read + std::io::Write + Send {
 //
 
 enum IdentityServerEvent {
-    EndpointRequestReceived{
+    EndpointRequestReceived {
         client_service_id: V3OnionServiceId,
         requested_endpoint: String,
     },
 
-    ChallengeResponseReceived{
+    ChallengeResponseReceived {
         challenge_response: bson::document::Document,
     },
 
-    HandshakeCompleted{
+    HandshakeCompleted {
         endpoint_private_key: Ed25519PrivateKey,
         endpoint_name: String,
         client_service_id: V3OnionServiceId,
         client_auth_public_key: X25519PublicKey,
     },
 
-    HandshakeRejected{
+    HandshakeRejected {
         // Client not on the block-list
         client_allowed: bool,
         // The requested endpoint is valid
@@ -375,7 +441,7 @@ enum IdentityServerState {
 
 struct IdentityServer<RW> {
     // Session Data
-    rpc: Option<Session<RW,RW>>,
+    rpc: Option<Session<RW, RW>>,
     server_identity: V3OnionServiceId,
 
     // State Machine Data
@@ -404,9 +470,12 @@ struct IdentityServer<RW> {
     challenge_response_valid: bool,
 }
 
-impl<RW> IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
-    pub fn new(rpc: Session<RW,RW>, server_identity: V3OnionServiceId) -> Self {
-        IdentityServer{
+impl<RW> IdentityServer<RW>
+where
+    RW: std::io::Read + std::io::Write + Send,
+{
+    pub fn new(rpc: Session<RW, RW>, server_identity: V3OnionServiceId) -> Self {
+        IdentityServer {
             // Session Data
             rpc: Some(rpc),
             server_identity,
@@ -528,8 +597,8 @@ impl<RW> IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
     fn handle_begin_handshake(
         &mut self,
         version: String,
-        endpoint_name: String) -> Result<(), GoslingError> {
-
+        endpoint_name: String,
+    ) -> Result<(), GoslingError> {
         if version != GOSLING_VERSION {
             Err(GoslingError::BadVersion)
         } else {
@@ -542,27 +611,32 @@ impl<RW> IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
         &mut self,
         client_allowed: bool,
         endpoint_valid: bool,
-        endpoint_challenge: bson::document::Document) -> Result<(), error::Error> {
-
-        match (&self.state,
-               self.begin_handshake_request_cookie,
-               self.client_identity.as_ref(),
-               self.requested_endpoint.as_ref(),
-               self.server_cookie.as_ref(),
-               self.endpoint_challenge.as_ref(),
-               self.client_auth_key.as_ref(),
-               self.challenge_response.as_ref(),
-               self.endpoint_private_key.as_ref()) {
-              (&IdentityServerState::GettingChallenge,
-               Some(_begin_handshake_request_cookie),
-               Some(_client_identity),
-               Some(_endpoint_name),
-               None, // server_cookie
-               None, // endpoint_challenge
-               None, // client_auth_key
-               None, // challenge_response
-               None) => // endpoint_private_key
-             {
+        endpoint_challenge: bson::document::Document,
+    ) -> Result<(), error::Error> {
+        match (
+            &self.state,
+            self.begin_handshake_request_cookie,
+            self.client_identity.as_ref(),
+            self.requested_endpoint.as_ref(),
+            self.server_cookie.as_ref(),
+            self.endpoint_challenge.as_ref(),
+            self.client_auth_key.as_ref(),
+            self.challenge_response.as_ref(),
+            self.endpoint_private_key.as_ref(),
+        ) {
+            (
+                &IdentityServerState::GettingChallenge,
+                Some(_begin_handshake_request_cookie),
+                Some(_client_identity),
+                Some(_endpoint_name),
+                None, // server_cookie
+                None, // endpoint_challenge
+                None, // client_auth_key
+                None, // challenge_response
+                None,
+            ) =>
+            // endpoint_private_key
+            {
                 let mut server_cookie: ServerCookie = Default::default();
                 OsRng.fill_bytes(&mut server_cookie);
                 self.server_cookie = Some(server_cookie);
@@ -571,10 +645,10 @@ impl<RW> IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
                 self.client_requested_endpoint_valid = endpoint_valid;
                 self.state = IdentityServerState::ChallengeReady;
                 Ok(())
-            },
+            }
             _ => {
                 bail!("unexpected state: state: {:?}", self.state);
-            },
+            }
         }
     }
 
@@ -587,24 +661,30 @@ impl<RW> IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
         client_authorization_key: X25519PublicKey,
         client_authorization_key_signbit: u8,
         client_authorization_signature: Ed25519Signature,
-        challenge_response: bson::document::Document) -> Result<(), GoslingError> {
-
+        challenge_response: bson::document::Document,
+    ) -> Result<(), GoslingError> {
         // convert client_identity to client's public ed25519 key
         if let Ok(client_identity_key) = Ed25519PublicKey::from_service_id(&client_identity) {
             // construct + verify client proof
             if let Ok(client_proof) = build_client_proof(
-                                            DomainSeparator::GoslingIdentity,
-                                            self.requested_endpoint.as_ref().unwrap(),
-                                            &client_identity,
-                                            &self.server_identity,
-                                            &client_cookie,
-                                            self.server_cookie.as_ref().unwrap()) {
-                self.client_proof_signature_valid = client_identity_proof_signature.verify(&client_proof, &client_identity_key);
+                DomainSeparator::GoslingIdentity,
+                self.requested_endpoint.as_ref().unwrap(),
+                &client_identity,
+                &self.server_identity,
+                &client_cookie,
+                self.server_cookie.as_ref().unwrap(),
+            ) {
+                self.client_proof_signature_valid =
+                    client_identity_proof_signature.verify(&client_proof, &client_identity_key);
             };
         }
 
         // evaluate the client authorization signature
-        self.client_auth_signature_valid = client_authorization_signature.verify_x25519(client_identity.as_bytes(), &client_authorization_key, client_authorization_key_signbit);
+        self.client_auth_signature_valid = client_authorization_signature.verify_x25519(
+            client_identity.as_bytes(),
+            &client_authorization_key,
+            client_authorization_key_signbit,
+        );
 
         // save off client auth key for future endpoint generation
         self.client_auth_key = Some(client_authorization_key);
@@ -616,77 +696,106 @@ impl<RW> IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
 
     pub fn handle_challenge_response_received(
         &mut self,
-        challenge_response_valid: bool) -> Result<(), error::Error> {
-
-        match (&self.state,
-               self.begin_handshake_request_cookie,
-               self.client_identity.as_ref(),
-               self.requested_endpoint.as_ref(),
-               self.server_cookie.as_ref(),
-               self.endpoint_challenge.as_ref(),
-               self.client_auth_key.as_ref(),
-               self.challenge_response.as_ref(),
-               self.endpoint_private_key.as_ref()) {
-              (&IdentityServerState::GettingChallengeVerification,
-               Some(_begin_handshake_request_cookie),
-               Some(_client_identity),
-               Some(_requested_endpoint),
-               Some(_server_cookie),
-               Some(_endpoint_challenge),
-               Some(_client_auth_key),
-               Some(_challenge_response),
-               None) => // endpoint_private_key
+        challenge_response_valid: bool,
+    ) -> Result<(), error::Error> {
+        match (
+            &self.state,
+            self.begin_handshake_request_cookie,
+            self.client_identity.as_ref(),
+            self.requested_endpoint.as_ref(),
+            self.server_cookie.as_ref(),
+            self.endpoint_challenge.as_ref(),
+            self.client_auth_key.as_ref(),
+            self.challenge_response.as_ref(),
+            self.endpoint_private_key.as_ref(),
+        ) {
+            (
+                &IdentityServerState::GettingChallengeVerification,
+                Some(_begin_handshake_request_cookie),
+                Some(_client_identity),
+                Some(_requested_endpoint),
+                Some(_server_cookie),
+                Some(_endpoint_challenge),
+                Some(_client_auth_key),
+                Some(_challenge_response),
+                None,
+            ) =>
+            // endpoint_private_key
             {
                 self.challenge_response_valid = challenge_response_valid;
                 self.state = IdentityServerState::ChallengeVerificationReady;
-            },
-            _ => { bail!("unexpected state"); }
+            }
+            _ => {
+                bail!("unexpected state");
+            }
         }
 
         Ok(())
     }
 }
 
-impl<RW> ApiSet for IdentityServer<RW> where RW : std::io::Read + std::io::Write + Send {
+impl<RW> ApiSet for IdentityServer<RW>
+where
+    RW: std::io::Read + std::io::Write + Send,
+{
     fn namespace(&self) -> &str {
         "gosling_identity"
     }
 
-    fn exec_function(&mut self, name: &str, version: i32, mut args: bson::document::Document, request_cookie: Option<RequestCookie>) -> Result<Option<bson::Bson>, ErrorCode> {
-
+    fn exec_function(
+        &mut self,
+        name: &str,
+        version: i32,
+        mut args: bson::document::Document,
+        request_cookie: Option<RequestCookie>,
+    ) -> Result<Option<bson::Bson>, ErrorCode> {
         let request_cookie = match request_cookie {
             Some(request_cookie) => request_cookie,
-            None => return Err(ErrorCode::Runtime(GoslingError::RequestCookieRequired as i32)),
+            None => {
+                return Err(ErrorCode::Runtime(
+                    GoslingError::RequestCookieRequired as i32,
+                ))
+            }
         };
 
-        match (name, version,
-               &self.state,
-               self.begin_handshake_request_cookie,
-               self.client_identity.as_ref(),
-               self.requested_endpoint.as_ref(),
-               self.server_cookie.as_ref(),
-               self.endpoint_challenge.as_ref(),
-               self.client_auth_key.as_ref(),
-               self.challenge_response.as_ref(),
-               self.endpoint_private_key.as_ref()) {
+        match (
+            name,
+            version,
+            &self.state,
+            self.begin_handshake_request_cookie,
+            self.client_identity.as_ref(),
+            self.requested_endpoint.as_ref(),
+            self.server_cookie.as_ref(),
+            self.endpoint_challenge.as_ref(),
+            self.client_auth_key.as_ref(),
+            self.challenge_response.as_ref(),
+            self.endpoint_private_key.as_ref(),
+        ) {
             // handle begin_handshake call
-            ("begin_handshake", 0,
-             &IdentityServerState::WaitingForBeginHandshake,
-             None, // begin_handshake_request_cookie
-             None, // client_identity
-             None, // requested_endpoint
-             None, // server_cookie
-             None, // endpoint_challenge
-             None, // client_auth_key
-             None, // challenge_response
-             None) => // endpoint_private_key
+            (
+                "begin_handshake",
+                0,
+                &IdentityServerState::WaitingForBeginHandshake,
+                None, // begin_handshake_request_cookie
+                None, // client_identity
+                None, // requested_endpoint
+                None, // server_cookie
+                None, // endpoint_challenge
+                None, // client_auth_key
+                None, // challenge_response
+                None,
+            ) =>
+            // endpoint_private_key
             {
-                if let (Some(Bson::String(version)),
-                        Some(Bson::String(client_identity)),
-                        Some(Bson::String(endpoint_name))) =
-                       (args.remove("version"),
-                        args.remove("client_identity"),
-                        args.remove("endpoint")) {
+                if let (
+                    Some(Bson::String(version)),
+                    Some(Bson::String(client_identity)),
+                    Some(Bson::String(endpoint_name)),
+                ) = (
+                    args.remove("version"),
+                    args.remove("client_identity"),
+                    args.remove("endpoint"),
+                ) {
                     self.begin_handshake_request_cookie = Some(request_cookie);
 
                     // client_identiity
@@ -706,132 +815,175 @@ impl<RW> ApiSet for IdentityServer<RW> where RW : std::io::Read + std::io::Write
                 } else {
                     Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32))
                 }
-            },
+            }
             // handle send_response call
-            ("send_response", 0,
-             &IdentityServerState::WaitingForSendResponse,
-             Some(_begin_handshake_request_cookie),
-             Some(client_identity),
-             Some(_endpoint_name),
-             Some(_server_cookie),
-             Some(_endpoint_challenge),
-             None, // client_auth_key
-             None, // challenge_response
-             None) => // endpoint_private_key
+            (
+                "send_response",
+                0,
+                &IdentityServerState::WaitingForSendResponse,
+                Some(_begin_handshake_request_cookie),
+                Some(client_identity),
+                Some(_endpoint_name),
+                Some(_server_cookie),
+                Some(_endpoint_challenge),
+                None, // client_auth_key
+                None, // challenge_response
+                None,
+            ) =>
+            // endpoint_private_key
             {
                 // arg validation
-                if let (Some(Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: client_cookie})),
-                        Some(Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: client_identity_proof_signature})),
-                        Some(Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: client_authorization_key})),
-                        Some(Bson::Boolean(client_authorization_key_signbit)),
-                        Some(Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: client_authorization_signature})),
-                        Some(Bson::Document(challenge_response))) =
-                       (args.remove("client_cookie"),
-                        args.remove("client_identity_proof_signature"),
-                        args.remove("client_authorization_key"),
-                        args.remove("client_authorization_key_signbit"),
-                        args.remove("client_authorization_signature"),
-                        args.remove("challenge_response")) {
+                if let (
+                    Some(Bson::Binary(Binary {
+                        subtype: BinarySubtype::Generic,
+                        bytes: client_cookie,
+                    })),
+                    Some(Bson::Binary(Binary {
+                        subtype: BinarySubtype::Generic,
+                        bytes: client_identity_proof_signature,
+                    })),
+                    Some(Bson::Binary(Binary {
+                        subtype: BinarySubtype::Generic,
+                        bytes: client_authorization_key,
+                    })),
+                    Some(Bson::Boolean(client_authorization_key_signbit)),
+                    Some(Bson::Binary(Binary {
+                        subtype: BinarySubtype::Generic,
+                        bytes: client_authorization_signature,
+                    })),
+                    Some(Bson::Document(challenge_response)),
+                ) = (
+                    args.remove("client_cookie"),
+                    args.remove("client_identity_proof_signature"),
+                    args.remove("client_authorization_key"),
+                    args.remove("client_authorization_key_signbit"),
+                    args.remove("client_authorization_signature"),
+                    args.remove("challenge_response"),
+                ) {
                     self.send_response_request_cookie = Some(request_cookie);
 
                     // client_cookie
-                    let client_cookie : ClientCookie = match client_cookie.try_into() {
+                    let client_cookie: ClientCookie = match client_cookie.try_into() {
                         Ok(client_cookie) => client_cookie,
                         Err(_) => return Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32)),
                     };
 
                     // client_identity_proof_signature
-                    let client_identity_proof_signature : [u8; ED25519_SIGNATURE_SIZE] = match client_identity_proof_signature.try_into() {
-                        Ok(client_identity_proof_signature) => client_identity_proof_signature,
-                        Err(_) => return Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32)),
-                    };
+                    let client_identity_proof_signature: [u8; ED25519_SIGNATURE_SIZE] =
+                        match client_identity_proof_signature.try_into() {
+                            Ok(client_identity_proof_signature) => client_identity_proof_signature,
+                            Err(_) => {
+                                return Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32))
+                            }
+                        };
 
-                    let client_identity_proof_signature = match Ed25519Signature::from_raw(&client_identity_proof_signature) {
-                        Ok(client_identity_proof_signature) => client_identity_proof_signature,
-                        Err(_) => return Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32)),
-                    };
+                    let client_identity_proof_signature =
+                        match Ed25519Signature::from_raw(&client_identity_proof_signature) {
+                            Ok(client_identity_proof_signature) => client_identity_proof_signature,
+                            Err(_) => {
+                                return Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32))
+                            }
+                        };
 
                     // client_authorization_key
-                    let client_authorization_key : [u8; X25519_PUBLIC_KEY_SIZE] = match client_authorization_key.try_into() {
-                        Ok(client_authorization_key) => client_authorization_key,
-                        Err(_) => return Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32)),
-                    };
+                    let client_authorization_key: [u8; X25519_PUBLIC_KEY_SIZE] =
+                        match client_authorization_key.try_into() {
+                            Ok(client_authorization_key) => client_authorization_key,
+                            Err(_) => {
+                                return Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32))
+                            }
+                        };
 
-                    let client_authorization_key = X25519PublicKey::from_raw(&client_authorization_key);
+                    let client_authorization_key =
+                        X25519PublicKey::from_raw(&client_authorization_key);
 
                     // client_authorization_key_signbit
                     let client_authorization_key_signbit = client_authorization_key_signbit as u8;
 
                     // client_authorization_signature
-                    let client_authorization_signature : [u8; ED25519_SIGNATURE_SIZE] = match client_authorization_signature.try_into() {
-                        Ok(client_authorization_signature) => client_authorization_signature,
-                        Err(_) => return Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32)),
-                    };
+                    let client_authorization_signature: [u8; ED25519_SIGNATURE_SIZE] =
+                        match client_authorization_signature.try_into() {
+                            Ok(client_authorization_signature) => client_authorization_signature,
+                            Err(_) => {
+                                return Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32))
+                            }
+                        };
 
-                    let client_authorization_signature = match Ed25519Signature::from_raw(&client_authorization_signature) {
-                        Ok(client_authorization_signature) => client_authorization_signature,
-                        Err(_) => return Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32)),
-                    };
+                    let client_authorization_signature =
+                        match Ed25519Signature::from_raw(&client_authorization_signature) {
+                            Ok(client_authorization_signature) => client_authorization_signature,
+                            Err(_) => {
+                                return Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32))
+                            }
+                        };
                     match self.handle_send_response(
-                            client_cookie,
-                            client_identity.clone(),
-                            client_identity_proof_signature,
-                            client_authorization_key,
-                            client_authorization_key_signbit,
-                            client_authorization_signature,
-                            challenge_response) {
+                        client_cookie,
+                        client_identity.clone(),
+                        client_identity_proof_signature,
+                        client_authorization_key,
+                        client_authorization_key_signbit,
+                        client_authorization_signature,
+                        challenge_response,
+                    ) {
                         Ok(()) => Ok(None),
                         Err(err) => Err(ErrorCode::Runtime(err as i32)),
                     }
                 } else {
                     Err(ErrorCode::Runtime(GoslingError::InvalidArg as i32))
                 }
-            },
-            _ => Err(ErrorCode::Runtime(GoslingError::Failure as i32))
+            }
+            _ => Err(ErrorCode::Runtime(GoslingError::Failure as i32)),
         }
     }
 
     fn next_result(&mut self) -> Option<(RequestCookie, Option<bson::Bson>, ErrorCode)> {
-        match (&self.state,
-               self.begin_handshake_request_cookie,
-               self.client_identity.as_ref(),
-               self.requested_endpoint.as_ref(),
-               self.server_cookie.as_ref(),
-               self.endpoint_challenge.as_mut(),
-               self.send_response_request_cookie,
-               self.client_auth_key.as_ref(),
-               self.challenge_response.as_ref()) {
+        match (
+            &self.state,
+            self.begin_handshake_request_cookie,
+            self.client_identity.as_ref(),
+            self.requested_endpoint.as_ref(),
+            self.server_cookie.as_ref(),
+            self.endpoint_challenge.as_mut(),
+            self.send_response_request_cookie,
+            self.client_auth_key.as_ref(),
+            self.challenge_response.as_ref(),
+        ) {
             // return challenge from begin_handshake
-            (&IdentityServerState::ChallengeReady,
-             Some(begin_handshake_request_cookie),
-             Some(_client_identity),
-             Some(_requested_endpoint),
-             Some(server_cookie),
-             Some(endpoint_challenge),
-             None, // send_response_request_cookie
-             None, // client_auth_key
-             None) => // challenge_response
+            (
+                &IdentityServerState::ChallengeReady,
+                Some(begin_handshake_request_cookie),
+                Some(_client_identity),
+                Some(_requested_endpoint),
+                Some(server_cookie),
+                Some(endpoint_challenge),
+                None, // send_response_request_cookie
+                None, // client_auth_key
+                None,
+            ) =>
+            // challenge_response
             {
                 self.state = IdentityServerState::WaitingForSendResponse;
                 Some((
                     begin_handshake_request_cookie,
-                    Some(Bson::Document(doc!{
+                    Some(Bson::Document(doc! {
                         "server_cookie" : Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: server_cookie.to_vec()}),
                         "endpoint_challenge" : std::mem::take(endpoint_challenge),
                     })),
-                    ErrorCode::Success))
-            },
+                    ErrorCode::Success,
+                ))
+            }
             (&IdentityServerState::ChallengeReady, _, _, _, _, _, _, _, _) => unreachable!(),
-            (&IdentityServerState::ChallengeVerificationReady,
-             Some(_begin_handshake_request_cookie),
-             Some(_client_identity),
-             Some(_requested_endpoint),
-             Some(_server_cookie),
-             Some(_endpoint_challenge),
-             Some(send_response_request_cookie),
-             Some(_client_auth_key),
-             Some(_challenge_response)) =>
-            {
+            (
+                &IdentityServerState::ChallengeVerificationReady,
+                Some(_begin_handshake_request_cookie),
+                Some(_client_identity),
+                Some(_requested_endpoint),
+                Some(_server_cookie),
+                Some(_endpoint_challenge),
+                Some(send_response_request_cookie),
+                Some(_client_auth_key),
+                Some(_challenge_response),
+            ) => {
                 let mut success = true;
                 success &= self.client_allowed;
                 success &= self.client_requested_endpoint_valid;
@@ -842,26 +994,29 @@ impl<RW> ApiSet for IdentityServer<RW> where RW : std::io::Read + std::io::Write
                 self.state = IdentityServerState::ChallengeVerificationResponseSent;
                 if success {
                     let endpoint_private_key = Ed25519PrivateKey::generate();
-                    let endpoint_service_id = V3OnionServiceId::from_private_key(&endpoint_private_key);
+                    let endpoint_service_id =
+                        V3OnionServiceId::from_private_key(&endpoint_private_key);
                     self.endpoint_private_key = Some(endpoint_private_key);
                     Some((
                         send_response_request_cookie,
                         Some(Bson::String(endpoint_service_id.to_string())),
-                        ErrorCode::Success))
+                        ErrorCode::Success,
+                    ))
                 } else {
                     Some((
                         send_response_request_cookie,
                         None,
-                        ErrorCode::Runtime(GoslingError::Failure as i32)))
+                        ErrorCode::Runtime(GoslingError::Failure as i32),
+                    ))
                 }
-            },
+            }
             _ => None,
         }
     }
 }
 
 enum EndpointClientEvent {
-    HandshakeCompleted
+    HandshakeCompleted,
 }
 
 #[derive(Debug, PartialEq)]
@@ -874,7 +1029,7 @@ enum EndpointClientState {
 
 struct EndpointClient<RW> {
     // session data
-    rpc: Session<RW,RW>,
+    rpc: Session<RW, RW>,
     server_service_id: V3OnionServiceId,
     requested_channel: String,
     client_service_id: V3OnionServiceId,
@@ -886,14 +1041,18 @@ struct EndpointClient<RW> {
     send_response_request_cookie: Option<RequestCookie>,
 }
 
-impl<RW> EndpointClient<RW> where RW : std::io::Read + std::io::Write + Send {
+impl<RW> EndpointClient<RW>
+where
+    RW: std::io::Read + std::io::Write + Send,
+{
     fn new(
-        rpc: Session<RW,RW>,
+        rpc: Session<RW, RW>,
         server_service_id: V3OnionServiceId,
         requested_channel: String,
-        client_ed25519_private: Ed25519PrivateKey) -> Result<Self> {
+        client_ed25519_private: Ed25519PrivateKey,
+    ) -> Result<Self> {
         ensure!(requested_channel.is_ascii());
-        Ok(Self{
+        Ok(Self {
             rpc,
             server_service_id,
             requested_channel,
@@ -906,7 +1065,6 @@ impl<RW> EndpointClient<RW> where RW : std::io::Read + std::io::Write + Send {
     }
 
     fn update(&mut self) -> Result<Option<EndpointClientEvent>> {
-
         ensure!(self.state != EndpointClientState::HandshakeComplete);
 
         // update our rpc session
@@ -916,40 +1074,60 @@ impl<RW> EndpointClient<RW> where RW : std::io::Read + std::io::Write + Send {
         match (
             &self.state,
             self.begin_handshake_request_cookie,
-            self.send_response_request_cookie) {
+            self.send_response_request_cookie,
+        ) {
             (&EndpointClientState::BeginHandshake, None, None) => {
                 ensure!(self.requested_channel.is_ascii());
                 self.begin_handshake_request_cookie = Some(self.rpc.client_call(
                     "gosling_endpoint",
                     "begin_handshake",
                     0,
-                    doc!{
+                    doc! {
                         "version" : bson::Bson::String(GOSLING_VERSION.to_string()),
                         "client_identity" : bson::Bson::String(self.client_service_id.to_string()),
                         "channel" : bson::Bson::String(self.requested_channel.clone()),
-                    })?);
+                    },
+                )?);
                 self.state = EndpointClientState::WaitingForServerCookie;
                 Ok(None)
-            },
-            (&EndpointClientState::WaitingForServerCookie, Some(begin_handshake_request_cookie), None) => {
+            }
+            (
+                &EndpointClientState::WaitingForServerCookie,
+                Some(begin_handshake_request_cookie),
+                None,
+            ) => {
                 if let Some(response) = self.rpc.client_next_response() {
                     let result = match response {
-                        Response::Pending{cookie} => {
-                            ensure!(cookie == begin_handshake_request_cookie, "received unexpected pending response");
+                        Response::Pending { cookie } => {
+                            ensure!(
+                                cookie == begin_handshake_request_cookie,
+                                "received unexpected pending response"
+                            );
                             return Ok(None);
-                        },
-                        Response::Error{cookie, error_code} => {
-                            ensure!(cookie == begin_handshake_request_cookie, "received unexpected error response; rpc error_code: {}", error_code);
+                        }
+                        Response::Error { cookie, error_code } => {
+                            ensure!(
+                                cookie == begin_handshake_request_cookie,
+                                "received unexpected error response; rpc error_code: {}",
+                                error_code
+                            );
                             bail!("rpc error_code: {}", error_code);
-                        },
-                        Response::Success{cookie, result} => {
-                            ensure!(cookie == begin_handshake_request_cookie, "received unexpected success response");
+                        }
+                        Response::Success { cookie, result } => {
+                            ensure!(
+                                cookie == begin_handshake_request_cookie,
+                                "received unexpected success response"
+                            );
                             result
-                        },
+                        }
                     };
 
                     if let bson::Bson::Document(result) = result {
-                        if let Some(Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: server_cookie})) = result.get("server_cookie") {
+                        if let Some(Bson::Binary(Binary {
+                            subtype: BinarySubtype::Generic,
+                            bytes: server_cookie,
+                        })) = result.get("server_cookie")
+                        {
                             // build arguments for send_response()
 
                             // client_cookie
@@ -957,7 +1135,8 @@ impl<RW> EndpointClient<RW> where RW : std::io::Read + std::io::Write + Send {
                             OsRng.fill_bytes(&mut client_cookie);
 
                             // client_identity_proof_signature
-                            let server_cookie: ServerCookie = match server_cookie.clone().try_into() {
+                            let server_cookie: ServerCookie = match server_cookie.clone().try_into()
+                            {
                                 Ok(server_cookie) => server_cookie,
                                 Err(_) => bail!("invalid server cookie length"),
                             };
@@ -969,10 +1148,12 @@ impl<RW> EndpointClient<RW> where RW : std::io::Read + std::io::Write + Send {
                                 &client_cookie,
                                 &server_cookie,
                             )?;
-                            let client_identity_proof_signature = self.client_ed25519_private.sign_message(&client_identity_proof);
+                            let client_identity_proof_signature = self
+                                .client_ed25519_private
+                                .sign_message(&client_identity_proof);
 
                             // build our args object for rpc call
-                            let args = doc!{
+                            let args = doc! {
                                 "client_cookie" : Bson::Binary(bson::Binary{subtype: BinarySubtype::Generic, bytes: client_cookie.to_vec()}),
                                 "client_identity_proof_signature" : Bson::Binary(bson::Binary{subtype: BinarySubtype::Generic, bytes: client_identity_proof_signature.to_bytes().to_vec()}),
                             };
@@ -982,7 +1163,8 @@ impl<RW> EndpointClient<RW> where RW : std::io::Read + std::io::Write + Send {
                                 "gosling_endpoint",
                                 "send_response",
                                 0,
-                                args)?);
+                                args,
+                            )?);
 
                             self.state = EndpointClientState::WaitingForProofVerification;
                         }
@@ -991,22 +1173,36 @@ impl<RW> EndpointClient<RW> where RW : std::io::Read + std::io::Write + Send {
                     }
                 }
                 Ok(None)
-            },
-            (&EndpointClientState::WaitingForProofVerification, Some(_begin_handshake_request_cookie), Some(send_response_request_cookie)) => {
+            }
+            (
+                &EndpointClientState::WaitingForProofVerification,
+                Some(_begin_handshake_request_cookie),
+                Some(send_response_request_cookie),
+            ) => {
                 if let Some(response) = self.rpc.client_next_response() {
                     let result = match response {
-                        Response::Pending{cookie} => {
-                            ensure!(cookie == send_response_request_cookie, "received unexpected pending response");
+                        Response::Pending { cookie } => {
+                            ensure!(
+                                cookie == send_response_request_cookie,
+                                "received unexpected pending response"
+                            );
                             return Ok(None);
-                        },
-                        Response::Error{cookie, error_code} => {
-                            ensure!(cookie == send_response_request_cookie, "received unexpected error response; rpc error_code: {}", error_code);
+                        }
+                        Response::Error { cookie, error_code } => {
+                            ensure!(
+                                cookie == send_response_request_cookie,
+                                "received unexpected error response; rpc error_code: {}",
+                                error_code
+                            );
                             bail!("rpc error_code: {}", error_code);
-                        },
-                        Response::Success{cookie, result} => {
-                            ensure!(cookie == send_response_request_cookie, "received unexpected success response");
+                        }
+                        Response::Success { cookie, result } => {
+                            ensure!(
+                                cookie == send_response_request_cookie,
+                                "received unexpected success response"
+                            );
                             result
-                        },
+                        }
                     };
 
                     if let Bson::Document(result) = result {
@@ -1017,12 +1213,15 @@ impl<RW> EndpointClient<RW> where RW : std::io::Read + std::io::Write + Send {
                     }
                 }
                 Ok(None)
-            },
+            }
             _ => {
-                bail!("unexpected state: state: {:?}, begin_handshake_request_cookie: {:?}", self.state, self.begin_handshake_request_cookie);
-            },
+                bail!(
+                    "unexpected state: state: {:?}, begin_handshake_request_cookie: {:?}",
+                    self.state,
+                    self.begin_handshake_request_cookie
+                );
+            }
         }
-
     }
 }
 
@@ -1031,17 +1230,17 @@ impl<RW> EndpointClient<RW> where RW : std::io::Read + std::io::Write + Send {
 //
 
 enum EndpointServerEvent {
-    ChannelRequestReceived{
+    ChannelRequestReceived {
         client_service_id: V3OnionServiceId,
-        requested_channel: String
+        requested_channel: String,
     },
     // endpoint server has acepted incoming channel request from identity client
-    HandshakeCompleted{
+    HandshakeCompleted {
         client_service_id: V3OnionServiceId,
         channel_name: String,
     },
     // endpoint server has reject an incoming channel request
-    HandshakeRejected{
+    HandshakeRejected {
         client_allowed: bool,
         client_requested_channel_valid: bool,
         client_proof_signature_valid: bool,
@@ -1060,7 +1259,7 @@ enum EndpointServerState {
 
 struct EndpointServer<RW> {
     // Session Data
-    rpc: Option<Session<RW,RW>>,
+    rpc: Option<Session<RW, RW>>,
     server_identity: V3OnionServiceId,
     allowed_client_identity: V3OnionServiceId,
 
@@ -1082,17 +1281,20 @@ struct EndpointServer<RW> {
     client_proof_signature_valid: bool,
 }
 
-impl<RW> EndpointServer<RW> where RW : std::io::Read + std::io::Write + Send {
+impl<RW> EndpointServer<RW>
+where
+    RW: std::io::Read + std::io::Write + Send,
+{
     pub fn new(
-        rpc: Session<RW,RW>,
+        rpc: Session<RW, RW>,
         client_identity: V3OnionServiceId,
-        server_identity: V3OnionServiceId) -> Self {
-
+        server_identity: V3OnionServiceId,
+    ) -> Self {
         // generate server cookie
         let mut server_cookie: ServerCookie = Default::default();
         OsRng.fill_bytes(&mut server_cookie);
 
-        EndpointServer{
+        EndpointServer {
             rpc: Some(rpc),
             server_identity,
             allowed_client_identity: client_identity,
@@ -1198,8 +1400,8 @@ impl<RW> EndpointServer<RW> where RW : std::io::Read + std::io::Write + Send {
     fn handle_begin_handshake(
         &mut self,
         version: String,
-        channel_name: String) -> Result<(), GoslingError> {
-
+        channel_name: String,
+    ) -> Result<(), GoslingError> {
         if version != GOSLING_VERSION {
             return Err(GoslingError::BadVersion);
         } else {
@@ -1210,8 +1412,8 @@ impl<RW> EndpointServer<RW> where RW : std::io::Read + std::io::Write + Send {
 
     pub fn handle_channel_request_received(
         &mut self,
-        client_requested_channel_valid: bool) -> Result<(), error::Error> {
-
+        client_requested_channel_valid: bool,
+    ) -> Result<(), error::Error> {
         match(&self.state,
               self.begin_handshake_request_cookie,
               self.client_identity.as_ref(),
@@ -1250,27 +1452,33 @@ impl<RW> EndpointServer<RW> where RW : std::io::Read + std::io::Write + Send {
         &mut self,
         client_cookie: ClientCookie,
         client_identity: V3OnionServiceId,
-        client_identity_proof_signature: Ed25519Signature) -> Result<bson::Bson, GoslingError> {
-
+        client_identity_proof_signature: Ed25519Signature,
+    ) -> Result<bson::Bson, GoslingError> {
         // convert client_identity to client's public ed25519 key
-        if let (Ok(client_identity_key), Some(requested_channel)) = (Ed25519PublicKey::from_service_id(&client_identity), self.requested_channel.as_ref()) {
+        if let (Ok(client_identity_key), Some(requested_channel)) = (
+            Ed25519PublicKey::from_service_id(&client_identity),
+            self.requested_channel.as_ref(),
+        ) {
             // construct + verify client proof
             if let Ok(client_proof) = build_client_proof(
-                                            DomainSeparator::GoslingEndpoint,
-                                            requested_channel,
-                                            &client_identity,
-                                            &self.server_identity,
-                                            &client_cookie,
-                                            &self.server_cookie.as_ref().unwrap()) {
-                self.client_proof_signature_valid = client_identity_proof_signature.verify(&client_proof, &client_identity_key);
+                DomainSeparator::GoslingEndpoint,
+                requested_channel,
+                &client_identity,
+                &self.server_identity,
+                &client_cookie,
+                &self.server_cookie.as_ref().unwrap(),
+            ) {
+                self.client_proof_signature_valid =
+                    client_identity_proof_signature.verify(&client_proof, &client_identity_key);
 
-                if self.client_allowed &&
-                   self.client_requested_channel_valid &&
-                   self.client_proof_signature_valid {
+                if self.client_allowed
+                    && self.client_requested_channel_valid
+                    && self.client_proof_signature_valid
+                {
                     self.handshake_succeeded = Some(true);
                     self.state = EndpointServerState::HandledSendResponse;
                     // success, return empty doc
-                    return Ok(Bson::Document(doc!{}));
+                    return Ok(Bson::Document(doc! {}));
                 }
             };
         }
@@ -1280,7 +1488,10 @@ impl<RW> EndpointServer<RW> where RW : std::io::Read + std::io::Write + Send {
     }
 }
 
-impl<RW> ApiSet for EndpointServer<RW> where RW : std::io::Read + std::io::Write + Send {
+impl<RW> ApiSet for EndpointServer<RW>
+where
+    RW: std::io::Read + std::io::Write + Send,
+{
     fn namespace(&self) -> &str {
         "gosling_endpoint"
     }
@@ -1290,11 +1501,15 @@ impl<RW> ApiSet for EndpointServer<RW> where RW : std::io::Read + std::io::Write
         name: &str,
         version: i32,
         mut args: bson::document::Document,
-        request_cookie: Option<RequestCookie>) -> Result<Option<bson::Bson>, ErrorCode> {
-
+        request_cookie: Option<RequestCookie>,
+    ) -> Result<Option<bson::Bson>, ErrorCode> {
         let request_cookie = match request_cookie {
             Some(request_cookie) => request_cookie,
-            None => return Err(ErrorCode::Runtime(GoslingError::RequestCookieRequired as i32)),
+            None => {
+                return Err(ErrorCode::Runtime(
+                    GoslingError::RequestCookieRequired as i32,
+                ))
+            }
         };
 
         match
@@ -1373,20 +1588,25 @@ impl<RW> ApiSet for EndpointServer<RW> where RW : std::io::Read + std::io::Write
     }
 
     fn next_result(&mut self) -> Option<(RequestCookie, Option<bson::Bson>, ErrorCode)> {
-        match (&self.state,
-               self.begin_handshake_request_cookie,
-               self.server_cookie.as_ref()) {
-            (&EndpointServerState::ChannelRequestValidated,
-             Some(begin_handshake_request_cookie),
-             Some(server_cookie)) => {
+        match (
+            &self.state,
+            self.begin_handshake_request_cookie,
+            self.server_cookie.as_ref(),
+        ) {
+            (
+                &EndpointServerState::ChannelRequestValidated,
+                Some(begin_handshake_request_cookie),
+                Some(server_cookie),
+            ) => {
                 self.state = EndpointServerState::WaitingForSendResponse;
                 Some((
                     begin_handshake_request_cookie,
-                    Some(Bson::Document(doc!{
+                    Some(Bson::Document(doc! {
                         "server_cookie" : Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: server_cookie.to_vec()}),
                     })),
-                    ErrorCode::Success))
-            },
+                    ErrorCode::Success,
+                ))
+            }
             _ => None,
         }
     }
@@ -1399,10 +1619,10 @@ pub type HandshakeHandle = usize;
 //
 pub struct Context {
     // our tor instance
-    tor_manager : TorManager,
+    tor_manager: TorManager,
     bootstrap_complete: bool,
-    identity_port : u16,
-    endpoint_port : u16,
+    identity_port: u16,
+    endpoint_port: u16,
 
     //
     // Servers and Clients for in-process handshakes
@@ -1410,45 +1630,44 @@ pub struct Context {
     next_handshake_handle: HandshakeHandle,
     identity_clients: BTreeMap<HandshakeHandle, IdentityClient<OnionStream>>,
     identity_servers: BTreeMap<HandshakeHandle, IdentityServer<OnionStream>>,
-    endpoint_clients : BTreeMap<HandshakeHandle, (EndpointClient<OnionStream>, TcpStream)>,
-    endpoint_servers : BTreeMap<HandshakeHandle, (EndpointServer<OnionStream>, TcpStream)>,
+    endpoint_clients: BTreeMap<HandshakeHandle, (EndpointClient<OnionStream>, TcpStream)>,
+    endpoint_servers: BTreeMap<HandshakeHandle, (EndpointServer<OnionStream>, TcpStream)>,
 
     //
     // Listeners for incoming connections
     //
-    identity_listener : Option<OnionListener>,
+    identity_listener: Option<OnionListener>,
     // maps the endpoint service id to the enpdoint name, alowed client, onion listener tuple
-    endpoint_listeners : HashMap<V3OnionServiceId, (String, V3OnionServiceId, OnionListener)>,
+    endpoint_listeners: HashMap<V3OnionServiceId, (String, V3OnionServiceId, OnionListener)>,
 
     //
     // Server Config Data
     //
 
     // Private key behind the identity onion service
-    identity_private_key : Ed25519PrivateKey,
+    identity_private_key: Ed25519PrivateKey,
     // Identity server's service id
-    identity_service_id : V3OnionServiceId,
+    identity_service_id: V3OnionServiceId,
 }
 
 pub enum ContextEvent {
-
     //
     // Tor Events
     //
 
     // bootstrap progress
-    TorBootstrapStatusReceived{
+    TorBootstrapStatusReceived {
         progress: u32,
         tag: String,
-        summary: String
+        summary: String,
     },
 
     // bootstrapping finished
     TorBootstrapCompleted,
 
     // tor log
-    TorLogReceived{
-        line: String
+    TorLogReceived {
+        line: String,
     },
 
     //
@@ -1457,7 +1676,7 @@ pub enum ContextEvent {
 
     // identity client has received a challenge request from an identy server
     // to continue the handshake, call Context::identity_client_handle_challenge_received
-    IdentityClientChallengeReceived{
+    IdentityClientChallengeReceived {
         handle: HandshakeHandle,
         identity_service_id: V3OnionServiceId,
         endpoint_name: String,
@@ -1465,16 +1684,16 @@ pub enum ContextEvent {
     },
 
     // identity client successfully completes identity handshake
-    IdentityClientHandshakeCompleted{
+    IdentityClientHandshakeCompleted {
         handle: HandshakeHandle,
         identity_service_id: V3OnionServiceId,
         endpoint_service_id: V3OnionServiceId,
         endpoint_name: String,
-        client_auth_private_key: X25519PrivateKey
+        client_auth_private_key: X25519PrivateKey,
     },
 
     // identity client handshake failed
-    IdentityClientHandshakeFailed{
+    IdentityClientHandshakeFailed {
         handle: HandshakeHandle,
         reason: error::Error,
     },
@@ -1483,13 +1702,13 @@ pub enum ContextEvent {
     IdentityServerPublished,
 
     // identity server has received incoming connection
-    IdentityServerHandshakeStarted{
-        handle: HandshakeHandle
+    IdentityServerHandshakeStarted {
+        handle: HandshakeHandle,
     },
 
     // identity server receives request from identity client
     // to continue the handshake, call Context::identity_server_handle_endpoint_request_received()
-    IdentityServerEndpointRequestReceived{
+    IdentityServerEndpointRequestReceived {
         handle: HandshakeHandle,
         client_service_id: V3OnionServiceId,
         requested_endpoint: String,
@@ -1497,22 +1716,22 @@ pub enum ContextEvent {
 
     // identity server receives challenge response from identity client
     // to continue the handshake, call Context::identity_server_handle_challenge_response_received()
-    IdentityServerChallengeResponseReceived{
+    IdentityServerChallengeResponseReceived {
         handle: HandshakeHandle,
         challenge_response: bson::document::Document,
     },
 
     // identity server supplies a new endpoint server to an identity client
-    IdentityServerHandshakeCompleted{
+    IdentityServerHandshakeCompleted {
         handle: HandshakeHandle,
         endpoint_private_key: Ed25519PrivateKey,
         endpoint_name: String,
         client_service_id: V3OnionServiceId,
-        client_auth_public_key: X25519PublicKey
+        client_auth_public_key: X25519PublicKey,
     },
 
     // identity server handshake explicitly rejected client handshake
-    IdentityServerHandshakeRejected{
+    IdentityServerHandshakeRejected {
         handle: HandshakeHandle,
         client_allowed: bool,
         client_requested_endpoint_valid: bool,
@@ -1522,7 +1741,7 @@ pub enum ContextEvent {
     },
 
     // identity server handshake failed due to error
-    IdentityServerHandshakeFailed{
+    IdentityServerHandshakeFailed {
         handle: HandshakeHandle,
         reason: error::Error,
     },
@@ -1532,15 +1751,15 @@ pub enum ContextEvent {
     //
 
     // endpoint client successfully opens a channel on an endpoint server
-    EndpointClientHandshakeCompleted{
+    EndpointClientHandshakeCompleted {
         handle: HandshakeHandle,
         endpoint_service_id: V3OnionServiceId,
         channel_name: String,
-        stream: TcpStream
+        stream: TcpStream,
     },
 
     // identity client handshake aborted
-    EndpointClientHandshakeFailed{
+    EndpointClientHandshakeFailed {
         handle: HandshakeHandle,
         reason: error::Error,
     },
@@ -1550,18 +1769,18 @@ pub enum ContextEvent {
     //
 
     // endpoint server onion service published
-    EndpointServerPublished{
+    EndpointServerPublished {
         endpoint_service_id: V3OnionServiceId,
         endpoint_name: String,
     },
 
-    EndpointServerHandshakeStarted{
+    EndpointServerHandshakeStarted {
         handle: HandshakeHandle,
     },
 
     // endpoint server receives request from endpoint client
     // to continue the handshake, call Context::endpoint_server_handle_channel_request_received()
-    EndpointServerChannelRequestReceived{
+    EndpointServerChannelRequestReceived {
         handle: HandshakeHandle,
         endpoint_service_id: V3OnionServiceId,
         client_service_id: V3OnionServiceId,
@@ -1569,16 +1788,16 @@ pub enum ContextEvent {
     },
 
     // endpoint server has acepted incoming channel request from identity client
-    EndpointServerHandshakeCompleted{
+    EndpointServerHandshakeCompleted {
         handle: HandshakeHandle,
         endpoint_service_id: V3OnionServiceId,
         client_service_id: V3OnionServiceId,
-        channel_name:  String,
-        stream: TcpStream
+        channel_name: String,
+        stream: TcpStream,
     },
 
     // endpoint server handshake explicitly rejected client handshake
-    EndpointServerHandshakeRejected{
+    EndpointServerHandshakeRejected {
         handle: HandshakeHandle,
         client_allowed: bool,
         client_requested_channel_valid: bool,
@@ -1586,11 +1805,10 @@ pub enum ContextEvent {
     },
 
     // endpoint server request failed
-    EndpointServerHandshakeFailed{
+    EndpointServerHandshakeFailed {
         handle: HandshakeHandle,
         reason: error::Error,
     },
-
 }
 
 impl Context {
@@ -1599,8 +1817,8 @@ impl Context {
         tor_working_directory: &Path,
         identity_port: u16,
         endpoint_port: u16,
-        identity_private_key: Ed25519PrivateKey) -> Result<Self> {
-
+        identity_private_key: Ed25519PrivateKey,
+    ) -> Result<Self> {
         let tor_manager = TorManager::new(tor_bin_path, tor_working_directory)?;
 
         let identity_service_id = V3OnionServiceId::from_private_key(&identity_private_key);
@@ -1632,11 +1850,14 @@ impl Context {
     pub fn identity_client_begin_handshake(
         &mut self,
         identity_server_id: V3OnionServiceId,
-        endpoint: &str) -> Result<HandshakeHandle> {
+        endpoint: &str,
+    ) -> Result<HandshakeHandle> {
         ensure!(endpoint.is_ascii());
         ensure!(self.bootstrap_complete);
         // open tcp stream to remove ident server
-        let stream = self.tor_manager.connect(&identity_server_id, self.identity_port, None)?;
+        let stream = self
+            .tor_manager
+            .connect(&identity_server_id, self.identity_port, None)?;
         resolve!(stream.set_nonblocking(true));
         let client_rpc = Session::new(stream.try_clone()?, stream);
 
@@ -1645,7 +1866,8 @@ impl Context {
             identity_server_id,
             endpoint.to_string(),
             self.identity_private_key.clone(),
-            X25519PrivateKey::generate())?;
+            X25519PrivateKey::generate(),
+        )?;
 
         let handshake_handle = self.next_handshake_handle;
         self.next_handshake_handle += 1;
@@ -1656,8 +1878,8 @@ impl Context {
 
     pub fn identity_client_abort_identity_handshake(
         &mut self,
-        handle: HandshakeHandle) -> Result<()> {
-
+        handle: HandshakeHandle,
+    ) -> Result<()> {
         if let Some(_identity_client) = self.identity_clients.remove(&handle) {
             Ok(())
         } else {
@@ -1670,8 +1892,8 @@ impl Context {
     pub fn identity_client_handle_challenge_received(
         &mut self,
         handle: HandshakeHandle,
-        challenge_response: bson::document::Document) -> Result<()> {
-
+        challenge_response: bson::document::Document,
+    ) -> Result<()> {
         if let Some(identity_client) = self.identity_clients.get_mut(&handle) {
             identity_client.send_response(challenge_response)?;
             Ok(())
@@ -1684,7 +1906,9 @@ impl Context {
         ensure!(self.bootstrap_complete);
         ensure!(self.identity_listener.is_none());
 
-        let identity_listener = self.tor_manager.listener(&self.identity_private_key, self.identity_port, None)?;
+        let identity_listener =
+            self.tor_manager
+                .listener(&self.identity_private_key, self.identity_port, None)?;
         identity_listener.set_nonblocking(true)?;
 
         self.identity_listener = Some(identity_listener);
@@ -1708,10 +1932,14 @@ impl Context {
         handle: HandshakeHandle,
         client_allowed: bool,
         endpoint_supported: bool,
-        endpoint_challenge: bson::document::Document) -> Result<()> {
-
+        endpoint_challenge: bson::document::Document,
+    ) -> Result<()> {
         if let Some(identity_server) = self.identity_servers.get_mut(&handle) {
-            identity_server.handle_endpoint_request_received(client_allowed, endpoint_supported, endpoint_challenge)
+            identity_server.handle_endpoint_request_received(
+                client_allowed,
+                endpoint_supported,
+                endpoint_challenge,
+            )
         } else {
             bail!("no handshake associated with handle '{}'", handle);
         }
@@ -1721,8 +1949,8 @@ impl Context {
     pub fn identity_server_handle_challenge_response_received(
         &mut self,
         handle: HandshakeHandle,
-        challenge_response_valid: bool) -> Result<()> {
-
+        challenge_response_valid: bool,
+    ) -> Result<()> {
         if let Some(identity_server) = self.identity_servers.get_mut(&handle) {
             identity_server.handle_challenge_response_received(challenge_response_valid)
         } else {
@@ -1734,11 +1962,14 @@ impl Context {
         &mut self,
         endpoint_server_id: V3OnionServiceId,
         client_auth_key: X25519PrivateKey,
-        channel: String) -> Result<()> {
-
+        channel: String,
+    ) -> Result<()> {
         ensure!(self.bootstrap_complete);
-        self.tor_manager.add_client_auth(&endpoint_server_id, &client_auth_key)?;
-        let stream = self.tor_manager.connect(&endpoint_server_id, self.endpoint_port, None)?;
+        self.tor_manager
+            .add_client_auth(&endpoint_server_id, &client_auth_key)?;
+        let stream = self
+            .tor_manager
+            .connect(&endpoint_server_id, self.endpoint_port, None)?;
         resolve!(stream.set_nonblocking(true));
         let client_rpc = Session::new(stream.try_clone()?, stream.try_clone()?);
 
@@ -1746,18 +1977,17 @@ impl Context {
             client_rpc,
             endpoint_server_id,
             channel,
-            self.identity_private_key.clone())?;
+            self.identity_private_key.clone(),
+        )?;
 
         let handshake_handle = self.next_handshake_handle;
         self.next_handshake_handle += 1;
-        self.endpoint_clients.insert(handshake_handle, (endpoint_client, stream.into()));
+        self.endpoint_clients
+            .insert(handshake_handle, (endpoint_client, stream.into()));
         Ok(())
     }
 
-    pub fn endpoint_client_abort_handshake(
-        &mut self,
-        handle: HandshakeHandle) -> Result<()> {
-
+    pub fn endpoint_client_abort_handshake(&mut self, handle: HandshakeHandle) -> Result<()> {
         if let Some(_endpoint_client) = self.endpoint_clients.remove(&handle) {
             Ok(())
         } else {
@@ -1770,22 +2000,31 @@ impl Context {
         endpoint_private_key: Ed25519PrivateKey,
         endpoint_name: String,
         client_identity: V3OnionServiceId,
-        client_auth: X25519PublicKey) -> Result<()> {
+        client_auth: X25519PublicKey,
+    ) -> Result<()> {
         ensure!(self.bootstrap_complete);
-        let endpoint_listener = self.tor_manager.listener(&endpoint_private_key, self.endpoint_port, Some(&[client_auth]))?;
+        let endpoint_listener = self.tor_manager.listener(
+            &endpoint_private_key,
+            self.endpoint_port,
+            Some(&[client_auth]),
+        )?;
         endpoint_listener.set_nonblocking(true)?;
 
         let endpoint_public_key = Ed25519PublicKey::from_private_key(&endpoint_private_key);
         let endpoint_service_id = V3OnionServiceId::from_public_key(&endpoint_public_key);
 
-        self.endpoint_listeners.insert(endpoint_service_id, (endpoint_name, client_identity, endpoint_listener));
+        self.endpoint_listeners.insert(
+            endpoint_service_id,
+            (endpoint_name, client_identity, endpoint_listener),
+        );
         Ok(())
     }
 
     pub fn endpoint_server_handle_channel_request_received(
         &mut self,
         handle: HandshakeHandle,
-        channel_supported: bool) -> Result<()> {
+        channel_supported: bool,
+    ) -> Result<()> {
         if let Some((endpoint_server, _stream)) = self.endpoint_servers.get_mut(&handle) {
             endpoint_server.handle_channel_request_received(channel_supported)
         } else {
@@ -1793,21 +2032,23 @@ impl Context {
         }
     }
 
-    pub fn endpoint_server_stop(
-        &mut self,
-        endpoint_identity: V3OnionServiceId) -> Result<()> {
+    pub fn endpoint_server_stop(&mut self, endpoint_identity: V3OnionServiceId) -> Result<()> {
         ensure!(self.bootstrap_complete);
 
         if let Some(_listener) = self.endpoint_listeners.remove(&endpoint_identity) {
             Ok(())
         } else {
-            bail!("endpoint server with service id {} not found", endpoint_identity.to_string());
+            bail!(
+                "endpoint server with service id {} not found",
+                endpoint_identity.to_string()
+            );
         }
     }
 
     fn identity_server_handle_accept(
         identity_listener: &OnionListener,
-        identity_private_key: &Ed25519PrivateKey) -> Result<Option<IdentityServer<OnionStream>>> {
+        identity_private_key: &Ed25519PrivateKey,
+    ) -> Result<Option<IdentityServer<OnionStream>>> {
         if let Some(stream) = resolve!(identity_listener.accept()) {
             if let Err(_) = stream.set_nonblocking(true) {
                 return Ok(None);
@@ -1831,8 +2072,8 @@ impl Context {
     fn endpoint_server_handle_accept(
         endpoint_listener: &OnionListener,
         client_service_id: &V3OnionServiceId,
-        endpoint_service_id: &V3OnionServiceId) -> Result<Option<(EndpointServer<OnionStream>, TcpStream)>> {
-
+        endpoint_service_id: &V3OnionServiceId,
+    ) -> Result<Option<(EndpointServer<OnionStream>, TcpStream)>> {
         if let Some(stream) = resolve!(endpoint_listener.accept()) {
             if let Err(_) = stream.set_nonblocking(true) {
                 return Ok(None);
@@ -1850,7 +2091,8 @@ impl Context {
             let endpoint_server = EndpointServer::new(
                 server_rpc,
                 client_service_id.clone(),
-                endpoint_service_id.clone());
+                endpoint_service_id.clone(),
+            );
 
             Ok(Some((endpoint_server, stream.into())))
         } else {
@@ -1859,20 +2101,22 @@ impl Context {
     }
 
     pub fn update(&mut self) -> Result<Vec<ContextEvent>> {
-
         // events to return
-        let mut events : Vec<ContextEvent> = Default::default();
+        let mut events: Vec<ContextEvent> = Default::default();
 
         // first handle new identity connections
         if let Some(identity_listener) = &self.identity_listener {
-            match Self::identity_server_handle_accept(&identity_listener, &self.identity_private_key) {
+            match Self::identity_server_handle_accept(
+                &identity_listener,
+                &self.identity_private_key,
+            ) {
                 Ok(Some(identity_server)) => {
                     let handle = self.next_handshake_handle;
                     self.next_handshake_handle += 1;
                     self.identity_servers.insert(handle, identity_server);
-                    events.push(ContextEvent::IdentityServerHandshakeStarted{handle});
-                },
-                Ok(None) => {},
+                    events.push(ContextEvent::IdentityServerHandshakeStarted { handle });
+                }
+                Ok(None) => {}
                 // identity listener failed, remove it
                 // TODO; signal caller identity listener is down
                 Err(err) => self.identity_listener = None,
@@ -1880,258 +2124,279 @@ impl Context {
         }
 
         // next handle new endpoint connections
-        self.endpoint_listeners.retain(|endpoint_service_id, (_endpoint_name, allowed_client, listener)| -> bool {
-            match Self::endpoint_server_handle_accept(&listener, &allowed_client, &endpoint_service_id) {
-                Ok(Some((endpoint_server, stream))) => {
-                    let handle = self.next_handshake_handle;
-                    self.next_handshake_handle += 1;
-                    self.endpoint_servers.insert(handle, (endpoint_server, stream.into()));
-                    events.push(ContextEvent::EndpointServerHandshakeStarted{handle});
-                    true
-                },
-                Ok(None) => true,
-                // endpoint listener failed, remove it
-                // TODO: signal caller endpoint listener is down
-                Err(err) => false,
-            }
-        });
+        self.endpoint_listeners.retain(
+            |endpoint_service_id, (_endpoint_name, allowed_client, listener)| -> bool {
+                match Self::endpoint_server_handle_accept(
+                    &listener,
+                    &allowed_client,
+                    &endpoint_service_id,
+                ) {
+                    Ok(Some((endpoint_server, stream))) => {
+                        let handle = self.next_handshake_handle;
+                        self.next_handshake_handle += 1;
+                        self.endpoint_servers
+                            .insert(handle, (endpoint_server, stream.into()));
+                        events.push(ContextEvent::EndpointServerHandshakeStarted { handle });
+                        true
+                    }
+                    Ok(None) => true,
+                    // endpoint listener failed, remove it
+                    // TODO: signal caller endpoint listener is down
+                    Err(err) => false,
+                }
+            },
+        );
 
         // consume tor events
         for event in self.tor_manager.update()?.drain(..) {
             match event {
-                Event::BootstrapStatus{progress,tag,summary} => {
-                    events.push(ContextEvent::TorBootstrapStatusReceived{progress, tag, summary});
-                },
+                Event::BootstrapStatus {
+                    progress,
+                    tag,
+                    summary,
+                } => {
+                    events.push(ContextEvent::TorBootstrapStatusReceived {
+                        progress,
+                        tag,
+                        summary,
+                    });
+                }
                 Event::BootstrapComplete => {
                     events.push(ContextEvent::TorBootstrapCompleted);
                     self.bootstrap_complete = true;
-                },
-                Event::LogReceived{line} => {
-                    events.push(ContextEvent::TorLogReceived{line});
-                },
-                Event::OnionServicePublished{service_id} => {
+                }
+                Event::LogReceived { line } => {
+                    events.push(ContextEvent::TorLogReceived { line });
+                }
+                Event::OnionServicePublished { service_id } => {
                     if service_id == self.identity_service_id {
                         events.push(ContextEvent::IdentityServerPublished);
-                    } else if let Some((endpoint_name, _, _)) = self.endpoint_listeners.get(&service_id) {
-                        events.push(ContextEvent::EndpointServerPublished{
+                    } else if let Some((endpoint_name, _, _)) =
+                        self.endpoint_listeners.get(&service_id)
+                    {
+                        events.push(ContextEvent::EndpointServerPublished {
                             endpoint_service_id: service_id,
                             endpoint_name: endpoint_name.clone(),
                         });
                     }
-                },
+                }
             }
         }
 
         // update the ident client handshakes
-        self.identity_clients.retain(|handle, identity_client| -> bool {
-            let handle = *handle;
-            match identity_client.update() {
-                Ok(Some(IdentityClientEvent::ChallengeReceived{
-                    identity_service_id,
-                    endpoint_name,
-                    endpoint_challenge,
-                })) => {
-                    events.push(
-                        ContextEvent::IdentityClientChallengeReceived{
+        self.identity_clients
+            .retain(|handle, identity_client| -> bool {
+                let handle = *handle;
+                match identity_client.update() {
+                    Ok(Some(IdentityClientEvent::ChallengeReceived {
+                        identity_service_id,
+                        endpoint_name,
+                        endpoint_challenge,
+                    })) => {
+                        events.push(ContextEvent::IdentityClientChallengeReceived {
                             handle,
                             identity_service_id,
                             endpoint_name,
-                            endpoint_challenge});
-                    true
-                },
-                Ok(Some(IdentityClientEvent::HandshakeCompleted{
-                    identity_service_id,
-                    endpoint_service_id,
-                    endpoint_name,
-                    client_auth_private_key,
-                })) => {
-                    events.push(
-                        ContextEvent::IdentityClientHandshakeCompleted{
+                            endpoint_challenge,
+                        });
+                        true
+                    }
+                    Ok(Some(IdentityClientEvent::HandshakeCompleted {
+                        identity_service_id,
+                        endpoint_service_id,
+                        endpoint_name,
+                        client_auth_private_key,
+                    })) => {
+                        events.push(ContextEvent::IdentityClientHandshakeCompleted {
                             handle,
                             identity_service_id,
                             endpoint_service_id,
                             endpoint_name,
-                            client_auth_private_key});
-                    false
-                },
-                Err(err) => {
-                    events.push(
-                        ContextEvent::IdentityClientHandshakeFailed{
+                            client_auth_private_key,
+                        });
+                        false
+                    }
+                    Err(err) => {
+                        events.push(ContextEvent::IdentityClientHandshakeFailed {
                             handle,
                             reason: err,
                         });
-                    false
-                },
-                Ok(None) => true,
-            }
-        });
+                        false
+                    }
+                    Ok(None) => true,
+                }
+            });
 
         // update the ident server handshakes
-        self.identity_servers.retain(|handle, identity_server| -> bool {
-            let handle = *handle;
-            match identity_server.update() {
-                Ok(Some(IdentityServerEvent::EndpointRequestReceived{client_service_id, requested_endpoint})) => {
-                    events.push(
-                        ContextEvent::IdentityServerEndpointRequestReceived{
+        self.identity_servers
+            .retain(|handle, identity_server| -> bool {
+                let handle = *handle;
+                match identity_server.update() {
+                    Ok(Some(IdentityServerEvent::EndpointRequestReceived {
+                        client_service_id,
+                        requested_endpoint,
+                    })) => {
+                        events.push(ContextEvent::IdentityServerEndpointRequestReceived {
                             handle,
                             client_service_id,
-                            requested_endpoint});
-                    true
-                },
-                Ok(Some(IdentityServerEvent::ChallengeResponseReceived{
-                    challenge_response})) => {
-                    events.push(
-                        ContextEvent::IdentityServerChallengeResponseReceived{
+                            requested_endpoint,
+                        });
+                        true
+                    }
+                    Ok(Some(IdentityServerEvent::ChallengeResponseReceived {
+                        challenge_response,
+                    })) => {
+                        events.push(ContextEvent::IdentityServerChallengeResponseReceived {
                             handle,
-                            challenge_response});
-                    true
-                },
-                Ok(Some(IdentityServerEvent::HandshakeCompleted{
-                    endpoint_private_key,
-                    endpoint_name,
-                    client_service_id,
-                    client_auth_public_key,
-                })) => {
-                    events.push(
-                        ContextEvent::IdentityServerHandshakeCompleted{
+                            challenge_response,
+                        });
+                        true
+                    }
+                    Ok(Some(IdentityServerEvent::HandshakeCompleted {
+                        endpoint_private_key,
+                        endpoint_name,
+                        client_service_id,
+                        client_auth_public_key,
+                    })) => {
+                        events.push(ContextEvent::IdentityServerHandshakeCompleted {
                             handle,
                             endpoint_private_key,
                             endpoint_name,
                             client_service_id,
-                            client_auth_public_key});
-                    false
-                },
-                Ok(Some(IdentityServerEvent::HandshakeRejected{
-                    client_allowed,
-                    client_requested_endpoint_valid,
-                    client_proof_signature_valid,
-                    client_auth_signature_valid,
-                    challenge_response_valid,
-                })) => {
-                    events.push(
-                        ContextEvent::IdentityServerHandshakeRejected{
+                            client_auth_public_key,
+                        });
+                        false
+                    }
+                    Ok(Some(IdentityServerEvent::HandshakeRejected {
+                        client_allowed,
+                        client_requested_endpoint_valid,
+                        client_proof_signature_valid,
+                        client_auth_signature_valid,
+                        challenge_response_valid,
+                    })) => {
+                        events.push(ContextEvent::IdentityServerHandshakeRejected {
                             handle,
                             client_allowed,
                             client_requested_endpoint_valid,
                             client_proof_signature_valid,
                             client_auth_signature_valid,
-                            challenge_response_valid});
-                    false
-                },
-                Err(err) => {
-                    events.push(
-                        ContextEvent::IdentityServerHandshakeFailed{
-                            handle,
-                            reason: err});
-                    false
-                },
-                Ok(None) => true,
-            }
-        });
-
-        // update the endpoint client handshakes
-        self.endpoint_clients.retain(|handle, (endpoint_client, stream)| -> bool {
-            let handle = *handle;
-            match endpoint_client.update() {
-                Ok(Some(EndpointClientEvent::HandshakeCompleted)) => {
-                    match stream.try_clone() {
-                        Ok(stream) => {
-                            events.push(
-                                ContextEvent::EndpointClientHandshakeCompleted{
-                                    handle,
-                                    endpoint_service_id: endpoint_client.server_service_id.clone(),
-                                    channel_name: endpoint_client.requested_channel.clone(),
-                                    stream});
-
-                        },
-                        Err(err) => {
-                            events.push(
-                                ContextEvent::EndpointClientHandshakeFailed{
-                                    handle,
-                                    reason: to_error!(err),
-                                });
-                        }
+                            challenge_response_valid,
+                        });
+                        false
                     }
-                    false
-                },
-                Err(err) => {
-                    events.push(
-                        ContextEvent::EndpointClientHandshakeFailed{
+                    Err(err) => {
+                        events.push(ContextEvent::IdentityServerHandshakeFailed {
                             handle,
                             reason: err,
                         });
-                    false
-                },
-                Ok(None) => true,
-            }
-        });
+                        false
+                    }
+                    Ok(None) => true,
+                }
+            });
+
+        // update the endpoint client handshakes
+        self.endpoint_clients
+            .retain(|handle, (endpoint_client, stream)| -> bool {
+                let handle = *handle;
+                match endpoint_client.update() {
+                    Ok(Some(EndpointClientEvent::HandshakeCompleted)) => {
+                        match stream.try_clone() {
+                            Ok(stream) => {
+                                events.push(ContextEvent::EndpointClientHandshakeCompleted {
+                                    handle,
+                                    endpoint_service_id: endpoint_client.server_service_id.clone(),
+                                    channel_name: endpoint_client.requested_channel.clone(),
+                                    stream,
+                                });
+                            }
+                            Err(err) => {
+                                events.push(ContextEvent::EndpointClientHandshakeFailed {
+                                    handle,
+                                    reason: to_error!(err),
+                                });
+                            }
+                        }
+                        false
+                    }
+                    Err(err) => {
+                        events.push(ContextEvent::EndpointClientHandshakeFailed {
+                            handle,
+                            reason: err,
+                        });
+                        false
+                    }
+                    Ok(None) => true,
+                }
+            });
 
         // update the endpoint server handshakes
-        self.endpoint_servers.retain(|handle, (endpoint_server, stream)| -> bool {
-            let handle = *handle;
-            match endpoint_server.update() {
-                Ok(Some(EndpointServerEvent::ChannelRequestReceived{
-                    client_service_id,
-                    requested_channel
-                })) => {
-                    events.push(
-                        ContextEvent::EndpointServerChannelRequestReceived{
+        self.endpoint_servers
+            .retain(|handle, (endpoint_server, stream)| -> bool {
+                let handle = *handle;
+                match endpoint_server.update() {
+                    Ok(Some(EndpointServerEvent::ChannelRequestReceived {
+                        client_service_id,
+                        requested_channel,
+                    })) => {
+                        events.push(ContextEvent::EndpointServerChannelRequestReceived {
                             handle,
                             client_service_id,
                             endpoint_service_id: endpoint_server.server_identity.clone(),
-                            requested_channel});
-                    true
-                },
-                Ok(Some(EndpointServerEvent::HandshakeCompleted{
-                    client_service_id,
-                    channel_name})) => {
-
-                    match stream.try_clone() {
-                        Ok(stream) => {
-                            events.push(
-                                ContextEvent::EndpointServerHandshakeCompleted{
+                            requested_channel,
+                        });
+                        true
+                    }
+                    Ok(Some(EndpointServerEvent::HandshakeCompleted {
+                        client_service_id,
+                        channel_name,
+                    })) => {
+                        match stream.try_clone() {
+                            Ok(stream) => {
+                                events.push(ContextEvent::EndpointServerHandshakeCompleted {
                                     handle,
                                     endpoint_service_id: endpoint_server.server_identity.clone(),
                                     client_service_id,
                                     channel_name,
-                                    stream});
-                        },
-                        Err(err) => {
-                            events.push(
-                                ContextEvent::EndpointServerHandshakeFailed{
+                                    stream,
+                                });
+                            }
+                            Err(err) => {
+                                events.push(ContextEvent::EndpointServerHandshakeFailed {
                                     handle,
-                                    reason: to_error!(err)});
+                                    reason: to_error!(err),
+                                });
+                            }
                         }
+                        false
                     }
-                    false
-                },
-                Ok(Some(EndpointServerEvent::HandshakeRejected{
-                    client_allowed,
-                    client_requested_channel_valid,
-                    client_proof_signature_valid})) => {
-                    events.push(
-                        ContextEvent::EndpointServerHandshakeRejected{
+                    Ok(Some(EndpointServerEvent::HandshakeRejected {
+                        client_allowed,
+                        client_requested_channel_valid,
+                        client_proof_signature_valid,
+                    })) => {
+                        events.push(ContextEvent::EndpointServerHandshakeRejected {
                             handle,
                             client_allowed,
                             client_requested_channel_valid,
-                            client_proof_signature_valid});
-                    false
-                },
-                Err(err) => {
-                    events.push(
-                        ContextEvent::EndpointServerHandshakeFailed{
+                            client_proof_signature_valid,
+                        });
+                        false
+                    }
+                    Err(err) => {
+                        events.push(ContextEvent::EndpointServerHandshakeFailed {
                             handle,
-                            reason: err});
-                    false
-                },
-                Ok(None) => true,
-            }
-        });
+                            reason: err,
+                        });
+                        false
+                    }
+                    Ok(None) => true,
+                }
+            });
 
         Ok(events)
     }
 }
-
 
 //
 // Tests
@@ -2145,7 +2410,8 @@ fn identity_test(
     server_challenge: bson::document::Document,
     client_response: bson::document::Document,
     server_expected_response: bson::document::Document,
-    should_fail: bool) -> Result<()> {
+    should_fail: bool,
+) -> Result<()> {
     // test sockets
     let stream1 = MemoryStream::new();
     let stream2 = MemoryStream::new();
@@ -2165,18 +2431,17 @@ fn identity_test(
         server_service_id.clone(),
         client_requested_endpoint.to_string(),
         client_ed25519_private,
-        X25519PrivateKey::generate()) {
+        X25519PrivateKey::generate(),
+    ) {
         Ok(client) => client,
         Err(err) => {
             ensure!(should_fail);
             return Ok(());
-        },
+        }
     };
 
     let server_rpc = Session::new(stream2, stream1);
-    let mut ident_server = IdentityServer::new(
-        server_rpc,
-        server_service_id.clone());
+    let mut ident_server = IdentityServer::new(server_rpc, server_service_id.clone());
 
     let mut failure_ocurred = false;
     let mut server_complete = false;
@@ -2184,58 +2449,106 @@ fn identity_test(
     while !server_complete && !client_complete {
         if !server_complete {
             match ident_server.update() {
-                Ok(Some(IdentityServerEvent::EndpointRequestReceived{client_service_id, requested_endpoint})) => {
-                    println!("server challenge send: client_service_id {}, requested_endpoint: {}", client_service_id.to_string(), requested_endpoint);
+                Ok(Some(IdentityServerEvent::EndpointRequestReceived {
+                    client_service_id,
+                    requested_endpoint,
+                })) => {
+                    println!(
+                        "server challenge send: client_service_id {}, requested_endpoint: {}",
+                        client_service_id.to_string(),
+                        requested_endpoint
+                    );
                     let client_allowed = !client_blocked;
-                    ident_server.handle_endpoint_request_received(client_allowed, client_requested_endpoint_valid, server_challenge.clone())?;
-                },
-                Ok(Some(IdentityServerEvent::ChallengeResponseReceived{challenge_response})) => {
+                    ident_server.handle_endpoint_request_received(
+                        client_allowed,
+                        client_requested_endpoint_valid,
+                        server_challenge.clone(),
+                    )?;
+                }
+                Ok(Some(IdentityServerEvent::ChallengeResponseReceived { challenge_response })) => {
                     println!("server challenge repsonse received");
-                    ident_server.handle_challenge_response_received(challenge_response == server_expected_response)?;
-                },
-                Ok(Some(IdentityServerEvent::HandshakeCompleted{endpoint_private_key: _, endpoint_name,client_service_id,client_auth_public_key: _})) => {
+                    ident_server.handle_challenge_response_received(
+                        challenge_response == server_expected_response,
+                    )?;
+                }
+                Ok(Some(IdentityServerEvent::HandshakeCompleted {
+                    endpoint_private_key: _,
+                    endpoint_name,
+                    client_service_id,
+                    client_auth_public_key: _,
+                })) => {
                     ensure!(endpoint_name == client_requested_endpoint);
-                    println!("server complete! client_service_id : {}", client_service_id.to_string());
+                    println!(
+                        "server complete! client_service_id : {}",
+                        client_service_id.to_string()
+                    );
                     server_complete = true;
-                },
-                Ok(Some(IdentityServerEvent::HandshakeRejected{client_allowed, client_requested_endpoint_valid, client_proof_signature_valid, client_auth_signature_valid, challenge_response_valid})) => {
+                }
+                Ok(Some(IdentityServerEvent::HandshakeRejected {
+                    client_allowed,
+                    client_requested_endpoint_valid,
+                    client_proof_signature_valid,
+                    client_auth_signature_valid,
+                    challenge_response_valid,
+                })) => {
                     println!("server complete! client request rejected");
                     println!(" client_allowed: {}", client_allowed);
-                    println!(" client_requested_endpoint_valid: {}", client_requested_endpoint_valid);
-                    println!(" client_proof_signature_valid: {}", client_proof_signature_valid);
-                    println!(" client_auth_signature_valid: {}", client_auth_signature_valid);
+                    println!(
+                        " client_requested_endpoint_valid: {}",
+                        client_requested_endpoint_valid
+                    );
+                    println!(
+                        " client_proof_signature_valid: {}",
+                        client_proof_signature_valid
+                    );
+                    println!(
+                        " client_auth_signature_valid: {}",
+                        client_auth_signature_valid
+                    );
                     println!(" client_response_valid: {}", challenge_response_valid);
                     server_complete = true;
                     failure_ocurred = true;
-                },
-                Ok(None) => {},
+                }
+                Ok(None) => {}
                 Err(err) => {
                     println!("server failure: {:?}", err);
                     server_complete = true;
                     failure_ocurred = true;
-                },
+                }
             }
         }
 
         if !client_complete {
             match ident_client.update() {
-                Ok(Some(IdentityClientEvent::ChallengeReceived{identity_service_id, endpoint_name, endpoint_challenge})) => {
+                Ok(Some(IdentityClientEvent::ChallengeReceived {
+                    identity_service_id,
+                    endpoint_name,
+                    endpoint_challenge,
+                })) => {
                     ensure!(identity_service_id == server_service_id);
                     println!("client challenge request received: identity_service_id: {}, endpoint_name: {}, endpoint_challenge: {}", identity_service_id.to_string(), endpoint_name, endpoint_challenge);
                     ident_client.send_response(client_response.clone())?;
-                },
-                Ok(Some(IdentityClientEvent::HandshakeCompleted{identity_service_id,endpoint_service_id,endpoint_name,client_auth_private_key: _})) => {
+                }
+                Ok(Some(IdentityClientEvent::HandshakeCompleted {
+                    identity_service_id,
+                    endpoint_service_id,
+                    endpoint_name,
+                    client_auth_private_key: _,
+                })) => {
                     ensure!(identity_service_id == server_service_id);
                     ensure!(endpoint_name == client_requested_endpoint);
-                    println!("client complete! endpoint_server : {}", endpoint_service_id.to_string());
+                    println!(
+                        "client complete! endpoint_server : {}",
+                        endpoint_service_id.to_string()
+                    );
                     client_complete = true;
-                },
-                Ok(None) => {},
+                }
+                Ok(None) => {}
                 Err(err) => {
                     println!("client failure: {:?}", err);
                     client_complete = true;
                     failure_ocurred = true;
-                },
+                }
             }
         }
     }
@@ -2246,7 +2559,6 @@ fn identity_test(
 
 #[test]
 fn test_identity_handshake() -> Result<()> {
-
     println!("Sucessful ---");
     {
         let client_blocked: bool = false;
@@ -2263,7 +2575,8 @@ fn test_identity_handshake() -> Result<()> {
             server_challenge,
             client_response,
             server_expected_response,
-            should_fail)?;
+            should_fail,
+        )?;
     }
     println!("Bad Endpoint ---");
     {
@@ -2281,7 +2594,8 @@ fn test_identity_handshake() -> Result<()> {
             server_challenge,
             client_response,
             server_expected_response,
-            should_fail)?;
+            should_fail,
+        )?;
     }
     println!("Bad Challenge Response ---");
     {
@@ -2299,7 +2613,8 @@ fn test_identity_handshake() -> Result<()> {
             server_challenge,
             client_response,
             server_expected_response,
-            should_fail)?;
+            should_fail,
+        )?;
     }
     println!("Blocked Client ---");
     {
@@ -2317,7 +2632,8 @@ fn test_identity_handshake() -> Result<()> {
             server_challenge,
             client_response,
             server_expected_response,
-            should_fail)?;
+            should_fail,
+        )?;
     }
     println!("Non-ASCII endpoint ---");
     {
@@ -2335,14 +2651,19 @@ fn test_identity_handshake() -> Result<()> {
             server_challenge,
             client_response,
             server_expected_response,
-            should_fail)?;
+            should_fail,
+        )?;
     }
     Ok(())
 }
 
 #[cfg(test)]
-fn endpoint_test(should_fail: bool, client_allowed: bool, channel: &str, channel_allowed: bool) -> Result<()> {
-
+fn endpoint_test(
+    should_fail: bool,
+    client_allowed: bool,
+    channel: &str,
+    channel_allowed: bool,
+) -> Result<()> {
     // test sockets
     let stream1 = MemoryStream::new();
     let stream2 = MemoryStream::new();
@@ -2367,16 +2688,25 @@ fn endpoint_test(should_fail: bool, client_allowed: bool, channel: &str, channel
 
     let server_rpc = Session::new(stream1.clone(), stream2.clone());
 
-    let mut endpoint_server = EndpointServer::new(server_rpc, allowed_client.clone(), server_service_id.clone());
+    let mut endpoint_server = EndpointServer::new(
+        server_rpc,
+        allowed_client.clone(),
+        server_service_id.clone(),
+    );
 
     let client_rpc = Session::new(stream2, stream1);
 
-    let mut endpoint_client = match EndpointClient::new(client_rpc, server_service_id.clone(), channel.to_string(), client_ed25519_private) {
+    let mut endpoint_client = match EndpointClient::new(
+        client_rpc,
+        server_service_id.clone(),
+        channel.to_string(),
+        client_ed25519_private,
+    ) {
         Ok(client) => client,
         Err(err) => {
             ensure!(should_fail);
             return Ok(());
-        },
+        }
     };
 
     let mut failure_ocurred = false;
@@ -2385,33 +2715,36 @@ fn endpoint_test(should_fail: bool, client_allowed: bool, channel: &str, channel
     while !server_complete && !client_complete {
         if !server_complete {
             match endpoint_server.update() {
-                Ok(Some(EndpointServerEvent::ChannelRequestReceived{
+                Ok(Some(EndpointServerEvent::ChannelRequestReceived {
                     client_service_id,
-                    requested_channel})) => {
+                    requested_channel,
+                })) => {
                     ensure!((allowed_client == client_service_id) == client_allowed);
                     ensure!(requested_channel == channel);
                     endpoint_server.handle_channel_request_received(channel_allowed)?;
-                },
-                Ok(Some(EndpointServerEvent::HandshakeCompleted{
+                }
+                Ok(Some(EndpointServerEvent::HandshakeCompleted {
                     client_service_id: ret_client_service_id,
-                    channel_name: ret_channel})) => {
+                    channel_name: ret_channel,
+                })) => {
                     ensure!(ret_client_service_id == client_service_id);
                     server_complete = true;
-                },
-                Ok(Some(EndpointServerEvent::HandshakeRejected{
+                }
+                Ok(Some(EndpointServerEvent::HandshakeRejected {
                     client_allowed,
                     client_requested_channel_valid,
-                    client_proof_signature_valid})) => {
+                    client_proof_signature_valid,
+                })) => {
                     println!("handshake rejected: client_allowed: {}, client_requested_channel_valid: {}, client_proof_signature_valid: {}", client_allowed, client_requested_channel_valid, client_proof_signature_valid);
                     server_complete = true;
                     failure_ocurred = true;
-                },
-                Ok(None) => {},
+                }
+                Ok(None) => {}
                 Err(err) => {
                     println!("server failure: {:?}", err);
                     server_complete = true;
                     failure_ocurred = true;
-                },
+                }
             }
         }
 
@@ -2419,13 +2752,13 @@ fn endpoint_test(should_fail: bool, client_allowed: bool, channel: &str, channel
             match endpoint_client.update() {
                 Ok(Some(EndpointClientEvent::HandshakeCompleted)) => {
                     client_complete = true;
-                },
-                Ok(None) => {},
+                }
+                Ok(None) => {}
                 Err(err) => {
                     println!("client failure: {:?}", err);
                     client_complete = true;
                     failure_ocurred = true;
-                },
+                }
             }
         }
     }
@@ -2440,7 +2773,6 @@ fn endpoint_test(should_fail: bool, client_allowed: bool, channel: &str, channel
 
 #[test]
 fn test_endpoint_handshake() -> Result<()> {
-
     println!("Success ---");
     {
         let should_fail = false;
@@ -2497,28 +2829,33 @@ fn test_gosling_context() -> Result<()> {
     let mut alice_path = std::env::temp_dir();
     alice_path.push("test_gosling_context_alice");
 
-    println!("Starting Alice gosling context ({})", alice_service_id.to_string());
-    let mut alice = Context::new(
-        &tor_path,
-        &alice_path,
-        420,
-        420,
-        alice_private_key)?;
+    println!(
+        "Starting Alice gosling context ({})",
+        alice_service_id.to_string()
+    );
+    let mut alice = Context::new(&tor_path, &alice_path, 420, 420, alice_private_key)?;
     alice.bootstrap()?;
 
     let mut bootstrap_complete = false;
     while !bootstrap_complete {
         for event in alice.update()?.drain(..) {
             match event {
-                ContextEvent::TorBootstrapStatusReceived{progress,tag,summary} => println!("Alice BootstrapStatus: {{ progress: {}, tag: {}, summary: '{}' }}", progress, tag, summary),
+                ContextEvent::TorBootstrapStatusReceived {
+                    progress,
+                    tag,
+                    summary,
+                } => println!(
+                    "Alice BootstrapStatus: {{ progress: {}, tag: {}, summary: '{}' }}",
+                    progress, tag, summary
+                ),
                 ContextEvent::TorBootstrapCompleted => {
                     println!("Alice Bootstrap Complete!");
                     bootstrap_complete = true;
-                },
-                ContextEvent::TorLogReceived{line} => {
+                }
+                ContextEvent::TorLogReceived { line } => {
                     println!("--- ALICE --- {}", line);
-                },
-                _ => {},
+                }
+                _ => {}
             }
         }
     }
@@ -2528,28 +2865,33 @@ fn test_gosling_context() -> Result<()> {
     let mut pat_path = std::env::temp_dir();
     pat_path.push("test_gosling_context_pat");
 
-    println!("Starting Pat gosling context ({})", pat_service_id.to_string());
-    let mut pat = Context::new(
-        &tor_path,
-        &pat_path,
-        420,
-        420,
-        pat_private_key)?;
+    println!(
+        "Starting Pat gosling context ({})",
+        pat_service_id.to_string()
+    );
+    let mut pat = Context::new(&tor_path, &pat_path, 420, 420, pat_private_key)?;
     pat.bootstrap()?;
 
     let mut bootstrap_complete = false;
     while !bootstrap_complete {
         for event in pat.update()?.drain(..) {
             match event {
-                ContextEvent::TorBootstrapStatusReceived{progress,tag,summary} => println!("Pat BootstrapStatus: {{ progress: {}, tag: {}, summary: '{}' }}", progress, tag, summary),
+                ContextEvent::TorBootstrapStatusReceived {
+                    progress,
+                    tag,
+                    summary,
+                } => println!(
+                    "Pat BootstrapStatus: {{ progress: {}, tag: {}, summary: '{}' }}",
+                    progress, tag, summary
+                ),
                 ContextEvent::TorBootstrapCompleted => {
                     println!("Pat Bootstrap Complete!");
                     bootstrap_complete = true;
-                },
-                ContextEvent::TorLogReceived{line} => {
+                }
+                ContextEvent::TorLogReceived { line } => {
                     println!("--- PAT --- {}", line);
-                },
-                _ => {},
+                }
+                _ => {}
             }
         }
     }
@@ -2571,7 +2913,6 @@ fn test_gosling_context() -> Result<()> {
     let mut pat_handshake_handle: usize = !0usize;
 
     while alice_server_socket.is_none() || pat_client_socket.is_none() {
-
         // update alice
         let mut events = alice.update()?;
         for event in events.drain(..) {
@@ -2581,96 +2922,151 @@ fn test_gosling_context() -> Result<()> {
                         println!("Alice: identity server published");
 
                         // alice has published the identity server, so pat may now request an endpoint
-                        match pat.identity_client_begin_handshake(alice_service_id.clone(), "test_endpoint") {
+                        match pat.identity_client_begin_handshake(
+                            alice_service_id.clone(),
+                            "test_endpoint",
+                        ) {
                             Ok(handle) => {
                                 identity_published = true;
                                 pat_handshake_handle = handle;
-                            },
+                            }
                             Err(err) => {
-                                println!("Pat: failed to connect to Alice's identity server\n {:?}", err);
+                                println!(
+                                    "Pat: failed to connect to Alice's identity server\n {:?}",
+                                    err
+                                );
                                 identity_retries_remaining -= 1;
                                 if identity_retries_remaining == 0 {
                                     bail!("Pat: no more retries remaining");
                                 }
-                            },
+                            }
                         }
                     }
-                },
-                ContextEvent::EndpointServerPublished{endpoint_service_id, endpoint_name} => {
+                }
+                ContextEvent::EndpointServerPublished {
+                    endpoint_service_id,
+                    endpoint_name,
+                } => {
                     if !endpoint_published {
                         println!("Alice: endpoint server published");
                         println!(" endpoint_service_id: {}", endpoint_service_id.to_string());
                         println!(" endpoint_name: {}", endpoint_name);
 
-                        if let Some(saved_endpoint_service_id) = saved_endpoint_service_id.as_ref() {
+                        if let Some(saved_endpoint_service_id) = saved_endpoint_service_id.as_ref()
+                        {
                             ensure!(*saved_endpoint_service_id == endpoint_service_id);
                         }
 
-                        match pat.endpoint_client_begin_handshake(saved_endpoint_service_id.clone().unwrap(),
-                                                                            saved_endpoint_client_auth_key.clone().unwrap(),
-                                                                            "test_channel".to_string()) {
+                        match pat.endpoint_client_begin_handshake(
+                            saved_endpoint_service_id.clone().unwrap(),
+                            saved_endpoint_client_auth_key.clone().unwrap(),
+                            "test_channel".to_string(),
+                        ) {
                             Ok(()) => endpoint_published = true,
                             Err(err) => {
-                                println!("Pat: failed to connect to Alice's endpoint server\n {:?}", err);
+                                println!(
+                                    "Pat: failed to connect to Alice's endpoint server\n {:?}",
+                                    err
+                                );
                                 endpoint_retries_remaining -= 1;
                                 if endpoint_retries_remaining == 0 {
                                     bail!("Pat: no more retries remaining");
                                 }
-                            },
+                            }
                         }
                     }
-                },
-                ContextEvent::IdentityServerHandshakeStarted{handle} => {
+                }
+                ContextEvent::IdentityServerHandshakeStarted { handle } => {
                     println!("Alice: client connected");
                     println!(" handle: {}", handle);
-                },
-                ContextEvent::IdentityServerEndpointRequestReceived{handle, client_service_id, requested_endpoint} => {
+                }
+                ContextEvent::IdentityServerEndpointRequestReceived {
+                    handle,
+                    client_service_id,
+                    requested_endpoint,
+                } => {
                     println!("Alice: endpoint request received");
                     println!(" handle: {}", handle);
                     println!(" client_service_id: {}", client_service_id.to_string());
                     println!(" requested_endpoint: {}", requested_endpoint);
                     // auto accept endpoint request, send empty challenge
-                    alice.identity_server_handle_endpoint_request_received(handle, true, true, doc!{})?;
-                },
-                ContextEvent::IdentityServerChallengeResponseReceived{handle, challenge_response} => {
+                    alice.identity_server_handle_endpoint_request_received(
+                        handle,
+                        true,
+                        true,
+                        doc! {},
+                    )?;
+                }
+                ContextEvent::IdentityServerChallengeResponseReceived {
+                    handle,
+                    challenge_response,
+                } => {
                     println!("Alice: challenge response received");
                     println!(" handle: {}", handle);
                     println!(" challenge_response: {}", challenge_response);
                     // auto accept challenge response
                     alice.identity_server_handle_challenge_response_received(handle, true)?;
-                },
-                ContextEvent::IdentityServerHandshakeCompleted{handle, endpoint_private_key, endpoint_name, client_service_id, client_auth_public_key} => {
+                }
+                ContextEvent::IdentityServerHandshakeCompleted {
+                    handle,
+                    endpoint_private_key,
+                    endpoint_name,
+                    client_service_id,
+                    client_auth_public_key,
+                } => {
                     println!("Alice: endpoint request handled");
                     println!(" handle: {}", handle);
-                    println!(" endpoint_service_id: {}", V3OnionServiceId::from_private_key(&endpoint_private_key).to_string());
+                    println!(
+                        " endpoint_service_id: {}",
+                        V3OnionServiceId::from_private_key(&endpoint_private_key).to_string()
+                    );
                     println!(" endpoint: {}", endpoint_name);
                     println!(" client: {}", client_service_id.to_string());
 
                     // server handed out endpoint server info, so start the endpoint server
-                    alice.endpoint_server_start(endpoint_private_key, endpoint_name, client_service_id, client_auth_public_key)?;
-                },
-                ContextEvent::EndpointServerHandshakeStarted{handle} => {
+                    alice.endpoint_server_start(
+                        endpoint_private_key,
+                        endpoint_name,
+                        client_service_id,
+                        client_auth_public_key,
+                    )?;
+                }
+                ContextEvent::EndpointServerHandshakeStarted { handle } => {
                     println!("Alice: endpoint handshake started");
                     println!(" handle: {}", handle);
-                },
-                ContextEvent::EndpointServerChannelRequestReceived{handle, endpoint_service_id, client_service_id, requested_channel} => {
+                }
+                ContextEvent::EndpointServerChannelRequestReceived {
+                    handle,
+                    endpoint_service_id,
+                    client_service_id,
+                    requested_channel,
+                } => {
                     println!("Alice: endpoint channel request received");
                     println!(" endpoint_service_id: {}", endpoint_service_id.to_string());
                     println!(" client_service_id: {}", client_service_id.to_string());
                     println!(" requested_channel: {}", requested_channel);
                     let channel_supported: bool = true;
-                    alice.endpoint_server_handle_channel_request_received(handle, channel_supported)?;
-                },
-                ContextEvent::EndpointServerHandshakeCompleted{handle, endpoint_service_id, client_service_id, channel_name, stream} => {
+                    alice.endpoint_server_handle_channel_request_received(
+                        handle,
+                        channel_supported,
+                    )?;
+                }
+                ContextEvent::EndpointServerHandshakeCompleted {
+                    handle,
+                    endpoint_service_id,
+                    client_service_id,
+                    channel_name,
+                    stream,
+                } => {
                     println!("Alice: endpoint channel accepted");
                     println!(" endpoint_service_id: {}", endpoint_service_id.to_string());
                     println!(" client_service_id: {}", client_service_id.to_string());
                     println!(" channel_name: {}", channel_name);
                     alice_server_socket = Some(stream);
-                },
-                ContextEvent::TorLogReceived{line} => {
+                }
+                ContextEvent::TorLogReceived { line } => {
                     println!("--- ALICE --- {}", line);
-                },
+                }
                 _ => bail!("Alice received unexpected event"),
             }
         }
@@ -2679,7 +3075,12 @@ fn test_gosling_context() -> Result<()> {
         let mut events = pat.update()?;
         for event in events.drain(..) {
             match event {
-                ContextEvent::IdentityClientChallengeReceived{handle, identity_service_id, endpoint_name, endpoint_challenge} => {
+                ContextEvent::IdentityClientChallengeReceived {
+                    handle,
+                    identity_service_id,
+                    endpoint_name,
+                    endpoint_challenge,
+                } => {
                     ensure!(handle == pat_handshake_handle);
                     println!("Pat: challenge request received");
                     println!(" handle: {}", handle);
@@ -2687,8 +3088,14 @@ fn test_gosling_context() -> Result<()> {
                     println!(" endpoint_name: {}", endpoint_name);
                     println!(" endpoint_challenge: {}", endpoint_challenge);
                     pat.identity_client_handle_challenge_received(handle, doc!())?;
-                },
-                ContextEvent::IdentityClientHandshakeCompleted{handle, identity_service_id, endpoint_service_id, endpoint_name, client_auth_private_key} => {
+                }
+                ContextEvent::IdentityClientHandshakeCompleted {
+                    handle,
+                    identity_service_id,
+                    endpoint_service_id,
+                    endpoint_name,
+                    client_auth_private_key,
+                } => {
                     ensure!(handle == pat_handshake_handle);
                     println!("Pat: endpoint request succeeded");
                     println!(" handle: {}", handle);
@@ -2697,23 +3104,28 @@ fn test_gosling_context() -> Result<()> {
                     println!(" endpoint_name: {}", endpoint_name);
                     saved_endpoint_service_id = Some(endpoint_service_id);
                     saved_endpoint_client_auth_key = Some(client_auth_private_key);
-                },
-                ContextEvent::IdentityClientHandshakeFailed{handle,reason} => {
+                }
+                ContextEvent::IdentityClientHandshakeFailed { handle, reason } => {
                     println!("Pat: identity handshake aborted {:?}", reason);
                     println!(" handle: {}", handle);
                     println!(" reason: {:?}", reason);
                     bail!(reason);
-                },
-                ContextEvent::EndpointClientHandshakeCompleted{handle,endpoint_service_id, channel_name, stream} => {
+                }
+                ContextEvent::EndpointClientHandshakeCompleted {
+                    handle,
+                    endpoint_service_id,
+                    channel_name,
+                    stream,
+                } => {
                     println!("Pat: endpoint channel opened");
                     println!(" handle: {}", handle);
                     println!(" endpoint_service_id: {}", endpoint_service_id.to_string());
                     println!(" channel_name: {}", channel_name);
                     pat_client_socket = Some(stream);
-                },
-                ContextEvent::TorLogReceived{line} => {
+                }
+                ContextEvent::TorLogReceived { line } => {
                     println!("--- PAT --- {}", line);
-                },
+                }
                 _ => bail!("Pat received unexpected event"),
             }
         }

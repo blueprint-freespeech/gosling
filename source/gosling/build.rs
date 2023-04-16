@@ -1,6 +1,6 @@
 extern crate cbindgen;
 
-use std::path::{Path,PathBuf};
+use std::path::{Path, PathBuf};
 
 fn main() {
     // set by cargo
@@ -11,9 +11,7 @@ fn main() {
         Err(_) => Path::new(&crate_dir).join("target"),
     };
 
-    let header_file_path = target_dir
-        .join("include")
-        .join("libgosling.h");
+    let header_file_path = target_dir.join("include").join("libgosling.h");
 
     // generate libgosling.h C header
     match cbindgen::generate(&crate_dir) {

@@ -8,14 +8,23 @@ pub struct Error {
 }
 
 impl Error {
-    pub fn new(message: String, file: &'static str, line: u32, function: &'static str, ) -> Self{
-        Self{message, line, function, file}
+    pub fn new(message: String, file: &'static str, line: u32, function: &'static str) -> Self {
+        Self {
+            message,
+            line,
+            function,
+            file,
+        }
     }
 }
 
 impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}({}:{}): {}", self.function, self.file, self.line, self.message)
+        write!(
+            f,
+            "{}({}:{}): {}",
+            self.function, self.file, self.line, self.message
+        )
     }
 }
 
@@ -23,9 +32,12 @@ pub trait ToError {
     fn to_error(self, file: &'static str, line: u32, function: &'static str) -> Error;
 }
 
-impl<T> ToError for T where T: std::string::ToString {
+impl<T> ToError for T
+where
+    T: std::string::ToString,
+{
     fn to_error(self, file: &'static str, line: u32, function: &'static str) -> Error {
-        Error{
+        Error {
             message: self.to_string(),
             line,
             function,
@@ -40,8 +52,7 @@ impl ToError for Error {
     }
 }
 
-
-pub type Result<T, E = Error> = core::result::Result<T,E>;
+pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 #[macro_export]
 macro_rules! function {
@@ -52,21 +63,19 @@ macro_rules! function {
         }
         let name = type_name_of(f);
         &name[..name.len() - 3]
-    }}
+    }};
 }
 
 #[macro_export]
 macro_rules! to_error {
-    ($err:tt) => {
-        {
-            let line = std::line!();
-            let function = function!();
-            let file = std::file!();
+    ($err:tt) => {{
+        let line = std::line!();
+        let function = function!();
+        let file = std::file!();
 
-            use $crate::error::ToError;
-            $err.to_error(file, line, function)
-        }
-    };
+        use $crate::error::ToError;
+        $err.to_error(file, line, function)
+    }};
 }
 
 #[macro_export]
@@ -96,7 +105,7 @@ macro_rules! resolve {
             Ok(val) => val,
             Err(err) => bail!(err),
         }
-    }
+    };
 }
 
 #[macro_export]
@@ -131,7 +140,7 @@ macro_rules! ensure_not_null {
 macro_rules! ensure_ok {
     ($result:expr) => {
         match $result {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(err) => bail!(err),
         }
     };

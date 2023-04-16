@@ -4,8 +4,8 @@ use std::io::{ErrorKind, Read, Write};
 use std::sync::{Arc, Mutex};
 
 // internal crates
-use crate::*;
 use crate::error::Result;
+use crate::*;
 
 // a test-only mock TcpStream
 #[derive(Clone)]
@@ -16,7 +16,7 @@ pub struct MemoryStream {
 
 impl MemoryStream {
     pub fn new() -> Self {
-        return Self{
+        return Self {
             stream: Default::default(),
             read_head: 0,
         };
@@ -55,7 +55,7 @@ impl Read for MemoryStream {
     }
 }
 
-impl Write for MemoryStream where {
+impl Write for MemoryStream {
     fn write(&mut self, buf: &[u8]) -> Result<usize, std::io::Error> {
         self.stream.lock().unwrap().extend_from_slice(buf);
         return Ok(buf.len());
@@ -68,7 +68,6 @@ impl Write for MemoryStream where {
 
 #[test]
 fn test_memory_stream() -> Result<()> {
-
     let mut stream1 = MemoryStream::new();
     let mut stream2 = stream1.clone();
 

@@ -5,19 +5,18 @@ use std::io::{Cursor, ErrorKind};
 use std::option::Option;
 
 // extern crates
-use bson::document::{ValueAccessError};
 use bson::doc;
-#[cfg(test)]
-use crypto::sha3::Sha3;
+use bson::document::ValueAccessError;
 #[cfg(test)]
 use crypto::digest::Digest;
+#[cfg(test)]
+use crypto::sha3::Sha3;
 
 // internal crates
-use crate::*;
 use crate::error::Result;
 #[cfg(test)]
 use crate::test_utils::MemoryStream;
-
+use crate::*;
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum ErrorCode {
@@ -56,11 +55,13 @@ impl From<i32> for ErrorCode {
             -11i32 => ErrorCode::ResponseCookieInvalid,
             -12i32 => ErrorCode::ResponseStateInvalid,
             0i32 => ErrorCode::Success,
-            value => if value > 0 {
-                ErrorCode::Runtime(value)
-            } else {
-                ErrorCode::Unknown(value)
-            },
+            value => {
+                if value > 0 {
+                    ErrorCode::Runtime(value)
+                } else {
+                    ErrorCode::Unknown(value)
+                }
+            }
         }
     }
 }
@@ -89,18 +90,40 @@ impl From<ErrorCode> for i32 {
 
 impl std::fmt::Display for ErrorCode {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-    match self {
+        match self {
             ErrorCode::BsonParseFailed => write!(f, "ProtocolError: failed to parse BSON object"),
             ErrorCode::MessageTooBig => write!(f, "ProtocolError: received document too large"),
-            ErrorCode::MessageParseFailed => write!(f, "ProtocolError: received message has invalid schema"),
-            ErrorCode::MessageVersionIncompatible => write!(f, "ProtocolError: received message has incompatible version"),
-            ErrorCode::SectionIdUnknown => write!(f, "ProtocolError: received message contains section of unknown type"),
-            ErrorCode::SectionParseFailed => write!(f, "ProtocolError: received message contains section with invalid schema"),
-            ErrorCode::RequestCookieInvalid => write!(f, "ProtocolError: request cookie already in use"),
-            ErrorCode::RequestNamespaceInvalid => write!(f, "ProtocolError: request function does not exist in requested namespace"),
-            ErrorCode::RequestFunctionInvalid => write!(f, "ProtocolError: request function does not exist"),
-            ErrorCode::RequestVersionInvalid => write!(f, "ProtocolError: request function version does not exist"),
-            ErrorCode::ResponseCookieInvalid => write!(f, "ProtocolError: response cookie is not recognized"),
+            ErrorCode::MessageParseFailed => {
+                write!(f, "ProtocolError: received message has invalid schema")
+            }
+            ErrorCode::MessageVersionIncompatible => write!(
+                f,
+                "ProtocolError: received message has incompatible version"
+            ),
+            ErrorCode::SectionIdUnknown => write!(
+                f,
+                "ProtocolError: received message contains section of unknown type"
+            ),
+            ErrorCode::SectionParseFailed => write!(
+                f,
+                "ProtocolError: received message contains section with invalid schema"
+            ),
+            ErrorCode::RequestCookieInvalid => {
+                write!(f, "ProtocolError: request cookie already in use")
+            }
+            ErrorCode::RequestNamespaceInvalid => write!(
+                f,
+                "ProtocolError: request function does not exist in requested namespace"
+            ),
+            ErrorCode::RequestFunctionInvalid => {
+                write!(f, "ProtocolError: request function does not exist")
+            }
+            ErrorCode::RequestVersionInvalid => {
+                write!(f, "ProtocolError: request function version does not exist")
+            }
+            ErrorCode::ResponseCookieInvalid => {
+                write!(f, "ProtocolError: response cookie is not recognized")
+            }
             ErrorCode::ResponseStateInvalid => write!(f, "ProtocolError: response state not valid"),
             ErrorCode::Success => write!(f, "Success"),
             ErrorCode::Runtime(code) => write!(f, "RuntimeError: runtime error {}", code),
@@ -132,7 +155,10 @@ impl TryFrom<bson::document::Document> for Message {
         };
 
         if let Ok(sections) = value.get_array_mut("sections") {
-            let mut message = Message{honk_rpc, sections: Default::default()};
+            let mut message = Message {
+                honk_rpc,
+                sections: Default::default(),
+            };
             for section in sections.iter_mut() {
                 if let bson::Bson::Document(section) = std::mem::take(section) {
                     message.sections.push(Section::try_from(section)?);
@@ -155,7 +181,9 @@ impl From<Message> for bson::document::Document {
 
         let mut sections = bson::Array::new();
         for section in value.sections.drain(0..) {
-            sections.push(bson::Bson::Document(bson::document::Document::from(section)));
+            sections.push(bson::Bson::Document(bson::document::Document::from(
+                section,
+            )));
         }
         message.insert("sections", sections);
 
@@ -182,7 +210,7 @@ struct ErrorSection {
     data: Option<bson::Bson>,
 }
 
-struct RequestSection{
+struct RequestSection {
     cookie: Option<RequestCookie>,
     namespace: String,
     function: String,
@@ -197,7 +225,7 @@ enum RequestState {
     Complete = 1i32,
 }
 
-struct ResponseSection{
+struct ResponseSection {
     cookie: RequestCookie,
     state: RequestState,
     result: Option<bson::Bson>,
@@ -206,7 +234,9 @@ struct ResponseSection{
 impl TryFrom<bson::document::Document> for Section {
     type Error = ErrorCode;
 
-    fn try_from(value: bson::document::Document) -> Result<Self, <Self as TryFrom<bson::document::Document>>::Error> {
+    fn try_from(
+        value: bson::document::Document,
+    ) -> Result<Self, <Self as TryFrom<bson::document::Document>>::Error> {
         match value.get_i32("id") {
             Ok(ERROR_SECTION_ID) => Ok(Section::Error(ErrorSection::try_from(value)?)),
             Ok(REQUEST_SECTION_ID) => Ok(Section::Request(RequestSection::try_from(value)?)),
@@ -252,7 +282,12 @@ impl TryFrom<bson::document::Document> for ErrorSection {
 
         let data = value.get_mut("data").map(std::mem::take);
 
-        Ok(ErrorSection{cookie, code, message, data})
+        Ok(ErrorSection {
+            cookie,
+            code,
+            message,
+            data,
+        })
     }
 }
 
@@ -298,11 +333,13 @@ impl TryFrom<bson::document::Document> for RequestSection {
         };
 
         let function = match value.get_str("function") {
-            Ok(function) => if function.is_empty() {
-                return Err(ErrorCode::RequestFunctionInvalid);
-            } else {
-                function.to_string()
-            },
+            Ok(function) => {
+                if function.is_empty() {
+                    return Err(ErrorCode::RequestFunctionInvalid);
+                } else {
+                    function.to_string()
+                }
+            }
             Err(_) => return Err(ErrorCode::SectionParseFailed),
         };
 
@@ -318,7 +355,13 @@ impl TryFrom<bson::document::Document> for RequestSection {
             Err(_) => return Err(ErrorCode::SectionParseFailed),
         };
 
-        Ok(RequestSection{cookie, namespace, function, version, arguments})
+        Ok(RequestSection {
+            cookie,
+            namespace,
+            function,
+            version,
+            arguments,
+        })
     }
 }
 
@@ -352,7 +395,7 @@ impl TryFrom<bson::document::Document> for ResponseSection {
 
     fn try_from(value: bson::document::Document) -> Result<Self, Self::Error> {
         let mut value = value;
-        let cookie =  match value.get_i64("cookie") {
+        let cookie = match value.get_i64("cookie") {
             Ok(cookie) => cookie,
             Err(_) => return Err(ErrorCode::SectionParseFailed),
         };
@@ -371,12 +414,16 @@ impl TryFrom<bson::document::Document> for ResponseSection {
             return Err(ErrorCode::SectionParseFailed);
         }
 
-	// if pending there should be no result
-       if state == RequestState::Pending && result != None {
+        // if pending there should be no result
+        if state == RequestState::Pending && result != None {
             return Err(ErrorCode::SectionParseFailed);
         }
 
-        Ok(ResponseSection{cookie, state, result})
+        Ok(ResponseSection {
+            cookie,
+            state,
+            result,
+        })
     }
 }
 
@@ -398,23 +445,36 @@ impl From<ResponseSection> for bson::document::Document {
 
 pub trait ApiSet {
     fn namespace(&self) -> &str;
-    fn exec_function(&mut self, name: &str, version: i32, args: bson::document::Document, request_cookie: Option<RequestCookie>) -> Result<Option<bson::Bson>, ErrorCode>;
+    fn exec_function(
+        &mut self,
+        name: &str,
+        version: i32,
+        args: bson::document::Document,
+        request_cookie: Option<RequestCookie>,
+    ) -> Result<Option<bson::Bson>, ErrorCode>;
     // TODO: add support for more error data per spec (string, debug)?
     fn next_result(&mut self) -> Option<(RequestCookie, Option<bson::Bson>, ErrorCode)>;
 }
 
 pub enum Response {
-    Pending{cookie: RequestCookie},
-    Success{cookie: RequestCookie, result: bson::Bson},
-    Error{cookie: RequestCookie, error_code: ErrorCode},
+    Pending {
+        cookie: RequestCookie,
+    },
+    Success {
+        cookie: RequestCookie,
+        result: bson::Bson,
+    },
+    Error {
+        cookie: RequestCookie,
+        error_code: ErrorCode,
+    },
 }
 
 // 4 kilobytes per specification
 const DEFAULT_MAX_MESSAGE_SIZE: usize = 4 * 1024 * 1024;
 const DEFAULT_MAX_WAIT_TIME: std::time::Duration = std::time::Duration::from_secs(60);
 
-pub struct Session<R,W> {
-
+pub struct Session<R, W> {
     // read stream
     reader: R,
     // write stream
@@ -450,17 +510,19 @@ pub struct Session<R,W> {
     max_wait_time: std::time::Duration,
     // last time a new message read began
     read_timestamp: std::time::Instant,
-
 }
 
 #[allow(dead_code)]
-impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send  {
+impl<R, W> Session<R, W>
+where
+    R: std::io::Read + Send,
+    W: std::io::Write + Send,
+{
     pub fn new(reader: R, writer: W) -> Self {
-
         let mut message_write_buffer: Vec<u8> = Default::default();
         message_write_buffer.reserve(DEFAULT_MAX_MESSAGE_SIZE);
 
-        Session{
+        Session {
             reader,
             writer,
             remaining_byte_count: None,
@@ -489,14 +551,18 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
                 let mut buffer = [0u8; std::mem::size_of::<i32>()];
                 let buffer = &mut buffer[0..bytes_needed];
                 match self.reader.read(buffer) {
-                    Err(err) => if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut {
-                        Ok(())
-                    } else {
-                        bail!(err);
-                    },
+                    Err(err) => {
+                        if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut
+                        {
+                            Ok(())
+                        } else {
+                            bail!(err);
+                        }
+                    }
                     Ok(0) => bail!(std::io::Error::from(ErrorKind::UnexpectedEof)),
                     Ok(count) => {
-                        self.message_read_buffer.extend_from_slice(&buffer[0..count]);
+                        self.message_read_buffer
+                            .extend_from_slice(&buffer[0..count]);
 
                         // all bytes required for i32 message size have been read
                         if self.message_read_buffer.len() == std::mem::size_of::<i32>() {
@@ -504,10 +570,10 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
                             self.read_timestamp = std::time::Instant::now();
 
                             let size = &self.message_read_buffer.as_slice();
-                            let size: i32 = (size[0] as i32)       |
-                                            (size[1] as i32) << 8  |
-                                            (size[2] as i32) << 16 |
-                                            (size[3] as i32) << 24;
+                            let size: i32 = (size[0] as i32)
+                                | (size[1] as i32) << 8
+                                | (size[2] as i32) << 16
+                                | (size[3] as i32) << 24;
                             // size should be at least larger than the bytes required for size header
                             ensure!(size > std::mem::size_of::<i32>() as i32);
                             // deduct size of i32 header and save
@@ -518,7 +584,7 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
                             self.remaining_byte_count = Some(size);
                         }
                         Ok(())
-                    },
+                    }
                 }
             }
         }
@@ -531,15 +597,18 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
         if let Some(remaining) = self.remaining_byte_count {
             let mut buffer = vec![0u8; remaining];
             match self.reader.read(&mut buffer) {
-                Err(err) => if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut {
-                    Ok(None)
-                } else {
-                    bail!(err);
+                Err(err) => {
+                    if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut {
+                        Ok(None)
+                    } else {
+                        bail!(err);
+                    }
                 }
                 Ok(0) => bail!("no more available bytes; expecting {} bytes", remaining),
                 Ok(count) => {
                     // append read bytes
-                    self.message_read_buffer.extend_from_slice(&buffer[0..count]);
+                    self.message_read_buffer
+                        .extend_from_slice(&buffer[0..count]);
                     if remaining == count {
                         self.remaining_byte_count = None;
 
@@ -568,16 +637,15 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
             match self.read_message() {
                 Ok(Some(mut message)) => {
                     self.pending_sections.extend(message.sections.drain(..));
-                },
+                }
                 Ok(None) => return Ok(()),
                 Err(err) => {
                     // ensure no pending items to handle
-                    if self.pending_sections.is_empty() &&
-                       self.inbound_responses.is_empty() {
+                    if self.pending_sections.is_empty() && self.inbound_responses.is_empty() {
                         bail!(err);
                     }
                     return Ok(());
-                },
+                }
             }
         }
     }
@@ -589,35 +657,32 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
                 Section::Error(error) => {
                     if error.cookie.is_some() {
                         // error in response to a request
-                        self.inbound_responses.push_back(
-                            Response::Error{
-                                cookie: error.cookie.unwrap(),
-                                error_code: error.code,
-                            });
+                        self.inbound_responses.push_back(Response::Error {
+                            cookie: error.cookie.unwrap(),
+                            error_code: error.code,
+                        });
                     } else {
                         // some other error
                         bail!("unexpected error '{}'", error.code);
                     }
-                },
+                }
                 Section::Request(request) => {
                     // request to route to our apisets
                     self.inbound_requests.push(request);
-                },
+                }
                 Section::Response(response) => {
                     // response to our client
                     if response.result.is_some() {
-                        self.inbound_responses.push_back(
-                            Response::Success{
-                                cookie: response.cookie,
-                                result: response.result.unwrap(),
+                        self.inbound_responses.push_back(Response::Success {
+                            cookie: response.cookie,
+                            result: response.result.unwrap(),
                         });
                     } else {
-                        self.inbound_responses.push_back(
-                            Response::Pending{
-                                cookie: response.cookie,
+                        self.inbound_responses.push_back(Response::Pending {
+                            cookie: response.cookie,
                         });
                     }
-                },
+                }
             }
         }
 
@@ -627,7 +692,6 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
     // try and send a message bson doc, spitting in half and trying again
     // if found to be too large
     fn send_message_impl(&mut self, message: &mut bson::document::Document) -> Result<()> {
-
         self.message_write_buffer.clear();
         resolve!(message.to_writer(&mut self.message_write_buffer));
 
@@ -636,7 +700,7 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
             let sections = resolve!(message.get_array_mut("sections"));
             ensure!(sections.len() > 1);
 
-            let mut right = doc!{
+            let mut right = doc! {
                 "honk_rpc" : HONK_RPC_VERSION,
                 "sections" : sections.split_off(sections.len() / 2),
             };
@@ -660,7 +724,7 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
         }
 
         // build message and convert to bson to send
-        let message = Message{
+        let message = Message {
             honk_rpc: HONK_RPC_VERSION,
             sections: std::mem::take(&mut self.outbound_sections),
         };
@@ -677,7 +741,9 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
 
     pub fn update(&mut self, apisets: Option<&mut [&mut dyn ApiSet]>) -> Result<()> {
         // abort if we've gone too long without a new message
-        ensure!(std::time::Instant::now().duration_since(self.read_timestamp) <= self.max_wait_time);
+        ensure!(
+            std::time::Instant::now().duration_since(self.read_timestamp) <= self.max_wait_time
+        );
 
         // read sections from remote
         self.read_sections()?;
@@ -696,53 +762,57 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
 
     // apisets : a slice of mutable ApiSet references sorted by their namespaces
     fn handle_requests(&mut self, apisets: &mut [&mut dyn ApiSet]) -> Result<()> {
-
         // first handle all of our inbound requests
         for mut request in self.inbound_requests.drain(..) {
-            if let Ok(idx) = apisets.binary_search_by(|probe| probe.namespace().cmp(&request.namespace)) {
+            if let Ok(idx) =
+                apisets.binary_search_by(|probe| probe.namespace().cmp(&request.namespace))
+            {
                 let apiset = apisets.get_mut(idx).unwrap();
-                match apiset.exec_function(&request.function, request.version, std::mem::take(&mut request.arguments), request.cookie) {
+                match apiset.exec_function(
+                    &request.function,
+                    request.version,
+                    std::mem::take(&mut request.arguments),
+                    request.cookie,
+                ) {
                     // func found, called, and returned immediately
                     Ok(Some(result)) => {
                         if let Some(cookie) = request.cookie {
-                            self.outbound_sections.push(
-                                Section::Response(ResponseSection{
+                            self.outbound_sections
+                                .push(Section::Response(ResponseSection {
                                     cookie,
                                     state: RequestState::Complete,
                                     result: Some(result),
-                            }));
+                                }));
                         }
-                    },
+                    }
                     // func found, called, and result is pending
                     Ok(None) => {
                         if let Some(cookie) = request.cookie {
-                            self.outbound_sections.push(
-                                Section::Response(ResponseSection{
+                            self.outbound_sections
+                                .push(Section::Response(ResponseSection {
                                     cookie,
                                     state: RequestState::Pending,
                                     result: None,
-                            }));
+                                }));
                         }
-                    },
+                    }
                     // some error
                     Err(error_code) => {
-                        self.outbound_sections.push(
-                            Section::Error(ErrorSection{
-                                cookie: request.cookie,
-                                code: error_code,
-                                message: None,
-                                data: None,
+                        self.outbound_sections.push(Section::Error(ErrorSection {
+                            cookie: request.cookie,
+                            code: error_code,
+                            message: None,
+                            data: None,
                         }));
-                    },
+                    }
                 }
             } else {
                 // invalid namespace
-                self.outbound_sections.push(
-                    Section::Error(ErrorSection{
-                        cookie: request.cookie,
-                        code: ErrorCode::RequestNamespaceInvalid,
-                        message: None,
-                        data: None,
+                self.outbound_sections.push(Section::Error(ErrorSection {
+                    cookie: request.cookie,
+                    code: ErrorCode::RequestNamespaceInvalid,
+                    message: None,
+                    data: None,
                 }));
             }
         }
@@ -753,27 +823,24 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
             while let Some((cookie, result, error_code)) = apiset.next_result() {
                 match (cookie, result, error_code) {
                     (cookie, Some(result), ErrorCode::Success) => {
-                        self.outbound_sections.push(
-                            Section::Response(
-                                ResponseSection{
-                                    cookie,
-                                    state: RequestState::Complete,
-                                    result: Some(result),
-                                }));
-                    },
+                        self.outbound_sections
+                            .push(Section::Response(ResponseSection {
+                                cookie,
+                                state: RequestState::Complete,
+                                result: Some(result),
+                            }));
+                    }
                     (cookie, result, error_code) => {
                         if result.is_some() {
                             println!("Server::update(): ApiSet next_result() returned both result and an ErrorCode {{ result : '{}', error : {} }}", result.unwrap(), error_code);
                         }
-                        self.outbound_sections.push(
-                            Section::Error(
-                                ErrorSection{
-                                    cookie: Some(cookie),
-                                    code: error_code,
-                                    message: None,
-                                    data: None,
-                                }));
-                    },
+                        self.outbound_sections.push(Section::Error(ErrorSection {
+                            cookie: Some(cookie),
+                            code: error_code,
+                            message: None,
+                            data: None,
+                        }));
+                    }
                 }
             }
         }
@@ -793,8 +860,8 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
         self.next_cookie += 1;
 
         // add request to outgoing buffer
-        self.outbound_sections.push(
-            Section::Request(RequestSection{
+        self.outbound_sections
+            .push(Section::Request(RequestSection {
                 cookie: Some(cookie),
                 namespace: namespace.to_string(),
                 function: function.to_string(),
@@ -818,7 +885,6 @@ impl<R,W> Session<R,W> where R : std::io::Read + Send, W : std::io::Write + Send
 
 #[test]
 fn test_honk_client_read_write() -> Result<()> {
-
     let stream1 = MemoryStream::new();
     let stream2 = MemoryStream::new();
 
@@ -833,20 +899,22 @@ fn test_honk_client_read_write() -> Result<()> {
 
     // ensure no mesage as actually sent
     match pat.read_message() {
-        Ok(Some(msg)) => bail!("message should not have been sent: {}", bson::document::Document::from(msg)),
-        Ok(None) => {},
+        Ok(Some(msg)) => bail!(
+            "message should not have been sent: {}",
+            bson::document::Document::from(msg)
+        ),
+        Ok(None) => {}
         Err(err) => bail!(err),
     }
 
     const CUSTOM_ERROR: &str = "Custom Error!";
 
-    pat.outbound_sections.push(
-        Section::Error(ErrorSection{
-                cookie: Some(42069),
-                code: ErrorCode::Runtime(1),
-                message: Some(CUSTOM_ERROR.to_string()),
-                data: None,
-            }));
+    pat.outbound_sections.push(Section::Error(ErrorSection {
+        cookie: Some(42069),
+        code: ErrorCode::Runtime(1),
+        message: Some(CUSTOM_ERROR.to_string()),
+        data: None,
+    }));
     pat.send_messages()?;
 
     if let Ok(Some(mut msg)) = alice.read_message() {
@@ -856,34 +924,32 @@ fn test_honk_client_read_write() -> Result<()> {
                 ensure!(section.cookie.is_some() && section.cookie.unwrap() == 42069);
                 ensure!(section.code == ErrorCode::Runtime(1));
                 ensure!(section.message.is_some() && section.message.unwrap() == CUSTOM_ERROR);
-            },
+            }
             Some(_) => bail!("was expecting an Error section"),
             None => bail!("we should have a message"),
         }
     }
 
-    alice.outbound_sections.append(
-        &mut vec![
-            Section::Error(ErrorSection{
-                cookie: Some(42069),
-                code: ErrorCode::Runtime(2),
-                message: Some(CUSTOM_ERROR.to_string()),
-                data: None,
-            }),
-            Section::Request(RequestSection{
-                cookie: None,
-                namespace: "std".to_string(),
-                function: "print".to_string(),
-                version: 0,
-                arguments: doc!{"message": "hello!"},
-            }),
-            Section::Response(ResponseSection{
-                cookie: 123456,
-                state: RequestState::Pending,
-                result: None,
-            }),
-        ]);
-
+    alice.outbound_sections.append(&mut vec![
+        Section::Error(ErrorSection {
+            cookie: Some(42069),
+            code: ErrorCode::Runtime(2),
+            message: Some(CUSTOM_ERROR.to_string()),
+            data: None,
+        }),
+        Section::Request(RequestSection {
+            cookie: None,
+            namespace: "std".to_string(),
+            function: "print".to_string(),
+            version: 0,
+            arguments: doc! {"message": "hello!"},
+        }),
+        Section::Response(ResponseSection {
+            cookie: 123456,
+            state: RequestState::Pending,
+            result: None,
+        }),
+    ]);
 
     // send a multi-section mesage
     alice.send_messages()?;
@@ -894,24 +960,27 @@ fn test_honk_client_read_write() -> Result<()> {
         match section {
             Section::Error(section) => {
                 ensure!(
-                    section.cookie == Some(42069) &&
-                    section.code == ErrorCode::Runtime(2) &&
-                    section.message == Some(CUSTOM_ERROR.to_string()) &&
-                    section.data == None);
-            },
+                    section.cookie == Some(42069)
+                        && section.code == ErrorCode::Runtime(2)
+                        && section.message == Some(CUSTOM_ERROR.to_string())
+                        && section.data == None
+                );
+            }
             Section::Request(section) => {
                 ensure!(
-                    section.cookie == None &&
-                    section.namespace == "std" &&
-                    section.function == "print" &&
-                    section.version == 0i32);
-            },
+                    section.cookie == None
+                        && section.namespace == "std"
+                        && section.function == "print"
+                        && section.version == 0i32
+                );
+            }
             Section::Response(section) => {
                 ensure!(
-                    section.cookie == 123456 &&
-                    section.state == RequestState::Pending &&
-                    section.result == None);
-            },
+                    section.cookie == 123456
+                        && section.state == RequestState::Pending
+                        && section.result == None
+                );
+            }
         }
     }
 
@@ -920,7 +989,6 @@ fn test_honk_client_read_write() -> Result<()> {
 
 #[test]
 fn test_honk_timeout() -> Result<()> {
-
     let stream1 = MemoryStream::new();
     let stream2 = MemoryStream::new();
 
@@ -933,13 +1001,13 @@ fn test_honk_timeout() -> Result<()> {
 
     // a read will happen so time should reset
     std::thread::sleep(std::time::Duration::from_secs(1));
-    pat.client_call("namespace", "function", 0, doc!{})?;
+    pat.client_call("namespace", "function", 0, doc! {})?;
     ensure_ok!(pat.update(None));
     ensure_ok!(alice.update(None));
 
     // a read will happen so time should reset
     std::thread::sleep(std::time::Duration::from_secs(1));
-    pat.client_call("namespace", "function", 0, doc!{})?;
+    pat.client_call("namespace", "function", 0, doc! {})?;
     ensure_ok!(pat.update(None));
     ensure_ok!(alice.update(None));
 
@@ -967,7 +1035,10 @@ const RUNTIME_ERROR_NOT_IMPLEMENTED: ErrorCode = ErrorCode::Runtime(2i32);
 #[cfg(test)]
 impl TestApiSet {
     // returns the same string arg sent
-    fn echo_0(&mut self, mut args: bson::document::Document) -> Result<Option<bson::Bson>, ErrorCode> {
+    fn echo_0(
+        &mut self,
+        mut args: bson::document::Document,
+    ) -> Result<Option<bson::Bson>, ErrorCode> {
         if let Some(bson::Bson::String(val)) = args.get_mut("val") {
             println!("TestApiSet::echo_0(val): val = '{}'", val);
             Ok(Some(bson::Bson::String(std::mem::take(val))))
@@ -978,17 +1049,25 @@ impl TestApiSet {
 
     // second version of echo that isn't implemented
     fn echo_1(&mut self, _args: bson::document::Document) -> Result<Option<bson::Bson>, ErrorCode> {
-       Err(RUNTIME_ERROR_NOT_IMPLEMENTED)
+        Err(RUNTIME_ERROR_NOT_IMPLEMENTED)
     }
 
     // same as echo but takes awhile and appends ' - Delayed!' to source string before returning
-    fn delay_echo_0(&mut self, request_cookie: Option<RequestCookie>, mut args: bson::document::Document) -> Result<Option<bson::Bson>, ErrorCode> {
+    fn delay_echo_0(
+        &mut self,
+        request_cookie: Option<RequestCookie>,
+        mut args: bson::document::Document,
+    ) -> Result<Option<bson::Bson>, ErrorCode> {
         if let Some(bson::Bson::String(val)) = args.get_mut("val") {
             println!("TestApiSet::delay_echo_0(val): val = '{}'", val);
             // only enqueue response if a request cookie is provided
             if let Some(request_cookie) = request_cookie {
                 val.push_str(" - Delayed!");
-                self.delay_echo_results.push_back((request_cookie, Some(bson::Bson::String(std::mem::take(val))), ErrorCode::Success));
+                self.delay_echo_results.push_back((
+                    request_cookie,
+                    Some(bson::Bson::String(std::mem::take(val))),
+                    ErrorCode::Success,
+                ));
             }
             // async func so don't return result immediately
             Ok(None)
@@ -997,7 +1076,10 @@ impl TestApiSet {
         }
     }
 
-    fn sha256_0(&mut self, mut args: bson::document::Document) -> Result<Option<bson::Bson>, ErrorCode> {
+    fn sha256_0(
+        &mut self,
+        mut args: bson::document::Document,
+    ) -> Result<Option<bson::Bson>, ErrorCode> {
         if let Some(bson::Bson::Binary(val)) = args.get_mut("data") {
             let mut sha256 = Sha3::sha3_256();
             sha256.input(&val.bytes);
@@ -1009,33 +1091,28 @@ impl TestApiSet {
     }
 }
 
-
 #[cfg(test)]
 impl ApiSet for TestApiSet {
-
     fn namespace(&self) -> &str {
         "test"
     }
 
-    fn exec_function(&mut self, name: &str, version: i32, args: bson::document::Document, request_cookie: Option<RequestCookie>) -> Result<Option<bson::Bson>, ErrorCode> {
-
-        match (name, version){
-            ("echo", 0) => {
-                self.echo_0(args)
-            },
-            ("echo", 1) => {
-                self.echo_1(args)
-            },
-            ("delay_echo", 0) => {
-                self.delay_echo_0(request_cookie, args)
-            },
-            ("sha256", 0) => {
-                self.sha256_0(args)
-            },
+    fn exec_function(
+        &mut self,
+        name: &str,
+        version: i32,
+        args: bson::document::Document,
+        request_cookie: Option<RequestCookie>,
+    ) -> Result<Option<bson::Bson>, ErrorCode> {
+        match (name, version) {
+            ("echo", 0) => self.echo_0(args),
+            ("echo", 1) => self.echo_1(args),
+            ("delay_echo", 0) => self.delay_echo_0(request_cookie, args),
+            ("sha256", 0) => self.sha256_0(args),
             (name, version) => {
                 println!("received {{ name: '{}', version: {} }}", name, version);
                 Err(ErrorCode::RequestFunctionInvalid)
-            },
+            }
         }
     }
 
@@ -1053,11 +1130,11 @@ fn test_honk_client_apiset() -> Result<()> {
     let mut pat = Session::new(stream2, stream1);
 
     let mut test_api_set: TestApiSet = Default::default();
-    let alice_apisets : &mut[&mut dyn ApiSet] = &mut [&mut test_api_set];
+    let alice_apisets: &mut [&mut dyn ApiSet] = &mut [&mut test_api_set];
 
     // Pat calls remote test::echo_0 call
     //
-    let sent_cookie = pat.client_call("test", "echo", 0, doc!{"val" : "Hello Alice!"})?;
+    let sent_cookie = pat.client_call("test", "echo", 0, doc! {"val" : "Hello Alice!"})?;
     pat.update(None)?;
 
     // alice receives and handles request
@@ -1067,18 +1144,22 @@ fn test_honk_client_apiset() -> Result<()> {
     pat.update(None)?;
     if let Some(response) = pat.client_next_response() {
         match response {
-            Response::Pending{cookie} => {
+            Response::Pending { cookie } => {
                 bail!("received unexpected pending, cookie: {}", cookie);
-            },
-            Response::Success{cookie, result} => {
+            }
+            Response::Success { cookie, result } => {
                 ensure!(sent_cookie == cookie);
                 if let bson::Bson::String(result) = result {
                     ensure!(result == "Hello Alice!");
                 }
-            },
-            Response::Error{cookie, error_code} => {
-                bail!("received unexpected error: {}, cookie: {}", error_code, cookie);
-            },
+            }
+            Response::Error { cookie, error_code } => {
+                bail!(
+                    "received unexpected error: {}, cookie: {}",
+                    error_code,
+                    cookie
+                );
+            }
         }
     } else {
         bail!("expected response");
@@ -1087,7 +1168,7 @@ fn test_honk_client_apiset() -> Result<()> {
     //
     // Pat calls remote test::echo_0 call (with wrong arg)
     //
-    let sent_cookie = pat.client_call("test", "echo", 0, doc!{"string" : "Hello Alice!"})?;
+    let sent_cookie = pat.client_call("test", "echo", 0, doc! {"string" : "Hello Alice!"})?;
     pat.update(None)?;
 
     // alice receives and handles request
@@ -1097,26 +1178,25 @@ fn test_honk_client_apiset() -> Result<()> {
     pat.update(None)?;
     if let Some(response) = pat.client_next_response() {
         match response {
-            Response::Pending{cookie} => {
+            Response::Pending { cookie } => {
                 bail!("received unexpected pending, cookie: {}", cookie);
-            },
-            Response::Success{cookie, result} => {
+            }
+            Response::Success { cookie, result } => {
                 bail!("received unexpected result: {}, cookie: {}", result, cookie);
-            },
-            Response::Error{cookie, error_code} => {
+            }
+            Response::Error { cookie, error_code } => {
                 ensure!(sent_cookie == cookie);
                 ensure!(error_code == RUNTIME_ERROR_INVALID_ARG);
-            },
+            }
         }
     } else {
         bail!("expected response");
     }
 
-
     //
     // Pat calls v2 remote test::echo_1 call (which is not implemented)
     //
-    let sent_cookie = pat.client_call("test", "echo", 1, doc!{"val" : "Hello Again!"})?;
+    let sent_cookie = pat.client_call("test", "echo", 1, doc! {"val" : "Hello Again!"})?;
     pat.update(None)?;
 
     // alice receives and handles request
@@ -1126,13 +1206,13 @@ fn test_honk_client_apiset() -> Result<()> {
     pat.update(None)?;
     if let Some(response) = pat.client_next_response() {
         match response {
-            Response::Pending{cookie} => {
+            Response::Pending { cookie } => {
                 bail!("received unexpected pending, cookie: {}", cookie);
-            },
-            Response::Success{cookie, result} => {
+            }
+            Response::Success { cookie, result } => {
                 bail!("received unexpected result: {}, cookie: {}", result, cookie);
-            },
-            Response::Error{cookie, error_code} => {
+            }
+            Response::Error { cookie, error_code } => {
                 ensure!(sent_cookie == cookie);
                 ensure!(error_code == RUNTIME_ERROR_NOT_IMPLEMENTED);
             }
@@ -1144,7 +1224,7 @@ fn test_honk_client_apiset() -> Result<()> {
     //
     // Pat calls test::delay_echo_0 which goes through the async machinery
     //
-    let sent_cookie = pat.client_call("test", "delay_echo", 0, doc!{"val" : "Hello Delayed?"})?;
+    let sent_cookie = pat.client_call("test", "delay_echo", 0, doc! {"val" : "Hello Delayed?"})?;
     pat.update(None)?;
 
     // alice receives and handles request
@@ -1154,47 +1234,67 @@ fn test_honk_client_apiset() -> Result<()> {
     pat.update(None)?;
     if let Some(response) = pat.client_next_response() {
         match response {
-            Response::Pending{cookie} => {
+            Response::Pending { cookie } => {
                 ensure!(sent_cookie == cookie);
-            },
-            Response::Error{cookie, error_code} => {
-                bail!("received unexpected error: {}, cookie: {}", error_code, cookie);
-            },
-            Response::Success{cookie, result} => {
+            }
+            Response::Error { cookie, error_code } => {
+                bail!(
+                    "received unexpected error: {}, cookie: {}",
+                    error_code,
+                    cookie
+                );
+            }
+            Response::Success { cookie, result } => {
                 bail!("received unexpected sucess: {}, cookie: {}", result, cookie);
-            },
+            }
         }
     } else {
         bail!("expected response");
     }
     if let Some(response) = pat.client_next_response() {
         match response {
-            Response::Pending{cookie} => {
+            Response::Pending { cookie } => {
                 bail!("received unexpected pending, cookie: {}", cookie);
-            },
-            Response::Error{cookie, error_code} => {
-                bail!("received unexpected error: {}, cookie: {}", error_code, cookie);
-            },
-            Response::Success{cookie, result} => {
+            }
+            Response::Error { cookie, error_code } => {
+                bail!(
+                    "received unexpected error: {}, cookie: {}",
+                    error_code,
+                    cookie
+                );
+            }
+            Response::Success { cookie, result } => {
                 ensure!(sent_cookie == cookie);
                 if let bson::Bson::String(result) = result {
                     ensure!(result == "Hello Delayed? - Delayed!");
                 }
-            },
+            }
         }
     } else {
         bail!("expected response");
     }
 
-    let mut args : bson::document::Document = Default::default();
+    let mut args: bson::document::Document = Default::default();
     let data = vec![0u8; DEFAULT_MAX_MESSAGE_SIZE / 2];
-    args.insert("data", bson::Bson::Binary(bson::Binary{subtype: bson::spec::BinarySubtype::Generic, bytes: data}));
+    args.insert(
+        "data",
+        bson::Bson::Binary(bson::Binary {
+            subtype: bson::spec::BinarySubtype::Generic,
+            bytes: data,
+        }),
+    );
 
     let cookie1 = pat.client_call("test", "sha256", 0, args)?;
 
-    let mut args : bson::document::Document = Default::default();
+    let mut args: bson::document::Document = Default::default();
     let data = vec![0xFFu8; DEFAULT_MAX_MESSAGE_SIZE / 2];
-    args.insert("data", bson::Bson::Binary(bson::Binary{subtype: bson::spec::BinarySubtype::Generic, bytes: data}));
+    args.insert(
+        "data",
+        bson::Bson::Binary(bson::Binary {
+            subtype: bson::spec::BinarySubtype::Generic,
+            bytes: data,
+        }),
+    );
 
     let cookie2 = pat.client_call("test", "sha256", 0, args)?;
     pat.update(None)?;
@@ -1206,13 +1306,17 @@ fn test_honk_client_apiset() -> Result<()> {
     pat.update(None)?;
     for response in pat.client_drain_responses() {
         match response {
-            Response::Pending{cookie} => {
+            Response::Pending { cookie } => {
                 bail!("received unexpected pending, cookie: {}", cookie);
-            },
-            Response::Error{cookie, error_code} => {
-                bail!("received unexpected error: {}, cookie: {}", error_code, cookie);
-            },
-            Response::Success{cookie, result} => {
+            }
+            Response::Error { cookie, error_code } => {
+                bail!(
+                    "received unexpected error: {}, cookie: {}",
+                    error_code,
+                    cookie
+                );
+            }
+            Response::Success { cookie, result } => {
                 println!("cookie: {}, result: {}", cookie, result);
                 if let bson::Bson::String(result) = result {
                     if cookie == cookie1 {
@@ -1221,7 +1325,7 @@ fn test_honk_client_apiset() -> Result<()> {
                         ensure!(result == "2b9d259845615e9f2840297569af9ff94c17793e0fdd013d88a277d46437e1e8")
                     }
                 }
-            },
+            }
         }
     }
 

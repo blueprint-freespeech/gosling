@@ -6,18 +6,18 @@ use std::str;
 use crypto::digest::Digest;
 use crypto::sha1::Sha1;
 use crypto::sha3::Sha3;
-use data_encoding::{HEXUPPER, BASE32, BASE32_NOPAD, BASE64};
+use data_encoding::{BASE32, BASE32_NOPAD, BASE64, HEXUPPER};
 use data_encoding_macro::new_encoding;
-use rand::RngCore;
 use rand::rngs::OsRng;
-use signature:: Verifier;
-use tor_llcrypto::*;
+use rand::RngCore;
+use signature::Verifier;
 use tor_llcrypto::pk::keymanip::*;
 use tor_llcrypto::util::rand_compat::RngCompatExt;
+use tor_llcrypto::*;
 
 // internal modules
-use crate::*;
 use crate::error::Result;
+use crate::*;
 
 /// The number of bytes in an ed25519 secret key
 /// cbindgen:ignore
@@ -39,7 +39,8 @@ const ED25519_PRIVATE_KEYBLOB_HEADER: &str = "ED25519-V3:";
 /// The number of bytes needed to store the keyblob header
 pub const ED25519_PRIVATE_KEYBLOB_HEADER_LENGTH: usize = 11;
 /// The number of bytes needed to store ed25519 private keyblob as an ASCII c-string (not including a null terminator)
-pub const ED25519_PRIVATE_KEYBLOB_LENGTH: usize = ED25519_PRIVATE_KEYBLOB_HEADER_LENGTH + ED25519_PRIVATE_KEYBLOB_BASE64_LENGTH;
+pub const ED25519_PRIVATE_KEYBLOB_LENGTH: usize =
+    ED25519_PRIVATE_KEYBLOB_HEADER_LENGTH + ED25519_PRIVATE_KEYBLOB_BASE64_LENGTH;
 /// The number of bytes needed to store ed25519 private keyblob as an ASCII c-string (including a null terminator)
 pub const ED25519_PRIVATE_KEYBLOB_SIZE: usize = ED25519_PRIVATE_KEYBLOB_LENGTH + 1;
 // number of bytes in an onion service id after base32 decode
@@ -65,19 +66,20 @@ pub const X25519_PUBLIC_KEYBLOB_BASE32_LENGTH: usize = 52;
 /// The number of bytes needed to store bsae32 encoded x25519 public key as an ASCII c-string (including a null terminator)
 pub const X25519_PUBLIC_KEYBLOB_BASE32_SIZE: usize = X25519_PUBLIC_KEYBLOB_BASE32_LENGTH + 1;
 
-const ONION_BASE32: data_encoding::Encoding  = new_encoding!{
+const ONION_BASE32: data_encoding::Encoding = new_encoding! {
     symbols: "abcdefghijklmnopqrstuvwxyz234567",
     padding: '=',
 };
 
-
-const SHA1_BYTES: usize = 160/8;
+const SHA1_BYTES: usize = 160 / 8;
 const S2K_RFC2440_SPECIFIER_LEN: usize = 9;
 
 // see https://github.com/torproject/torspec/blob/main/rend-spec-v3.txt#L2143
-fn calc_truncated_checksum(public_key: &[u8; ED25519_PUBLIC_KEY_SIZE]) -> [u8; TRUNCATED_CHECKSUM_SIZE] {
+fn calc_truncated_checksum(
+    public_key: &[u8; ED25519_PUBLIC_KEY_SIZE],
+) -> [u8; TRUNCATED_CHECKSUM_SIZE] {
     // space for full checksum
-    const SHA256_BYTES: usize = 256/8;
+    const SHA256_BYTES: usize = 256 / 8;
     let mut hash_bytes = [0u8; SHA256_BYTES];
 
     let mut hasher = Sha3::sha3_256();
@@ -94,21 +96,26 @@ fn calc_truncated_checksum(public_key: &[u8; ED25519_PUBLIC_KEY_SIZE]) -> [u8; T
 
 // Free functions
 
-fn hash_tor_password_with_salt(salt: &[u8; S2K_RFC2440_SPECIFIER_LEN], password: &str) -> Result<String> {
-
+fn hash_tor_password_with_salt(
+    salt: &[u8; S2K_RFC2440_SPECIFIER_LEN],
+    password: &str,
+) -> Result<String> {
     if salt[S2K_RFC2440_SPECIFIER_LEN - 1] != 0x60 {
-        bail!("last byte in salt must be '0x60', received '{:#02X}'", salt[S2K_RFC2440_SPECIFIER_LEN - 1]);
+        bail!(
+            "last byte in salt must be '0x60', received '{:#02X}'",
+            salt[S2K_RFC2440_SPECIFIER_LEN - 1]
+        );
     }
 
     // tor-specific rfc 2440 constants
     const EXPBIAS: u8 = 6u8;
     const C: u8 = 0x60; // salt[S2K_RFC2440_SPECIFIER_LEN - 1]
-    const COUNT: usize = (16usize + ((C & 15u8) as usize)) << ((C >> 4)  + EXPBIAS);
+    const COUNT: usize = (16usize + ((C & 15u8) as usize)) << ((C >> 4) + EXPBIAS);
 
     // squash together our hash input
     let mut input: Vec<u8> = Default::default();
     // append salt (sans the 'C' constant')
-    input.extend_from_slice(&salt[0..S2K_RFC2440_SPECIFIER_LEN-1]);
+    input.extend_from_slice(&salt[0..S2K_RFC2440_SPECIFIER_LEN - 1]);
     // append password bytes
     input.extend_from_slice(password.as_bytes());
 
@@ -138,7 +145,6 @@ fn hash_tor_password_with_salt(salt: &[u8; S2K_RFC2440_SPECIFIER_LEN], password:
 }
 
 pub fn hash_tor_password(password: &str) -> Result<String> {
-
     let mut salt = [0x00u8; S2K_RFC2440_SPECIFIER_LEN];
     OsRng.fill_bytes(&mut salt);
     salt[S2K_RFC2440_SPECIFIER_LEN - 1] = 0x60u8;
@@ -180,36 +186,47 @@ pub struct V3OnionServiceId {
 // Ed25519 Private Key
 
 impl Ed25519PrivateKey {
-
     pub fn generate() -> Ed25519PrivateKey {
         let secret_key = pk::ed25519::SecretKey::generate(&mut rand_core::OsRng.rng_compat());
 
-        Ed25519PrivateKey{
+        Ed25519PrivateKey {
             expanded_secret_key: pk::ed25519::ExpandedSecretKey::from(&secret_key),
         }
     }
 
     // according to nickm, any 64 byte string here is allowed
     pub fn from_raw(raw: &[u8; ED25519_PRIVATE_KEY_SIZE]) -> Result<Ed25519PrivateKey> {
-        Ok(Ed25519PrivateKey{
+        Ok(Ed25519PrivateKey {
             expanded_secret_key: resolve!(pk::ed25519::ExpandedSecretKey::from_bytes(raw)),
         })
     }
 
     pub fn from_key_blob(key_blob: &str) -> Result<Ed25519PrivateKey> {
         if key_blob.len() != ED25519_PRIVATE_KEYBLOB_LENGTH {
-            bail!("expects string of length '{}'; received string with length '{}'", ED25519_PRIVATE_KEYBLOB_LENGTH, key_blob.len());
+            bail!(
+                "expects string of length '{}'; received string with length '{}'",
+                ED25519_PRIVATE_KEYBLOB_LENGTH,
+                key_blob.len()
+            );
         }
 
         if !key_blob.starts_with(&ED25519_PRIVATE_KEYBLOB_HEADER) {
-            bail!("expects string that begins with '{}'; received '{}'", &ED25519_PRIVATE_KEYBLOB_HEADER, &key_blob);
+            bail!(
+                "expects string that begins with '{}'; received '{}'",
+                &ED25519_PRIVATE_KEYBLOB_HEADER,
+                &key_blob
+            );
         }
 
-        let base64_key:&str = &key_blob[ED25519_PRIVATE_KEYBLOB_HEADER.len()..];
+        let base64_key: &str = &key_blob[ED25519_PRIVATE_KEYBLOB_HEADER.len()..];
         let private_key_data = resolve!(BASE64.decode(base64_key.as_bytes()));
 
         if private_key_data.len() != ED25519_PRIVATE_KEY_SIZE {
-            bail!("expects decoded private key length '{}'; actual '{}'", ED25519_PRIVATE_KEY_SIZE, private_key_data.len());
+            bail!(
+                "expects decoded private key length '{}'; actual '{}'",
+                ED25519_PRIVATE_KEY_SIZE,
+                private_key_data.len()
+            );
         }
         let private_key_data: [u8; ED25519_PRIVATE_KEY_SIZE] = private_key_data.try_into().unwrap();
 
@@ -217,10 +234,15 @@ impl Ed25519PrivateKey {
     }
 
     fn from_private_x25519(x25519_private: &X25519PrivateKey) -> Result<(Ed25519PrivateKey, u8)> {
-        if let Some((result, signbit)) = convert_curve25519_to_ed25519_private(&x25519_private.secret_key) {
-            return Ok((Ed25519PrivateKey{
-                expanded_secret_key: result
-            }, signbit));
+        if let Some((result, signbit)) =
+            convert_curve25519_to_ed25519_private(&x25519_private.secret_key)
+        {
+            return Ok((
+                Ed25519PrivateKey {
+                    expanded_secret_key: result,
+                },
+                signbit,
+            ));
         }
         bail!("couldn't convert key");
     }
@@ -232,10 +254,15 @@ impl Ed25519PrivateKey {
         key_blob
     }
 
-    pub fn sign_message_ex(&self, public_key: &Ed25519PublicKey, message: &[u8]) -> Ed25519Signature {
-
-        let signature = self.expanded_secret_key.sign(message, &public_key.public_key);
-        Ed25519Signature{signature}
+    pub fn sign_message_ex(
+        &self,
+        public_key: &Ed25519PublicKey,
+        message: &[u8],
+    ) -> Ed25519Signature {
+        let signature = self
+            .expanded_secret_key
+            .sign(message, &public_key.public_key);
+        Ed25519Signature { signature }
     }
 
     pub fn sign_message(&self, message: &[u8]) -> Ed25519Signature {
@@ -249,15 +276,16 @@ impl Ed25519PrivateKey {
 }
 
 impl PartialEq for Ed25519PrivateKey {
-    fn eq(&self, other:&Self) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         self.to_bytes().eq(&other.to_bytes())
     }
 }
 
 impl Clone for Ed25519PrivateKey {
     fn clone(&self) -> Ed25519PrivateKey {
-        Ed25519PrivateKey{
-            expanded_secret_key: pk::ed25519::ExpandedSecretKey::from_bytes(&self.to_bytes()).unwrap()
+        Ed25519PrivateKey {
+            expanded_secret_key: pk::ed25519::ExpandedSecretKey::from_bytes(&self.to_bytes())
+                .unwrap(),
         }
     }
 }
@@ -266,7 +294,7 @@ impl Clone for Ed25519PrivateKey {
 
 impl Ed25519PublicKey {
     pub fn from_raw(raw: &[u8; ED25519_PUBLIC_KEY_SIZE]) -> Result<Ed25519PublicKey> {
-        Ok(Ed25519PublicKey{
+        Ok(Ed25519PublicKey {
             public_key: resolve!(pk::ed25519::PublicKey::from_bytes(raw)),
         })
     }
@@ -274,26 +302,40 @@ impl Ed25519PublicKey {
     pub fn from_service_id(service_id: &V3OnionServiceId) -> Result<Ed25519PublicKey> {
         // decode base32 encoded service id
         let mut decoded_service_id = [0u8; V3_ONION_SERVICE_ID_RAW_SIZE];
-        let decoded_byte_count = ONION_BASE32.decode_mut(service_id.as_bytes(), &mut decoded_service_id).unwrap();
+        let decoded_byte_count = ONION_BASE32
+            .decode_mut(service_id.as_bytes(), &mut decoded_service_id)
+            .unwrap();
         if decoded_byte_count != V3_ONION_SERVICE_ID_RAW_SIZE {
-            bail!("decoded byte count is '{}', expected '{}'", decoded_byte_count, V3_ONION_SERVICE_ID_RAW_SIZE);
+            bail!(
+                "decoded byte count is '{}', expected '{}'",
+                decoded_byte_count,
+                V3_ONION_SERVICE_ID_RAW_SIZE
+            );
         }
 
-        Ok(Ed25519PublicKey{
-            public_key: resolve!(pk::ed25519::PublicKey::from_bytes(&decoded_service_id[0..ED25519_PUBLIC_KEY_SIZE])),
+        Ok(Ed25519PublicKey {
+            public_key: resolve!(pk::ed25519::PublicKey::from_bytes(
+                &decoded_service_id[0..ED25519_PUBLIC_KEY_SIZE]
+            )),
         })
     }
 
     pub fn from_private_key(private_key: &Ed25519PrivateKey) -> Ed25519PublicKey {
-        Ed25519PublicKey{
+        Ed25519PublicKey {
             public_key: pk::ed25519::PublicKey::from(&private_key.expanded_secret_key),
         }
     }
 
-    fn from_public_x25519(public_x25519: &X25519PublicKey, signbit: u8) -> Result<Ed25519PublicKey> {
+    fn from_public_x25519(
+        public_x25519: &X25519PublicKey,
+        signbit: u8,
+    ) -> Result<Ed25519PublicKey> {
         ensure!(signbit == 0u8 || signbit == 1u8);
-        Ok(Ed25519PublicKey{
-            public_key: match convert_curve25519_to_ed25519_public(&public_x25519.public_key, signbit) {
+        Ok(Ed25519PublicKey {
+            public_key: match convert_curve25519_to_ed25519_public(
+                &public_x25519.public_key,
+                signbit,
+            ) {
                 Some(public_key) => public_key,
                 None => bail!("failed to convert public key"),
             },
@@ -319,7 +361,7 @@ impl PartialEq for Ed25519PublicKey {
 
 impl Ed25519Signature {
     pub fn from_raw(raw: &[u8; ED25519_SIGNATURE_SIZE]) -> Result<Ed25519Signature> {
-        Ok(Ed25519Signature{
+        Ok(Ed25519Signature {
             signature: resolve!(pk::ed25519::Signature::from_bytes(raw)),
         })
     }
@@ -359,13 +401,13 @@ impl PartialEq for Ed25519Signature {
 
 impl X25519PrivateKey {
     pub fn generate() -> X25519PrivateKey {
-        X25519PrivateKey{
+        X25519PrivateKey {
             secret_key: pk::curve25519::StaticSecret::new(rand_core::OsRng.rng_compat()),
         }
     }
 
     pub fn from_raw(raw: &[u8; X25519_PRIVATE_KEY_SIZE]) -> X25519PrivateKey {
-        X25519PrivateKey{
+        X25519PrivateKey {
             secret_key: pk::curve25519::StaticSecret::from(*raw),
         }
     }
@@ -376,12 +418,16 @@ impl X25519PrivateKey {
             "X25519PrivateKey::from_base64(): expects string of length '{}'; received string with length '{}'", X25519_PRIVATE_KEYBLOB_BASE64_LENGTH, base64.len());
 
         let private_key_data = resolve!(BASE64.decode(base64.as_bytes()));
-        ensure!(private_key_data.len() == X25519_PRIVATE_KEY_SIZE,
-            "X25519PrivateKey::from_base64(): expects decoded private key length '{}'; actual '{}'", X25519_PRIVATE_KEY_SIZE, private_key_data.len());
+        ensure!(
+            private_key_data.len() == X25519_PRIVATE_KEY_SIZE,
+            "X25519PrivateKey::from_base64(): expects decoded private key length '{}'; actual '{}'",
+            X25519_PRIVATE_KEY_SIZE,
+            private_key_data.len()
+        );
 
         let private_key_data: [u8; X25519_PRIVATE_KEY_SIZE] = private_key_data.try_into().unwrap();
 
-        Ok(X25519PrivateKey{
+        Ok(X25519PrivateKey {
             secret_key: pk::curve25519::StaticSecret::from(private_key_data),
         })
     }
@@ -407,13 +453,13 @@ impl X25519PrivateKey {
 // X25519 Public Key
 impl X25519PublicKey {
     pub fn from_private_key(private_key: &X25519PrivateKey) -> X25519PublicKey {
-        X25519PublicKey{
+        X25519PublicKey {
             public_key: pk::curve25519::PublicKey::from(&private_key.secret_key),
         }
     }
 
     pub fn from_raw(raw: &[u8; X25519_PUBLIC_KEY_SIZE]) -> X25519PublicKey {
-        X25519PublicKey{
+        X25519PublicKey {
             public_key: pk::curve25519::PublicKey::from(*raw),
         }
     }
@@ -423,12 +469,16 @@ impl X25519PublicKey {
             "X25519PublicKey::from_base32(): expects string of length '{}'; received '{}' with length '{}'", X25519_PUBLIC_KEYBLOB_BASE32_LENGTH, base32, base32.len());
 
         let public_key_data = resolve!(BASE32_NOPAD.decode(base32.as_bytes()));
-        ensure!(public_key_data.len() == X25519_PUBLIC_KEY_SIZE,
-            "X25519PublicKey::from_base32(): expects decoded public key length '{}'; actual '{}'", X25519_PUBLIC_KEY_SIZE, public_key_data.len());
+        ensure!(
+            public_key_data.len() == X25519_PUBLIC_KEY_SIZE,
+            "X25519PublicKey::from_base32(): expects decoded public key length '{}'; actual '{}'",
+            X25519_PUBLIC_KEY_SIZE,
+            public_key_data.len()
+        );
 
         let public_key_data: [u8; X25519_PUBLIC_KEY_SIZE] = public_key_data.try_into().unwrap();
 
-        Ok(X25519PublicKey{
+        Ok(X25519PublicKey {
             public_key: pk::curve25519::PublicKey::from(public_key_data),
         })
     }
@@ -449,7 +499,9 @@ impl V3OnionServiceId {
         if !V3OnionServiceId::is_valid(service_id) {
             bail!("'{}' is not a valid v3 onion service id", &service_id);
         }
-        Ok(V3OnionServiceId{data: resolve!(service_id.as_bytes().try_into())})
+        Ok(V3OnionServiceId {
+            data: resolve!(service_id.as_bytes().try_into()),
+        })
     }
 
     pub fn from_public_key(public_key: &Ed25519PublicKey) -> V3OnionServiceId {
@@ -457,7 +509,7 @@ impl V3OnionServiceId {
 
         raw_service_id[..ED25519_PUBLIC_KEY_SIZE].copy_from_slice(&public_key.as_bytes()[..]);
         let truncated_checksum = calc_truncated_checksum(public_key.as_bytes());
-        raw_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET    ] = truncated_checksum[0];
+        raw_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET] = truncated_checksum[0];
         raw_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 1] = truncated_checksum[1];
         raw_service_id[V3_ONION_SERVICE_ID_VERSION_OFFSET] = 0x03u8;
 
@@ -465,7 +517,7 @@ impl V3OnionServiceId {
         // panics on wrong buffer size, but given our constant buffer sizes should be fine
         ONION_BASE32.encode_mut(&raw_service_id, &mut service_id);
 
-        V3OnionServiceId{data:service_id}
+        V3OnionServiceId { data: service_id }
     }
 
     pub fn from_private_key(private_key: &Ed25519PrivateKey) -> V3OnionServiceId {
@@ -493,12 +545,14 @@ impl V3OnionServiceId {
                 public_key[..].copy_from_slice(&decoded_service_id[..ED25519_PUBLIC_KEY_SIZE]);
                 // ensure checksum is correct
                 let truncated_checksum = calc_truncated_checksum(&public_key);
-                if truncated_checksum[0] != decoded_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET    ] ||
-                   truncated_checksum[1] != decoded_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 1] {
+                if truncated_checksum[0] != decoded_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET]
+                    || truncated_checksum[1]
+                        != decoded_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + 1]
+                {
                     return false;
                 }
                 true
-            },
+            }
             Err(_) => false,
         }
     }
@@ -523,8 +577,19 @@ impl std::fmt::Debug for V3OnionServiceId {
 #[test]
 fn test_ed25519() -> Result<()> {
     let private_key_blob = "ED25519-V3:YE3GZtDmc+izGijWKgeVRabbXqK456JKKGONDBhV+kPBVKa2mHVQqnRTVuFXe3inU3YW6qvc7glYEwe9rK0LhQ==";
-    let private_raw: [u8;ED25519_PRIVATE_KEY_SIZE] = [0x60u8,0x4du8,0xc6u8,0x66u8,0xd0u8,0xe6u8,0x73u8,0xe8u8,0xb3u8,0x1au8,0x28u8,0xd6u8,0x2au8,0x07u8,0x95u8,0x45u8,0xa6u8,0xdbu8,0x5eu8,0xa2u8,0xb8u8,0xe7u8,0xa2u8,0x4au8,0x28u8,0x63u8,0x8du8,0x0cu8,0x18u8,0x55u8,0xfau8,0x43u8,0xc1u8,0x54u8,0xa6u8,0xb6u8,0x98u8,0x75u8,0x50u8,0xaau8,0x74u8,0x53u8,0x56u8,0xe1u8,0x57u8,0x7bu8,0x78u8,0xa7u8,0x53u8,0x76u8,0x16u8,0xeau8,0xabu8,0xdcu8,0xeeu8,0x09u8,0x58u8,0x13u8,0x07u8,0xbdu8,0xacu8,0xadu8,0x0bu8,0x85u8];
-    let public_raw: [u8;ED25519_PUBLIC_KEY_SIZE] = [0xf2u8,0xfdu8,0xa2u8,0xdbu8,0xf3u8,0x80u8,0xa6u8,0xbau8,0x74u8,0xa4u8,0x90u8,0xe1u8,0x45u8,0x55u8,0xeeu8,0xb9u8,0x32u8,0xa0u8,0x5cu8,0x39u8,0x5au8,0xe2u8,0x02u8,0x83u8,0x55u8,0x27u8,0x89u8,0x6au8,0x1fu8,0x2fu8,0x3du8,0xc5u8];
+    let private_raw: [u8; ED25519_PRIVATE_KEY_SIZE] = [
+        0x60u8, 0x4du8, 0xc6u8, 0x66u8, 0xd0u8, 0xe6u8, 0x73u8, 0xe8u8, 0xb3u8, 0x1au8, 0x28u8,
+        0xd6u8, 0x2au8, 0x07u8, 0x95u8, 0x45u8, 0xa6u8, 0xdbu8, 0x5eu8, 0xa2u8, 0xb8u8, 0xe7u8,
+        0xa2u8, 0x4au8, 0x28u8, 0x63u8, 0x8du8, 0x0cu8, 0x18u8, 0x55u8, 0xfau8, 0x43u8, 0xc1u8,
+        0x54u8, 0xa6u8, 0xb6u8, 0x98u8, 0x75u8, 0x50u8, 0xaau8, 0x74u8, 0x53u8, 0x56u8, 0xe1u8,
+        0x57u8, 0x7bu8, 0x78u8, 0xa7u8, 0x53u8, 0x76u8, 0x16u8, 0xeau8, 0xabu8, 0xdcu8, 0xeeu8,
+        0x09u8, 0x58u8, 0x13u8, 0x07u8, 0xbdu8, 0xacu8, 0xadu8, 0x0bu8, 0x85u8,
+    ];
+    let public_raw: [u8; ED25519_PUBLIC_KEY_SIZE] = [
+        0xf2u8, 0xfdu8, 0xa2u8, 0xdbu8, 0xf3u8, 0x80u8, 0xa6u8, 0xbau8, 0x74u8, 0xa4u8, 0x90u8,
+        0xe1u8, 0x45u8, 0x55u8, 0xeeu8, 0xb9u8, 0x32u8, 0xa0u8, 0x5cu8, 0x39u8, 0x5au8, 0xe2u8,
+        0x02u8, 0x83u8, 0x55u8, 0x27u8, 0x89u8, 0x6au8, 0x1fu8, 0x2fu8, 0x3du8, 0xc5u8,
+    ];
     let public_base32 = "6L62FW7TQCTLU5FESDQUKVPOXEZKAXBZLLRAFA2VE6EWUHZPHXCQ====";
     let service_id_string = "6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd";
     assert!(V3OnionServiceId::is_valid(&service_id_string));
@@ -534,7 +599,14 @@ fn test_ed25519() -> Result<()> {
     for (i, ptr) in message.iter_mut().enumerate() {
         *ptr = i as u8;
     }
-    let signature_raw: [u8; ED25519_SIGNATURE_SIZE] = [0xa6u8,0xd6u8,0xc6u8,0x1au8,0x03u8,0xbcu8,0x43u8,0x6fu8,0x38u8,0x53u8,0x94u8,0xcdu8,0xdcu8,0x86u8,0x0au8,0x88u8,0x64u8,0x43u8,0x1du8,0x18u8,0x84u8,0x30u8,0x2fu8,0xcdu8,0xa6u8,0x79u8,0xcau8,0x87u8,0xd0u8,0x29u8,0xe7u8,0x2bu8,0x32u8,0x9bu8,0xa2u8,0xa4u8,0x3cu8,0x74u8,0x6au8,0x08u8,0x67u8,0x0eu8,0x63u8,0x60u8,0xcbu8,0x46u8,0x22u8,0x55u8,0x43u8,0x5bu8,0x84u8,0x68u8,0x0fu8,0x47u8,0xceu8,0x6cu8,0xd2u8,0xb8u8,0xebu8,0xfeu8,0xf6u8,0x9eu8,0x97u8,0x0au8];
+    let signature_raw: [u8; ED25519_SIGNATURE_SIZE] = [
+        0xa6u8, 0xd6u8, 0xc6u8, 0x1au8, 0x03u8, 0xbcu8, 0x43u8, 0x6fu8, 0x38u8, 0x53u8, 0x94u8,
+        0xcdu8, 0xdcu8, 0x86u8, 0x0au8, 0x88u8, 0x64u8, 0x43u8, 0x1du8, 0x18u8, 0x84u8, 0x30u8,
+        0x2fu8, 0xcdu8, 0xa6u8, 0x79u8, 0xcau8, 0x87u8, 0xd0u8, 0x29u8, 0xe7u8, 0x2bu8, 0x32u8,
+        0x9bu8, 0xa2u8, 0xa4u8, 0x3cu8, 0x74u8, 0x6au8, 0x08u8, 0x67u8, 0x0eu8, 0x63u8, 0x60u8,
+        0xcbu8, 0x46u8, 0x22u8, 0x55u8, 0x43u8, 0x5bu8, 0x84u8, 0x68u8, 0x0fu8, 0x47u8, 0xceu8,
+        0x6cu8, 0xd2u8, 0xb8u8, 0xebu8, 0xfeu8, 0xf6u8, 0x9eu8, 0x97u8, 0x0au8,
+    ];
 
     // test the golden path first
     let service_id = V3OnionServiceId::from_string(&service_id_string)?;
@@ -556,9 +628,13 @@ fn test_ed25519() -> Result<()> {
 
     // some invalid service ids
     assert!(!V3OnionServiceId::is_valid(""));
-    assert!(!V3OnionServiceId::is_valid("
-        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
-    assert!(!V3OnionServiceId::is_valid("6L62FW7TQCTLU5FESDQUKVPOXEZKAXBZLLRAFA2VE6EWUHZPHXCZSJYD"));
+    assert!(!V3OnionServiceId::is_valid(
+        "
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ));
+    assert!(!V3OnionServiceId::is_valid(
+        "6L62FW7TQCTLU5FESDQUKVPOXEZKAXBZLLRAFA2VE6EWUHZPHXCZSJYD"
+    ));
 
     // generate a new key, get the public key and sign/verify a message
     let private_key = Ed25519PrivateKey::generate();
@@ -571,11 +647,15 @@ fn test_ed25519() -> Result<()> {
 
 #[test]
 fn test_password_hash() -> Result<()> {
-    let salt1: [u8; S2K_RFC2440_SPECIFIER_LEN] = [0xbeu8,0x2au8,0x25u8,0x1du8,0xe6u8,0x2cu8,0xb2u8,0x7au8,0x60u8];
+    let salt1: [u8; S2K_RFC2440_SPECIFIER_LEN] = [
+        0xbeu8, 0x2au8, 0x25u8, 0x1du8, 0xe6u8, 0x2cu8, 0xb2u8, 0x7au8, 0x60u8,
+    ];
     let hash1 = hash_tor_password_with_salt(&salt1, "abcdefghijklmnopqrstuvwxyz")?;
     assert!(hash1 == "16:BE2A251DE62CB27A60AC9178A937990E8ED0AB662FA82A5C7DE3EBB23A");
 
-    let salt2: [u8; S2K_RFC2440_SPECIFIER_LEN] = [0x36u8,0x73u8,0x0eu8,0xefu8,0xd1u8,0x8cu8,0x60u8,0xd6u8,0x60u8];
+    let salt2: [u8; S2K_RFC2440_SPECIFIER_LEN] = [
+        0x36u8, 0x73u8, 0x0eu8, 0xefu8, 0xd1u8, 0x8cu8, 0x60u8, 0xd6u8, 0x60u8,
+    ];
     let hash2 = hash_tor_password_with_salt(&salt2, "password")?;
     assert!(hash2 == "16:36730EEFD18C60D66052E7EA535438761C0928D316EEA56A190C99B50A");
 
@@ -589,9 +669,17 @@ fn test_password_hash() -> Result<()> {
 fn test_x25519() -> Result<()> {
     // private/public key pair
     const SECRET_BASE64: &str = "0GeSReJXdNcgvWRQdnDXhJGdu5UiwP2fefgT93/oqn0=";
-    const SECRET_RAW: [u8; X25519_PRIVATE_KEY_SIZE] = [0xd0u8, 0x67u8, 0x92u8, 0x45u8, 0xe2u8, 0x57u8, 0x74u8, 0xd7u8, 0x20u8, 0xbdu8, 0x64u8, 0x50u8, 0x76u8, 0x70u8, 0xd7u8, 0x84u8, 0x91u8, 0x9du8, 0xbbu8, 0x95u8, 0x22u8, 0xc0u8, 0xfdu8, 0x9fu8, 0x79u8, 0xf8u8, 0x13u8, 0xf7u8, 0x7fu8, 0xe8u8, 0xaau8, 0x7du8];
+    const SECRET_RAW: [u8; X25519_PRIVATE_KEY_SIZE] = [
+        0xd0u8, 0x67u8, 0x92u8, 0x45u8, 0xe2u8, 0x57u8, 0x74u8, 0xd7u8, 0x20u8, 0xbdu8, 0x64u8,
+        0x50u8, 0x76u8, 0x70u8, 0xd7u8, 0x84u8, 0x91u8, 0x9du8, 0xbbu8, 0x95u8, 0x22u8, 0xc0u8,
+        0xfdu8, 0x9fu8, 0x79u8, 0xf8u8, 0x13u8, 0xf7u8, 0x7fu8, 0xe8u8, 0xaau8, 0x7du8,
+    ];
     const PUBLIC_BASE32: &str = "AEXCBCEDJ5KU34YGGMZ7PVHVDEA7D7YB7VQAPJTMTZGRJLN3JASA";
-    const PUBLIC_RAW: [u8; X25519_PUBLIC_KEY_SIZE] = [0x01u8, 0x2eu8, 0x20u8, 0x88u8, 0x83u8, 0x4fu8, 0x55u8, 0x4du8, 0xf3u8, 0x06u8, 0x33u8, 0x33u8, 0xf7u8, 0xd4u8, 0xf5u8, 0x19u8, 0x01u8, 0xf1u8, 0xffu8, 0x01u8, 0xfdu8, 0x60u8, 0x07u8, 0xa6u8, 0x6cu8, 0x9eu8, 0x4du8, 0x14u8, 0xadu8, 0xbbu8, 0x48u8, 0x24u8];
+    const PUBLIC_RAW: [u8; X25519_PUBLIC_KEY_SIZE] = [
+        0x01u8, 0x2eu8, 0x20u8, 0x88u8, 0x83u8, 0x4fu8, 0x55u8, 0x4du8, 0xf3u8, 0x06u8, 0x33u8,
+        0x33u8, 0xf7u8, 0xd4u8, 0xf5u8, 0x19u8, 0x01u8, 0xf1u8, 0xffu8, 0x01u8, 0xfdu8, 0x60u8,
+        0x07u8, 0xa6u8, 0x6cu8, 0x9eu8, 0x4du8, 0x14u8, 0xadu8, 0xbbu8, 0x48u8, 0x24u8,
+    ];
 
     // ensure we can convert from raw as expected
     ensure!(&X25519PrivateKey::from_raw(&SECRET_RAW).to_base64() == SECRET_BASE64);

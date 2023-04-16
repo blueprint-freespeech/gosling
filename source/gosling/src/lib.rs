@@ -18,10 +18,10 @@
 
 mod error;
 mod ffi;
-mod tor_crypto;
-mod object_registry;
-mod tor_controller;
-mod honk_rpc;
 mod gosling;
+mod honk_rpc;
+mod object_registry;
 #[cfg(test)]
 mod test_utils;
+mod tor_controller;
+mod tor_crypto;
