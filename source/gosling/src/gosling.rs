@@ -1403,7 +1403,7 @@ where
         channel_name: String,
     ) -> Result<(), GoslingError> {
         if version != GOSLING_VERSION {
-            return Err(GoslingError::BadVersion);
+            Err(GoslingError::BadVersion)
         } else {
             self.requested_channel = Some(channel_name);
             Ok(())
@@ -1466,7 +1466,7 @@ where
                 &client_identity,
                 &self.server_identity,
                 &client_cookie,
-                &self.server_cookie.as_ref().unwrap(),
+                self.server_cookie.as_ref().unwrap(),
             ) {
                 self.client_proof_signature_valid =
                     client_identity_proof_signature.verify(&client_proof, &client_identity_key);
@@ -2047,7 +2047,7 @@ impl Context {
         identity_private_key: &Ed25519PrivateKey,
     ) -> Result<Option<IdentityServer<OnionStream>>> {
         if let Some(stream) = resolve!(identity_listener.accept()) {
-            if let Err(_) = stream.set_nonblocking(true) {
+            if stream.set_nonblocking(true).is_err() {
                 return Ok(None);
             }
 
@@ -2072,7 +2072,7 @@ impl Context {
         endpoint_service_id: &V3OnionServiceId,
     ) -> Result<Option<(EndpointServer<OnionStream>, TcpStream)>> {
         if let Some(stream) = resolve!(endpoint_listener.accept()) {
-            if let Err(_) = stream.set_nonblocking(true) {
+            if stream.set_nonblocking(true).is_err() {
                 return Ok(None);
             }
 
@@ -2103,10 +2103,8 @@ impl Context {
 
         // first handle new identity connections
         if let Some(identity_listener) = &self.identity_listener {
-            match Self::identity_server_handle_accept(
-                &identity_listener,
-                &self.identity_private_key,
-            ) {
+            match Self::identity_server_handle_accept(identity_listener, &self.identity_private_key)
+            {
                 Ok(Some(identity_server)) => {
                     let handle = self.next_handshake_handle;
                     self.next_handshake_handle += 1;
@@ -2124,15 +2122,15 @@ impl Context {
         self.endpoint_listeners.retain(
             |endpoint_service_id, (_endpoint_name, allowed_client, listener)| -> bool {
                 match Self::endpoint_server_handle_accept(
-                    &listener,
-                    &allowed_client,
-                    &endpoint_service_id,
+                    listener,
+                    allowed_client,
+                    endpoint_service_id,
                 ) {
                     Ok(Some((endpoint_server, stream))) => {
                         let handle = self.next_handshake_handle;
                         self.next_handshake_handle += 1;
                         self.endpoint_servers
-                            .insert(handle, (endpoint_server, stream.into()));
+                            .insert(handle, (endpoint_server, stream));
                         events.push(ContextEvent::EndpointServerHandshakeStarted { handle });
                         true
                     }
@@ -2963,7 +2961,7 @@ fn test_gosling_context() -> Result<()> {
                             Ok(handle) => {
                                 endpoint_published = true;
                                 pat_endpoint_handshake_handle = handle;
-                            },
+                            }
                             Err(err) => {
                                 println!(
                                     "Pat: failed to connect to Alice's endpoint server\n {:?}",
