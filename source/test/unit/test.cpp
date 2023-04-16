@@ -46,11 +46,11 @@ TEST_CASE("gosling_ed25519_private_key_from_keyblob") {
 
   unique_ptr<gosling_ed25519_private_key> privateKey;
   const std::string keyBlob =
-      "ED25519-V3:YE3GZtDmc+izGijWKgeVRabbXqK456JKKGONDBhV+"
-      "kPBVKa2mHVQqnRTVuFXe3inU3YW6qvc7glYEwe9rK0LhQ==";
+      "ED25519-V3:YE3GZtDmc+izGijWKgeVRabbXqK456JKKGONDBh"
+      "V+kPBVKa2mHVQqnRTVuFXe3inU3YW6qvc7glYEwe9rK0LhQ==";
   const std::string invalidKeyBlob =
-      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-      "aaaaaaaaaaaaaaaaaaaaaaaaaaa";
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
   REQUIRE(keyBlob.size() == ED25519_PRIVATE_KEYBLOB_LENGTH);
   REQUIRE(invalidKeyBlob.size() == ED25519_PRIVATE_KEYBLOB_LENGTH);
 
@@ -110,8 +110,8 @@ TEST_CASE("gosling_ed25519_private_key_to_keyblob") {
 
   unique_ptr<gosling_ed25519_private_key> privateKey;
   const std::string keyBlob =
-      "ED25519-V3:YE3GZtDmc+izGijWKgeVRabbXqK456JKKGONDBhV+"
-      "kPBVKa2mHVQqnRTVuFXe3inU3YW6qvc7glYEwe9rK0LhQ==";
+      "ED25519-V3:YE3GZtDmc+izGijWKgeVRabbXqK456JKKGONDBh"
+      "V+kPBVKa2mHVQqnRTVuFXe3inU3YW6qvc7glYEwe9rK0LhQ==";
   char keyBlobRaw[ED25519_PRIVATE_KEYBLOB_SIZE] = {0};
   REQUIRE_NOTHROW(::gosling_ed25519_private_key_from_keyblob(
       out(privateKey), keyBlob.c_str(), keyBlob.size(), throw_on_error()));
@@ -434,8 +434,8 @@ TEST_CASE("gosling_v3_onion_service_id_from_ed25519_private_key") {
   REQUIRE_NOTHROW(::gosling_library_init(out(library), throw_on_error()));
 
   const std::string privateKeyBlob =
-      "ED25519-V3:YE3GZtDmc+izGijWKgeVRabbXqK456JKKGONDBhV+"
-      "kPBVKa2mHVQqnRTVuFXe3inU3YW6qvc7glYEwe9rK0LhQ==";
+      "ED25519-V3:YE3GZtDmc+izGijWKgeVRabbXqK456JKKGONDBh"
+      "V+kPBVKa2mHVQqnRTVuFXe3inU3YW6qvc7glYEwe9rK0LhQ==";
   const std::string serviceIdString =
       "6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd";
 
