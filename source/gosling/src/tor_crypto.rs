@@ -195,10 +195,13 @@ impl Ed25519PrivateKey {
     }
 
     // according to nickm, any 64 byte string here is allowed
-    pub fn from_raw(raw: &[u8; ED25519_PRIVATE_KEY_SIZE]) -> Result<Ed25519PrivateKey> {
-        Ok(Ed25519PrivateKey {
-            expanded_secret_key: resolve!(pk::ed25519::ExpandedSecretKey::from_bytes(raw)),
-        })
+    pub fn from_raw(raw: &[u8; ED25519_PRIVATE_KEY_SIZE]) -> Ed25519PrivateKey {
+        Ed25519PrivateKey {
+            expanded_secret_key: match pk::ed25519::ExpandedSecretKey::from_bytes(raw) {
+                Ok(expanded_secret_key) => expanded_secret_key,
+                Err(_) => unreachable!(),
+            },
+        }
     }
 
     pub fn from_key_blob(key_blob: &str) -> Result<Ed25519PrivateKey> {
@@ -220,17 +223,18 @@ impl Ed25519PrivateKey {
 
         let base64_key: &str = &key_blob[ED25519_PRIVATE_KEYBLOB_HEADER.len()..];
         let private_key_data = resolve!(BASE64.decode(base64_key.as_bytes()));
-
-        if private_key_data.len() != ED25519_PRIVATE_KEY_SIZE {
-            bail!(
+        let private_key_data_len = private_key_data.len();
+        let private_key_data_raw: [u8; ED25519_PRIVATE_KEY_SIZE] = match private_key_data.try_into()
+        {
+            Ok(private_key_data) => private_key_data,
+            Err(_) => bail!(
                 "expects decoded private key length '{}'; actual '{}'",
                 ED25519_PRIVATE_KEY_SIZE,
-                private_key_data.len()
-            );
-        }
-        let private_key_data: [u8; ED25519_PRIVATE_KEY_SIZE] = private_key_data.try_into().unwrap();
+                private_key_data_len
+            ),
+        };
 
-        Ed25519PrivateKey::from_raw(&private_key_data)
+        Ok(Ed25519PrivateKey::from_raw(&private_key_data_raw))
     }
 
     fn from_private_x25519(x25519_private: &X25519PrivateKey) -> Result<(Ed25519PrivateKey, u8)> {
@@ -283,10 +287,7 @@ impl PartialEq for Ed25519PrivateKey {
 
 impl Clone for Ed25519PrivateKey {
     fn clone(&self) -> Ed25519PrivateKey {
-        Ed25519PrivateKey {
-            expanded_secret_key: pk::ed25519::ExpandedSecretKey::from_bytes(&self.to_bytes())
-                .unwrap(),
-        }
+        Ed25519PrivateKey::from_raw(&self.to_bytes())
     }
 }
 
@@ -302,9 +303,14 @@ impl Ed25519PublicKey {
     pub fn from_service_id(service_id: &V3OnionServiceId) -> Result<Ed25519PublicKey> {
         // decode base32 encoded service id
         let mut decoded_service_id = [0u8; V3_ONION_SERVICE_ID_RAW_SIZE];
-        let decoded_byte_count = ONION_BASE32
-            .decode_mut(service_id.as_bytes(), &mut decoded_service_id)
-            .unwrap();
+        let decoded_byte_count =
+            match ONION_BASE32.decode_mut(service_id.as_bytes(), &mut decoded_service_id) {
+                Ok(decoded_byte_count) => decoded_byte_count,
+                Err(_) => bail!(
+                    "failed to decode '{}' as V3OnionServiceId",
+                    service_id.to_string()
+                ),
+            };
         if decoded_byte_count != V3_ONION_SERVICE_ID_RAW_SIZE {
             bail!(
                 "decoded byte count is '{}', expected '{}'",
@@ -418,18 +424,18 @@ impl X25519PrivateKey {
             "X25519PrivateKey::from_base64(): expects string of length '{}'; received string with length '{}'", X25519_PRIVATE_KEYBLOB_BASE64_LENGTH, base64.len());
 
         let private_key_data = resolve!(BASE64.decode(base64.as_bytes()));
-        ensure!(
-            private_key_data.len() == X25519_PRIVATE_KEY_SIZE,
-            "X25519PrivateKey::from_base64(): expects decoded private key length '{}'; actual '{}'",
-            X25519_PRIVATE_KEY_SIZE,
-            private_key_data.len()
-        );
+        let private_key_data_len = private_key_data.len();
+        let private_key_data_raw: [u8; X25519_PRIVATE_KEY_SIZE] = match private_key_data.try_into()
+        {
+            Ok(private_key_data) => private_key_data,
+            Err(_) => bail!(
+                "expects decoded private key length '{}'; actual '{}'",
+                X25519_PRIVATE_KEY_SIZE,
+                private_key_data_len
+            ),
+        };
 
-        let private_key_data: [u8; X25519_PRIVATE_KEY_SIZE] = private_key_data.try_into().unwrap();
-
-        Ok(X25519PrivateKey {
-            secret_key: pk::curve25519::StaticSecret::from(private_key_data),
-        })
+        Ok(X25519PrivateKey::from_raw(&private_key_data_raw))
     }
 
     // security note: only ever sign messages the private key owner controls the contents of!
@@ -469,18 +475,17 @@ impl X25519PublicKey {
             "X25519PublicKey::from_base32(): expects string of length '{}'; received '{}' with length '{}'", X25519_PUBLIC_KEYBLOB_BASE32_LENGTH, base32, base32.len());
 
         let public_key_data = resolve!(BASE32_NOPAD.decode(base32.as_bytes()));
-        ensure!(
-            public_key_data.len() == X25519_PUBLIC_KEY_SIZE,
-            "X25519PublicKey::from_base32(): expects decoded public key length '{}'; actual '{}'",
-            X25519_PUBLIC_KEY_SIZE,
-            public_key_data.len()
-        );
+        let public_key_data_len = public_key_data.len();
+        let public_key_data_raw: [u8; X25519_PUBLIC_KEY_SIZE] = match public_key_data.try_into() {
+            Ok(public_key_data) => public_key_data,
+            Err(_) => bail!(
+                "expects decoded public key length '{}'; actual '{}'",
+                X25519_PUBLIC_KEY_SIZE,
+                public_key_data_len
+            ),
+        };
 
-        let public_key_data: [u8; X25519_PUBLIC_KEY_SIZE] = public_key_data.try_into().unwrap();
-
-        Ok(X25519PublicKey {
-            public_key: pk::curve25519::PublicKey::from(public_key_data),
-        })
+        Ok(X25519PublicKey::from_raw(&public_key_data_raw))
     }
 
     pub fn to_base32(&self) -> String {
@@ -557,7 +562,7 @@ impl V3OnionServiceId {
         }
     }
 
-    pub fn as_bytes(&self) -> &[u8] {
+    pub fn as_bytes(&self) -> &[u8; V3_ONION_SERVICE_ID_LENGTH] {
         &self.data
     }
 }
@@ -611,7 +616,7 @@ fn test_ed25519() -> Result<()> {
     // test the golden path first
     let service_id = V3OnionServiceId::from_string(&service_id_string)?;
 
-    let private_key = Ed25519PrivateKey::from_raw(&private_raw)?;
+    let private_key = Ed25519PrivateKey::from_raw(&private_raw);
     assert!(private_key == Ed25519PrivateKey::from_key_blob(&private_key_blob)?);
     assert!(private_key_blob == private_key.to_key_blob());
 
