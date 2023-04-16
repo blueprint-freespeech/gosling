@@ -481,7 +481,7 @@ TEST_CASE("gosling_cpp_demo") {
 
   // pat opens chanel to alice's endpoint
   cout << "--- pat begin endpoint channel request" << endl;
-  REQUIRE_NOTHROW(::gosling_context_open_endpoint_channel(
+  REQUIRE_NOTHROW(::gosling_context_begin_endpoint_handshake(
       pat_context.get(), alice_endpoint_service_id.get(),
       pat_onion_auth_private_key.get(), channelName.data(), channelName.size(),
       throw_on_error()));

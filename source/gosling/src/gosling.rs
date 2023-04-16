@@ -1876,10 +1876,7 @@ impl Context {
         Ok(handshake_handle)
     }
 
-    pub fn identity_client_abort_identity_handshake(
-        &mut self,
-        handle: HandshakeHandle,
-    ) -> Result<()> {
+    pub fn identity_client_abort_handshake(&mut self, handle: HandshakeHandle) -> Result<()> {
         if let Some(_identity_client) = self.identity_clients.remove(&handle) {
             Ok(())
         } else {
@@ -1963,7 +1960,7 @@ impl Context {
         endpoint_server_id: V3OnionServiceId,
         client_auth_key: X25519PrivateKey,
         channel: String,
-    ) -> Result<()> {
+    ) -> Result<HandshakeHandle> {
         ensure!(self.bootstrap_complete);
         self.tor_manager
             .add_client_auth(&endpoint_server_id, &client_auth_key)?;
@@ -1984,7 +1981,7 @@ impl Context {
         self.next_handshake_handle += 1;
         self.endpoint_clients
             .insert(handshake_handle, (endpoint_client, stream.into()));
-        Ok(())
+        Ok(handshake_handle)
     }
 
     pub fn endpoint_client_abort_handshake(&mut self, handle: HandshakeHandle) -> Result<()> {
@@ -2910,7 +2907,8 @@ fn test_gosling_context() -> Result<()> {
 
     let mut alice_server_socket: Option<TcpStream> = None;
     let mut pat_client_socket: Option<TcpStream> = None;
-    let mut pat_handshake_handle: usize = !0usize;
+    let mut pat_identity_handshake_handle: usize = !0usize;
+    let mut pat_endpoint_handshake_handle: usize = !0usize;
 
     while alice_server_socket.is_none() || pat_client_socket.is_none() {
         // update alice
@@ -2928,7 +2926,7 @@ fn test_gosling_context() -> Result<()> {
                         ) {
                             Ok(handle) => {
                                 identity_published = true;
-                                pat_handshake_handle = handle;
+                                pat_identity_handshake_handle = handle;
                             }
                             Err(err) => {
                                 println!(
@@ -2962,7 +2960,10 @@ fn test_gosling_context() -> Result<()> {
                             saved_endpoint_client_auth_key.clone().unwrap(),
                             "test_channel".to_string(),
                         ) {
-                            Ok(()) => endpoint_published = true,
+                            Ok(handle) => {
+                                endpoint_published = true;
+                                pat_endpoint_handshake_handle = handle;
+                            },
                             Err(err) => {
                                 println!(
                                     "Pat: failed to connect to Alice's endpoint server\n {:?}",
@@ -3081,7 +3082,7 @@ fn test_gosling_context() -> Result<()> {
                     endpoint_name,
                     endpoint_challenge,
                 } => {
-                    ensure!(handle == pat_handshake_handle);
+                    ensure!(handle == pat_identity_handshake_handle);
                     println!("Pat: challenge request received");
                     println!(" handle: {}", handle);
                     println!(" identity_service_id: {}", identity_service_id.to_string());
@@ -3096,7 +3097,7 @@ fn test_gosling_context() -> Result<()> {
                     endpoint_name,
                     client_auth_private_key,
                 } => {
-                    ensure!(handle == pat_handshake_handle);
+                    ensure!(handle == pat_identity_handshake_handle);
                     println!("Pat: endpoint request succeeded");
                     println!(" handle: {}", handle);
                     println!(" identity_service_id: {}", identity_service_id.to_string());
@@ -3117,6 +3118,7 @@ fn test_gosling_context() -> Result<()> {
                     channel_name,
                     stream,
                 } => {
+                    ensure!(handle == pat_endpoint_handshake_handle);
                     println!("Pat: endpoint channel opened");
                     println!(" handle: {}", handle);
                     println!(" endpoint_service_id: {}", endpoint_service_id.to_string());

@@ -1095,7 +1095,7 @@ pub extern "C" fn gosling_context_stop_endpoint_server(
     });
 }
 
-/// Connect to and begin a handshake to request an endpoint forom the given identity server
+/// Connect to and begin a handshake to request an endpoint from the given identity server
 ///
 /// @param context : the context to request an endpoint server for
 /// @param identity_service_id : the service id of the identity server we want ot request an endpoint server
@@ -1167,13 +1167,11 @@ pub extern "C" fn gosling_context_abort_identity_client_handshake(
             None => bail!("context is invalid"),
         };
 
-        context
-            .0
-            .identity_client_abort_identity_handshake(handshake_handle)
+        context.0.identity_client_abort_handshake(handshake_handle)
     })
 }
 
-/// Try to open a channel to the given endpoint
+/// Connect to and begin a handshake to request a channel from the given endpoint server
 ///
 /// @param context : the context which will be opening the channel
 /// @param endpoint_service_id : the endpoint server to open a channel to
@@ -1182,15 +1180,15 @@ pub extern "C" fn gosling_context_abort_identity_client_handshake(
 /// @param channel_name : the ascii-encoded name of the channel to open
 /// @param channel_name_length : the number of chars in channel name not including any null-terminator
 #[no_mangle]
-pub extern "C" fn gosling_context_open_endpoint_channel(
+pub extern "C" fn gosling_context_begin_endpoint_handshake(
     context: *mut GoslingContext,
     endpoint_service_id: *const GoslingV3OnionServiceId,
     client_auth_private_key: *const GoslingX25519PrivateKey,
     channel_name: *const c_char,
     channel_name_length: usize,
     error: *mut *mut GoslingError,
-) {
-    translate_failures((), error, || -> Result<()> {
+) -> GoslingHandshakeHandle {
+    translate_failures(!0usize, error, || -> Result<GoslingHandshakeHandle> {
         ensure_not_null!(context);
         ensure_not_null!(endpoint_service_id);
         ensure_not_null!(client_auth_private_key);
@@ -1230,7 +1228,31 @@ pub extern "C" fn gosling_context_open_endpoint_channel(
             client_auth_private_key.clone(),
             channel_name,
         )
-    });
+    })
+}
+
+/// Abort an in-progress endpoint client handshake
+///
+/// @param context : the context associated with the endpoint client handshake handle
+/// @param handshake_handle : the handle associated with the identity client handshake
+/// @param error : filled on error
+#[no_mangle]
+pub extern "C" fn gosling_context_abort_endpoint_client_handshake(
+    context: *mut GoslingContext,
+    handshake_handle: GoslingHandshakeHandle,
+    error: *mut *mut GoslingError,
+) {
+    translate_failures((), error, || -> Result<()> {
+        ensure_not_null!(context);
+
+        let mut context_tuple_registry = get_context_tuple_registry();
+        let context = match context_tuple_registry.get_mut(context as usize) {
+            Some(context) => context,
+            None => bail!("context is invalid"),
+        };
+
+        context.0.endpoint_client_abort_handshake(handshake_handle)
+    })
 }
 
 /// Update the internal gosling context state and process event callbacks
