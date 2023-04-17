@@ -655,14 +655,13 @@ where
         while let Some(section) = self.pending_sections.pop_front() {
             match section {
                 Section::Error(error) => {
-                    if error.cookie.is_some() {
+                    if let Some(cookie) = error.cookie {
                         // error in response to a request
                         self.inbound_responses.push_back(Response::Error {
-                            cookie: error.cookie.unwrap(),
+                            cookie,
                             error_code: error.code,
                         });
                     } else {
-                        // some other error
                         bail!("unexpected error '{}'", error.code);
                     }
                 }
@@ -672,10 +671,11 @@ where
                 }
                 Section::Response(response) => {
                     // response to our client
-                    if response.result.is_some() {
+
+                    if let Some(result) = response.result {
                         self.inbound_responses.push_back(Response::Success {
                             cookie: response.cookie,
-                            result: response.result.unwrap(),
+                            result,
                         });
                     } else {
                         self.inbound_responses.push_back(Response::Pending {
@@ -767,7 +767,10 @@ where
             if let Ok(idx) =
                 apisets.binary_search_by(|probe| probe.namespace().cmp(&request.namespace))
             {
-                let apiset = apisets.get_mut(idx).unwrap();
+                let apiset = match apisets.get_mut(idx) {
+                    Some(apiset) => apiset,
+                    None => unreachable!(),
+                };
                 match apiset.exec_function(
                     &request.function,
                     request.version,
@@ -831,8 +834,8 @@ where
                             }));
                     }
                     (cookie, result, error_code) => {
-                        if result.is_some() {
-                            println!("Server::update(): ApiSet next_result() returned both result and an ErrorCode {{ result : '{}', error : {} }}", result.unwrap(), error_code);
+                        if let Some(result) = result {
+                            println!("Server::update(): ApiSet next_result() returned both result and an ErrorCode {{ result : '{}', error : {} }}", result, error_code);
                         }
                         self.outbound_sections.push(Section::Error(ErrorSection {
                             cookie: Some(cookie),
@@ -921,9 +924,17 @@ fn test_honk_client_read_write() -> Result<()> {
         ensure!(msg.sections.len() == 1);
         match msg.sections.pop() {
             Some(Section::Error(section)) => {
-                ensure!(section.cookie.is_some() && section.cookie.unwrap() == 42069);
-                ensure!(section.code == ErrorCode::Runtime(1));
-                ensure!(section.message.is_some() && section.message.unwrap() == CUSTOM_ERROR);
+                match (section.cookie, section.code, section.message) {
+                    (Some(42069), ErrorCode::Runtime(1), Some(message)) => {
+                        ensure!(message == CUSTOM_ERROR)
+                    }
+                    (cookie, code, message) => bail!(
+                        "unexpected error section: cookie: {:?}, code: {:?}, message: {:?}",
+                        cookie,
+                        code,
+                        message
+                    ),
+                };
             }
             Some(_) => bail!("was expecting an Error section"),
             None => bail!("we should have a message"),
