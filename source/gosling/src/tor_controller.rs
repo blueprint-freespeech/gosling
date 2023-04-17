@@ -185,17 +185,23 @@ impl TorProcess {
                 resolve!(fs::remove_file(&control_port_file));
             }
         }
-        ensure!(
-            control_addr != None,
-            "failed to read control addr from '{}'",
-            control_port_file.display()
-        );
+
+        let control_addr = match control_addr {
+            Some(control_addr) => control_addr,
+            None => bail!(
+                "failed to read control addr from '{}'",
+                control_port_file.display()
+            ),
+        };
 
         let stdout_lines: Arc<Mutex<Vec<String>>> = Default::default();
 
         {
             let stdout_lines = Arc::downgrade(&stdout_lines);
-            let stdout = BufReader::new(process.stdout.take().unwrap());
+            let stdout = BufReader::new(match process.stdout.take() {
+                Some(stdout) => stdout,
+                None => unreachable!(),
+            });
 
             resolve!(std::thread::Builder::new()
                 .name("tor_stdout_reader".to_string())
@@ -205,7 +211,7 @@ impl TorProcess {
         }
 
         Ok(TorProcess {
-            control_addr: control_addr.unwrap(),
+            control_addr,
             process,
             password,
             stdout_lines,
@@ -223,14 +229,20 @@ impl TorProcess {
                 // remove trailing '\n'
                 line.pop();
                 // then acquire the lock on the line buffer
-                let mut stdout_lines = stdout_lines.lock().unwrap();
+                let mut stdout_lines = match stdout_lines.lock() {
+                    Ok(stdout_lines) => stdout_lines,
+                    Err(_) => unreachable!(),
+                };
                 stdout_lines.push(line);
             }
         }
     }
 
     fn wait_log_lines(&mut self) -> Vec<String> {
-        let mut lines = self.stdout_lines.lock().unwrap();
+        let mut lines = match self.stdout_lines.lock() {
+            Ok(lines) => lines,
+            Err(_) => unreachable!(),
+        };
         std::mem::take(&mut lines)
     }
 }
@@ -275,9 +287,9 @@ impl ControlStream {
         const READ_BUFFER_SIZE: usize = 1024;
         let pending_data = Vec::with_capacity(READ_BUFFER_SIZE);
 
-        let single_line_data = Regex::new(r"^\d\d\d-.*").unwrap();
-        let multi_line_data = Regex::new(r"^\d\d\d+.*").unwrap();
-        let end_reply_line = Regex::new(r"^\d\d\d .*").unwrap();
+        let single_line_data = resolve!(Regex::new(r"^\d\d\d-.*"));
+        let multi_line_data = resolve!(Regex::new(r"^\d\d\d+.*"));
+        let end_reply_line = resolve!(Regex::new(r"^\d\d\d .*"));
 
         Ok(ControlStream {
             stream,
@@ -378,7 +390,10 @@ impl ControlStream {
                 if current_line == "." {
                     self.reading_multiline_value = false;
                 } else {
-                    let multiline = self.pending_reply.last_mut().unwrap();
+                    let multiline = match self.pending_reply.last_mut() {
+                        Some(multiline) => multiline,
+                        None => unreachable!(),
+                    };
                     multiline.push('\n');
                     multiline.push_str(&current_line);
                 }
@@ -390,7 +405,10 @@ impl ControlStream {
         std::mem::swap(&mut self.pending_reply, &mut reply_lines);
 
         // parse out the response code for easier matching
-        let status_code_string = reply_lines.first().unwrap()[0..3].to_string();
+        let status_code_string = match reply_lines.first() {
+            Some(line) => line[0..3].to_string(),
+            None => unreachable!(),
+        };
         let status_code: u32 = resolve!(status_code_string.parse());
 
         // strip the redundant status code form start of lines
@@ -463,7 +481,6 @@ impl Version {
         status_tag: Option<&str>,
     ) -> Result<Version> {
         let status_tag = if let Some(status_tag) = status_tag {
-            // ensure!(STATUS_TAG_PATTERN.is_match(status_tag));
             ensure!(Self::status_tag_pattern_is_match(status_tag));
             Some(status_tag.to_string())
         } else {
@@ -646,22 +663,25 @@ struct TorController {
 
 #[allow(dead_code)]
 impl TorController {
-    pub fn new(control_stream: ControlStream) -> TorController {
-        let status_event_pattern =
-            Regex::new(r#"^STATUS_CLIENT (?P<severity>NOTICE|WARN|ERR) (?P<action>[A-Za-z]+)"#)
-                .unwrap();
-        let status_event_argument_pattern =
-            Regex::new(r#"(?P<key>[A-Z]+)=(?P<value>[A-Za-z0-9_]+|"[^"]+")"#).unwrap();
-        let hs_desc_pattern = Regex::new(r#"HS_DESC (?P<action>REQUESTED|UPLOAD|RECEIVED|UPLOADED|IGNORE|FAILED|CREATED) (?P<hsaddress>[a-z2-7]{56})"#).unwrap();
+    pub fn new(control_stream: ControlStream) -> Result<TorController> {
+        let status_event_pattern = resolve!(Regex::new(
+            r#"^STATUS_CLIENT (?P<severity>NOTICE|WARN|ERR) (?P<action>[A-Za-z]+)"#
+        ));
+        let status_event_argument_pattern = resolve!(Regex::new(
+            r#"(?P<key>[A-Z]+)=(?P<value>[A-Za-z0-9_]+|"[^"]+")"#
+        ));
+        let hs_desc_pattern = resolve!(Regex::new(
+            r#"HS_DESC (?P<action>REQUESTED|UPLOAD|RECEIVED|UPLOADED|IGNORE|FAILED|CREATED) (?P<hsaddress>[a-z2-7]{56})"#
+        ));
 
-        TorController {
+        Ok(TorController {
             control_stream,
             async_replies: Default::default(),
             // regex
             status_event_pattern,
             status_event_argument_pattern,
             hs_desc_pattern,
-        }
+        })
     }
 
     // return curently available events, does not block waiting
@@ -691,24 +711,36 @@ impl TorController {
         // not sure this is what we want but yolo
         let reply_text = reply.reply_lines.join(" ");
         if let Some(caps) = self.status_event_pattern.captures(&reply_text) {
-            let severity = caps.name("severity").unwrap().as_str();
-            let action = caps.name("action").unwrap().as_str();
+            let severity = match caps.name("severity") {
+                Some(severity) => severity.as_str(),
+                None => unreachable!(),
+            };
+            let action = match caps.name("action") {
+                Some(action) => action.as_str(),
+                None => unreachable!(),
+            };
 
             let mut arguments: Vec<(String, String)> = Default::default();
             for caps in self
                 .status_event_argument_pattern
                 .captures_iter(&reply_text)
             {
-                let key = caps.name("key").unwrap().as_str().to_string();
+                let key = match caps.name("key") {
+                    Some(key) => key.as_str(),
+                    None => unreachable!(),
+                };
                 let value = {
-                    let value = caps.name("value").unwrap().as_str();
+                    let value = match caps.name("value") {
+                        Some(value) => value.as_str(),
+                        None => unreachable!(),
+                    };
                     if value.starts_with('\"') && value.ends_with('\"') {
-                        value[1..value.len() - 1].to_string()
+                        &value[1..value.len() - 1]
                     } else {
-                        value.to_string()
+                        value
                     }
                 };
-                arguments.push((key, value));
+                arguments.push((key.to_string(), value.to_string()));
             }
 
             return Ok(AsyncEvent::StatusClient {
@@ -719,8 +751,14 @@ impl TorController {
         }
 
         if let Some(caps) = self.hs_desc_pattern.captures(&reply_text) {
-            let action = caps.name("action").unwrap().as_str();
-            let hs_address = caps.name("hsaddress").unwrap().as_str();
+            let action = match caps.name("action") {
+                Some(action) => action.as_str(),
+                None => unreachable!(),
+            };
+            let hs_address = match caps.name("hsaddress") {
+                Some(hs_address) => hs_address.as_str(),
+                None => unreachable!(),
+            };
 
             if let Ok(hs_address) = V3OnionServiceId::from_string(hs_address) {
                 return Ok(AsyncEvent::HsDesc {
@@ -1027,7 +1065,7 @@ impl TorController {
                         private_key = Some(Ed25519PrivateKey::from_key_blob(&line[index..])?);
                     } else if line.contains("ClientAuthV3=") {
                         ensure!(
-                            client_auth.is_some() && !client_auth.unwrap().is_empty(),
+                            !client_auth.unwrap_or_default().is_empty(),
                             "received unexpected ClientAuthV3 keys"
                         );
                     } else if !line.contains("OK") {
@@ -1038,7 +1076,6 @@ impl TorController {
             code => bail!("{} {}", code, reply.reply_lines.join("\n")),
         }
 
-        ensure!(service_id != None, "did not receive a service id");
         if flags.discard_pk {
             ensure!(
                 private_key.is_none(),
@@ -1048,7 +1085,10 @@ impl TorController {
             ensure!(private_key.is_some(), "did not return private key");
         }
 
-        Ok((private_key, service_id.unwrap()))
+        match service_id {
+            Some(service_id) => Ok((private_key, service_id)),
+            None => bail!("did not receive a serviceid"),
+        }
     }
 
     pub fn del_onion(&mut self, service_id: &V3OnionServiceId) -> Result<()> {
@@ -1280,7 +1320,7 @@ impl TorManager {
         let control_stream = ControlStream::new(&daemon.control_addr, Duration::from_millis(16))?;
 
         // create a controler
-        let mut controller = TorController::new(control_stream);
+        let mut controller = TorController::new(control_stream)?;
 
         // authenticate
         controller.authenticate(&daemon.password)?;
@@ -1412,14 +1452,19 @@ impl TorManager {
             self.socks_listener = Some(listeners.swap_remove(0));
         }
 
+        let socks_listener = match self.socks_listener {
+            Some(socks_listener) => socks_listener,
+            None => unreachable!(),
+        };
+
         // our onion domain
         let target =
             socks::TargetAddr::Domain(format!("{}.onion", service_id.to_string()), virt_port);
         // readwrite stream
         let stream = match &circuit {
-            None => resolve!(Socks5Stream::connect(self.socks_listener.unwrap(), target)),
+            None => resolve!(Socks5Stream::connect(socks_listener, target)),
             Some(circuit) => resolve!(Socks5Stream::connect_with_password(
-                self.socks_listener.unwrap(),
+                socks_listener,
                 target,
                 &circuit.username,
                 &circuit.password
@@ -1487,7 +1532,7 @@ fn test_tor_controller() -> Result<()> {
             ControlStream::new(&tor_process.control_addr, Duration::from_millis(16))?;
 
         // create a tor controller and send authentication command
-        let mut tor_controller = TorController::new(control_stream);
+        let mut tor_controller = TorController::new(control_stream)?;
         tor_controller.authenticate_cmd(&tor_process.password)?;
         ensure!(
             tor_controller
@@ -1512,7 +1557,7 @@ fn test_tor_controller() -> Result<()> {
 
         // create a tor controller and send authentication command
         // all async events are just printed to stdout
-        let mut tor_controller = TorController::new(control_stream);
+        let mut tor_controller = TorController::new(control_stream)?;
         tor_controller.authenticate(&tor_process.password)?;
 
         // ensure everything is matching our default_torrc settings
@@ -1554,9 +1599,11 @@ fn test_tor_controller() -> Result<()> {
 
         // add an onoin service
         let (private_key, service_id) =
-            tor_controller.add_onion(None, &Default::default(), None, 22, None, None)?;
-
-        println!("private_key: {}", private_key.unwrap().to_key_blob());
+            match tor_controller.add_onion(None, &Default::default(), None, 22, None, None)? {
+                (Some(private_key), service_id) => (private_key, service_id),
+                _ => bail!("add_onion did not return expected values"),
+            };
+        println!("private_key: {}", private_key.to_key_blob());
         println!("service_id: {}", service_id.to_string());
 
         if let Ok(()) = tor_controller.del_onion(&V3OnionServiceId::from_string(
