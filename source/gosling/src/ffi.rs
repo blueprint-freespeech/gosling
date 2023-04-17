@@ -45,9 +45,13 @@ macro_rules! define_registry {
             pub fn [<get_ $type:snake _registry>]<'a>() -> std::sync::MutexGuard<'a, ObjectRegistry<$type>> {
                 unsafe {
                     if let Some(registry) = &[<$type:snake:upper _REGISTRY>] {
-                        return registry.lock().unwrap();
+                        match registry.lock() {
+                            Ok(registry) => registry,
+                            Err(_) => unreachable!("this object registry has not been inited"),
+                        }
+                    } else {
+                        panic!()
                     }
-                    panic!();
                 }
             }
 
@@ -71,7 +75,7 @@ pub struct Error {
 impl Error {
     pub fn new(message: &str) -> Error {
         Error {
-            message: CString::new(message).unwrap(),
+            message: CString::new(message).unwrap_or_default(),
         }
     }
 }
@@ -1329,9 +1333,7 @@ pub extern "C" fn gosling_context_poll_events(
                         callbacks.identity_client_build_challenge_response_callback,
                     ) {
                         let mut endpoint_challenge_buffer: Vec<u8> = Default::default();
-                        endpoint_challenge
-                            .to_writer(&mut endpoint_challenge_buffer)
-                            .unwrap();
+                        endpoint_challenge.to_writer(&mut endpoint_challenge_buffer).expect("gosling_context_poll_events(): unable to write identity handshake challenge Bson document to buffer");
 
                         // get the size of challenge response bson blob
                         let challenge_response_size = challenge_response_size_callback(
@@ -1514,24 +1516,24 @@ pub extern "C" fn gosling_context_poll_events(
                     handle,
                     challenge_response,
                 } => {
-                    let challenge_response_valid =
-                        match callbacks.identity_server_verify_challenge_response_callback {
-                            Some(callback) => {
-                                // get response as bytes
-                                let mut challenge_response_buffer: Vec<u8> = Default::default();
-                                challenge_response
-                                    .to_writer(&mut challenge_response_buffer)
-                                    .unwrap();
+                    let challenge_response_valid = match callbacks
+                        .identity_server_verify_challenge_response_callback
+                    {
+                        Some(callback) => {
+                            // get response as bytes
+                            let mut challenge_response_buffer: Vec<u8> = Default::default();
+                            challenge_response
+                                    .to_writer(&mut challenge_response_buffer).expect("gosling_context_poll_events(): unable to write identity challenge response Bson document to buffer");
 
-                                callback(
-                                    context,
-                                    handle,
-                                    challenge_response_buffer.as_ptr(),
-                                    challenge_response_buffer.len(),
-                                )
-                            }
-                            None => false,
-                        };
+                            callback(
+                                context,
+                                handle,
+                                challenge_response_buffer.as_ptr(),
+                                challenge_response_buffer.len(),
+                            )
+                        }
+                        None => false,
+                    };
 
                     match get_context_tuple_registry().get_mut(context as usize) {
                         Some(context) => context
