@@ -272,7 +272,6 @@ struct Reply {
     reply_lines: Vec<String>,
 }
 
-#[allow(dead_code)]
 impl ControlStream {
     pub fn new(addr: &SocketAddr, read_timeout: Duration) -> Result<ControlStream> {
         ensure!(
@@ -305,6 +304,7 @@ impl ControlStream {
         })
     }
 
+    #[cfg(test)]
     fn closed_by_remote(&mut self) -> bool {
         self.closed_by_remote
     }
@@ -661,7 +661,6 @@ struct TorController {
     hs_desc_pattern: Regex,
 }
 
-#[allow(dead_code)]
 impl TorController {
     pub fn new(control_stream: ControlStream) -> Result<TorController> {
         let status_event_pattern = resolve!(Regex::new(
@@ -826,6 +825,7 @@ impl TorController {
     }
 
     // GETCONF (3.3)
+    #[cfg(test)]
     fn getconf_cmd(&mut self, keywords: &[&str]) -> Result<Reply> {
         ensure!(!keywords.is_empty());
         let command = format!("GETCONF {}", keywords.join(" "));
@@ -978,6 +978,7 @@ impl TorController {
         }
     }
 
+    #[cfg(test)]
     pub fn getconf(&mut self, keywords: &[&str]) -> Result<Vec<(String, String)>> {
         let reply = self.getconf_cmd(keywords)?;
 
@@ -1150,6 +1151,7 @@ impl TorController {
         }
     }
 
+    #[allow(dead_code)]
     pub fn onion_client_auth_remove(&mut self, service_id: &V3OnionServiceId) -> Result<()> {
         let reply = self.onion_client_auth_remove_cmd(service_id)?;
 
@@ -1165,8 +1167,8 @@ pub struct CircuitToken {
     password: String,
 }
 
-#[allow(dead_code)]
 impl CircuitToken {
+    #[allow(dead_code)]
     pub fn new(first_party: Host) -> CircuitToken {
         const CIRCUIT_TOKEN_PASSWORD_LENGTH: usize = 32usize;
         let username = first_party.to_string();
@@ -1311,7 +1313,6 @@ pub struct TorManager {
     onion_services: Vec<(V3OnionServiceId, Arc<atomic::AtomicBool>)>,
 }
 
-#[allow(dead_code)]
 impl TorManager {
     pub fn new(tor_bin_path: &Path, data_directory: &Path) -> Result<TorManager> {
         // launch tor
@@ -1415,6 +1416,7 @@ impl TorManager {
         Ok(events)
     }
 
+    #[allow(dead_code)]
     pub fn version(&mut self) -> Result<Version> {
         self.controller.getinfo_version()
     }
@@ -1432,6 +1434,7 @@ impl TorManager {
             .onion_client_auth_add(service_id, client_auth, None, &Default::default())
     }
 
+    #[allow(dead_code)]
     pub fn remove_client_auth(&mut self, service_id: &V3OnionServiceId) -> Result<()> {
         self.controller.onion_client_auth_remove(service_id)
     }
