@@ -665,14 +665,24 @@ where
     ) -> Result<(), GoslingError> {
         // convert client_identity to client's public ed25519 key
         if let Ok(client_identity_key) = Ed25519PublicKey::from_service_id(&client_identity) {
+            let (requested_endpoint, server_cookie) = match (
+                self.requested_endpoint.as_ref(),
+                self.server_cookie.as_ref(),
+            ) {
+                (Some(requested_endpoint), Some(server_cookie)) => {
+                    (requested_endpoint, server_cookie)
+                }
+                _ => unreachable!(),
+            };
+
             // construct + verify client proof
             if let Ok(client_proof) = build_client_proof(
                 DomainSeparator::GoslingIdentity,
-                self.requested_endpoint.as_ref().unwrap(),
+                requested_endpoint,
                 &client_identity,
                 &self.server_identity,
                 &client_cookie,
-                self.server_cookie.as_ref().unwrap(),
+                server_cookie,
             ) {
                 self.client_proof_signature_valid =
                     client_identity_proof_signature.verify(&client_proof, &client_identity_key);
@@ -1459,6 +1469,11 @@ where
             Ed25519PublicKey::from_service_id(&client_identity),
             self.requested_channel.as_ref(),
         ) {
+            let server_cookie = match self.server_cookie.as_ref() {
+                Some(server_cookie) => server_cookie,
+                None => unreachable!(),
+            };
+
             // construct + verify client proof
             if let Ok(client_proof) = build_client_proof(
                 DomainSeparator::GoslingEndpoint,
@@ -1466,7 +1481,7 @@ where
                 &client_identity,
                 &self.server_identity,
                 &client_cookie,
-                self.server_cookie.as_ref().unwrap(),
+                server_cookie,
             ) {
                 self.client_proof_signature_valid =
                     client_identity_proof_signature.verify(&client_proof, &client_identity_key);
