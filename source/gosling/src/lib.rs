@@ -11,8 +11,6 @@
 // TODO: APIs for identity server to set the endpoint private key/service id rather than generating new
 // TODO: APIs for identity cleint to set the endpint client auth key rather than generating new
 
-// remove this once refactoring is complete
-#![allow(unused_variables)]
 // some internal functions take a lot of args but thats ok
 #![allow(clippy::too_many_arguments)]
 

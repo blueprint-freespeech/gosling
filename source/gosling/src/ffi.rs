@@ -276,7 +276,7 @@ pub extern "C" fn gosling_library_init(
 /// Frees all resources associated with the Gosling library. No-op if the library
 /// is not initialized or if it has already been freed
 #[no_mangle]
-pub extern "C" fn gosling_library_free(library: *mut GoslingLibrary) {
+pub extern "C" fn gosling_library_free(_library: *mut GoslingLibrary) {
     unsafe {
         if GOSLING_LIBRARY_INITED {
             drop_error_registry();
@@ -1320,8 +1320,6 @@ pub extern "C" fn gosling_context_poll_events(
                 //
                 ContextEvent::IdentityClientChallengeReceived {
                     handle,
-                    identity_service_id,
-                    endpoint_name,
                     endpoint_challenge,
                 } => {
                     // construct challenge response
@@ -1698,8 +1696,6 @@ pub extern "C" fn gosling_context_poll_events(
                 }
                 ContextEvent::EndpointServerChannelRequestReceived {
                     handle,
-                    endpoint_service_id,
-                    client_service_id,
                     requested_channel,
                 } => {
                     let channel_supported: bool = match callbacks
