@@ -1834,7 +1834,7 @@ pub type GoslingTorBootstrapCompletedCallback = extern "C" fn(context: *mut Gosl
 /// @param context: the context associated with this event
 /// @param line: the null-terminated received log line
 /// @param line_length: the number of chars in line not including the null-terminator
-pub type GoslingTorLogRecieved =
+pub type GoslingTorLogReceivedCallback =
     extern "C" fn(context: *mut GoslingContext, line: *const c_char, line_length: usize) -> ();
 
 /// The function pointer type for the client handshake challenge response size
@@ -2273,7 +2273,7 @@ pub struct EventCallbacks {
     // tor events
     tor_bootstrap_status_received_callback: Option<GoslingTorBootstrapStatusReceivedCallback>,
     tor_bootstrap_completed_callback: Option<GoslingTorBootstrapCompletedCallback>,
-    tor_log_received_callback: Option<GoslingTorLogRecieved>,
+    tor_log_received_callback: Option<GoslingTorLogReceivedCallback>,
 
     // identity client events
     identity_client_challenge_response_size_callback:
@@ -2386,7 +2386,7 @@ pub extern "C" fn gosling_context_set_tor_bootstrap_completed_callback(
 #[no_mangle]
 pub extern "C" fn gosling_context_set_tor_log_received_callback(
     context: *mut GoslingContext,
-    callback: GoslingTorLogRecieved,
+    callback: GoslingTorLogReceivedCallback,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(tor_log_received_callback, context, callback, error);
