@@ -137,6 +137,23 @@ macro_rules! ensure_not_null {
 }
 
 #[macro_export]
+macro_rules! ensure_equal {
+    ($left:expr, $right:expr) => {
+        let left_val = $left;
+        let right_val = $right;
+        if left_val != right_val {
+            bail!(std::format!(
+                "`{}` must equal `{}` but found left: {:?}, right: {:?}",
+                std::stringify!($left),
+                std::stringify!($right),
+                left_val,
+                right_val
+            ));
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! ensure_ok {
     ($result:expr) => {
         match $result {
