@@ -14,6 +14,7 @@ use std::sync::Mutex;
 
 // extern crates
 use bson::doc;
+use num_enum::TryFromPrimitive;
 
 // internal crates
 use crate::error::Result;
@@ -22,10 +23,26 @@ use crate::object_registry::*;
 use crate::tor_crypto::*;
 use crate::*;
 
+// Ids used for types we put in ObjectRegistrys
+#[derive(Debug, Eq, PartialEq, TryFromPrimitive)]
+#[repr(u8)]
+enum ObjectTypes {
+    Error,
+    Ed25519PrivateKey,
+    X25519PrivateKey,
+    X25519PublicKey,
+    V3OnionServiceId,
+    Context,
+}
+
 macro_rules! define_registry {
     ($type:ty, $id:expr) => {
         paste::paste! {
-            static mut [<$type:snake:upper _REGISTRY>]: Option<Mutex<ObjectRegistry<$type>>> = None;
+            static_assertions::const_assert!($id as usize <= 0xFF);
+
+            const [<$type:snake:upper _ID>]: usize = $id as usize;
+
+            static mut [<$type:snake:upper _REGISTRY>]: Option<Mutex<ObjectRegistry<$type, [<$type:snake:upper _ID>], 3>>> = None;
 
             pub fn [<init_ $type:snake _registry>]() {
                 unsafe {
@@ -42,7 +59,7 @@ macro_rules! define_registry {
             }
 
             // get a mutex guard wrapping the object registry
-            pub fn [<get_ $type:snake _registry>]<'a>() -> std::sync::MutexGuard<'a, ObjectRegistry<$type>> {
+            pub fn [<get_ $type:snake _registry>]<'a>() -> std::sync::MutexGuard<'a, ObjectRegistry<$type, [<$type:snake:upper _ID>], 3>> {
                 unsafe {
                     if let Some(registry) = &[<$type:snake:upper _REGISTRY>] {
                         match registry.lock() {
@@ -55,14 +72,6 @@ macro_rules! define_registry {
                 }
             }
 
-            static_assertions::const_assert!($id as usize <= 0xFF);
-            const [<$type:snake:upper _BYTE_TYPE_ID>]: usize = $id as usize;
-
-            impl HasByteTypeId for $type {
-                fn get_byte_type_id() -> usize {
-                    [<$type:snake:upper _BYTE_TYPE_ID>]
-                }
-            }
         }
     }
 }
