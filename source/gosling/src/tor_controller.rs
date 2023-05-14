@@ -54,7 +54,7 @@ fn generate_password(length: usize) -> String {
 
 fn read_control_port_file(control_port_file: &Path) -> Result<SocketAddr> {
     // open file
-    let mut file = resolve!(File::open(&control_port_file));
+    let mut file = resolve!(File::open(control_port_file));
 
     // bail if the file is larger than expected
     let metadata = resolve!(file.metadata());
@@ -95,7 +95,7 @@ impl TorProcess {
 
         // create data directory if it doesn't exist
         if !data_directory.exists() {
-            resolve!(fs::create_dir_all(&data_directory));
+            resolve!(fs::create_dir_all(data_directory));
         } else {
             ensure!(
                 !data_directory.is_file(),
@@ -179,7 +179,7 @@ impl TorProcess {
         // try and read the control port from the control port file
         // or abort after 5 seconds
         // TODO: make this timeout configurable?
-        while control_addr == None && start.elapsed() < Duration::from_secs(5) {
+        while control_addr.is_none() && start.elapsed() < Duration::from_secs(5) {
             if control_port_file.exists() {
                 control_addr = Some(read_control_port_file(control_port_file.as_path())?);
                 resolve!(fs::remove_file(&control_port_file));
@@ -279,7 +279,7 @@ impl ControlStream {
             "read_timeout must not be zero"
         );
 
-        let stream = resolve!(TcpStream::connect(&addr));
+        let stream = resolve!(TcpStream::connect(addr));
         resolve!(stream.set_read_timeout(Some(read_timeout)));
 
         // pre-allocate a kilobyte for the read buffer

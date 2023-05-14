@@ -213,7 +213,7 @@ impl Ed25519PrivateKey {
             );
         }
 
-        if !key_blob.starts_with(&ED25519_PRIVATE_KEYBLOB_HEADER) {
+        if !key_blob.starts_with(ED25519_PRIVATE_KEYBLOB_HEADER) {
             bail!(
                 "expects string that begins with '{}'; received '{}'",
                 &ED25519_PRIVATE_KEYBLOB_HEADER,

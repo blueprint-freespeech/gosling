@@ -294,10 +294,10 @@ impl TryFrom<bson::document::Document> for ErrorSection {
 impl From<ErrorSection> for bson::document::Document {
     fn from(value: ErrorSection) -> bson::document::Document {
         let mut error_section = bson::document::Document::new();
-        error_section.insert("id", ERROR_SECTION_ID as i32);
+        error_section.insert("id", ERROR_SECTION_ID);
 
         if let Some(cookie) = value.cookie {
-            error_section.insert("cookie", cookie as i64);
+            error_section.insert("cookie", cookie);
         }
 
         error_section.insert("code", Into::<i32>::into(value.code));
@@ -368,10 +368,10 @@ impl TryFrom<bson::document::Document> for RequestSection {
 impl From<RequestSection> for bson::document::Document {
     fn from(value: RequestSection) -> bson::document::Document {
         let mut request_section = bson::document::Document::new();
-        request_section.insert("id", REQUEST_SECTION_ID as i32);
+        request_section.insert("id", REQUEST_SECTION_ID);
 
         if let Some(cookie) = value.cookie {
-            request_section.insert("cookie", cookie as i64);
+            request_section.insert("cookie", cookie);
         }
 
         if !value.namespace.is_empty() {
@@ -410,12 +410,12 @@ impl TryFrom<bson::document::Document> for ResponseSection {
         let result = value.get_mut("result").map(std::mem::take);
 
         // if complete the result must be present
-        if state == RequestState::Complete && result == None {
+        if state == RequestState::Complete && result.is_none() {
             return Err(ErrorCode::SectionParseFailed);
         }
 
         // if pending there should be no result
-        if state == RequestState::Pending && result != None {
+        if state == RequestState::Pending && result.is_some() {
             return Err(ErrorCode::SectionParseFailed);
         }
 
@@ -430,9 +430,9 @@ impl TryFrom<bson::document::Document> for ResponseSection {
 impl From<ResponseSection> for bson::document::Document {
     fn from(value: ResponseSection) -> bson::document::Document {
         let mut response_section = bson::document::Document::new();
-        response_section.insert("id", RESPONSE_SECTION_ID as i32);
+        response_section.insert("id", RESPONSE_SECTION_ID);
 
-        response_section.insert("cookie", value.cookie as i64);
+        response_section.insert("cookie", value.cookie);
         response_section.insert("state", value.state as i32);
 
         if let Some(result) = value.result {
