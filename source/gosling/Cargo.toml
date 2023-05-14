@@ -3,7 +3,7 @@ name = "gosling"
 build = "build.rs"
 authors = ["Richard Pospesel <richard@blueprintforfreespeech.net>"]
 version = "0.0.1"
-rust-version = "1.61"
+rust-version = "1.66"
 edition = "2021"
 
 [build-dependencies]

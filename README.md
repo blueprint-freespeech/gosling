@@ -15,7 +15,7 @@ It is meant to generalize (and improve upon) the authentication scheme [Ricochet
 
 Libgosling currently has the following build dependencies:
 
-- rust >= [1.61.0](https://github.com/blueprint-freespeech/gosling/blob/main/source/gosling/Cargo.toml#L6)
+- rust >= [1.66.0](https://github.com/blueprint-freespeech/gosling/blob/main/source/gosling/Cargo.toml#L6)
 - cargo
 - cmake >= [3.16.6](https://github.com/blueprint-freespeech/gosling/blob/main/source/CMakeLists.txt#L1)
 - boost >= [1.66](https://github.com/blueprint-freespeech/gosling/blob/main/source/test/functional/CMakeLists.txt#L1) (for C++ tests)
