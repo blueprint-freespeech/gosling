@@ -341,7 +341,7 @@ pub extern "C" fn gosling_ed25519_private_key_from_keyblob(
         let key_blob_view =
             unsafe { std::slice::from_raw_parts(key_blob as *const u8, key_blob_length) };
         let key_blob_str = resolve!(std::str::from_utf8(key_blob_view));
-        let private_key = Ed25519PrivateKey::from_key_blob(key_blob_str)?;
+        let private_key = resolve!(Ed25519PrivateKey::from_key_blob(key_blob_str));
 
         let handle = get_ed25519_private_key_registry().insert(private_key);
         unsafe { *out_private_key = handle as *mut GoslingEd25519PrivateKey };
@@ -454,7 +454,7 @@ pub extern "C" fn gosling_x25519_private_key_from_base64(
 
         let base64_view = unsafe { std::slice::from_raw_parts(base64 as *const u8, base64_length) };
         let base64_str = resolve!(std::str::from_utf8(base64_view));
-        let private_key = X25519PrivateKey::from_base64(base64_str)?;
+        let private_key = resolve!(X25519PrivateKey::from_base64(base64_str));
 
         let handle = get_x25519_private_key_registry().insert(private_key);
         unsafe { *out_private_key = handle as *mut GoslingX25519PrivateKey };
@@ -566,7 +566,7 @@ pub extern "C" fn gosling_x25519_public_key_from_base32(
 
         let base32_view = unsafe { std::slice::from_raw_parts(base32 as *const u8, base32_length) };
         let base32_str = resolve!(std::str::from_utf8(base32_view));
-        let public_key = X25519PublicKey::from_base32(base32_str)?;
+        let public_key = resolve!(X25519PublicKey::from_base32(base32_str));
 
         let handle = get_x25519_public_key_registry().insert(public_key);
         unsafe { *out_public_key = handle as *mut GoslingX25519PublicKey };
@@ -681,7 +681,7 @@ pub extern "C" fn gosling_v3_onion_service_id_from_string(
             std::slice::from_raw_parts(service_id_string as *const u8, service_id_string_length)
         };
         let service_id_str = resolve!(std::str::from_utf8(service_id_view));
-        let service_id = V3OnionServiceId::from_string(service_id_str)?;
+        let service_id = resolve!(V3OnionServiceId::from_string(service_id_str));
 
         let handle = get_v3_onion_service_id_registry().insert(service_id);
         unsafe { *out_service_id = handle as *mut GoslingV3OnionServiceId };
@@ -890,13 +890,13 @@ pub extern "C" fn gosling_context_init(
             };
 
         // construct context
-        let context = Context::new(
+        let context = resolve!(Context::new(
             &tor_bin_path,
             tor_working_directory,
             identity_port,
             endpoint_port,
             identity_private_key.clone(),
-        )?;
+        ));
 
         let handle = get_context_tuple_registry().insert((context, Default::default()));
         unsafe { *out_context = handle as *mut GoslingContext };
@@ -1251,7 +1251,7 @@ pub extern "C" fn gosling_context_poll_events(
         // is accesible)
         let (mut context_events, callbacks) =
             match get_context_tuple_registry().get_mut(context as usize) {
-                Some(context) => (context.0.update()?, context.1.clone()),
+                Some(context) => (resolve!(context.0.update()), context.1.clone()),
                 None => bail!("context is invalid"),
             };
 
@@ -1341,10 +1341,12 @@ pub extern "C" fn gosling_context_poll_events(
                     };
 
                     match get_context_tuple_registry().get_mut(context as usize) {
-                        Some(context) => context.0.identity_client_handle_challenge_received(
-                            handle,
-                            challenge_response,
-                        )?,
+                        Some(context) => {
+                            resolve!(context.0.identity_client_handle_challenge_received(
+                                handle,
+                                challenge_response,
+                            ))
+                        }
                         None => bail!("context is invalid"),
                     };
                 }
@@ -1476,12 +1478,12 @@ pub extern "C" fn gosling_context_poll_events(
 
                     match get_context_tuple_registry().get_mut(context as usize) {
                         Some(context) => {
-                            context.0.identity_server_handle_endpoint_request_received(
+                            resolve!(context.0.identity_server_handle_endpoint_request_received(
                                 handle,
                                 client_allowed,
                                 endpoint_supported,
                                 endpoint_challenge,
-                            )?
+                            ))
                         }
                         None => bail!("context is invalid"),
                     };
@@ -1510,12 +1512,12 @@ pub extern "C" fn gosling_context_poll_events(
                     };
 
                     match get_context_tuple_registry().get_mut(context as usize) {
-                        Some(context) => context
+                        Some(context) => resolve!(context
                             .0
                             .identity_server_handle_challenge_response_received(
                                 handle,
                                 challenge_response_valid,
-                            )?,
+                            )),
                         None => bail!("context is invalid"),
                     };
                 }
@@ -1691,10 +1693,10 @@ pub extern "C" fn gosling_context_poll_events(
 
                     match get_context_tuple_registry().get_mut(context as usize) {
                         Some(context) => {
-                            context.0.endpoint_server_handle_channel_request_received(
+                            resolve!(context.0.endpoint_server_handle_channel_request_received(
                                 handle,
                                 channel_supported,
-                            )?
+                            ))
                         }
                         None => bail!("context is invalid"),
                     };
