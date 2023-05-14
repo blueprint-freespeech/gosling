@@ -10,11 +10,11 @@ use std::panic;
 use std::path::Path;
 use std::ptr;
 use std::str;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 
 // extern crates
 use bson::doc;
-use num_enum::TryFromPrimitive;
 
 // internal crates
 use crate::error::Result;
@@ -23,55 +23,35 @@ use crate::object_registry::*;
 use crate::tor_crypto::*;
 use crate::*;
 
-// Ids used for types we put in ObjectRegistrys
-#[derive(Debug, Eq, PartialEq, TryFromPrimitive)]
-#[repr(u8)]
-enum ObjectTypes {
-    Error,
-    Ed25519PrivateKey,
-    X25519PrivateKey,
-    X25519PublicKey,
-    V3OnionServiceId,
-    Context,
-}
+// tags used for types we put in ObjectRegistrys
+const ERROR_TAG: usize = 0x1;
+const ED25519_PRIVATE_KEY_TAG: usize = 0x2;
+const X25519_PRIVATE_KEY_TAG: usize = 0x3;
+const X25519_PUBLIC_KEY_TAG: usize = 0x4;
+const V3_ONION_SERVICE_ID_TAG: usize = 0x5;
+const CONTEXT_TUPLE_TAG: usize = 0x6;
 
 macro_rules! define_registry {
-    ($type:ty, $id:expr) => {
+    ($type:ty) => {
         paste::paste! {
-            static_assertions::const_assert!($id as usize <= 0xFF);
+            // ensure tag fits in 3 bits
+            static_assertions::const_assert!([<$type:snake:upper _TAG>] <= 0b111);
 
-            const [<$type:snake:upper _ID>]: usize = $id as usize;
+            static [<$type:snake:upper _REGISTRY>]: Mutex<ObjectRegistry<$type, { [<$type:snake:upper _TAG>] }, 3>> = Mutex::new(ObjectRegistry::new());
 
-            static mut [<$type:snake:upper _REGISTRY>]: Option<Mutex<ObjectRegistry<$type, [<$type:snake:upper _ID>], 3>>> = None;
-
-            pub fn [<init_ $type:snake _registry>]() {
-                unsafe {
-                    if let None = [<$type:snake:upper _REGISTRY>] {
-                        [<$type:snake:upper _REGISTRY>] = Some(Mutex::new(ObjectRegistry::new()));
-                    }
+            pub fn [<get_ $type:snake _registry>]<'a>() -> std::sync::MutexGuard<'a, ObjectRegistry<$type, { [<$type:snake:upper _TAG>] }, 3>> {
+                match [<$type:snake:upper _REGISTRY>].lock() {
+                    Ok(registry) => registry,
+                    Err(_) => unreachable!("another thread panicked while holding this registry's mutex"),
                 }
             }
 
-            pub fn [<drop_ $type:snake _registry>]() {
-                unsafe {
-                    [<$type:snake:upper _REGISTRY>] = None;
+            pub fn [<clear_ $type:snake _registry>]() {
+                match [<$type:snake:upper _REGISTRY>].lock() {
+                    Ok(mut registry) => *registry = ObjectRegistry::new(),
+                    Err(_) => unreachable!("another thread panicked while holding this registry's mutex"),
                 }
             }
-
-            // get a mutex guard wrapping the object registry
-            pub fn [<get_ $type:snake _registry>]<'a>() -> std::sync::MutexGuard<'a, ObjectRegistry<$type, [<$type:snake:upper _ID>], 3>> {
-                unsafe {
-                    if let Some(registry) = &[<$type:snake:upper _REGISTRY>] {
-                        match registry.lock() {
-                            Ok(registry) => registry,
-                            Err(_) => unreachable!("this object registry has not been inited"),
-                        }
-                    } else {
-                        panic!()
-                    }
-                }
-            }
-
         }
     }
 }
@@ -89,7 +69,7 @@ impl Error {
     }
 }
 
-define_registry! {Error, ObjectTypes::Error}
+define_registry! {Error}
 
 /// A wrapper object containing an error message
 pub struct GoslingError;
@@ -153,15 +133,15 @@ pub struct GoslingContext;
 /// A handle for an in-progress identity handhskae
 pub type GoslingHandshakeHandle = usize;
 
-define_registry! {Ed25519PrivateKey, ObjectTypes::Ed25519PrivateKey}
-define_registry! {X25519PrivateKey, ObjectTypes::X25519PrivateKey}
-define_registry! {X25519PublicKey, ObjectTypes::X25519PublicKey}
-define_registry! {V3OnionServiceId, ObjectTypes::V3OnionServiceId}
+define_registry! {Ed25519PrivateKey}
+define_registry! {X25519PrivateKey}
+define_registry! {X25519PublicKey}
+define_registry! {V3OnionServiceId}
 
 /// cbindgen:ignore
 type ContextTuple = (Context, EventCallbacks);
 
-define_registry! {ContextTuple, ObjectTypes::Context}
+define_registry! {ContextTuple}
 
 /// Frees a gosling_ed25519_private_key object
 ///
@@ -240,7 +220,7 @@ where
 }
 
 pub struct GoslingLibrary;
-static mut GOSLING_LIBRARY_INITED: bool = false;
+static GOSLING_LIBRARY_INITED: AtomicBool = AtomicBool::new(false);
 const GOSLING_LIBRARY_HANDLE: usize = {
     // integer constant in the form 0x6000..5E (GOOOOOSE)
     (0x60 << ((std::mem::size_of::<usize>() - 1) * 8)) + 0x5E
@@ -258,26 +238,15 @@ pub extern "C" fn gosling_library_init(
     translate_failures((), error, || -> Result<()> {
         ensure_not_null!(out_library);
 
-        unsafe {
-            if GOSLING_LIBRARY_INITED {
-                // error handling
-                bail!("gosling is already initialized");
-            } else {
-                init_error_registry();
-
-                init_ed25519_private_key_registry();
-                init_x25519_private_key_registry();
-                init_x25519_public_key_registry();
-                init_v3_onion_service_id_registry();
-
-                init_context_tuple_registry();
-
-                GOSLING_LIBRARY_INITED = true;
-
+        if GOSLING_LIBRARY_INITED.load(Ordering::Relaxed) {
+            // error handling
+            bail!("gosling is already initialized");
+        } else {
+            GOSLING_LIBRARY_INITED.store(true, Ordering::Relaxed);
+            unsafe {
                 *out_library = GOSLING_LIBRARY_HANDLE as *mut GoslingLibrary;
             }
         }
-
         Ok(())
     })
 }
@@ -286,19 +255,17 @@ pub extern "C" fn gosling_library_init(
 /// is not initialized or if it has already been freed
 #[no_mangle]
 pub extern "C" fn gosling_library_free(_library: *mut GoslingLibrary) {
-    unsafe {
-        if GOSLING_LIBRARY_INITED {
-            drop_error_registry();
+    if GOSLING_LIBRARY_INITED.load(Ordering::Relaxed) {
+        clear_error_registry();
 
-            drop_ed25519_private_key_registry();
-            drop_x25519_private_key_registry();
-            drop_x25519_public_key_registry();
-            drop_v3_onion_service_id_registry();
+        clear_ed25519_private_key_registry();
+        clear_x25519_private_key_registry();
+        clear_x25519_public_key_registry();
+        clear_v3_onion_service_id_registry();
 
-            drop_context_tuple_registry();
+        clear_context_tuple_registry();
 
-            GOSLING_LIBRARY_INITED = false;
-        }
+        GOSLING_LIBRARY_INITED.store(false, Ordering::Relaxed);
     }
 }
 
