@@ -43,8 +43,8 @@ lint: debug
 		--enable=all\
 		--inline-suppr\
 		--suppress=missingIncludeSystem\
-		--include=out/debug/gosling/include/libgosling.h\
-		--include=out/debug/gosling/include/libgosling.hpp\
+		--include=out/debug/gosling/crates/gosling/include/libgosling.h\
+		--include=out/debug/gosling/crates/gosling/include/libgosling.hpp\
 		--project=out/debug/compile_commands.json\
 		-isource/Catch2
 

@@ -1,3 +1,3 @@
-source/gosling/Cargo.lock
-source/gosling/target
+Cargo.lock
+target
 out
