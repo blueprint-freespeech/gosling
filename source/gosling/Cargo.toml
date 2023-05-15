@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+    "crates/tor-interface",
     "crates/gosling",
     "crates/gosling-ffi",
 ]
