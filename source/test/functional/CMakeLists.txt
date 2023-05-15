@@ -7,7 +7,7 @@ target_precompile_headers(gosling_functional_test PRIVATE precomp.hpp)
 
 target_include_directories(gosling_functional_test PRIVATE ${Boost_INCLUDE_DIRS})
 
-target_link_libraries(gosling_functional_test PRIVATE gosling)
+target_link_libraries(gosling_functional_test PRIVATE gosling_ffi)
 target_link_libraries(gosling_functional_test PRIVATE Catch2::Catch2WithMain)
 
 target_compile_features(gosling_functional_test PRIVATE cxx_std_17)

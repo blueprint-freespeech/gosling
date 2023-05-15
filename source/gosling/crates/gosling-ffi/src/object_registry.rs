@@ -2,12 +2,6 @@
 use std::collections::BTreeMap;
 use std::option::Option;
 
-// internal modules
-#[cfg(test)]
-use crate::error::Result;
-#[cfg(test)]
-use crate::*;
-
 // An ObjectRegistry<T> maintains ownership of objects and maps them to usize keys
 // which can be safely handed out to external consumers as opaque pointer.
 // Keys are represented as a usize; the high bits are a unique identifier (calculated
@@ -106,11 +100,11 @@ impl<T, const TAG: usize, const TAG_BITS: u32> ObjectRegistry<T, TAG, TAG_BITS> 
 }
 
 #[test]
-fn test_object_registry() -> Result<()> {
+fn test_object_registry() -> anyhow::Result<()> {
     // create a new ObjectRegistry
     type Int32Registry0_16 = ObjectRegistry<i32, 1234usize, 16>;
     let mut registry = Int32Registry0_16::new();
-    ensure_equal!(
+    assert_eq!(
         Int32Registry0_16::COUNTER_BITS,
         std::mem::size_of::<usize>() as u32 * BITS_PER_BYTE - 16
     );
@@ -121,46 +115,46 @@ fn test_object_registry() -> Result<()> {
     let key3 = registry.insert(30);
 
     // check that the registry contains the keys we just added
-    ensure!(registry.contains_key(key1));
-    ensure!(registry.contains_key(key2));
-    ensure!(registry.contains_key(key3));
+    assert!(registry.contains_key(key1));
+    assert!(registry.contains_key(key2));
+    assert!(registry.contains_key(key3));
 
     // check that we can get the objects back using their keys
-    ensure_equal!(registry.get(key1), Some(&10));
-    ensure_equal!(registry.get(key2), Some(&20));
-    ensure_equal!(registry.get(key3), Some(&30));
+    assert_eq!(registry.get(key1), Some(&10));
+    assert_eq!(registry.get(key2), Some(&20));
+    assert_eq!(registry.get(key3), Some(&30));
 
     // check that we can get mutable references to the objects and modify them
     let obj = registry.get_mut(key1).unwrap();
     *obj = 100;
-    ensure_equal!(registry.get(key1), Some(&100));
+    assert_eq!(registry.get(key1), Some(&100));
 
     // check that we can remove objects from the registry and they are no longer contained
     let obj = registry.remove(key2).unwrap();
-    ensure_equal!(obj, 20);
-    ensure!(!registry.contains_key(key2));
+    assert_eq!(obj, 20);
+    assert!(!registry.contains_key(key2));
 
     // check that the tag bits of the keys match the TAG constant we provided
-    ensure_equal!(registry.get_tag_from_key(key1), 1234usize);
-    ensure_equal!(registry.get_tag_from_key(key2), 1234usize);
-    ensure_equal!(registry.get_tag_from_key(key3), 1234usize);
+    assert_eq!(registry.get_tag_from_key(key1), 1234usize);
+    assert_eq!(registry.get_tag_from_key(key2), 1234usize);
+    assert_eq!(registry.get_tag_from_key(key3), 1234usize);
 
     // check that the counter bits of the keys are unique and increasing
     let counter1 = registry.get_counter_from_key(key1);
     let counter2 = registry.get_counter_from_key(key2);
     let counter3 = registry.get_counter_from_key(key3);
-    ensure!(counter1 < counter2 && counter2 < counter3);
+    assert!(counter1 < counter2 && counter2 < counter3);
 
     // check that we can calculate the key given the counter and it matches the key we got from insert()
-    ensure_equal!(registry.get_key_from_counter(1), key1);
-    ensure_equal!(registry.get_key_from_counter(2), key2);
-    ensure_equal!(registry.get_key_from_counter(3), key3);
+    assert_eq!(registry.get_key_from_counter(1), key1);
+    assert_eq!(registry.get_key_from_counter(2), key2);
+    assert_eq!(registry.get_key_from_counter(3), key3);
 
     Ok(())
 }
 
 #[test]
-fn test_object_registry_key_collision() -> Result<()> {
+fn test_object_registry_key_collision() -> anyhow::Result<()> {
     // create two registries with different TAG values
     let mut registry_a: ObjectRegistry<String, 1usize, 8> = ObjectRegistry::new();
     let mut registry_b: ObjectRegistry<String, 2usize, 8> = ObjectRegistry::new();
@@ -172,33 +166,33 @@ fn test_object_registry_key_collision() -> Result<()> {
     let key_b_2 = registry_b.insert("b2".to_string());
 
     // counter portions should be the same
-    ensure_equal!(
+    assert_eq!(
         registry_a.get_counter_from_key(key_a_1),
         registry_b.get_counter_from_key(key_b_1)
     );
-    ensure_equal!(
+    assert_eq!(
         registry_a.get_counter_from_key(key_a_2),
         registry_b.get_counter_from_key(key_b_2)
     );
 
     // ensure the keys do not collide
-    ensure!(key_a_1 != key_b_1);
-    ensure!(key_a_2 != key_b_2);
-    ensure!(key_a_1 != key_b_2);
-    ensure!(key_a_2 != key_b_1);
+    assert!(key_a_1 != key_b_1);
+    assert!(key_a_2 != key_b_2);
+    assert!(key_a_1 != key_b_2);
+    assert!(key_a_2 != key_b_1);
 
     Ok(())
 }
 #[test]
-fn test_object_registry_empty_tag() -> Result<()> {
+fn test_object_registry_empty_tag() -> anyhow::Result<()> {
     // create a registry with tag 0 and tag bits 0
     let mut reg = ObjectRegistry::<i32, 0, 0>::new();
 
     // add some values and check their keys
     let key1 = reg.insert(1);
     let key2 = reg.insert(2);
-    ensure_equal!(key1, 1);
-    ensure_equal!(key2, 2);
+    assert_eq!(key1, 1);
+    assert_eq!(key2, 2);
 
     Ok(())
 }

@@ -32,6 +32,11 @@ documentation_style = "c99"
 line_length = 80
 only_target_dependencies = true
 
+[parse]
+parse_deps = true
+include = ["gosling"]
+extra_bindings = ["gosling"]
+
 [defines]
 "target_os = windows" = "GOSLING_PLATFORM_WINDOWS"
 "target_os = linux" = "GOSLING_PLATFORM_LINUX"

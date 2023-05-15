@@ -14,14 +14,14 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 
 // extern crates
+use ::gosling::error::Result;
+use ::gosling::gosling::*;
+use ::gosling::tor_crypto::*;
+use ::gosling::*;
 use bson::doc;
 
 // internal crates
-use crate::error::Result;
-use crate::gosling::*;
 use crate::object_registry::*;
-use crate::tor_crypto::*;
-use crate::*;
 
 // tags used for types we put in ObjectRegistrys
 const ERROR_TAG: usize = 0x1;

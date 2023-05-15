@@ -1,12 +1,10 @@
 // some internal functions take a lot of args but thats ok
 #![allow(clippy::too_many_arguments)]
 
-mod error;
-mod ffi;
-mod gosling;
-mod honk_rpc;
-mod object_registry;
+pub mod error;
+pub mod gosling;
+pub mod honk_rpc;
 #[cfg(test)]
-mod test_utils;
-mod tor_controller;
-mod tor_crypto;
+pub mod test_utils;
+pub mod tor_controller;
+pub mod tor_crypto;
