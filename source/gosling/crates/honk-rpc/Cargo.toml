@@ -1,0 +1,15 @@
+[package]
+name = "honk-rpc"
+authors = ["Richard Pospesel <richard@blueprintforfreespeech.net>"]
+version = "0.0.1"
+rust-version = "1.66"
+edition = "2021"
+
+[dependencies]
+bson = "2.2.0"
+rust-crypto = "^0.2"
+thiserror = "1.0"
+
+[dev-dependencies]
+anyhow = "1.0"
+
