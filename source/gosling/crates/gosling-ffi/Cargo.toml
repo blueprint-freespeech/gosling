@@ -10,10 +10,12 @@ edition = "2021"
 cbindgen = "0.20.0"
 
 [dependencies]
+anyhow = "1.0"
 bson = "2.2.0"
 gosling = { version = "0.0.1", path = "../gosling" }
 paste = "1.0"
 static_assertions = "1.1.0"
+tor-interface = { version = "0.0.1", path = "../tor-interface" }
 which = "4.3.0"
 
 [lib]

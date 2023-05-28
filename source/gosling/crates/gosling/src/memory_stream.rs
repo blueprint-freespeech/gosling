@@ -3,10 +3,6 @@ use std::convert::From;
 use std::io::{ErrorKind, Read, Write};
 use std::sync::{Arc, Mutex};
 
-// internal crates
-use crate::error::Result;
-use crate::*;
-
 // a test-only mock TcpStream
 #[derive(Clone)]
 pub struct MemoryStream {
@@ -77,29 +73,29 @@ impl Write for MemoryStream {
 }
 
 #[test]
-fn test_memory_stream() -> Result<()> {
+fn test_memory_stream() -> anyhow::Result<()> {
     let mut stream1 = MemoryStream::new();
     let mut stream2 = stream1.clone();
 
     const MESSAGE: &str = "hello_world!";
 
-    resolve!(stream1.write_all(MESSAGE.as_bytes()));
+    stream1.write_all(MESSAGE.as_bytes())?;
     let mut msg_buff: Vec<u8> = Default::default();
-    ensure!(resolve!(stream2.read_to_end(&mut msg_buff)) == MESSAGE.len());
+    assert!(stream2.read_to_end(&mut msg_buff)? == MESSAGE.len());
 
     match stream2.read_to_end(&mut msg_buff) {
-        Err(err) => ensure!(err.kind() == ErrorKind::WouldBlock),
-        Ok(_) => bail!("should have returned ErrorKind::WouldBlock"),
+        Err(err) => assert!(err.kind() == ErrorKind::WouldBlock),
+        Ok(_) => panic!("should have returned ErrorKind::WouldBlock"),
     }
 
-    let msg = resolve!(std::str::from_utf8(&msg_buff));
+    let msg = std::str::from_utf8(&msg_buff)?;
 
-    ensure!(msg == MESSAGE);
+    assert!(msg == MESSAGE);
 
     let mut buf = [0u8; 16];
     match stream2.read(&mut buf) {
-        Err(err) => ensure!(err.kind() == ErrorKind::WouldBlock),
-        Ok(_) => bail!("should have returned ErrorKind::WouldBlock"),
+        Err(err) => assert!(err.kind() == ErrorKind::WouldBlock),
+        Ok(_) => panic!("should have returned ErrorKind::WouldBlock"),
     }
 
     println!("recieved string: '{}'", msg);

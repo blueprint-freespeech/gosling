@@ -34,8 +34,8 @@ only_target_dependencies = true
 
 [parse]
 parse_deps = true
-include = ["gosling"]
-extra_bindings = ["gosling"]
+include = ["tor-interface"]
+extra_bindings = ["tor-interface"]
 
 [defines]
 "target_os = windows" = "GOSLING_PLATFORM_WINDOWS"
@@ -60,7 +60,7 @@ GoslingHandshakeHandle = "gosling_handshake_handle_t"
 # structs
 
 GoslingLibrary = "gosling_library"
-GoslingError = "gosling_error"
+GoslingFFIError = "gosling_error"
 GoslingContext = "gosling_context"
 GoslingEd25519PrivateKey = "gosling_ed25519_private_key"
 GoslingV3OnionServiceId = "gosling_v3_onion_service_id"

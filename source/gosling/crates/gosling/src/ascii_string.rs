@@ -12,11 +12,10 @@ pub(crate) struct AsciiString {
     value: String,
 }
 
-
 impl AsciiString {
     pub fn new(value: String) -> Result<AsciiString, Error> {
         if value.is_ascii() {
-            Ok(Self{value})
+            Ok(Self { value })
         } else {
             Err(Error::InvalidAscii(value))
         }
