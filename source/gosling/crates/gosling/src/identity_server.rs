@@ -320,7 +320,7 @@ where
                 Ok(())
             }
             _ => {
-                return Err(Error::IncorrectUsage("handle_endpoint_request_received() may only be called after EndpointRequestReceived has been returned from update(), and it may only be called once".to_string()));
+                Err(Error::IncorrectUsage("handle_endpoint_request_received() may only be called after EndpointRequestReceived has been returned from update(), and it may only be called once".to_string()))
             }
         }
     }
@@ -566,7 +566,8 @@ where
                         X25519PublicKey::from_raw(&client_authorization_key);
 
                     // client_authorization_key_signbit
-                    let client_authorization_key_signbit = client_authorization_key_signbit as bool;
+                    let client_authorization_key_signbit: SignBit =
+                        client_authorization_key_signbit.into();
 
                     // client_authorization_signature
                     let client_authorization_signature: [u8; ED25519_SIGNATURE_SIZE] =
@@ -585,7 +586,7 @@ where
                         client_identity.clone(),
                         client_identity_proof_signature,
                         client_authorization_key,
-                        client_authorization_key_signbit.into(),
+                        client_authorization_key_signbit,
                         client_authorization_signature,
                         challenge_response,
                     ) {

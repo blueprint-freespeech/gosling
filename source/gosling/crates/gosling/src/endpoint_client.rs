@@ -266,9 +266,7 @@ where
                 }
                 Ok(None)
             }
-            _ => {
-                return Err(Error::InvalidState(self.get_state()));
-            }
+            _ => Err(Error::InvalidState(self.get_state())),
         }
     }
 }

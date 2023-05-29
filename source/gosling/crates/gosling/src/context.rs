@@ -263,9 +263,9 @@ impl Context {
         let endpoint = match AsciiString::new(endpoint) {
             Ok(endpoint) => endpoint,
             Err(_) => {
-                return Err(Error::InvalidArgument(format!(
-                    "endpoint must be an ASCII string"
-                )))
+                return Err(Error::InvalidArgument(
+                    "endpoint must be an ASCII string".to_string(),
+                ))
             }
         };
 
@@ -398,9 +398,9 @@ impl Context {
         let channel = match AsciiString::new(channel) {
             Ok(channel) => channel,
             Err(_) => {
-                return Err(Error::InvalidArgument(format!(
-                    "channel must be an ASCII string"
-                )))
+                return Err(Error::InvalidArgument(
+                    "channel must be an ASCII string".to_string(),
+                ))
             }
         };
 

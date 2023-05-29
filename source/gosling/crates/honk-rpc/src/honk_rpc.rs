@@ -790,7 +790,7 @@ where
     pub fn update(&mut self, apisets: Option<&mut [&mut dyn ApiSet]>) -> Result<(), Error> {
         // abort if we've gone too long without a new message
         if std::time::Instant::now().duration_since(self.read_timestamp) > self.max_wait_time {
-            return Err(Error::MessageReadTimedOut(self.max_wait_time.clone()));
+            return Err(Error::MessageReadTimedOut(self.max_wait_time));
         }
 
         // read sections from remote
