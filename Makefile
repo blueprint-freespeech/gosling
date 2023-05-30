@@ -39,12 +39,13 @@ format:
 # line Rust code with cargo clippy and C++ code with clang-tidy
 lint: debug
 	cd source/gosling && cargo clippy
+	jq 'del(.[]|select(.directory|test("Catch2/src$$")))' out/debug/compile_commands.json > out/debug/compile_commands.sans-catch2.json
 	cppcheck\
 		--enable=all\
 		--inline-suppr\
 		--suppress=missingIncludeSystem\
 		--include=out/debug/gosling/crates/gosling-ffi/include/libgosling.h\
 		--include=out/debug/gosling/crates/gosling-ffi/include/libgosling.hpp\
-		--project=out/debug/compile_commands.json\
-		-isource/Catch2
+		--project=out/debug/compile_commands.sans-catch2.json\
+		-isource/sans-catch2
 

@@ -31,6 +31,7 @@ The **format** make target has the following additional dependencies:
 The **lint** make target has the following additional dependencies:
 
 - [cppcheck](https://cppcheck.sourceforge.io/)
+- [jq](https://jqlang.github.io/jq/)
 
 The documentation has the following build dependencies:
 
