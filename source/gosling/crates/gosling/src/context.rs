@@ -1,6 +1,6 @@
 // standard
 use std::clone::Clone;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, VecDeque};
 #[cfg(test)]
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpStream;
@@ -551,9 +551,9 @@ impl Context {
         }
     }
 
-    pub fn update(&mut self) -> Result<Vec<ContextEvent>, Error> {
+    pub fn update(&mut self) -> Result<VecDeque<ContextEvent>, Error> {
         // events to return
-        let mut events: Vec<ContextEvent> = Default::default();
+        let mut events: VecDeque<ContextEvent> = Default::default();
 
         // first handle new identity connections
         if let Some(identity_listener) = &self.identity_listener {
@@ -563,11 +563,11 @@ impl Context {
                     let handle = self.next_handshake_handle;
                     self.next_handshake_handle += 1;
                     self.identity_servers.insert(handle, identity_server);
-                    events.push(ContextEvent::IdentityServerHandshakeStarted { handle });
+                    events.push_back(ContextEvent::IdentityServerHandshakeStarted { handle });
                 }
                 Ok(None) => {}
                 // identity listener failed, remove it
-                // TODO; signal caller identity listener is down
+                // TODO: signal caller identity listener is down
                 Err(_) => self.identity_listener = None,
             }
         }
@@ -585,7 +585,7 @@ impl Context {
                         self.next_handshake_handle += 1;
                         self.endpoint_servers
                             .insert(handle, (endpoint_server, stream));
-                        events.push(ContextEvent::EndpointServerHandshakeStarted { handle });
+                        events.push_back(ContextEvent::EndpointServerHandshakeStarted { handle });
                         true
                     }
                     Ok(None) => true,
@@ -597,6 +597,14 @@ impl Context {
         );
 
         // consume tor events
+        // TODO: so curently the only failure mode of this function is a result of the
+        // TorManager failing; we should probably consider a TorManager failure fatal, since
+        // reading the TorManager::update() function it seems the only failure modes are a
+        // failure to DEL_ONION (which realistically speaking could only be due to a logic
+        // error on our part by deleting an onion that doesn't exist, or a parse error of
+        // the response) and a failure to read async events which is either again a parsing
+        // bug on our end or a malformed/buggy tor daemon which we also cannot recover
+        // from.
         for event in self.tor_manager.update()?.drain(..) {
             match event {
                 Event::BootstrapStatus {
@@ -604,26 +612,26 @@ impl Context {
                     tag,
                     summary,
                 } => {
-                    events.push(ContextEvent::TorBootstrapStatusReceived {
+                    events.push_back(ContextEvent::TorBootstrapStatusReceived {
                         progress,
                         tag,
                         summary,
                     });
                 }
                 Event::BootstrapComplete => {
-                    events.push(ContextEvent::TorBootstrapCompleted);
+                    events.push_back(ContextEvent::TorBootstrapCompleted);
                     self.bootstrap_complete = true;
                 }
                 Event::LogReceived { line } => {
-                    events.push(ContextEvent::TorLogReceived { line });
+                    events.push_back(ContextEvent::TorLogReceived { line });
                 }
                 Event::OnionServicePublished { service_id } => {
                     if service_id == self.identity_service_id {
-                        events.push(ContextEvent::IdentityServerPublished);
+                        events.push_back(ContextEvent::IdentityServerPublished);
                     } else if let Some((endpoint_name, _, _)) =
                         self.endpoint_listeners.get(&service_id)
                     {
-                        events.push(ContextEvent::EndpointServerPublished {
+                        events.push_back(ContextEvent::EndpointServerPublished {
                             endpoint_service_id: service_id,
                             endpoint_name: endpoint_name.clone(),
                         });
@@ -638,7 +646,7 @@ impl Context {
                 let handle = *handle;
                 match identity_client.update() {
                     Ok(Some(IdentityClientEvent::ChallengeReceived { endpoint_challenge })) => {
-                        events.push(ContextEvent::IdentityClientChallengeReceived {
+                        events.push_back(ContextEvent::IdentityClientChallengeReceived {
                             handle,
                             endpoint_challenge,
                         });
@@ -650,7 +658,7 @@ impl Context {
                         endpoint_name,
                         client_auth_private_key,
                     })) => {
-                        events.push(ContextEvent::IdentityClientHandshakeCompleted {
+                        events.push_back(ContextEvent::IdentityClientHandshakeCompleted {
                             handle,
                             identity_service_id,
                             endpoint_service_id,
@@ -660,7 +668,7 @@ impl Context {
                         false
                     }
                     Err(err) => {
-                        events.push(ContextEvent::IdentityClientHandshakeFailed {
+                        events.push_back(ContextEvent::IdentityClientHandshakeFailed {
                             handle,
                             reason: err.into(),
                         });
@@ -679,7 +687,7 @@ impl Context {
                         client_service_id,
                         requested_endpoint,
                     })) => {
-                        events.push(ContextEvent::IdentityServerEndpointRequestReceived {
+                        events.push_back(ContextEvent::IdentityServerEndpointRequestReceived {
                             handle,
                             client_service_id,
                             requested_endpoint: requested_endpoint.to_string(),
@@ -689,7 +697,7 @@ impl Context {
                     Ok(Some(IdentityServerEvent::ChallengeResponseReceived {
                         challenge_response,
                     })) => {
-                        events.push(ContextEvent::IdentityServerChallengeResponseReceived {
+                        events.push_back(ContextEvent::IdentityServerChallengeResponseReceived {
                             handle,
                             challenge_response,
                         });
@@ -701,7 +709,7 @@ impl Context {
                         client_service_id,
                         client_auth_public_key,
                     })) => {
-                        events.push(ContextEvent::IdentityServerHandshakeCompleted {
+                        events.push_back(ContextEvent::IdentityServerHandshakeCompleted {
                             handle,
                             endpoint_private_key,
                             endpoint_name: endpoint_name.to_string(),
@@ -717,7 +725,7 @@ impl Context {
                         client_auth_signature_valid,
                         challenge_response_valid,
                     })) => {
-                        events.push(ContextEvent::IdentityServerHandshakeRejected {
+                        events.push_back(ContextEvent::IdentityServerHandshakeRejected {
                             handle,
                             client_allowed,
                             client_requested_endpoint_valid,
@@ -728,7 +736,7 @@ impl Context {
                         false
                     }
                     Err(err) => {
-                        events.push(ContextEvent::IdentityServerHandshakeFailed {
+                        events.push_back(ContextEvent::IdentityServerHandshakeFailed {
                             handle,
                             reason: err.into(),
                         });
@@ -746,7 +754,7 @@ impl Context {
                     Ok(Some(EndpointClientEvent::HandshakeCompleted)) => {
                         match stream.try_clone() {
                             Ok(stream) => {
-                                events.push(ContextEvent::EndpointClientHandshakeCompleted {
+                                events.push_back(ContextEvent::EndpointClientHandshakeCompleted {
                                     handle,
                                     endpoint_service_id: endpoint_client.server_service_id.clone(),
                                     channel_name: endpoint_client.requested_channel.to_string(),
@@ -754,7 +762,7 @@ impl Context {
                                 });
                             }
                             Err(err) => {
-                                events.push(ContextEvent::EndpointClientHandshakeFailed {
+                                events.push_back(ContextEvent::EndpointClientHandshakeFailed {
                                     handle,
                                     reason: err.into(),
                                 });
@@ -763,7 +771,7 @@ impl Context {
                         false
                     }
                     Err(err) => {
-                        events.push(ContextEvent::EndpointClientHandshakeFailed {
+                        events.push_back(ContextEvent::EndpointClientHandshakeFailed {
                             handle,
                             reason: err.into(),
                         });
@@ -779,7 +787,7 @@ impl Context {
                 let handle = *handle;
                 match endpoint_server.update() {
                     Ok(Some(EndpointServerEvent::ChannelRequestReceived { requested_channel })) => {
-                        events.push(ContextEvent::EndpointServerChannelRequestReceived {
+                        events.push_back(ContextEvent::EndpointServerChannelRequestReceived {
                             handle,
                             requested_channel: requested_channel.to_string(),
                         });
@@ -791,7 +799,7 @@ impl Context {
                     })) => {
                         match stream.try_clone() {
                             Ok(stream) => {
-                                events.push(ContextEvent::EndpointServerHandshakeCompleted {
+                                events.push_back(ContextEvent::EndpointServerHandshakeCompleted {
                                     handle,
                                     endpoint_service_id: endpoint_server.server_identity.clone(),
                                     client_service_id,
@@ -800,7 +808,7 @@ impl Context {
                                 });
                             }
                             Err(err) => {
-                                events.push(ContextEvent::EndpointServerHandshakeFailed {
+                                events.push_back(ContextEvent::EndpointServerHandshakeFailed {
                                     handle,
                                     reason: err.into(),
                                 });
@@ -813,7 +821,7 @@ impl Context {
                         client_requested_channel_valid,
                         client_proof_signature_valid,
                     })) => {
-                        events.push(ContextEvent::EndpointServerHandshakeRejected {
+                        events.push_back(ContextEvent::EndpointServerHandshakeRejected {
                             handle,
                             client_allowed,
                             client_requested_channel_valid,
@@ -822,7 +830,7 @@ impl Context {
                         false
                     }
                     Err(err) => {
-                        events.push(ContextEvent::EndpointServerHandshakeFailed {
+                        events.push_back(ContextEvent::EndpointServerHandshakeFailed {
                             handle,
                             reason: err.into(),
                         });

@@ -1,4 +1,5 @@
 // standard
+use std::collections::VecDeque;
 use std::ffi::CString;
 use std::io::Cursor;
 use std::os::raw::{c_char, c_void};
@@ -140,7 +141,7 @@ define_registry! {X25519PublicKey}
 define_registry! {V3OnionServiceId}
 
 /// cbindgen:ignore
-type ContextTuple = (Context, EventCallbacks);
+type ContextTuple = (Context, EventCallbacks, Option<VecDeque<ContextEvent>>);
 
 define_registry! {ContextTuple}
 
@@ -959,7 +960,8 @@ pub extern "C" fn gosling_context_init(
             identity_private_key.clone(),
         )?;
 
-        let handle = get_context_tuple_registry().insert((context, Default::default()));
+        let handle =
+            get_context_tuple_registry().insert((context, Default::default(), None));
         unsafe { *out_context = handle as *mut GoslingContext };
 
         Ok(())
@@ -1345,6 +1347,502 @@ pub extern "C" fn gosling_context_abort_endpoint_client_handshake(
     })
 }
 
+fn handle_context_event(
+    event: ContextEvent,
+    context: *mut GoslingContext,
+    callbacks: &EventCallbacks,
+) -> anyhow::Result<()> {
+    match event {
+        //
+        // Tor Events
+        //
+        ContextEvent::TorBootstrapStatusReceived {
+            progress,
+            tag,
+            summary,
+        } => {
+            if let Some(callback) = callbacks.tor_bootstrap_status_received_callback {
+                let tag0 = CString::new(tag.as_str()).expect(
+                    "gosling_context_poll_events(): unexpected null byte in bootstrap status tag",
+                );
+                let summary0 = CString::new(summary.as_str()).expect("gosling_context_poll_events(): unexpected null byte in bootstrap status summary");
+                callback(
+                    context,
+                    progress,
+                    tag0.as_ptr(),
+                    tag.len(),
+                    summary0.as_ptr(),
+                    summary.len(),
+                );
+            }
+        }
+        ContextEvent::TorBootstrapCompleted => {
+            if let Some(callback) = callbacks.tor_bootstrap_completed_callback {
+                callback(context);
+            }
+        }
+        ContextEvent::TorLogReceived { line } => {
+            if let Some(callback) = callbacks.tor_log_received_callback {
+                let line0 = CString::new(line.as_str())
+                    .expect("gosling_context_poll_events(): unexpected null byte in tor log line");
+                callback(context, line0.as_ptr(), line.len());
+            }
+        }
+        //
+        // Identity Client Events
+        //
+        ContextEvent::IdentityClientChallengeReceived {
+            handle,
+            endpoint_challenge,
+        } => {
+            // construct challenge response
+            let challenge_response = if let (
+                Some(challenge_response_size_callback),
+                Some(build_challenge_response_callback),
+            ) = (
+                callbacks.identity_client_challenge_response_size_callback,
+                callbacks.identity_client_build_challenge_response_callback,
+            ) {
+                let mut endpoint_challenge_buffer: Vec<u8> = Default::default();
+                endpoint_challenge.to_writer(&mut endpoint_challenge_buffer).expect("gosling_context_poll_events(): unable to write identity handshake challenge Bson document to buffer");
+
+                // get the size of challenge response bson blob
+                let challenge_response_size = challenge_response_size_callback(
+                    context,
+                    handle,
+                    endpoint_challenge_buffer.as_ptr(),
+                    endpoint_challenge_buffer.len(),
+                );
+
+                // get the challenge response bson blob
+                let mut challenge_response_buffer: Vec<u8> = vec![0u8; challenge_response_size];
+                build_challenge_response_callback(
+                    context,
+                    handle,
+                    endpoint_challenge_buffer.as_ptr(),
+                    endpoint_challenge_buffer.len(),
+                    challenge_response_buffer.as_mut_ptr(),
+                    challenge_response_buffer.len(),
+                );
+
+                // convert bson blob to bson object
+                match bson::document::Document::from_reader(Cursor::new(challenge_response_buffer))
+                {
+                    Ok(challenge_response) => challenge_response,
+                    Err(_) => panic!(),
+                }
+            } else {
+                doc! {}
+            };
+
+            match get_context_tuple_registry().get_mut(context as usize) {
+                Some(context) => context
+                    .0
+                    .identity_client_handle_challenge_received(handle, challenge_response)?,
+                None => bail!("context is invalid"),
+            };
+        }
+        ContextEvent::IdentityClientHandshakeCompleted {
+            handle,
+            identity_service_id,
+            endpoint_service_id,
+            endpoint_name,
+            client_auth_private_key,
+        } => {
+            if let Some(callback) = callbacks.identity_client_handshake_completed_callback {
+                let (identity_service_id, endpoint_service_id) = {
+                    let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
+                    let identity_service_id =
+                        v3_onion_service_id_registry.insert(identity_service_id);
+                    let endpoint_service_id =
+                        v3_onion_service_id_registry.insert(endpoint_service_id);
+                    (identity_service_id, endpoint_service_id)
+                };
+
+                let endpoint_name0 = CString::new(endpoint_name.as_str())
+                    .expect("gosling_context_poll_events(): unexpected null byte in endpoint name");
+
+                let client_auth_private_key =
+                    get_x25519_private_key_registry().insert(client_auth_private_key);
+
+                callback(
+                    context,
+                    handle,
+                    identity_service_id as *const GoslingV3OnionServiceId,
+                    endpoint_service_id as *const GoslingV3OnionServiceId,
+                    endpoint_name0.as_ptr(),
+                    endpoint_name.len(),
+                    client_auth_private_key as *const GoslingX25519PrivateKey,
+                );
+
+                {
+                    let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
+                    v3_onion_service_id_registry.remove(identity_service_id);
+                    v3_onion_service_id_registry.remove(endpoint_service_id);
+                }
+
+                // cleanup
+                get_x25519_private_key_registry().remove(client_auth_private_key);
+            }
+        }
+        ContextEvent::IdentityClientHandshakeFailed { handle, reason } => {
+            if let Some(callback) = callbacks.identity_client_handshake_failed_callback {
+                let key = get_error_registry().insert(Error::new(format!("{:?}", reason).as_str()));
+                callback(context, handle, key as *const GoslingFFIError);
+                get_error_registry().remove(key);
+            }
+        }
+        //
+        // Identity Server Events
+        //
+        ContextEvent::IdentityServerPublished => {
+            if let Some(callback) = callbacks.identity_server_published_callback {
+                callback(context);
+            }
+        }
+        ContextEvent::IdentityServerHandshakeStarted { handle } => {
+            if let Some(callback) = callbacks.identity_server_handshake_started_callback {
+                callback(context, handle);
+            }
+        }
+        ContextEvent::IdentityServerEndpointRequestReceived {
+            handle,
+            client_service_id,
+            requested_endpoint,
+        } => {
+            let client_allowed = match callbacks.identity_server_client_allowed_callback {
+                Some(callback) => {
+                    let client_service_id =
+                        get_v3_onion_service_id_registry().insert(client_service_id);
+                    callback(
+                        context,
+                        handle,
+                        client_service_id as *const GoslingV3OnionServiceId,
+                    )
+                }
+                None => false,
+            };
+
+            let endpoint_supported = match callbacks.identity_server_endpoint_supported_callback {
+                Some(callback) => {
+                    let requested_endpoint0 = CString::new(requested_endpoint.as_str()).expect(
+                        "gosling_context_poll_events(): unexpected null byte in requested_endpoint",
+                    );
+                    callback(
+                        context,
+                        handle,
+                        requested_endpoint0.as_ptr(),
+                        requested_endpoint.len(),
+                    )
+                }
+                None => false,
+            };
+            let endpoint_challenge =
+                if let (Some(challenge_size_callback), Some(build_challenge_callback)) = (
+                    callbacks.identity_server_challenge_size_callback,
+                    callbacks.identity_server_build_challenge_callback,
+                ) {
+                    // get the challenge size in bytes
+                    let challenge_size = challenge_size_callback(context, handle);
+                    // construct challenge object into buffer
+                    let mut challenge_buffer = vec![0u8; challenge_size];
+                    build_challenge_callback(
+                        context,
+                        handle,
+                        challenge_buffer.as_mut_ptr(),
+                        challenge_size,
+                    );
+
+                    // convert bson blob to bson object
+                    match bson::document::Document::from_reader(Cursor::new(challenge_buffer)) {
+                        Ok(challenge) => challenge,
+                        Err(_) => panic!(),
+                    }
+                } else {
+                    doc! {}
+                };
+
+            match get_context_tuple_registry().get_mut(context as usize) {
+                Some(context) => context.0.identity_server_handle_endpoint_request_received(
+                    handle,
+                    client_allowed,
+                    endpoint_supported,
+                    endpoint_challenge,
+                )?,
+                None => bail!("context is invalid"),
+            };
+        }
+        ContextEvent::IdentityServerChallengeResponseReceived {
+            handle,
+            challenge_response,
+        } => {
+            let challenge_response_valid = match callbacks
+                .identity_server_verify_challenge_response_callback
+            {
+                Some(callback) => {
+                    // get response as bytes
+                    let mut challenge_response_buffer: Vec<u8> = Default::default();
+                    challenge_response
+                            .to_writer(&mut challenge_response_buffer).expect("gosling_context_poll_events(): unable to write identity challenge response Bson document to buffer");
+
+                    callback(
+                        context,
+                        handle,
+                        challenge_response_buffer.as_ptr(),
+                        challenge_response_buffer.len(),
+                    )
+                }
+                None => false,
+            };
+
+            match get_context_tuple_registry().get_mut(context as usize) {
+                Some(context) => context
+                    .0
+                    .identity_server_handle_challenge_response_received(
+                        handle,
+                        challenge_response_valid,
+                    )?,
+                None => bail!("context is invalid"),
+            };
+        }
+        ContextEvent::IdentityServerHandshakeCompleted {
+            handle,
+            endpoint_private_key,
+            endpoint_name,
+            client_service_id,
+            client_auth_public_key,
+        } => {
+            if let Some(callback) = callbacks.identity_server_handshake_completed_callback {
+                let endpoint_private_key = {
+                    let mut ed25519_private_key_registry = get_ed25519_private_key_registry();
+                    ed25519_private_key_registry.insert(endpoint_private_key)
+                };
+
+                let endpoint_name0 = CString::new(endpoint_name.as_str())
+                    .expect("gosling_context_poll_events(): unexpected null byte in endpoint name");
+
+                let client_service_id = {
+                    let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
+                    v3_onion_service_id_registry.insert(client_service_id)
+                };
+
+                let client_auth_public_key = {
+                    let mut x25519_public_key_registry = get_x25519_public_key_registry();
+                    x25519_public_key_registry.insert(client_auth_public_key)
+                };
+
+                callback(
+                    context,
+                    handle,
+                    endpoint_private_key as *const GoslingEd25519PrivateKey,
+                    endpoint_name0.as_ptr(),
+                    endpoint_name.len(),
+                    client_service_id as *const GoslingV3OnionServiceId,
+                    client_auth_public_key as *const GoslingX25519PublicKey,
+                );
+
+                // cleanup
+                get_ed25519_private_key_registry().remove(endpoint_private_key);
+                get_v3_onion_service_id_registry().remove(client_service_id);
+                get_x25519_public_key_registry().remove(client_auth_public_key);
+            }
+        }
+        ContextEvent::IdentityServerHandshakeRejected {
+            handle,
+            client_allowed,
+            client_requested_endpoint_valid,
+            client_proof_signature_valid,
+            client_auth_signature_valid,
+            challenge_response_valid,
+        } => {
+            if let Some(callback) = callbacks.identity_server_handshake_rejected_callback {
+                callback(
+                    context,
+                    handle,
+                    client_allowed,
+                    client_requested_endpoint_valid,
+                    client_proof_signature_valid,
+                    client_auth_signature_valid,
+                    challenge_response_valid,
+                );
+            }
+        }
+        ContextEvent::IdentityServerHandshakeFailed { handle, reason } => {
+            if let Some(callback) = callbacks.identity_server_handshake_failed_callback {
+                let key = get_error_registry().insert(Error::new(format!("{:?}", reason).as_str()));
+                callback(context, handle, key as *const GoslingFFIError);
+                get_error_registry().remove(key);
+            }
+        }
+        //
+        // Endpoint Client Events
+        //
+        ContextEvent::EndpointClientHandshakeCompleted {
+            endpoint_service_id,
+            handle,
+            channel_name,
+            stream,
+        } => {
+            if let Some(callback) = callbacks.endpoint_client_handshake_completed_callback {
+                let endpoint_service_id = {
+                    let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
+                    v3_onion_service_id_registry.insert(endpoint_service_id)
+                };
+                let channel_name0 = CString::new(channel_name.as_str())
+                    .expect("gosling_context_poll_events(): unexpected null byte in channel name");
+
+                #[cfg(any(target_os = "linux", target_os = "macos"))]
+                let stream = stream.into_raw_fd();
+                #[cfg(target_os = "windows")]
+                let stream = stream.into_raw_socket();
+
+                callback(
+                    context,
+                    handle,
+                    endpoint_service_id as *const GoslingV3OnionServiceId,
+                    channel_name0.as_ptr(),
+                    channel_name.len(),
+                    stream,
+                );
+
+                // cleanup
+                get_v3_onion_service_id_registry().remove(endpoint_service_id);
+            }
+        }
+        ContextEvent::EndpointClientHandshakeFailed { handle, reason } => {
+            if let Some(callback) = callbacks.endpoint_client_handshake_failed_callback {
+                let key = get_error_registry().insert(Error::new(format!("{:?}", reason).as_str()));
+                callback(context, handle, key as *const GoslingFFIError);
+                get_error_registry().remove(key);
+            }
+        }
+        //
+        // Endpoint Server Events
+        //
+        ContextEvent::EndpointServerPublished {
+            endpoint_service_id,
+            endpoint_name,
+        } => {
+            if let Some(callback) = callbacks.endpoint_server_published_callback {
+                let endpoint_service_id = {
+                    let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
+                    v3_onion_service_id_registry.insert(endpoint_service_id)
+                };
+                let endpoint_name0 = CString::new(endpoint_name.as_str())
+                    .expect("gosling_context_poll_events(): unexpected null byte in endpoint name");
+
+                callback(
+                    context,
+                    endpoint_service_id as *const GoslingV3OnionServiceId,
+                    endpoint_name0.as_ptr(),
+                    endpoint_name.len(),
+                );
+
+                // cleanup
+                get_v3_onion_service_id_registry().remove(endpoint_service_id);
+            }
+        }
+        ContextEvent::EndpointServerHandshakeStarted { handle } => {
+            if let Some(callback) = callbacks.endpoint_server_handshake_started_callback {
+                callback(context, handle);
+            }
+        }
+        ContextEvent::EndpointServerChannelRequestReceived {
+            handle,
+            requested_channel,
+        } => {
+            let channel_supported: bool = match callbacks.endpoint_server_channel_supported_callback
+            {
+                Some(callback) => {
+                    let requested_channel0 = CString::new(requested_channel.as_str()).expect(
+                        "gosling_context_poll_events(): unexpected null byte in requested_channel",
+                    );
+                    callback(
+                        context,
+                        handle,
+                        requested_channel0.as_ptr(),
+                        requested_channel.len(),
+                    )
+                }
+                None => false,
+            };
+
+            match get_context_tuple_registry().get_mut(context as usize) {
+                Some(context) => context
+                    .0
+                    .endpoint_server_handle_channel_request_received(handle, channel_supported)?,
+                None => return Err(anyhow!("context is invalid")),
+            };
+        }
+        ContextEvent::EndpointServerHandshakeCompleted {
+            handle,
+            endpoint_service_id,
+            client_service_id,
+            channel_name,
+            stream,
+        } => {
+            if let Some(callback) = callbacks.endpoint_server_handshake_completed_callback {
+                let (endpoint_service_id, client_service_id) = {
+                    let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
+                    let endpoint_service_id =
+                        v3_onion_service_id_registry.insert(endpoint_service_id);
+                    let client_service_id = v3_onion_service_id_registry.insert(client_service_id);
+                    (endpoint_service_id, client_service_id)
+                };
+
+                let channel_name0 = CString::new(channel_name.as_str())
+                    .expect("gosling_context_poll_events(): unexpected null byte in channel name");
+
+                #[cfg(any(target_os = "linux", target_os = "macos"))]
+                let stream = stream.into_raw_fd();
+                #[cfg(target_os = "windows")]
+                let stream = stream.into_raw_socket();
+
+                callback(
+                    context,
+                    handle,
+                    endpoint_service_id as *const GoslingV3OnionServiceId,
+                    client_service_id as *const GoslingV3OnionServiceId,
+                    channel_name0.as_ptr(),
+                    channel_name.len(),
+                    stream,
+                );
+
+                // cleanup
+                {
+                    let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
+                    v3_onion_service_id_registry.remove(endpoint_service_id);
+                    v3_onion_service_id_registry.remove(client_service_id);
+                }
+            }
+        }
+        ContextEvent::EndpointServerHandshakeRejected {
+            handle,
+            client_allowed,
+            client_requested_channel_valid,
+            client_proof_signature_valid,
+        } => {
+            if let Some(callback) = callbacks.endpoint_server_handshake_rejected_callback {
+                callback(
+                    context,
+                    handle,
+                    client_allowed,
+                    client_requested_channel_valid,
+                    client_proof_signature_valid,
+                );
+            }
+        }
+        ContextEvent::EndpointServerHandshakeFailed { handle, reason } => {
+            if let Some(callback) = callbacks.endpoint_server_handshake_failed_callback {
+                let key = get_error_registry().insert(Error::new(format!("{:?}", reason).as_str()));
+                callback(context, handle, key as *const GoslingFFIError);
+                get_error_registry().remove(key);
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Update the internal gosling context state and process event callbacks
 ///
 /// @param context : the context object we are updating
@@ -1361,524 +1859,42 @@ pub extern "C" fn gosling_context_poll_events(
         // is accesible)
         let (mut context_events, callbacks) =
             match get_context_tuple_registry().get_mut(context as usize) {
-                Some(context) => (context.0.update()?, context.1.clone()),
+                Some(context) => {
+                    // get our new events
+                    let mut new_events = context.0.update()?;
+                    // get a copy of our callbacks
+                    let callbacks = context.1.clone();
+
+                    // append new_events to any existing events if they exist,
+                    // otherwise just pass through new_events
+                    let context_events = match std::mem::take(&mut context.2) {
+                        Some(mut context_events) => {
+                            context_events.append(&mut new_events);
+                            context_events
+                        },
+                        None => {
+                            // no previous events so just pass through the new events
+                            new_events
+                        }
+                    };
+                    (context_events, callbacks)
+                }
                 None => bail!("context is invalid"),
             };
 
-        for event in context_events.drain(..) {
-            match event {
-                //
-                // Tor Events
-                //
-                ContextEvent::TorBootstrapStatusReceived {
-                    progress,
-                    tag,
-                    summary,
-                } => {
-                    if let Some(callback) = callbacks.tor_bootstrap_status_received_callback {
-                        let tag0 = CString::new(tag.as_str()).expect("gosling_context_poll_events(): unexpected null byte in bootstrap status tag");
-                        let summary0 = CString::new(summary.as_str()).expect("gosling_context_poll_events(): unexpected null byte in bootstrap status summary");
-                        callback(
-                            context,
-                            progress,
-                            tag0.as_ptr(),
-                            tag.len(),
-                            summary0.as_ptr(),
-                            summary.len(),
-                        );
+        // consume the events and trigger any callbacks
+        while let Some(event) = context_events.pop_front() {
+            let result = handle_context_event(event, context, &callbacks);
+            if result.is_err() {
+                // if we have remaining events to consume, save them off on
+                // the context
+                if !context_events.is_empty() {
+                    if let Some(context) = get_context_tuple_registry().get_mut(context as usize) {
+                        context.2 = Some(context_events);
                     }
                 }
-                ContextEvent::TorBootstrapCompleted => {
-                    if let Some(callback) = callbacks.tor_bootstrap_completed_callback {
-                        callback(context);
-                    }
-                }
-                ContextEvent::TorLogReceived { line } => {
-                    if let Some(callback) = callbacks.tor_log_received_callback {
-                        let line0 = CString::new(line.as_str()).expect(
-                            "gosling_context_poll_events(): unexpected null byte in tor log line",
-                        );
-                        callback(context, line0.as_ptr(), line.len());
-                    }
-                }
-                //
-                // Identity Client Events
-                //
-                ContextEvent::IdentityClientChallengeReceived {
-                    handle,
-                    endpoint_challenge,
-                } => {
-                    // construct challenge response
-                    let challenge_response = if let (
-                        Some(challenge_response_size_callback),
-                        Some(build_challenge_response_callback),
-                    ) = (
-                        callbacks.identity_client_challenge_response_size_callback,
-                        callbacks.identity_client_build_challenge_response_callback,
-                    ) {
-                        let mut endpoint_challenge_buffer: Vec<u8> = Default::default();
-                        endpoint_challenge.to_writer(&mut endpoint_challenge_buffer).expect("gosling_context_poll_events(): unable to write identity handshake challenge Bson document to buffer");
-
-                        // get the size of challenge response bson blob
-                        let challenge_response_size = challenge_response_size_callback(
-                            context,
-                            handle,
-                            endpoint_challenge_buffer.as_ptr(),
-                            endpoint_challenge_buffer.len(),
-                        );
-
-                        // get the challenge response bson blob
-                        let mut challenge_response_buffer: Vec<u8> =
-                            vec![0u8; challenge_response_size];
-                        build_challenge_response_callback(
-                            context,
-                            handle,
-                            endpoint_challenge_buffer.as_ptr(),
-                            endpoint_challenge_buffer.len(),
-                            challenge_response_buffer.as_mut_ptr(),
-                            challenge_response_buffer.len(),
-                        );
-
-                        // convert bson blob to bson object
-                        match bson::document::Document::from_reader(Cursor::new(
-                            challenge_response_buffer,
-                        )) {
-                            Ok(challenge_response) => challenge_response,
-                            Err(_) => panic!(),
-                        }
-                    } else {
-                        doc! {}
-                    };
-
-                    match get_context_tuple_registry().get_mut(context as usize) {
-                        Some(context) => context.0.identity_client_handle_challenge_received(
-                            handle,
-                            challenge_response,
-                        )?,
-                        None => bail!("context is invalid"),
-                    };
-                }
-                ContextEvent::IdentityClientHandshakeCompleted {
-                    handle,
-                    identity_service_id,
-                    endpoint_service_id,
-                    endpoint_name,
-                    client_auth_private_key,
-                } => {
-                    if let Some(callback) = callbacks.identity_client_handshake_completed_callback {
-                        let (identity_service_id, endpoint_service_id) = {
-                            let mut v3_onion_service_id_registry =
-                                get_v3_onion_service_id_registry();
-                            let identity_service_id =
-                                v3_onion_service_id_registry.insert(identity_service_id);
-                            let endpoint_service_id =
-                                v3_onion_service_id_registry.insert(endpoint_service_id);
-                            (identity_service_id, endpoint_service_id)
-                        };
-
-                        let endpoint_name0 = CString::new(endpoint_name.as_str()).expect(
-                            "gosling_context_poll_events(): unexpected null byte in endpoint name",
-                        );
-
-                        let client_auth_private_key =
-                            get_x25519_private_key_registry().insert(client_auth_private_key);
-
-                        callback(
-                            context,
-                            handle,
-                            identity_service_id as *const GoslingV3OnionServiceId,
-                            endpoint_service_id as *const GoslingV3OnionServiceId,
-                            endpoint_name0.as_ptr(),
-                            endpoint_name.len(),
-                            client_auth_private_key as *const GoslingX25519PrivateKey,
-                        );
-
-                        {
-                            let mut v3_onion_service_id_registry =
-                                get_v3_onion_service_id_registry();
-                            v3_onion_service_id_registry.remove(identity_service_id);
-                            v3_onion_service_id_registry.remove(endpoint_service_id);
-                        }
-
-                        // cleanup
-                        get_x25519_private_key_registry().remove(client_auth_private_key);
-                    }
-                }
-                ContextEvent::IdentityClientHandshakeFailed { handle, reason } => {
-                    if let Some(callback) = callbacks.identity_client_handshake_failed_callback {
-                        let key = get_error_registry()
-                            .insert(Error::new(format!("{:?}", reason).as_str()));
-                        callback(context, handle, key as *const GoslingFFIError);
-                        get_error_registry().remove(key);
-                    }
-                }
-                //
-                // Identity Server Events
-                //
-                ContextEvent::IdentityServerPublished => {
-                    if let Some(callback) = callbacks.identity_server_published_callback {
-                        callback(context);
-                    }
-                }
-                ContextEvent::IdentityServerHandshakeStarted { handle } => {
-                    if let Some(callback) = callbacks.identity_server_handshake_started_callback {
-                        callback(context, handle);
-                    }
-                }
-                ContextEvent::IdentityServerEndpointRequestReceived {
-                    handle,
-                    client_service_id,
-                    requested_endpoint,
-                } => {
-                    let client_allowed = match callbacks.identity_server_client_allowed_callback {
-                        Some(callback) => {
-                            let client_service_id =
-                                get_v3_onion_service_id_registry().insert(client_service_id);
-                            callback(
-                                context,
-                                handle,
-                                client_service_id as *const GoslingV3OnionServiceId,
-                            )
-                        }
-                        None => false,
-                    };
-
-                    let endpoint_supported = match callbacks
-                        .identity_server_endpoint_supported_callback
-                    {
-                        Some(callback) => {
-                            let requested_endpoint0 = CString::new(requested_endpoint.as_str()).expect("gosling_context_poll_events(): unexpected null byte in requested_endpoint");
-                            callback(
-                                context,
-                                handle,
-                                requested_endpoint0.as_ptr(),
-                                requested_endpoint.len(),
-                            )
-                        }
-                        None => false,
-                    };
-                    let endpoint_challenge = if let (
-                        Some(challenge_size_callback),
-                        Some(build_challenge_callback),
-                    ) = (
-                        callbacks.identity_server_challenge_size_callback,
-                        callbacks.identity_server_build_challenge_callback,
-                    ) {
-                        // get the challenge size in bytes
-                        let challenge_size = challenge_size_callback(context, handle);
-                        // construct challenge object into buffer
-                        let mut challenge_buffer = vec![0u8; challenge_size];
-                        build_challenge_callback(
-                            context,
-                            handle,
-                            challenge_buffer.as_mut_ptr(),
-                            challenge_size,
-                        );
-
-                        // convert bson blob to bson object
-                        match bson::document::Document::from_reader(Cursor::new(challenge_buffer)) {
-                            Ok(challenge) => challenge,
-                            Err(_) => panic!(),
-                        }
-                    } else {
-                        doc! {}
-                    };
-
-                    match get_context_tuple_registry().get_mut(context as usize) {
-                        Some(context) => {
-                            context.0.identity_server_handle_endpoint_request_received(
-                                handle,
-                                client_allowed,
-                                endpoint_supported,
-                                endpoint_challenge,
-                            )?
-                        }
-                        None => bail!("context is invalid"),
-                    };
-                }
-                ContextEvent::IdentityServerChallengeResponseReceived {
-                    handle,
-                    challenge_response,
-                } => {
-                    let challenge_response_valid = match callbacks
-                        .identity_server_verify_challenge_response_callback
-                    {
-                        Some(callback) => {
-                            // get response as bytes
-                            let mut challenge_response_buffer: Vec<u8> = Default::default();
-                            challenge_response
-                                    .to_writer(&mut challenge_response_buffer).expect("gosling_context_poll_events(): unable to write identity challenge response Bson document to buffer");
-
-                            callback(
-                                context,
-                                handle,
-                                challenge_response_buffer.as_ptr(),
-                                challenge_response_buffer.len(),
-                            )
-                        }
-                        None => false,
-                    };
-
-                    match get_context_tuple_registry().get_mut(context as usize) {
-                        Some(context) => context
-                            .0
-                            .identity_server_handle_challenge_response_received(
-                                handle,
-                                challenge_response_valid,
-                            )?,
-                        None => bail!("context is invalid"),
-                    };
-                }
-                ContextEvent::IdentityServerHandshakeCompleted {
-                    handle,
-                    endpoint_private_key,
-                    endpoint_name,
-                    client_service_id,
-                    client_auth_public_key,
-                } => {
-                    if let Some(callback) = callbacks.identity_server_handshake_completed_callback {
-                        let endpoint_private_key = {
-                            let mut ed25519_private_key_registry =
-                                get_ed25519_private_key_registry();
-                            ed25519_private_key_registry.insert(endpoint_private_key)
-                        };
-
-                        let endpoint_name0 = CString::new(endpoint_name.as_str()).expect(
-                            "gosling_context_poll_events(): unexpected null byte in endpoint name",
-                        );
-
-                        let client_service_id = {
-                            let mut v3_onion_service_id_registry =
-                                get_v3_onion_service_id_registry();
-                            v3_onion_service_id_registry.insert(client_service_id)
-                        };
-
-                        let client_auth_public_key = {
-                            let mut x25519_public_key_registry = get_x25519_public_key_registry();
-                            x25519_public_key_registry.insert(client_auth_public_key)
-                        };
-
-                        callback(
-                            context,
-                            handle,
-                            endpoint_private_key as *const GoslingEd25519PrivateKey,
-                            endpoint_name0.as_ptr(),
-                            endpoint_name.len(),
-                            client_service_id as *const GoslingV3OnionServiceId,
-                            client_auth_public_key as *const GoslingX25519PublicKey,
-                        );
-
-                        // cleanup
-                        get_ed25519_private_key_registry().remove(endpoint_private_key);
-                        get_v3_onion_service_id_registry().remove(client_service_id);
-                        get_x25519_public_key_registry().remove(client_auth_public_key);
-                    }
-                }
-                ContextEvent::IdentityServerHandshakeRejected {
-                    handle,
-                    client_allowed,
-                    client_requested_endpoint_valid,
-                    client_proof_signature_valid,
-                    client_auth_signature_valid,
-                    challenge_response_valid,
-                } => {
-                    if let Some(callback) = callbacks.identity_server_handshake_rejected_callback {
-                        callback(
-                            context,
-                            handle,
-                            client_allowed,
-                            client_requested_endpoint_valid,
-                            client_proof_signature_valid,
-                            client_auth_signature_valid,
-                            challenge_response_valid,
-                        );
-                    }
-                }
-                ContextEvent::IdentityServerHandshakeFailed { handle, reason } => {
-                    if let Some(callback) = callbacks.identity_server_handshake_failed_callback {
-                        let key = get_error_registry()
-                            .insert(Error::new(format!("{:?}", reason).as_str()));
-                        callback(context, handle, key as *const GoslingFFIError);
-                        get_error_registry().remove(key);
-                    }
-                }
-                //
-                // Endpoint Client Events
-                //
-                ContextEvent::EndpointClientHandshakeCompleted {
-                    endpoint_service_id,
-                    handle,
-                    channel_name,
-                    stream,
-                } => {
-                    if let Some(callback) = callbacks.endpoint_client_handshake_completed_callback {
-                        let endpoint_service_id = {
-                            let mut v3_onion_service_id_registry =
-                                get_v3_onion_service_id_registry();
-                            v3_onion_service_id_registry.insert(endpoint_service_id)
-                        };
-                        let channel_name0 = CString::new(channel_name.as_str()).expect(
-                            "gosling_context_poll_events(): unexpected null byte in channel name",
-                        );
-
-                        #[cfg(any(target_os = "linux", target_os = "macos"))]
-                        let stream = stream.into_raw_fd();
-                        #[cfg(target_os = "windows")]
-                        let stream = stream.into_raw_socket();
-
-                        callback(
-                            context,
-                            handle,
-                            endpoint_service_id as *const GoslingV3OnionServiceId,
-                            channel_name0.as_ptr(),
-                            channel_name.len(),
-                            stream,
-                        );
-
-                        // cleanup
-                        get_v3_onion_service_id_registry().remove(endpoint_service_id);
-                    }
-                }
-                ContextEvent::EndpointClientHandshakeFailed { handle, reason } => {
-                    if let Some(callback) = callbacks.endpoint_client_handshake_failed_callback {
-                        let key = get_error_registry()
-                            .insert(Error::new(format!("{:?}", reason).as_str()));
-                        callback(context, handle, key as *const GoslingFFIError);
-                        get_error_registry().remove(key);
-                    }
-                }
-                //
-                // Endpoint Server Events
-                //
-                ContextEvent::EndpointServerPublished {
-                    endpoint_service_id,
-                    endpoint_name,
-                } => {
-                    if let Some(callback) = callbacks.endpoint_server_published_callback {
-                        let endpoint_service_id = {
-                            let mut v3_onion_service_id_registry =
-                                get_v3_onion_service_id_registry();
-                            v3_onion_service_id_registry.insert(endpoint_service_id)
-                        };
-                        let endpoint_name0 = CString::new(endpoint_name.as_str()).expect(
-                            "gosling_context_poll_events(): unexpected null byte in endpoint name",
-                        );
-
-                        callback(
-                            context,
-                            endpoint_service_id as *const GoslingV3OnionServiceId,
-                            endpoint_name0.as_ptr(),
-                            endpoint_name.len(),
-                        );
-
-                        // cleanup
-                        get_v3_onion_service_id_registry().remove(endpoint_service_id);
-                    }
-                }
-                ContextEvent::EndpointServerHandshakeStarted { handle } => {
-                    if let Some(callback) = callbacks.endpoint_server_handshake_started_callback {
-                        callback(context, handle);
-                    }
-                }
-                ContextEvent::EndpointServerChannelRequestReceived {
-                    handle,
-                    requested_channel,
-                } => {
-                    let channel_supported: bool = match callbacks
-                        .endpoint_server_channel_supported_callback
-                    {
-                        Some(callback) => {
-                            let requested_channel0 = CString::new(requested_channel.as_str()).expect("gosling_context_poll_events(): unexpected null byte in requested_channel");
-                            callback(
-                                context,
-                                handle,
-                                requested_channel0.as_ptr(),
-                                requested_channel.len(),
-                            )
-                        }
-                        None => false,
-                    };
-
-                    match get_context_tuple_registry().get_mut(context as usize) {
-                        Some(context) => {
-                            context.0.endpoint_server_handle_channel_request_received(
-                                handle,
-                                channel_supported,
-                            )?
-                        }
-                        None => return Err(anyhow!("context is invalid")),
-                    };
-                }
-                ContextEvent::EndpointServerHandshakeCompleted {
-                    handle,
-                    endpoint_service_id,
-                    client_service_id,
-                    channel_name,
-                    stream,
-                } => {
-                    if let Some(callback) = callbacks.endpoint_server_handshake_completed_callback {
-                        let (endpoint_service_id, client_service_id) = {
-                            let mut v3_onion_service_id_registry =
-                                get_v3_onion_service_id_registry();
-                            let endpoint_service_id =
-                                v3_onion_service_id_registry.insert(endpoint_service_id);
-                            let client_service_id =
-                                v3_onion_service_id_registry.insert(client_service_id);
-                            (endpoint_service_id, client_service_id)
-                        };
-
-                        let channel_name0 = CString::new(channel_name.as_str()).expect(
-                            "gosling_context_poll_events(): unexpected null byte in channel name",
-                        );
-
-                        #[cfg(any(target_os = "linux", target_os = "macos"))]
-                        let stream = stream.into_raw_fd();
-                        #[cfg(target_os = "windows")]
-                        let stream = stream.into_raw_socket();
-
-                        callback(
-                            context,
-                            handle,
-                            endpoint_service_id as *const GoslingV3OnionServiceId,
-                            client_service_id as *const GoslingV3OnionServiceId,
-                            channel_name0.as_ptr(),
-                            channel_name.len(),
-                            stream,
-                        );
-
-                        // cleanup
-                        {
-                            let mut v3_onion_service_id_registry =
-                                get_v3_onion_service_id_registry();
-                            v3_onion_service_id_registry.remove(endpoint_service_id);
-                            v3_onion_service_id_registry.remove(client_service_id);
-                        }
-                    }
-                }
-                ContextEvent::EndpointServerHandshakeRejected {
-                    handle,
-                    client_allowed,
-                    client_requested_channel_valid,
-                    client_proof_signature_valid,
-                } => {
-                    if let Some(callback) = callbacks.endpoint_server_handshake_rejected_callback {
-                        callback(
-                            context,
-                            handle,
-                            client_allowed,
-                            client_requested_channel_valid,
-                            client_proof_signature_valid,
-                        );
-                    }
-                }
-                ContextEvent::EndpointServerHandshakeFailed { handle, reason } => {
-                    if let Some(callback) = callbacks.endpoint_server_handshake_failed_callback {
-                        let key = get_error_registry()
-                            .insert(Error::new(format!("{:?}", reason).as_str()));
-                        callback(context, handle, key as *const GoslingFFIError);
-                        get_error_registry().remove(key);
-                    }
-                }
+                // return the error
+                return result;
             }
         }
         Ok(())
