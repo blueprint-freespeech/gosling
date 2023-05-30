@@ -96,7 +96,7 @@ pub extern "C" fn gosling_error_get_message(error: *const GoslingFFIError) -> *c
     ptr::null()
 }
 
-// macro for defining the implmenetation of freeing objects
+// macro for defining the implementation of freeing objects
 // owned by an ObjectRegistry
 macro_rules! impl_registry_free {
     ($obj:expr, $type:ty) => {
@@ -1898,7 +1898,7 @@ pub extern "C" fn gosling_context_poll_events(
 /// @param tag: the null-terminated short name of the current bootstrap stage
 /// @param tag_length: the number of chrs in tag not including any null-terminator
 /// @param summary: the null-terminated description of the current bootstra stage
-/// @param summmary_length: the number of hcars in summary not including the null-terminator
+/// @param summmary_length: the number of chars in summary not including the null-terminator
 pub type GoslingTorBootstrapStatusReceivedCallback = extern "C" fn(
     context: *mut GoslingContext,
     progress: u32,
