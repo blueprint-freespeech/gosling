@@ -20,7 +20,12 @@ Libgosling currently has the following build dependencies:
 - cmake >= [3.16.6](https://github.com/blueprint-freespeech/gosling/blob/main/source/CMakeLists.txt#L1)
 - boost >= [1.66](https://github.com/blueprint-freespeech/gosling/blob/main/source/test/functional/CMakeLists.txt#L1) (for C++ tests)
 
-Cargo will automatically download and build the required Rust crates. The list of current dependencies can be found in [Cargo.toml](https://github.com/blueprint-freespeech/gosling/blob/main/source/gosling/Cargo.toml)
+Cargo will automatically download and build the required Rust crates. The list of current dependencies can be found in each crate's Cargo.toml file:
+
+- [honk-rpc](./source/gosling/crates/honk-rpc/Cargo.toml)
+- [tor-interface](./source/gosling/crates/tor-interface/Cargo.toml)
+- [gosling](./source/gosling/crates/gosling/Cargo.toml)
+- [gosling-ffi](./source/gosling/crates/gosling-ffi/Cargo.toml)
 
 ## Optional Dependencis
 
