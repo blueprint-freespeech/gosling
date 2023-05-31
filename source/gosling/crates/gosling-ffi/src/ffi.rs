@@ -17,7 +17,6 @@ use std::sync::Mutex;
 // extern crates
 use anyhow::anyhow;
 use anyhow::bail;
-use bson::doc;
 use gosling::context::*;
 use tor_interface::tor_crypto::*;
 use tor_interface::tor_process::tor_exe_name;
@@ -960,8 +959,7 @@ pub extern "C" fn gosling_context_init(
             identity_private_key.clone(),
         )?;
 
-        let handle =
-            get_context_tuple_registry().insert((context, Default::default(), None));
+        let handle = get_context_tuple_registry().insert((context, Default::default(), None));
         unsafe { *out_context = handle as *mut GoslingContext };
 
         Ok(())
@@ -1432,7 +1430,7 @@ fn handle_context_event(
                     Err(_) => panic!(),
                 }
             } else {
-                doc! {}
+                bail!("missing required identity_client_challenge_response_size() and identity_client_build_challenge_response() callbacks");
             };
 
             match get_context_tuple_registry().get_mut(context as usize) {
@@ -1483,6 +1481,8 @@ fn handle_context_event(
 
                 // cleanup
                 get_x25519_private_key_registry().remove(client_auth_private_key);
+            } else {
+                bail!("missing required identity_client_handshake_completed() callback");
             }
         }
         ContextEvent::IdentityClientHandshakeFailed { handle, reason } => {
@@ -1520,7 +1520,7 @@ fn handle_context_event(
                         client_service_id as *const GoslingV3OnionServiceId,
                     )
                 }
-                None => false,
+                None => bail!("missing required identity_server_client_allowed() callback"),
             };
 
             let endpoint_supported = match callbacks.identity_server_endpoint_supported_callback {
@@ -1535,32 +1535,34 @@ fn handle_context_event(
                         requested_endpoint.len(),
                     )
                 }
-                None => false,
+                None => bail!("missing required identity_server_endpoint_supported() callback"),
             };
-            let endpoint_challenge =
-                if let (Some(challenge_size_callback), Some(build_challenge_callback)) = (
-                    callbacks.identity_server_challenge_size_callback,
-                    callbacks.identity_server_build_challenge_callback,
-                ) {
-                    // get the challenge size in bytes
-                    let challenge_size = challenge_size_callback(context, handle);
-                    // construct challenge object into buffer
-                    let mut challenge_buffer = vec![0u8; challenge_size];
-                    build_challenge_callback(
-                        context,
-                        handle,
-                        challenge_buffer.as_mut_ptr(),
-                        challenge_size,
-                    );
+            let endpoint_challenge = if let (
+                Some(challenge_size_callback),
+                Some(build_challenge_callback),
+            ) = (
+                callbacks.identity_server_challenge_size_callback,
+                callbacks.identity_server_build_challenge_callback,
+            ) {
+                // get the challenge size in bytes
+                let challenge_size = challenge_size_callback(context, handle);
+                // construct challenge object into buffer
+                let mut challenge_buffer = vec![0u8; challenge_size];
+                build_challenge_callback(
+                    context,
+                    handle,
+                    challenge_buffer.as_mut_ptr(),
+                    challenge_size,
+                );
 
-                    // convert bson blob to bson object
-                    match bson::document::Document::from_reader(Cursor::new(challenge_buffer)) {
-                        Ok(challenge) => challenge,
-                        Err(_) => panic!(),
-                    }
-                } else {
-                    doc! {}
-                };
+                // convert bson blob to bson object
+                match bson::document::Document::from_reader(Cursor::new(challenge_buffer)) {
+                    Ok(challenge) => challenge,
+                    Err(_) => panic!(),
+                }
+            } else {
+                bail!("missing required identity_server_challenge_size() and identity_server_build_challenge() callbacks");
+            };
 
             match get_context_tuple_registry().get_mut(context as usize) {
                 Some(context) => context.0.identity_server_handle_endpoint_request_received(
@@ -1592,7 +1594,9 @@ fn handle_context_event(
                         challenge_response_buffer.len(),
                     )
                 }
-                None => false,
+                None => {
+                    bail!("missing required identity_server_verify_challenge_response() callback()")
+                }
             };
 
             match get_context_tuple_registry().get_mut(context as usize) {
@@ -1645,6 +1649,8 @@ fn handle_context_event(
                 get_ed25519_private_key_registry().remove(endpoint_private_key);
                 get_v3_onion_service_id_registry().remove(client_service_id);
                 get_x25519_public_key_registry().remove(client_auth_public_key);
+            } else {
+                bail!("missing required identity_server_handshake_completed_callback()");
             }
         }
         ContextEvent::IdentityServerHandshakeRejected {
@@ -1707,6 +1713,8 @@ fn handle_context_event(
 
                 // cleanup
                 get_v3_onion_service_id_registry().remove(endpoint_service_id);
+            } else {
+                bail!("missing required endpoint_client_hanshake_completed() callback");
             }
         }
         ContextEvent::EndpointClientHandshakeFailed { handle, reason } => {
@@ -1764,7 +1772,7 @@ fn handle_context_event(
                         requested_channel.len(),
                     )
                 }
-                None => false,
+                None => bail!("missing required endpoint_server_channel_supported() callback"),
             };
 
             match get_context_tuple_registry().get_mut(context as usize) {
@@ -1814,6 +1822,8 @@ fn handle_context_event(
                     v3_onion_service_id_registry.remove(endpoint_service_id);
                     v3_onion_service_id_registry.remove(client_service_id);
                 }
+            } else {
+                bail!("missing required endpoint_server_handshake_completed() callback");
             }
         }
         ContextEvent::EndpointServerHandshakeRejected {
@@ -1871,7 +1881,7 @@ pub extern "C" fn gosling_context_poll_events(
                         Some(mut context_events) => {
                             context_events.append(&mut new_events);
                             context_events
-                        },
+                        }
                         None => {
                             // no previous events so just pass through the new events
                             new_events
