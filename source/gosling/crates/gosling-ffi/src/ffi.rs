@@ -238,7 +238,7 @@ pub extern "C" fn gosling_library_init(
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if out_library.is_null() {
-            return Err(anyhow!("out_library may not be null"));
+            bail!("out_library may not be null");
         }
 
         if GOSLING_LIBRARY_INITED.load(Ordering::Relaxed) {
@@ -959,7 +959,8 @@ pub extern "C" fn gosling_context_init(
             identity_private_key.clone(),
         )?;
 
-        let handle = get_context_tuple_registry().insert((context, Default::default(), None));
+        let handle =
+            get_context_tuple_registry().insert((context, Default::default(), None));
         unsafe { *out_context = handle as *mut GoslingContext };
 
         Ok(())
@@ -1361,9 +1362,9 @@ fn handle_context_event(
         } => {
             if let Some(callback) = callbacks.tor_bootstrap_status_received_callback {
                 let tag0 = CString::new(tag.as_str()).expect(
-                    "gosling_context_poll_events(): unexpected null byte in bootstrap status tag",
+                    "bootstrap status tag string should not have an intermediate null byte",
                 );
-                let summary0 = CString::new(summary.as_str()).expect("gosling_context_poll_events(): unexpected null byte in bootstrap status summary");
+                let summary0 = CString::new(summary.as_str()).expect("bootstrap status summary string should not have an intermediate null byte");
                 callback(
                     context,
                     progress,
@@ -1382,7 +1383,7 @@ fn handle_context_event(
         ContextEvent::TorLogReceived { line } => {
             if let Some(callback) = callbacks.tor_log_received_callback {
                 let line0 = CString::new(line.as_str())
-                    .expect("gosling_context_poll_events(): unexpected null byte in tor log line");
+                    .expect("tor log line string should not have an intermediate null byte");
                 callback(context, line0.as_ptr(), line.len());
             }
         }
@@ -1402,7 +1403,7 @@ fn handle_context_event(
                 callbacks.identity_client_build_challenge_response_callback,
             ) {
                 let mut endpoint_challenge_buffer: Vec<u8> = Default::default();
-                endpoint_challenge.to_writer(&mut endpoint_challenge_buffer).expect("gosling_context_poll_events(): unable to write identity handshake challenge Bson document to buffer");
+                endpoint_challenge.to_writer(&mut endpoint_challenge_buffer).expect("endpoint_challenge should be a valid bson::document::Document and therefore serializable to Vec<u8>");
 
                 // get the size of challenge response bson blob
                 let challenge_response_size = challenge_response_size_callback(
@@ -1458,7 +1459,7 @@ fn handle_context_event(
                 };
 
                 let endpoint_name0 = CString::new(endpoint_name.as_str())
-                    .expect("gosling_context_poll_events(): unexpected null byte in endpoint name");
+                    .expect("endpoint_name should be a valid ASCII string and not have an intermediate null byte");
 
                 let client_auth_private_key =
                     get_x25519_private_key_registry().insert(client_auth_private_key);
@@ -1519,14 +1520,14 @@ fn handle_context_event(
                         handle,
                         client_service_id as *const GoslingV3OnionServiceId,
                     )
-                }
+                },
                 None => bail!("missing required identity_server_client_allowed() callback"),
             };
 
             let endpoint_supported = match callbacks.identity_server_endpoint_supported_callback {
                 Some(callback) => {
                     let requested_endpoint0 = CString::new(requested_endpoint.as_str()).expect(
-                        "gosling_context_poll_events(): unexpected null byte in requested_endpoint",
+                        "requested_endpoint should be a valid ASCII string and not have an intermediate null byte",
                     );
                     callback(
                         context,
@@ -1537,32 +1538,30 @@ fn handle_context_event(
                 }
                 None => bail!("missing required identity_server_endpoint_supported() callback"),
             };
-            let endpoint_challenge = if let (
-                Some(challenge_size_callback),
-                Some(build_challenge_callback),
-            ) = (
-                callbacks.identity_server_challenge_size_callback,
-                callbacks.identity_server_build_challenge_callback,
-            ) {
-                // get the challenge size in bytes
-                let challenge_size = challenge_size_callback(context, handle);
-                // construct challenge object into buffer
-                let mut challenge_buffer = vec![0u8; challenge_size];
-                build_challenge_callback(
-                    context,
-                    handle,
-                    challenge_buffer.as_mut_ptr(),
-                    challenge_size,
-                );
+            let endpoint_challenge =
+                if let (Some(challenge_size_callback), Some(build_challenge_callback)) = (
+                    callbacks.identity_server_challenge_size_callback,
+                    callbacks.identity_server_build_challenge_callback,
+                ) {
+                    // get the challenge size in bytes
+                    let challenge_size = challenge_size_callback(context, handle);
+                    // construct challenge object into buffer
+                    let mut challenge_buffer = vec![0u8; challenge_size];
+                    build_challenge_callback(
+                        context,
+                        handle,
+                        challenge_buffer.as_mut_ptr(),
+                        challenge_size,
+                    );
 
-                // convert bson blob to bson object
-                match bson::document::Document::from_reader(Cursor::new(challenge_buffer)) {
-                    Ok(challenge) => challenge,
-                    Err(_) => panic!(),
-                }
-            } else {
-                bail!("missing required identity_server_challenge_size() and identity_server_build_challenge() callbacks");
-            };
+                    // convert bson blob to bson object
+                    match bson::document::Document::from_reader(Cursor::new(challenge_buffer)) {
+                        Ok(challenge) => challenge,
+                        Err(_) => panic!(),
+                    }
+                } else {
+                    bail!("missing required identity_server_challenge_size() and identity_server_build_challenge() callbacks");
+                };
 
             match get_context_tuple_registry().get_mut(context as usize) {
                 Some(context) => context.0.identity_server_handle_endpoint_request_received(
@@ -1585,7 +1584,7 @@ fn handle_context_event(
                     // get response as bytes
                     let mut challenge_response_buffer: Vec<u8> = Default::default();
                     challenge_response
-                            .to_writer(&mut challenge_response_buffer).expect("gosling_context_poll_events(): unable to write identity challenge response Bson document to buffer");
+                            .to_writer(&mut challenge_response_buffer).expect("challenge_response should be a valid bson::document::Document and therefore serializable to Vec<u8>");
 
                     callback(
                         context,
@@ -1594,9 +1593,7 @@ fn handle_context_event(
                         challenge_response_buffer.len(),
                     )
                 }
-                None => {
-                    bail!("missing required identity_server_verify_challenge_response() callback()")
-                }
+                None => bail!("missing required identity_server_verify_challenge_response() callback()"),
             };
 
             match get_context_tuple_registry().get_mut(context as usize) {
@@ -1623,7 +1620,7 @@ fn handle_context_event(
                 };
 
                 let endpoint_name0 = CString::new(endpoint_name.as_str())
-                    .expect("gosling_context_poll_events(): unexpected null byte in endpoint name");
+                    .expect("endpoint_name should be a valid ASCII string and not have an intermediate null byte");
 
                 let client_service_id = {
                     let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
@@ -1695,7 +1692,7 @@ fn handle_context_event(
                     v3_onion_service_id_registry.insert(endpoint_service_id)
                 };
                 let channel_name0 = CString::new(channel_name.as_str())
-                    .expect("gosling_context_poll_events(): unexpected null byte in channel name");
+                    .expect("channel_name should be a valid ASCII string and not have an intermediate null byte");
 
                 #[cfg(any(target_os = "linux", target_os = "macos"))]
                 let stream = stream.into_raw_fd();
@@ -1714,7 +1711,7 @@ fn handle_context_event(
                 // cleanup
                 get_v3_onion_service_id_registry().remove(endpoint_service_id);
             } else {
-                bail!("missing required endpoint_client_hanshake_completed() callback");
+                bail!("missing required endpoint_client_handshake_completed() callback");
             }
         }
         ContextEvent::EndpointClientHandshakeFailed { handle, reason } => {
@@ -1737,7 +1734,7 @@ fn handle_context_event(
                     v3_onion_service_id_registry.insert(endpoint_service_id)
                 };
                 let endpoint_name0 = CString::new(endpoint_name.as_str())
-                    .expect("gosling_context_poll_events(): unexpected null byte in endpoint name");
+                    .expect("endpoint_name should be a valid ASCII string and not have an intermediate null byte");
 
                 callback(
                     context,
@@ -1762,8 +1759,7 @@ fn handle_context_event(
             let channel_supported: bool = match callbacks.endpoint_server_channel_supported_callback
             {
                 Some(callback) => {
-                    let requested_channel0 = CString::new(requested_channel.as_str()).expect(
-                        "gosling_context_poll_events(): unexpected null byte in requested_channel",
+                    let requested_channel0 = CString::new(requested_channel.as_str()).expect("requested_channel should be a valid ASCII string and not have an intermediate null byte",
                     );
                     callback(
                         context,
@@ -1771,7 +1767,7 @@ fn handle_context_event(
                         requested_channel0.as_ptr(),
                         requested_channel.len(),
                     )
-                }
+                },
                 None => bail!("missing required endpoint_server_channel_supported() callback"),
             };
 
@@ -1799,7 +1795,7 @@ fn handle_context_event(
                 };
 
                 let channel_name0 = CString::new(channel_name.as_str())
-                    .expect("gosling_context_poll_events(): unexpected null byte in channel name");
+                    .expect("channel_name should be a valid ASCII string and not have an intermediate null byte");
 
                 #[cfg(any(target_os = "linux", target_os = "macos"))]
                 let stream = stream.into_raw_fd();
@@ -1881,7 +1877,7 @@ pub extern "C" fn gosling_context_poll_events(
                         Some(mut context_events) => {
                             context_events.append(&mut new_events);
                             context_events
-                        }
+                        },
                         None => {
                             // no previous events so just pass through the new events
                             new_events
