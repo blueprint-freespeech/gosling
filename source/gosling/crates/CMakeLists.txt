@@ -22,3 +22,10 @@ add_subdirectory(honk-rpc)
 add_subdirectory(tor-interface)
 add_subdirectory(gosling)
 add_subdirectory(gosling-ffi)
+
+add_custom_target(gosling_crates_doc
+    COMMAND CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR} RUSTFLAGS=${RUSTFLAGS} cargo doc --no-deps --workspace --exclude gosling-ffi
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    BYPRODUCTS
+)
+

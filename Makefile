@@ -49,3 +49,6 @@ lint: debug
 		--project=out/debug/compile_commands.sans-catch2.json\
 		-isource/sans-catch2
 
+# build programmer documentation
+docs: debug
+	@$(MAKE) gosling_crates_doc -C out/debug
