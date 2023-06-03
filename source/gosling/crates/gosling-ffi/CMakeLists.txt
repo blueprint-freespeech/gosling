@@ -18,7 +18,7 @@ set(GOSLING_LIBRARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/${CARGO_PROFILE})
 
 # specify goslings link target for consumers
 set_target_properties(gosling_ffi PROPERTIES
-    IMPORTED_LOCATION ${GOSLING_LIBRARY_DIR}/libgosling.a
+    IMPORTED_LOCATION ${GOSLING_LIBRARY_DIR}/libgoslingffi.a
 )
 
 # include location of our cbindgen headers

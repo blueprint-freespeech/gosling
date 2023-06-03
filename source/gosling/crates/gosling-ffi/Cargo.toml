@@ -19,5 +19,5 @@ tor-interface = { version = "0.0.1", path = "../tor-interface" }
 which = "4.3.0"
 
 [lib]
-name = "gosling"
+name = "goslingffi"
 crate-type = ["staticlib"]
