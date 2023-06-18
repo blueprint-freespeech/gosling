@@ -492,8 +492,7 @@ impl Context {
         } else {
             Err(Error::InvalidArgument(format!(
                 "endpoint server with service id {} not found",
-                endpoint_identity
-            )))
+                endpoint_identity)))
         }
     }
 
