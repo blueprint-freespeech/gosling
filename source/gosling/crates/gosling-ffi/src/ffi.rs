@@ -18,7 +18,6 @@ use std::sync::Mutex;
 use anyhow::anyhow;
 use anyhow::bail;
 use gosling::context::*;
-use tor_interface::legacy_tor_process::tor_exe_name;
 use tor_interface::tor_crypto::*;
 
 // internal crates
@@ -922,7 +921,7 @@ pub extern "C" fn gosling_context_init(
         }
 
         let tor_bin_path = if tor_bin_path.is_null() {
-            which::which(tor_exe_name())?
+            which::which(format!("tor{}", std::env::consts::EXE_SUFFIX))?
         } else {
             let tor_bin_path = unsafe {
                 std::slice::from_raw_parts(tor_bin_path as *const u8, tor_bin_path_length)
