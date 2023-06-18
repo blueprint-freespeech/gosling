@@ -12,8 +12,9 @@ use bson::doc;
 use honk_rpc::honk_rpc::*;
 #[cfg(test)]
 use serial_test::serial;
+use tor_interface::legacy_tor_client::*;
 use tor_interface::tor_crypto::*;
-use tor_interface::tor_manager::*;
+use tor_interface::tor_provider::*;
 
 // internal crates
 use crate::ascii_string::*;
@@ -30,7 +31,7 @@ pub type HandshakeHandle = usize;
 //
 pub struct Context {
     // our tor instance
-    tor_manager: TorManager,
+    tor_manager: LegacyTorClient,
     bootstrap_complete: bool,
     identity_port: u16,
     endpoint_port: u16,
@@ -47,9 +48,9 @@ pub struct Context {
     //
     // Listeners for incoming connections
     //
-    identity_listener: Option<OnionListener>,
+    identity_listener: Option<LegacyOnionListener>,
     // maps the endpoint service id to the enpdoint name, alowed client, onion listener tuple
-    endpoint_listeners: HashMap<V3OnionServiceId, (String, V3OnionServiceId, OnionListener)>,
+    endpoint_listeners: HashMap<V3OnionServiceId, (String, V3OnionServiceId, LegacyOnionListener)>,
 
     //
     // Server Config Data
@@ -226,7 +227,7 @@ impl Context {
         endpoint_port: u16,
         identity_private_key: Ed25519PrivateKey,
     ) -> Result<Self, Error> {
-        let tor_manager = TorManager::new(tor_bin_path, tor_working_directory)?;
+        let tor_manager = LegacyTorClient::new(tor_bin_path, tor_working_directory)?;
 
         let identity_service_id = V3OnionServiceId::from_private_key(&identity_private_key);
 
@@ -491,13 +492,13 @@ impl Context {
         } else {
             Err(Error::InvalidArgument(format!(
                 "endpoint server with service id {} not found",
-                endpoint_identity.to_string()
+                endpoint_identity
             )))
         }
     }
 
     fn identity_server_handle_accept(
-        identity_listener: &OnionListener,
+        identity_listener: &LegacyOnionListener,
         identity_private_key: &Ed25519PrivateKey,
     ) -> Result<Option<IdentityServer<OnionStream>>, Error> {
         if let Some(stream) = identity_listener.accept()? {
@@ -521,7 +522,7 @@ impl Context {
     }
 
     fn endpoint_server_handle_accept(
-        endpoint_listener: &OnionListener,
+        endpoint_listener: &TorDaemonOnionListener,
         client_service_id: &V3OnionServiceId,
         endpoint_service_id: &V3OnionServiceId,
     ) -> Result<Option<(EndpointServer<OnionStream>, TcpStream)>, Error> {
@@ -598,8 +599,8 @@ impl Context {
 
         // consume tor events
         // TODO: so curently the only failure mode of this function is a result of the
-        // TorManager failing; we should probably consider a TorManager failure fatal, since
-        // reading the TorManager::update() function it seems the only failure modes are a
+        // LegacyTorClient failing; we should probably consider a LegacyTorClient failure fatal, since
+        // reading the LegacyTorClient::update() function it seems the only failure modes are a
         // failure to DEL_ONION (which realistically speaking could only be due to a logic
         // error on our part by deleting an onion that doesn't exist, or a parse error of
         // the response) and a failure to read async events which is either again a parsing
@@ -607,7 +608,7 @@ impl Context {
         // from.
         for event in self.tor_manager.update()?.drain(..) {
             match event {
-                Event::BootstrapStatus {
+                TorEvent::BootstrapStatus {
                     progress,
                     tag,
                     summary,
@@ -618,14 +619,14 @@ impl Context {
                         summary,
                     });
                 }
-                Event::BootstrapComplete => {
+                TorEvent::BootstrapComplete => {
                     events.push_back(ContextEvent::TorBootstrapCompleted);
                     self.bootstrap_complete = true;
                 }
-                Event::LogReceived { line } => {
+                TorEvent::LogReceived { line } => {
                     events.push_back(ContextEvent::TorLogReceived { line });
                 }
-                Event::OnionServicePublished { service_id } => {
+                TorEvent::OnionServicePublished { service_id } => {
                     if service_id == self.identity_service_id {
                         events.push_back(ContextEvent::IdentityServerPublished);
                     } else if let Some((endpoint_name, _, _)) =
