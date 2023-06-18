@@ -18,8 +18,8 @@ use std::sync::Mutex;
 use anyhow::anyhow;
 use anyhow::bail;
 use gosling::context::*;
+use tor_interface::legacy_tor_process::tor_exe_name;
 use tor_interface::tor_crypto::*;
-use tor_interface::tor_process::tor_exe_name;
 
 // internal crates
 use crate::object_registry::*;
