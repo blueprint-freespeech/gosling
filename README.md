@@ -38,6 +38,10 @@ The **lint** make target has the following additional dependencies:
 - [cppcheck](https://cppcheck.sourceforge.io/)
 - [jq](https://jqlang.github.io/jq/)
 
+The **docs** make target has the following additional dependencies:
+
+- [doxygen](https://www.doxygen.nl/)
+
 The documentation has the following build dependencies:
 
 - [plantuml](https://github.com/plantuml/plantuml)

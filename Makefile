@@ -50,5 +50,6 @@ lint: debug
 		-isource/sans-catch2
 
 # build programmer documentation
-docs: debug
-	@$(MAKE) gosling_crates_doc -C out/debug
+docs: release
+	@$(MAKE) gosling_cargo_doc -C out/release
+	@$(MAKE) gosling_ffi_doxygen -C out/release
