@@ -492,7 +492,8 @@ impl Context {
         } else {
             Err(Error::InvalidArgument(format!(
                 "endpoint server with service id {} not found",
-                endpoint_identity)))
+                endpoint_identity
+            )))
         }
     }
 
@@ -521,7 +522,7 @@ impl Context {
     }
 
     fn endpoint_server_handle_accept(
-        endpoint_listener: &TorDaemonOnionListener,
+        endpoint_listener: &LegacyOnionListener,
         client_service_id: &V3OnionServiceId,
         endpoint_service_id: &V3OnionServiceId,
     ) -> Result<Option<(EndpointServer<OnionStream>, TcpStream)>, Error> {
