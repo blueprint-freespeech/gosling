@@ -959,8 +959,7 @@ pub extern "C" fn gosling_context_init(
             identity_private_key.clone(),
         )?;
 
-        let handle =
-            get_context_tuple_registry().insert((context, Default::default(), None));
+        let handle = get_context_tuple_registry().insert((context, Default::default(), None));
         unsafe { *out_context = handle as *mut GoslingContext };
 
         Ok(())
@@ -1364,7 +1363,9 @@ fn handle_context_event(
                 let tag0 = CString::new(tag.as_str()).expect(
                     "bootstrap status tag string should not have an intermediate null byte",
                 );
-                let summary0 = CString::new(summary.as_str()).expect("bootstrap status summary string should not have an intermediate null byte");
+                let summary0 = CString::new(summary.as_str()).expect(
+                    "bootstrap status summary string should not have an intermediate null byte",
+                );
                 callback(
                     context,
                     progress,
@@ -1520,7 +1521,7 @@ fn handle_context_event(
                         handle,
                         client_service_id as *const GoslingV3OnionServiceId,
                     )
-                },
+                }
                 None => bail!("missing required identity_server_client_allowed() callback"),
             };
 
@@ -1538,30 +1539,32 @@ fn handle_context_event(
                 }
                 None => bail!("missing required identity_server_endpoint_supported() callback"),
             };
-            let endpoint_challenge =
-                if let (Some(challenge_size_callback), Some(build_challenge_callback)) = (
-                    callbacks.identity_server_challenge_size_callback,
-                    callbacks.identity_server_build_challenge_callback,
-                ) {
-                    // get the challenge size in bytes
-                    let challenge_size = challenge_size_callback(context, handle);
-                    // construct challenge object into buffer
-                    let mut challenge_buffer = vec![0u8; challenge_size];
-                    build_challenge_callback(
-                        context,
-                        handle,
-                        challenge_buffer.as_mut_ptr(),
-                        challenge_size,
-                    );
+            let endpoint_challenge = if let (
+                Some(challenge_size_callback),
+                Some(build_challenge_callback),
+            ) = (
+                callbacks.identity_server_challenge_size_callback,
+                callbacks.identity_server_build_challenge_callback,
+            ) {
+                // get the challenge size in bytes
+                let challenge_size = challenge_size_callback(context, handle);
+                // construct challenge object into buffer
+                let mut challenge_buffer = vec![0u8; challenge_size];
+                build_challenge_callback(
+                    context,
+                    handle,
+                    challenge_buffer.as_mut_ptr(),
+                    challenge_size,
+                );
 
-                    // convert bson blob to bson object
-                    match bson::document::Document::from_reader(Cursor::new(challenge_buffer)) {
-                        Ok(challenge) => challenge,
-                        Err(_) => panic!(),
-                    }
-                } else {
-                    bail!("missing required identity_server_challenge_size() and identity_server_build_challenge() callbacks");
-                };
+                // convert bson blob to bson object
+                match bson::document::Document::from_reader(Cursor::new(challenge_buffer)) {
+                    Ok(challenge) => challenge,
+                    Err(_) => panic!(),
+                }
+            } else {
+                bail!("missing required identity_server_challenge_size() and identity_server_build_challenge() callbacks");
+            };
 
             match get_context_tuple_registry().get_mut(context as usize) {
                 Some(context) => context.0.identity_server_handle_endpoint_request_received(
@@ -1593,7 +1596,9 @@ fn handle_context_event(
                         challenge_response_buffer.len(),
                     )
                 }
-                None => bail!("missing required identity_server_verify_challenge_response() callback()"),
+                None => {
+                    bail!("missing required identity_server_verify_challenge_response() callback()")
+                }
             };
 
             match get_context_tuple_registry().get_mut(context as usize) {
@@ -1767,7 +1772,7 @@ fn handle_context_event(
                         requested_channel0.as_ptr(),
                         requested_channel.len(),
                     )
-                },
+                }
                 None => bail!("missing required endpoint_server_channel_supported() callback"),
             };
 
@@ -1877,7 +1882,7 @@ pub extern "C" fn gosling_context_poll_events(
                         Some(mut context_events) => {
                             context_events.append(&mut new_events);
                             context_events
-                        },
+                        }
                         None => {
                             // no previous events so just pass through the new events
                             new_events
