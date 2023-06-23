@@ -48,9 +48,9 @@ pub struct Context {
     //
     // Listeners for incoming connections
     //
-    identity_listener: Option<LegacyOnionListener>,
+    identity_listener: Option<OnionListener>,
     // maps the endpoint service id to the enpdoint name, alowed client, onion listener tuple
-    endpoint_listeners: HashMap<V3OnionServiceId, (String, V3OnionServiceId, LegacyOnionListener)>,
+    endpoint_listeners: HashMap<V3OnionServiceId, (String, V3OnionServiceId, OnionListener)>,
 
     //
     // Server Config Data
@@ -498,7 +498,7 @@ impl Context {
     }
 
     fn identity_server_handle_accept(
-        identity_listener: &LegacyOnionListener,
+        identity_listener: &OnionListener,
         identity_private_key: &Ed25519PrivateKey,
     ) -> Result<Option<IdentityServer<OnionStream>>, Error> {
         if let Some(stream) = identity_listener.accept()? {
@@ -522,7 +522,7 @@ impl Context {
     }
 
     fn endpoint_server_handle_accept(
-        endpoint_listener: &LegacyOnionListener,
+        endpoint_listener: &OnionListener,
         client_service_id: &V3OnionServiceId,
         endpoint_service_id: &V3OnionServiceId,
     ) -> Result<Option<(EndpointServer<OnionStream>, TcpStream)>, Error> {
