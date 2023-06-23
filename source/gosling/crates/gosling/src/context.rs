@@ -13,6 +13,8 @@ use honk_rpc::honk_rpc::*;
 use serial_test::serial;
 #[cfg(test)]
 use tor_interface::legacy_tor_client::*;
+#[cfg(test)]
+use tor_interface::mock_tor_client::*;
 use tor_interface::tor_crypto::*;
 use tor_interface::tor_provider::*;
 
@@ -842,23 +844,42 @@ impl Context {
     }
 }
 
-// Client Handshake
+#[test]
+fn test_mock_client_gosling_context() -> anyhow::Result<()> {
+    let alice_tor_client = Box::new(MockTorClient::new());
+    let pat_tor_client = Box::new(MockTorClient::new());
+    gosling_context_test(alice_tor_client, pat_tor_client)
+}
 
 #[test]
 #[serial]
-fn test_gosling_context() -> anyhow::Result<()> {
+fn test_legacy_client_gosling_context() -> anyhow::Result<()> {
     let tor_path = which::which("tor")?;
 
+    let mut alice_path = std::env::temp_dir();
+    alice_path.push("test_legacy_client_gosling_context_alice");
+    let alice_tor_client = Box::new(LegacyTorClient::new(&tor_path, &alice_path)?);
+
+    let mut pat_path = std::env::temp_dir();
+    pat_path.push("test_legacy_client_gosling_context_pat");
+    let pat_tor_client = Box::new(LegacyTorClient::new(&tor_path, &pat_path)?);
+
+    gosling_context_test(alice_tor_client, pat_tor_client)
+}
+
+#[cfg(test)]
+fn gosling_context_test(
+    alice_tor_client: Box<dyn TorProvider>,
+    pat_tor_client: Box<dyn TorProvider>,
+) -> anyhow::Result<()> {
     let alice_private_key = Ed25519PrivateKey::generate();
     let alice_service_id = V3OnionServiceId::from_private_key(&alice_private_key);
-    let mut alice_path = std::env::temp_dir();
-    alice_path.push("test_gosling_context_alice");
 
     println!(
         "Starting Alice gosling context ({})",
         alice_service_id.to_string()
     );
-    let alice_tor_client = Box::new(LegacyTorClient::new(&tor_path, &alice_path)?);
+
     let mut alice = Context::new(alice_tor_client, 420, 420, alice_private_key)?;
     alice.bootstrap()?;
 
@@ -888,14 +909,11 @@ fn test_gosling_context() -> anyhow::Result<()> {
 
     let pat_private_key = Ed25519PrivateKey::generate();
     let pat_service_id = V3OnionServiceId::from_private_key(&pat_private_key);
-    let mut pat_path = std::env::temp_dir();
-    pat_path.push("test_gosling_context_pat");
 
     println!(
         "Starting Pat gosling context ({})",
         pat_service_id.to_string()
     );
-    let pat_tor_client = Box::new(LegacyTorClient::new(&tor_path, &pat_path)?);
     let mut pat = Context::new(pat_tor_client, 420, 420, pat_private_key)?;
     pat.bootstrap()?;
 
