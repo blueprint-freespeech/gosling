@@ -4,7 +4,6 @@ use std::collections::{BTreeMap, HashMap, VecDeque};
 #[cfg(test)]
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpStream;
-use std::path::Path;
 
 // extern crates
 #[cfg(test)]
@@ -12,6 +11,7 @@ use bson::doc;
 use honk_rpc::honk_rpc::*;
 #[cfg(test)]
 use serial_test::serial;
+#[cfg(test)]
 use tor_interface::legacy_tor_client::*;
 use tor_interface::tor_crypto::*;
 use tor_interface::tor_provider::*;
@@ -31,7 +31,7 @@ pub type HandshakeHandle = usize;
 //
 pub struct Context {
     // our tor instance
-    tor_manager: LegacyTorClient,
+    tor_provider: Box<dyn TorProvider>,
     bootstrap_complete: bool,
     identity_port: u16,
     endpoint_port: u16,
@@ -221,18 +221,15 @@ pub enum ContextEvent {
 
 impl Context {
     pub fn new(
-        tor_bin_path: &Path,
-        tor_working_directory: &Path,
+        tor_provider: Box<dyn TorProvider>,
         identity_port: u16,
         endpoint_port: u16,
         identity_private_key: Ed25519PrivateKey,
     ) -> Result<Self, Error> {
-        let tor_manager = LegacyTorClient::new(tor_bin_path, tor_working_directory)?;
-
         let identity_service_id = V3OnionServiceId::from_private_key(&identity_private_key);
 
         Ok(Self {
-            tor_manager,
+            tor_provider,
             bootstrap_complete: false,
             identity_port,
             endpoint_port,
@@ -252,7 +249,7 @@ impl Context {
     }
 
     pub fn bootstrap(&mut self) -> Result<(), Error> {
-        self.tor_manager.bootstrap()?;
+        self.tor_provider.bootstrap()?;
         Ok(())
     }
 
@@ -276,7 +273,7 @@ impl Context {
 
         // open tcp stream to remove ident server
         let stream = self
-            .tor_manager
+            .tor_provider
             .connect(&identity_server_id, self.identity_port, None)?;
         stream.set_nonblocking(true)?;
         let client_rpc = Session::new(stream.try_clone()?, stream);
@@ -334,7 +331,7 @@ impl Context {
         }
 
         let identity_listener =
-            self.tor_manager
+            self.tor_provider
                 .listener(&self.identity_private_key, self.identity_port, None)?;
         identity_listener.set_nonblocking(true)?;
 
@@ -409,10 +406,10 @@ impl Context {
             return Err(Error::TorNotConnected());
         }
 
-        self.tor_manager
+        self.tor_provider
             .add_client_auth(&endpoint_server_id, &client_auth_key)?;
         let stream = self
-            .tor_manager
+            .tor_provider
             .connect(&endpoint_server_id, self.endpoint_port, None)?;
         stream.set_nonblocking(true)?;
         let client_rpc = Session::new(stream.try_clone()?, stream.try_clone()?);
@@ -452,7 +449,7 @@ impl Context {
         if !self.bootstrap_complete {
             return Err(Error::TorNotConnected());
         }
-        let endpoint_listener = self.tor_manager.listener(
+        let endpoint_listener = self.tor_provider.listener(
             &endpoint_private_key,
             self.endpoint_port,
             Some(&[client_auth]),
@@ -606,7 +603,7 @@ impl Context {
         // the response) and a failure to read async events which is either again a parsing
         // bug on our end or a malformed/buggy tor daemon which we also cannot recover
         // from.
-        for event in self.tor_manager.update()?.drain(..) {
+        for event in self.tor_provider.update()?.drain(..) {
             match event {
                 TorEvent::BootstrapStatus {
                     progress,
@@ -861,7 +858,8 @@ fn test_gosling_context() -> anyhow::Result<()> {
         "Starting Alice gosling context ({})",
         alice_service_id.to_string()
     );
-    let mut alice = Context::new(&tor_path, &alice_path, 420, 420, alice_private_key)?;
+    let alice_tor_client = Box::new(LegacyTorClient::new(&tor_path, &alice_path)?);
+    let mut alice = Context::new(alice_tor_client, 420, 420, alice_private_key)?;
     alice.bootstrap()?;
 
     let mut bootstrap_complete = false;
@@ -897,7 +895,8 @@ fn test_gosling_context() -> anyhow::Result<()> {
         "Starting Pat gosling context ({})",
         pat_service_id.to_string()
     );
-    let mut pat = Context::new(&tor_path, &pat_path, 420, 420, pat_private_key)?;
+    let pat_tor_client = Box::new(LegacyTorClient::new(&tor_path, &pat_path)?);
+    let mut pat = Context::new(pat_tor_client, 420, 420, pat_private_key)?;
     pat.bootstrap()?;
 
     let mut bootstrap_complete = false;

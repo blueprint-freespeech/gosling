@@ -62,7 +62,7 @@ pub enum Error {
     TorCrypto(#[from] tor_interface::tor_crypto::Error),
 
     #[error(transparent)]
-    LegacyTorClient(#[from] tor_interface::legacy_tor_client::Error),
+    TorProvider(#[from] tor_interface::tor_provider::Error),
 
     #[error(transparent)]
     IdentityClientError(#[from] identity_client::Error),

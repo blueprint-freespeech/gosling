@@ -1,4 +1,5 @@
 // standard
+use std::boxed::Box;
 use std::collections::VecDeque;
 use std::ffi::CString;
 use std::io::Cursor;
@@ -18,6 +19,7 @@ use std::sync::Mutex;
 use anyhow::anyhow;
 use anyhow::bail;
 use gosling::context::*;
+use tor_interface::legacy_tor_client::*;
 use tor_interface::tor_crypto::*;
 
 // internal crates
@@ -950,9 +952,9 @@ pub extern "C" fn gosling_context_init(
             };
 
         // construct context
+        let tor_client = LegacyTorClient::new(&tor_bin_path, tor_working_directory)?;
         let context = Context::new(
-            &tor_bin_path,
-            tor_working_directory,
+            Box::new(tor_client),
             identity_port,
             endpoint_port,
             identity_private_key.clone(),
