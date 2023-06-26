@@ -53,3 +53,7 @@ lint: debug
 docs: release
 	@$(MAKE) gosling_cargo_doc -C out/release
 	@$(MAKE) gosling_ffi_doxygen -C out/release
+
+# build test code coverage report
+coverage: debug
+	@$(MAKE) gosling_cargo_tarpaulin -C out/debug
