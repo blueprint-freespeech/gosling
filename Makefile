@@ -57,3 +57,7 @@ docs: release
 # build test code coverage report
 coverage: debug
 	@$(MAKE) gosling_cargo_tarpaulin -C out/debug
+
+# build test code coverge report using only the mock tor backend
+coverage-offline: debug
+	@$(MAKE) gosling_cargo_tarpaulin_offline -C out/debug
