@@ -1,34 +1,72 @@
 .DEFAULT_GOAL := debug
 
-# build debug target
-debug:
-	mkdir -p out/debug
-	cd out/debug && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ../../source/
-	@$(MAKE) -C out/debug
-
-# build release target
-release:
-	mkdir -p out/release
-	cd out/release && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ../../source/
-	@$(MAKE) -C out/release
-
-# build and run debug target tests
-test:
-	mkdir -p out/debug
-	cd out/debug && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug ../../source/
-	@$(MAKE) test -C out/debug
-
-test-debug: test
-
-# build and run release target tests
-test-release:
-	mkdir -p out/release
-	cd out/release && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo ../../source/
-	@$(MAKE) test -C out/release
-
 # delete all build artifacts
 clean:
 	rm -rf out
+
+# cmake debug config
+config-debug:
+	mkdir -p out/debug
+	cd out/debug && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ../../source/
+
+# cmake release config
+config-release:
+	mkdir -p out/release
+	cd out/release && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ../../source/
+# build debug target
+debug: config-debug
+	@$(MAKE) -C out/debug
+
+# build release target
+release: config-release
+	@$(MAKE) -C out/release
+
+# build and run debug target tests
+test-debug: config-debug
+	# test each of our crates
+	@$(MAKE) honk_rpc_cargo_test -C out/debug
+	@$(MAKE) tor_interface_cargo_test -C out/debug
+	@$(MAKE) gosling_cargo_test -C out/debug
+	@$(MAKE) gosling_ffi_cargo_test -C out/debug
+	@$(MAKE) gosling_functional_test -C out/debug
+	@$(MAKE) gosling_unit_test -C out/debug
+
+
+# build and run release target tests
+test-release: config-release
+	# test each of our crates
+	@$(MAKE) honk_rpc_cargo_test -C out/release
+	@$(MAKE) tor_interface_cargo_test -C out/release
+	@$(MAKE) gosling_cargo_test -C out/release
+	@$(MAKE) gosling_ffi_cargo_test -C out/release
+	@$(MAKE) gosling_functional_test -C out/release
+	@$(MAKE) gosling_unit_test -C out/release
+
+# debug tests which do not require access to the tor network
+test-offline-debug: config-debug
+	# test each of our crates
+	@$(MAKE) honk_rpc_cargo_test -C out/debug
+	@$(MAKE) tor_interface_cargo_test_offline -C out/debug
+	@$(MAKE) gosling_cargo_test_offline -C out/debug
+	@$(MAKE) gosling_ffi_cargo_test -C out/debug
+	@$(MAKE) gosling_unit_test -C out/debug
+
+# release tests which do not require access to the tor network
+test-offline-release: config-release
+	# test each of our crates
+	@$(MAKE) honk_rpc_cargo_test -C out/release
+	@$(MAKE) tor_interface_cargo_test_offline -C out/release
+	@$(MAKE) gosling_cargo_test_offline -C out/release
+	@$(MAKE) gosling_ffi_cargo_test -C out/release
+	@$(MAKE) gosling_unit_test -C out/release
+
+# build test code coverage report
+coverage: config-debug
+	@$(MAKE) gosling_cargo_tarpaulin -C out/debug
+
+# build test code coverge report using only the mock tor backend
+coverage-offline: config-debug
+	@$(MAKE) gosling_cargo_tarpaulin_offline -C out/debug
 
 # format Rust code with cargo fmt and C++ code with clang-format
 format:
@@ -50,14 +88,7 @@ lint: debug
 		-isource/sans-catch2
 
 # build programmer documentation
-docs: release
+docs: config-release
 	@$(MAKE) gosling_cargo_doc -C out/release
 	@$(MAKE) gosling_ffi_doxygen -C out/release
 
-# build test code coverage report
-coverage: debug
-	@$(MAKE) gosling_cargo_tarpaulin -C out/debug
-
-# build test code coverge report using only the mock tor backend
-coverage-offline: debug
-	@$(MAKE) gosling_cargo_tarpaulin_offline -C out/debug

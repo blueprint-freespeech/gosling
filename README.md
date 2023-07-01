@@ -31,7 +31,7 @@ Cargo will automatically download and build the required Rust crates. The list o
 
 The **format** make target has the following additional dependencies:
 
-- clang-format
+- [clang-format](https://clang.llvm.org/docs/ClangFormat.html)
 
 The **lint** make target has the following additional dependencies:
 
@@ -41,6 +41,10 @@ The **lint** make target has the following additional dependencies:
 The **docs** make target has the following additional dependencies:
 
 - [doxygen](https://www.doxygen.nl/)
+
+The **coverage-** make targets have the following additional dependencies:
+
+- [cargo-tarpaulin](https://crates.io/crates/cargo-tarpaulin)
 
 The documentation has the following build dependencies:
 
@@ -59,13 +63,19 @@ $ git submodule update --init
 
 The following make targets are supported:
 
-- **debug** - corresponds to the **Debug** CMake build type: no optimization, asserts enabled, debug symbols generated; bulid artifacts placed in out/debug
-- **release** - corresponds to the **RelWithDebInfo** CMake build type: optimize for speed, asserts disabled, debug symbols generated; build artifacts placed in out/release
-- **test-debug** - builds debug target and runs all tests
-- **test-release** - builds release target and runs all tests
+- **clean** - deletes all build artifacts in `out` directory
+- **config-debug** - builds Makefiles for the **Debug** CMake build type: no optimization, asserts enabled, debug symbols generated; bulid artifacts placed in `out/debug`
+- **config-release** - builds Makefile for the **RelWithDebInfo** CMake build type: optimize for speed, asserts disabled, debug symbols generated; build artifacts placed in `out/release`
+- **debug** - builds debug version of the gosling library
+- **release** - builds release version of the gosling library
+- **test-debug** - builds and runs debug versions of all tests
+- **test-release** - builds and runs release versions of all tests
+- **test-offline-debug** - builds and runs debug versions of only tests which do not need access to the internet
+- **test-offline-release** - builds and runs release versions of only tests which do not need access to the internet
+- **coverage** - generates test code coverage of all crates using `cargo-tarpaulin` crate
+- **coverage-offline** - generates offline test code coverage of all crates using `cargo-tarpulin` crate
 - **format** - runs `cargo fmt` on Rust source and `clang-format` on the C++ source
 - **lint** - runs `cargo clippy` on the Rust source and `cppcheck` on the C++ source
-- **clean** - deletes build artifacts
 
 Further information about CMake build types can be found in the CMake documentation:
 - https://cmake.org/cmake/help/v3.16/variable/CMAKE_BUILD_TYPE.html

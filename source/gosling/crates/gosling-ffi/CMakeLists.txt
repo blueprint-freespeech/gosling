@@ -36,15 +36,6 @@ if(WINDOWS)
     target_link_libraries(gosling_ffi INTERFACE userenv)
 endif()
 
-# test target
-add_test(NAME gosling_ffi_test
-    COMMAND cargo test ${CARGO_FLAGS}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-)
-set_tests_properties(gosling_ffi_test
-    PROPERTIES ENVIRONMENT "RUSTFLAGS=${RUSTFLAGS};CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR};RUST_BACKTRACE=full"
-)
-
 # doxygen target
 set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
 set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
@@ -53,4 +44,11 @@ configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
 add_custom_target(gosling_ffi_doxygen
     COMMAND doxygen ${DOXYGEN_OUT}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+add_dependencies(gosling_ffi_doxygen gosling_ffi_target)
+
+# test target
+add_custom_target(gosling_ffi_cargo_test
+    COMMAND RUSTFLAGS=${RUSTFLAGS} CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR} RUST_BACKTRACE=full cargo test ${CARGO_FLAGS}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
