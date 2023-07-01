@@ -18,6 +18,8 @@ project(gosling)
 
 # toggle to enable debug spew
 set(CMAKE_VERBOSE_MAKEFILE on)
+# enable link-time optimization
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 
 add_subdirectory(gosling)
 add_subdirectory(Catch2)
