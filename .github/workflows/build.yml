@@ -1,0 +1,36 @@
+name: build
+
+on: [push]
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Gosling
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libboost-all-dev
+      - name: Build Debug
+        run: |
+          make debug
+      - name: Archive Debug
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-debug
+          path: |
+            out/debug/gosling/crates/gosling-ffi/debug/libgoslingffi.a
+            out/debug/gosling/crates/gosling-ffi/include/libgosling.h
+      - name: Build Release
+        run: |
+          make release
+      - name: Archive Release
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-release
+          path: |
+            out/release/gosling/crates/gosling-ffi/release/libgoslingffi.a
+            out/release/gosling/crates/gosling-ffi/include/libgosling.h
