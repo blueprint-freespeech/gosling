@@ -81,4 +81,33 @@ jobs:
           path: |
             out/release/gosling/crates/gosling-ffi/release/libgoslingffi.a
             out/release/gosling/crates/gosling-ffi/include/libgosling.h
-
+  macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Gosling
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install Dependencies
+        run: |
+          brew install boost
+      - name: Build Debug
+        run: |
+          make debug
+      - name: Archive Debug
+        uses: actions/upload-artifact@v3
+        with:
+          name: macos-debug
+          path: |
+            out/debug/gosling/crates/gosling-ffi/debug/libgoslingffi.a
+            out/debug/gosling/crates/gosling-ffi/include/libgosling.h
+      - name: Build Release
+        run: |
+          make release
+      - name: Archive Release
+        uses: actions/upload-artifact@v3
+        with:
+          name: macos-release
+          path: |
+            out/release/gosling/crates/gosling-ffi/release/libgoslingffi.a
+            out/release/gosling/crates/gosling-ffi/include/libgosling.h
