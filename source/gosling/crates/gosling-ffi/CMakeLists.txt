@@ -32,8 +32,9 @@ endif()
 
 if(WINDOWS)
     target_link_libraries(gosling_ffi INTERFACE ws2_32)
-    target_link_libraries(gosling_ffi INTERFACE bcrypt)
     target_link_libraries(gosling_ffi INTERFACE userenv)
+    target_link_libraries(gosling_ffi INTERFACE bcrypt)
+    target_link_libraries(gosling_ffi INTERFACE ntoskrnl)
 endif()
 
 # doxygen target
