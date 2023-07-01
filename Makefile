@@ -75,8 +75,8 @@ format:
 	cd source/test/unit && clang-format -i *.cpp *.hpp
 
 # line Rust code with cargo clippy and C++ code with clang-tidy
-lint: debug
-	cd source/gosling && cargo clippy
+lint: config-debug
+	@$(MAKE) gosling_cargo_clippy -C out/debug
 	jq 'del(.[]|select(.directory|test("Catch2/src$$")))' out/debug/compile_commands.json > out/debug/compile_commands.sans-catch2.json
 	cppcheck\
 		--enable=all\
