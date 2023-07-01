@@ -14,10 +14,6 @@ if(WIN32)
     set(WINDOWS TRUE)
 endif()
 
-# enable tests
-enable_testing()
-list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
-
 project(gosling)
 
 # toggle to enable debug spew
