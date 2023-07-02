@@ -61,12 +61,12 @@ test-offline-release: config-release
 	@$(MAKE) gosling_unit_test -C out/release
 
 # build test code coverage report
-coverage: config-debug
-	@$(MAKE) gosling_cargo_tarpaulin -C out/debug
+coverage: config-release
+	@$(MAKE) gosling_cargo_tarpaulin -C out/release
 
 # build test code coverge report using only the mock tor backend
-coverage-offline: config-debug
-	@$(MAKE) gosling_cargo_tarpaulin_offline -C out/debug
+coverage-offline: config-release
+	@$(MAKE) gosling_cargo_tarpaulin_offline -C out/release
 
 # format Rust code with cargo fmt and C++ code with clang-format
 format:
