@@ -1,0 +1,72 @@
+name: test
+
+on: [push, pull_request]
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Gosling
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libboost-all-dev
+      - name: Test Debug
+        run: |
+          make test-offline-debug
+      - name: Test Release
+        run: |
+          make test-offline-release
+
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Checkout Gosling
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install Dependencies
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: clang64
+          update: true
+          install: >-
+            make
+            mingw-w64-clang-x86_64-cmake
+            mingw-w64-clang-x86_64-clang
+            mingw-w64-clang-x86_64-boost
+      - name: Configure Rust
+        run: |
+          PATH=$(cygpath $USERPROFILE)/.cargo/bin:$PATH
+          rustup default stable-x86_64-pc-windows-gnu
+      - name: Test Debug
+        run: |
+          PATH=$(cygpath $USERPROFILE)/.cargo/bin:$PATH
+          make test-offline-debug
+      - name: Test Release
+        run: |
+          PATH=$(cygpath $USERPROFILE)/.cargo/bin:$PATH
+          make test-offline-release
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Gosling
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install Dependencies
+        run: |
+          brew install boost
+      - name: Test Debug
+        run: |
+          make test-offline-debug
+      - name: Test Release
+        run: |
+          make test-offline-release
