@@ -1,6 +1,6 @@
 name: build
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   linux:
@@ -34,6 +34,7 @@ jobs:
           path: |
             out/release/gosling/crates/gosling-ffi/release/libgoslingffi.a
             out/release/gosling/crates/gosling-ffi/include/libgosling.h
+
   windows:
     runs-on: windows-latest
     defaults:
@@ -81,6 +82,7 @@ jobs:
           path: |
             out/release/gosling/crates/gosling-ffi/release/libgoslingffi.a
             out/release/gosling/crates/gosling-ffi/include/libgosling.h
+
   macos:
     runs-on: macos-latest
     steps:
