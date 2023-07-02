@@ -13,7 +13,7 @@ target_link_libraries(gosling_functional PRIVATE Catch2::Catch2WithMain)
 target_compile_features(gosling_functional PRIVATE cxx_std_17)
 
 add_custom_target(gosling_functional_test
-    COMMAND ./gosling_functional
+    COMMAND gosling_functional
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 add_dependencies(gosling_functional_test gosling_functional)
