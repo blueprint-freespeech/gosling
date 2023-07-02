@@ -32,6 +32,7 @@ jobs:
           mv out/release/gosling/crates/doc pages/gosling
           mv out/release/gosling/tarpaulin-offline pages/coverage
           ln -s tarpaulin-report.html pages/coverage/index.html
+          cp source/pages/index.xhtml pages/index.xhtml
       - name: Deploy to Github Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
