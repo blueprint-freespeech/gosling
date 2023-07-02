@@ -71,6 +71,7 @@ coverage-offline: config-debug
 # format Rust code with cargo fmt and C++ code with clang-format
 format:
 	cd source/gosling && cargo fmt
+	cd source/gosling/crates/gosling-ffi && clang-format -i libgosling.hpp
 	cd source/test/functional && clang-format -i *.cpp *.hpp
 	cd source/test/unit && clang-format -i *.cpp *.hpp
 
