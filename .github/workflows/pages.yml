@@ -1,0 +1,39 @@
+name: pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Gosling
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libboost-all-dev
+          cargo install cargo-tarpaulin
+          sudo apt-get install -y doxygen
+      - name: Build Docs
+        run: |
+          make docs
+      - name: Build Code Coverage
+        run: |
+          make coverage-offline
+      - name: Move Outputs
+        run: |
+          mkdir pages
+          mv out/release/gosling/crates/gosling-ffi/html pages/gosling-ffi
+          mv out/release/gosling/crates/doc pages/gosling
+          mv out/release/gosling/tarpaulin-offline pages/coverage
+          ln -s tarpaulin-report.html pages/coverage/index.html
+      - name: Deploy to Github Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: pages
