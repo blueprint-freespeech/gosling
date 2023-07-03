@@ -7,6 +7,8 @@ use std::net::TcpStream;
 
 // extern crates
 #[cfg(test)]
+use anyhow::bail;
+#[cfg(test)]
 use bson::doc;
 use honk_rpc::honk_rpc::*;
 #[cfg(test)]
@@ -28,6 +30,7 @@ use crate::identity_server::*;
 
 /// cbindgen:ignore
 pub type HandshakeHandle = usize;
+pub const INVALID_HANDSHAKE_HANDLE: HandshakeHandle = !0usize;
 //
 // The root Gosling Context object
 //
@@ -51,8 +54,9 @@ pub struct Context {
     // Listeners for incoming connections
     //
     identity_listener: Option<OnionListener>,
-    // maps the endpoint service id to the enpdoint name, alowed client, onion listener tuple
-    endpoint_listeners: HashMap<V3OnionServiceId, (String, V3OnionServiceId, OnionListener)>,
+    identity_server_published: bool,
+    // maps the endpoint service id to the (enpdoint name, alowed client, onion listener tuple, published)
+    endpoint_listeners: HashMap<V3OnionServiceId, (String, V3OnionServiceId, OnionListener, bool)>,
 
     //
     // Server Config Data
@@ -243,6 +247,7 @@ impl Context {
             endpoint_servers: Default::default(),
 
             identity_listener: None,
+            identity_server_published: false,
             endpoint_listeners: Default::default(),
 
             identity_private_key,
@@ -348,8 +353,10 @@ impl Context {
             ));
         }
 
-        // clear out current identduciton listener
+        // clear out current identity listener
         self.identity_listener = None;
+        // clear out published flag
+        self.identity_server_published = false;
         // clear out any in-process identity handshakes
         self.identity_servers = Default::default();
         Ok(())
@@ -463,7 +470,7 @@ impl Context {
 
         self.endpoint_listeners.insert(
             endpoint_service_id,
-            (endpoint_name, client_identity, endpoint_listener),
+            (endpoint_name, client_identity, endpoint_listener, false),
         );
         Ok(())
     }
@@ -574,7 +581,7 @@ impl Context {
 
         // next handle new endpoint connections
         self.endpoint_listeners.retain(
-            |endpoint_service_id, (_endpoint_name, allowed_client, listener)| -> bool {
+            |endpoint_service_id, (_endpoint_name, allowed_client, listener, _published)| -> bool {
                 match Self::endpoint_server_handle_accept(
                     listener,
                     allowed_client,
@@ -627,14 +634,21 @@ impl Context {
                 }
                 TorEvent::OnionServicePublished { service_id } => {
                     if service_id == self.identity_service_id {
-                        events.push_back(ContextEvent::IdentityServerPublished);
-                    } else if let Some((endpoint_name, _, _)) =
-                        self.endpoint_listeners.get(&service_id)
+                        if !self.identity_server_published {
+                            events.push_back(ContextEvent::IdentityServerPublished);
+                            self.identity_server_published = true;
+                        }
+                    } else if let Some((endpoint_name, _, _, published)) =
+                        self.endpoint_listeners.get_mut(&service_id)
                     {
-                        events.push_back(ContextEvent::EndpointServerPublished {
-                            endpoint_service_id: service_id,
-                            endpoint_name: endpoint_name.clone(),
-                        });
+                        // ingore duplicate publish events
+                        if !*published {
+                            events.push_back(ContextEvent::EndpointServerPublished {
+                                endpoint_service_id: service_id,
+                                endpoint_name: endpoint_name.clone(),
+                            });
+                            *published = true;
+                        }
                     }
                 }
             }
@@ -873,6 +887,8 @@ fn gosling_context_test(
     alice_tor_client: Box<dyn TorProvider>,
     pat_tor_client: Box<dyn TorProvider>,
 ) -> anyhow::Result<()> {
+
+    // Bootstrap Alice
     let alice_private_key = Ed25519PrivateKey::generate();
     let alice_service_id = V3OnionServiceId::from_private_key(&alice_private_key);
 
@@ -908,6 +924,7 @@ fn gosling_context_test(
         }
     }
 
+    // Bootstrap Pat
     let pat_private_key = Ed25519PrivateKey::generate();
     let pat_service_id = V3OnionServiceId::from_private_key(&pat_private_key);
 
@@ -942,252 +959,373 @@ fn gosling_context_test(
         }
     }
 
-    println!("Starting Alice identity server");
+    // Start the Alice identity server
+    println!("Alice identity server starting");
     alice.identity_server_start()?;
+    let mut alice_identity_published: bool = false;
 
-    println!("------------ Begin event loop ------------ ");
-
-    let mut identity_retries_remaining = 3;
-    let mut endpoint_retries_remaining = 3;
-    let mut identity_published = false;
-    let mut endpoint_published = false;
-    let mut saved_endpoint_service_id: Option<V3OnionServiceId> = None;
-    let mut saved_endpoint_client_auth_key: Option<X25519PrivateKey> = None;
-
-    let mut alice_server_socket: Option<TcpStream> = None;
-    let mut pat_client_socket: Option<TcpStream> = None;
-    let mut pat_identity_handshake_handle: usize = !0usize;
-    let mut pat_endpoint_handshake_handle: usize = !0usize;
-
-    while alice_server_socket.is_none() || pat_client_socket.is_none() {
-        // update alice
-        let mut events = alice.update()?;
-        for event in events.drain(..) {
+    while !alice_identity_published {
+        for event in alice.update()?.drain(..) {
             match event {
                 ContextEvent::IdentityServerPublished => {
-                    if !identity_published {
-                        println!("Alice: identity server published");
-
-                        // alice has published the identity server, so pat may now request an endpoint
-                        match pat.identity_client_begin_handshake(
-                            alice_service_id.clone(),
-                            "test_endpoint".to_string(),
-                        ) {
-                            Ok(handle) => {
-                                identity_published = true;
-                                pat_identity_handshake_handle = handle;
-                            }
-                            Err(err) => {
-                                println!(
-                                    "Pat: failed to connect to Alice's identity server\n {:?}",
-                                    err
-                                );
-                                identity_retries_remaining -= 1;
-                                if identity_retries_remaining == 0 {
-                                    panic!("Pat: no more retries remaining");
-                                }
-                            }
-                        }
-                    }
+                    alice_identity_published = true;
+                    println!("Alice identity server published");
+                },
+                _ => {
+                    bail!("alice.update() returned unexpected event");
                 }
-                ContextEvent::EndpointServerPublished {
-                    endpoint_service_id,
-                    endpoint_name,
-                } => {
-                    if !endpoint_published {
-                        println!("Alice: endpoint server published");
-                        println!(" endpoint_service_id: {}", endpoint_service_id.to_string());
-                        println!(" endpoint_name: {}", endpoint_name);
-
-                        if let Some(saved_endpoint_service_id) = saved_endpoint_service_id.as_ref()
-                        {
-                            assert!(*saved_endpoint_service_id == endpoint_service_id);
-                        }
-
-                        match pat.endpoint_client_begin_handshake(
-                            saved_endpoint_service_id.clone().unwrap(),
-                            saved_endpoint_client_auth_key.clone().unwrap(),
-                            "test_channel".to_string(),
-                        ) {
-                            Ok(handle) => {
-                                endpoint_published = true;
-                                pat_endpoint_handshake_handle = handle;
-                            }
-                            Err(err) => {
-                                println!(
-                                    "Pat: failed to connect to Alice's endpoint server\n {:?}",
-                                    err
-                                );
-                                endpoint_retries_remaining -= 1;
-                                if endpoint_retries_remaining == 0 {
-                                    panic!("Pat: no more retries remaining");
-                                }
-                            }
-                        }
-                    }
-                }
-                ContextEvent::IdentityServerHandshakeStarted { handle } => {
-                    println!("Alice: client connected");
-                    println!(" handle: {}", handle);
-                }
-                ContextEvent::IdentityServerEndpointRequestReceived {
-                    handle,
-                    client_service_id,
-                    requested_endpoint,
-                } => {
-                    println!("Alice: endpoint request received");
-                    println!(" handle: {}", handle);
-                    println!(" client_service_id: {}", client_service_id.to_string());
-                    println!(" requested_endpoint: {}", requested_endpoint);
-                    // auto accept endpoint request, send empty challenge
-                    alice.identity_server_handle_endpoint_request_received(
-                        handle,
-                        true,
-                        true,
-                        doc! {},
-                    )?;
-                }
-                ContextEvent::IdentityServerChallengeResponseReceived {
-                    handle,
-                    challenge_response,
-                } => {
-                    println!("Alice: challenge response received");
-                    println!(" handle: {}", handle);
-                    println!(" challenge_response: {}", challenge_response);
-                    // auto accept challenge response
-                    alice.identity_server_handle_challenge_response_received(handle, true)?;
-                }
-                ContextEvent::IdentityServerHandshakeCompleted {
-                    handle,
-                    endpoint_private_key,
-                    endpoint_name,
-                    client_service_id,
-                    client_auth_public_key,
-                } => {
-                    println!("Alice: endpoint request handled");
-                    println!(" handle: {}", handle);
-                    println!(
-                        " endpoint_service_id: {}",
-                        V3OnionServiceId::from_private_key(&endpoint_private_key).to_string()
-                    );
-                    println!(" endpoint: {}", endpoint_name);
-                    println!(" client: {}", client_service_id.to_string());
-
-                    // server handed out endpoint server info, so start the endpoint server
-                    alice.endpoint_server_start(
-                        endpoint_private_key,
-                        endpoint_name,
-                        client_service_id,
-                        client_auth_public_key,
-                    )?;
-                }
-                ContextEvent::EndpointServerHandshakeStarted { handle } => {
-                    println!("Alice: endpoint handshake started");
-                    println!(" handle: {}", handle);
-                }
-                ContextEvent::EndpointServerChannelRequestReceived {
-                    handle,
-                    requested_channel,
-                } => {
-                    println!("Alice: endpoint channel request received");
-                    println!(" requested_channel: {}", requested_channel);
-                    let channel_supported: bool = true;
-                    alice.endpoint_server_handle_channel_request_received(
-                        handle,
-                        channel_supported,
-                    )?;
-                }
-                ContextEvent::EndpointServerHandshakeCompleted {
-                    handle: _,
-                    endpoint_service_id,
-                    client_service_id,
-                    channel_name,
-                    stream,
-                } => {
-                    println!("Alice: endpoint channel accepted");
-                    println!(" endpoint_service_id: {}", endpoint_service_id.to_string());
-                    println!(" client_service_id: {}", client_service_id.to_string());
-                    println!(" channel_name: {}", channel_name);
-                    alice_server_socket = Some(stream);
-                }
-                ContextEvent::TorLogReceived { line } => {
-                    println!("--- ALICE --- {}", line);
-                }
-                _ => panic!("Alice received unexpected event"),
-            }
-        }
-
-        // update pat
-        let mut events = pat.update()?;
-        for event in events.drain(..) {
-            match event {
-                ContextEvent::IdentityClientChallengeReceived {
-                    handle,
-                    endpoint_challenge,
-                } => {
-                    assert!(handle == pat_identity_handshake_handle);
-                    println!("Pat: challenge request received");
-                    println!(" handle: {}", handle);
-                    println!(" endpoint_challenge: {}", endpoint_challenge);
-                    pat.identity_client_handle_challenge_received(handle, doc!())?;
-                }
-                ContextEvent::IdentityClientHandshakeCompleted {
-                    handle,
-                    identity_service_id,
-                    endpoint_service_id,
-                    endpoint_name,
-                    client_auth_private_key,
-                } => {
-                    assert!(handle == pat_identity_handshake_handle);
-                    println!("Pat: endpoint request succeeded");
-                    println!(" handle: {}", handle);
-                    println!(" identity_service_id: {}", identity_service_id.to_string());
-                    println!(" endpoint_service_id: {}", endpoint_service_id.to_string());
-                    println!(" endpoint_name: {}", endpoint_name);
-                    saved_endpoint_service_id = Some(endpoint_service_id);
-                    saved_endpoint_client_auth_key = Some(client_auth_private_key);
-                }
-                ContextEvent::IdentityClientHandshakeFailed { handle, reason } => {
-                    println!("Pat: identity handshake aborted {:?}", reason);
-                    println!(" handle: {}", handle);
-                    println!(" reason: {:?}", reason);
-                    panic!("{}", reason);
-                }
-                ContextEvent::EndpointClientHandshakeCompleted {
-                    handle,
-                    endpoint_service_id,
-                    channel_name,
-                    stream,
-                } => {
-                    assert!(handle == pat_endpoint_handshake_handle);
-                    println!("Pat: endpoint channel opened");
-                    println!(" handle: {}", handle);
-                    println!(" endpoint_service_id: {}", endpoint_service_id.to_string());
-                    println!(" channel_name: {}", channel_name);
-                    pat_client_socket = Some(stream);
-                }
-                ContextEvent::TorLogReceived { line } => {
-                    println!("--- PAT --- {}", line);
-                }
-                _ => panic!("Pat received unexpected event"),
             }
         }
     }
 
-    let alice_server_socket = alice_server_socket.take().unwrap();
-    let mut pat_client_socket = pat_client_socket.take().unwrap();
+    // Pat begins client handshake
+    println!("Pat identity client handshake begin");
+    let mut pat_identity_handshake_handle: HandshakeHandle = INVALID_HANDSHAKE_HANDLE;
+    {
+        let mut pat_identity_handshake_tries_remaining = 3;
+        while pat_identity_handshake_tries_remaining > 0 && pat_identity_handshake_handle == INVALID_HANDSHAKE_HANDLE{
+            match pat.identity_client_begin_handshake(
+                alice_service_id.clone(),
+                "test_endpoint".to_string(),
+            ) {
+                Ok(handle) => {
+                    pat_identity_handshake_handle = handle;
+                }
+                Err(err) => {
+                    println!(
+                        "Pat connecting to Alice's identity server failed with: {:?}",
+                        err
+                    );
+                    pat_identity_handshake_tries_remaining -= 1;
+                }
+            }
+        }
 
-    pat_client_socket.write(b"Hello World!\n")?;
-    pat_client_socket.flush()?;
+        if pat_identity_handshake_tries_remaining == 0 {
+            bail!("pat.identity_client_handshake() failed no more retries remain");
+        }
+    }
 
-    alice_server_socket.set_nonblocking(false)?;
-    let mut alice_reader = BufReader::new(alice_server_socket);
+    // Alice waits for handshake start
+    let mut alice_identity_handshake_handle: HandshakeHandle = INVALID_HANDSHAKE_HANDLE;
+    println!("Alice waits for identity handshake start");
+    {
+        let mut alice_identity_server_endpoint_request_received: bool = false;
+        while !alice_identity_server_endpoint_request_received {
+            for event in alice.update()?.drain(..) {
+                match event {
+                    ContextEvent::IdentityServerHandshakeStarted{handle} => {
+                        alice_identity_handshake_handle = handle;
+                        println!("Pat has connected to Alice identity server");
+                    }
+                    ContextEvent::IdentityServerEndpointRequestReceived{
+                        handle,
+                        client_service_id,
+                        requested_endpoint
+                    } => {
+                        assert_eq!(alice_identity_handshake_handle, handle);
+                        assert_eq!(pat_service_id, client_service_id);
+                        assert_eq!(requested_endpoint, "test_endpoint");
+                        alice_identity_server_endpoint_request_received = true;
+                        println!("Alice receives initial identity handshake request");
+                    }
+                    _ => bail!("alice.update() returned unexpected event")
+                }
+            }
+            for event in pat.update()?.drain(..) {
+                match event {
+                    _ => bail!("pat.update() returned unexpected event")
+                }
+            }
+        }
+    }
+
+    // Alice sends challenge
+    println!("Alice sends identity server challenge");
+    alice.identity_server_handle_endpoint_request_received(
+        alice_identity_handshake_handle,
+        true,
+        true,
+        doc! {})?;
+
+    // Pat responds to challenge
+    println!("Pat waits for server challenge");
+    {
+        let mut pat_identity_client_challenge: Option<bson::document::Document> = None;
+        while pat_identity_client_challenge.is_none() {
+            for event in pat.update()?.drain(..) {
+                match event {
+                    ContextEvent::IdentityClientChallengeReceived{
+                        handle,
+                        endpoint_challenge
+                    } => {
+                        assert_eq!(handle, pat_identity_handshake_handle);
+                        pat_identity_client_challenge = Some(endpoint_challenge);
+                    },
+                    _ => bail!("pat.update() returned unexpected event")
+                }
+            }
+            for event in alice.update()?.drain(..) {
+                match event {
+                    _ => bail!("alice.upate() returned unexpected event")
+                }
+            }
+        }
+
+        println!("Pat responds to challenge");
+        if let Some(challenge) = pat_identity_client_challenge {
+            assert_eq!(challenge, doc!{});
+            // send empty doc in response
+            pat.identity_client_handle_challenge_received(pat_identity_handshake_handle, doc!{})?;
+        } else {
+            bail!("missing pat_identity_client_challenge");
+        }
+    }
+
+    // Alice evaluate challenge response
+    println!("Alice awaits challenge response");
+    {
+        let mut alice_identity_server_challenge_response: Option<bson::document::Document> = None;
+        while alice_identity_server_challenge_response.is_none() {
+            for event in alice.update()?.drain(..) {
+                match event {
+                    ContextEvent::IdentityServerChallengeResponseReceived{
+                        handle,
+                        challenge_response
+                    } => {
+                        assert_eq!(handle, alice_identity_handshake_handle);
+                        alice_identity_server_challenge_response = Some(challenge_response);
+                    }
+                    _ => bail!("alice.update() returned unexepecte event")
+                }
+            }
+            for event in pat.update()?.drain(..) {
+                match event {
+                    _ => bail!("pat.update() returned unexpected event")
+                }
+            }
+        }
+        println!("Alice evaluates challenge response");
+        if let Some(challenge_response) = alice_identity_server_challenge_response {
+            assert_eq!(challenge_response, doc!{});
+            println!("Alice accepts challenge response");
+            alice.identity_server_handle_challenge_response_received(alice_identity_handshake_handle, true)?;
+        } else {
+            bail!("missing challenge response");
+        }
+    }
+
+    // Alice and Pat awaits handshake results
+    println!("Identity handshake completing");
+    let (alice_endpoint_private_key, alice_endpoint_service_id, pat_auth_private_key, pat_auth_public_key) =
+    {
+        let mut alice_endpoint_private_key: Option<Ed25519PrivateKey> = None;
+        let mut alice_endpoint_service_id: Option<V3OnionServiceId> = None;
+        let mut pat_auth_private_key: Option<X25519PrivateKey> = None;
+        let mut pat_auth_public_key: Option<X25519PublicKey> = None;
+
+        let mut pat_identity_client_handshake_completed: bool = false;
+        let mut alice_identity_server_hanshake_completed: bool = false;
+        while !pat_identity_client_handshake_completed || !alice_identity_server_hanshake_completed {
+            for event in alice.update()?.drain(..) {
+                match event {
+                    ContextEvent::IdentityServerHandshakeCompleted {
+                        handle,
+                        endpoint_private_key,
+                        endpoint_name,
+                        client_service_id,
+                        client_auth_public_key,
+                    } => {
+                        assert_eq!(handle, alice_identity_handshake_handle);
+                        alice_endpoint_private_key = Some(endpoint_private_key);
+                        assert_eq!(endpoint_name, "test_endpoint");
+                        assert_eq!(client_service_id, pat_service_id);
+                        pat_auth_public_key = Some(client_auth_public_key);
+                        alice_identity_server_hanshake_completed = true;
+                    }
+                    _ => bail!("alice.update() returned unexpected event")
+                }
+            }
+            for event in pat.update()?.drain(..) {
+                match event {
+                    ContextEvent::IdentityClientHandshakeCompleted {
+                        handle,
+                        identity_service_id,
+                        endpoint_service_id,
+                        endpoint_name,
+                        client_auth_private_key,
+                    } => {
+                        assert_eq!(handle, pat_identity_handshake_handle);
+                        assert_eq!(identity_service_id, alice_service_id);
+                        assert_eq!(endpoint_name, "test_endpoint");
+                        alice_endpoint_service_id = Some(endpoint_service_id);
+                        pat_auth_private_key = Some(client_auth_private_key);
+                        pat_identity_client_handshake_completed = true;
+                    }
+                    _ => bail!("pat.update() returned unexpected event")
+                }
+            }
+        }
+
+        // verify the private key returned by alice matches service id returned by pat
+        assert_eq!(V3OnionServiceId::from_private_key(
+            alice_endpoint_private_key.as_ref().unwrap()),
+            *alice_endpoint_service_id.as_ref().unwrap());
+
+        (alice_endpoint_private_key.unwrap(),
+            alice_endpoint_service_id.unwrap(),
+            pat_auth_private_key.unwrap(),
+            pat_auth_public_key.unwrap())
+    };
+
+    // Alice starts endpoint server
+    println!("Alice endpoint server starting");
+    alice.endpoint_server_start(alice_endpoint_private_key, "test_endpoint".to_string(), pat_service_id.clone(), pat_auth_public_key.clone())?;
+    {
+        let mut alice_endpoint_server_published: bool = false;
+        while !alice_endpoint_server_published {
+            for event in alice.update()?.drain(..) {
+                match event {
+                    ContextEvent::EndpointServerPublished {
+                        endpoint_service_id,
+                        endpoint_name
+                    } => {
+                        assert_eq!(endpoint_service_id, alice_endpoint_service_id);
+                        assert_eq!(endpoint_name, "test_endpoint");
+                        println!("Alice endpoint server published");
+                        alice_endpoint_server_published = true;
+                    }
+                    _ => bail!("alice.update() returned unexpected event")
+                }
+            }
+        }
+    }
+
+    // Pat begins client handshake
+    println!("Pat endpoint client handshake begin");
+    let mut pat_endpoint_handshake_handle: HandshakeHandle = INVALID_HANDSHAKE_HANDLE;
+    {
+        let mut pat_endpoint_handshake_tries_remaining = 3;
+        while pat_endpoint_handshake_tries_remaining > 0 && pat_endpoint_handshake_handle == INVALID_HANDSHAKE_HANDLE {
+            match pat.endpoint_client_begin_handshake(alice_endpoint_service_id.clone(), pat_auth_private_key.clone(), "test_channel".to_string()) {
+                Ok(handle) => {
+                    pat_endpoint_handshake_handle = handle;
+                }
+                Err(err) => {
+                    println!(
+                        "Pat connecting to Alice's identity server failed with:\n{:?}",
+                        err
+                    );
+                    pat_endpoint_handshake_tries_remaining -= 1;
+                }
+            }
+        }
+
+        if pat_endpoint_handshake_tries_remaining == 0 {
+            bail!("pat.endpoint_client_begin_handshake() failed no more retries remain");
+        }
+    }
+
+    // Alice waits for handshake start
+    let mut alice_endpoint_server_handshake_handle: HandshakeHandle = INVALID_HANDSHAKE_HANDLE;
+    println!("Alice waits for endpoint handshake to start");
+    {
+        let mut alice_endpoint_server_request_recieved: bool = false;
+        while !alice_endpoint_server_request_recieved {
+            for event in alice.update()?.drain(..) {
+                match event {
+                    ContextEvent::EndpointServerHandshakeStarted{handle} => {
+                        alice_endpoint_server_handshake_handle = handle;
+                        println!("Pat has connected to Alice endpoint server")
+                    }
+                    ContextEvent::EndpointServerChannelRequestReceived{
+                        handle,
+                        requested_channel,
+                    } => {
+                        assert_eq!(handle, alice_endpoint_server_handshake_handle);
+                        assert_eq!(requested_channel, "test_channel");
+                        alice_endpoint_server_request_recieved = true;
+                        println!("Pat requesting '{0}' endpoint channel", requested_channel);
+                    }
+                    _ => bail!("alice.update() returned unexpected event")
+                }
+            }
+            for event in pat.update()?.drain(..) {
+                match event {
+                    _ => bail!("pat.update() returned unexpected event")
+                }
+            }
+        }
+
+        // Alice sends handshake response
+        println!("Alice sends endpoint handshake response");
+        alice.endpoint_server_handle_channel_request_received(alice_endpoint_server_handshake_handle, true)?;
+    }
+
+    // Alice and Pat await hndshake result
+    println!("Endpoint handshake completing");
+    let (alice_server_stream, mut pat_client_stream) = {
+        let mut alice_server_stream: Option<TcpStream> = None;
+        let mut pat_client_stream: Option<TcpStream> = None;
+
+        let mut pat_endpoint_client_handshake_completed: bool = false;
+        let mut alice_endpoint_server_handshake_completed: bool = false;
+
+        while !pat_endpoint_client_handshake_completed || !alice_endpoint_server_handshake_completed {
+            for event in alice.update()?.drain(..) {
+                match event {
+                    ContextEvent::EndpointServerHandshakeCompleted{
+                        handle,
+                        endpoint_service_id,
+                        client_service_id,
+                        channel_name,
+                        stream
+                    } => {
+                        assert_eq!(handle, alice_endpoint_server_handshake_handle);
+                        assert_eq!(endpoint_service_id, alice_endpoint_service_id);
+                        assert_eq!(client_service_id, pat_service_id);
+                        assert_eq!(channel_name, "test_channel");
+                        alice_server_stream = Some(stream);
+                        alice_endpoint_server_handshake_completed = true;
+                    }
+                    _ => bail!("alice.upate() returned unexepcted event")
+                }
+            }
+            for event in pat.update()?.drain(..) {
+                match event {
+                    ContextEvent::EndpointClientHandshakeCompleted{
+                        handle,
+                        endpoint_service_id,
+                        channel_name,
+                        stream
+                    } => {
+                        assert_eq!(handle, pat_endpoint_handshake_handle);
+                        assert_eq!(endpoint_service_id, alice_endpoint_service_id);
+                        assert_eq!(channel_name, "test_channel");
+                        pat_client_stream = Some(stream);
+                        pat_endpoint_client_handshake_completed = true;
+                    }
+                    _ => bail!("pat.upate() returned unexepcted event")
+                }
+            }
+        }
+        (alice_server_stream.unwrap(), pat_client_stream.unwrap())
+    };
+
+    println!("Endpoint handshake complete, TcpStreams returned");
+
+    pat_client_stream.write(b"Hello World!\n")?;
+    pat_client_stream.flush()?;
+
+    alice_server_stream.set_nonblocking(false)?;
+    let mut alice_reader = BufReader::new(alice_server_stream);
 
     let mut response: String = Default::default();
     alice_reader.read_line(&mut response)?;
 
-    println!("response: '{}'", response);
-    assert!(response == "Hello World!\n");
+    assert_eq!(response, "Hello World!\n");
+
+    println!("TcpStream communication succesful");
 
     Ok(())
 }
