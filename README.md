@@ -17,7 +17,7 @@ Libgosling currently has the following build dependencies:
 
 - rust >= [1.66.0](https://github.com/blueprint-freespeech/gosling/blob/main/source/gosling/Cargo.toml#L6)
 - cargo
-- cmake >= [3.16.6](https://github.com/blueprint-freespeech/gosling/blob/main/source/CMakeLists.txt#L1)
+- cmake >= [3.17](https://github.com/blueprint-freespeech/gosling/blob/main/source/CMakeLists.txt#L1)
 - boost >= [1.66](https://github.com/blueprint-freespeech/gosling/blob/main/source/test/functional/CMakeLists.txt#L1) (for C++ tests)
 
 Cargo will automatically download and build the required Rust crates. The list of current dependencies can be found in each crate's Cargo.toml file:
@@ -28,6 +28,10 @@ Cargo will automatically download and build the required Rust crates. The list o
 - [gosling-ffi](./source/gosling/crates/gosling-ffi/Cargo.toml)
 
 ## Optional Dependencis
+
+The **coverage-** make targets have the following additional dependencies:
+
+- [cargo-tarpaulin](https://crates.io/crates/cargo-tarpaulin)
 
 The **format** make target has the following additional dependencies:
 
@@ -42,9 +46,10 @@ The **docs** make target has the following additional dependencies:
 
 - [doxygen](https://www.doxygen.nl/)
 
-The **coverage-** make targets have the following additional dependencies:
+The **pages** make target has the following additional dependencies:
 
-- [cargo-tarpaulin](https://crates.io/crates/cargo-tarpaulin)
+- [markdown](https://daringfireball.net/projects/markdown/)
+- [mustache](http://mustache.github.io/)
 
 The documentation has the following build dependencies:
 
@@ -57,7 +62,7 @@ The reference implementation is a work-in-progress and the API is not yet fully 
 
 You will need to initialize the git submodules by:
 
-```
+```shell
 $ git submodule update --init
 ```
 
@@ -76,6 +81,8 @@ The following make targets are supported:
 - **coverage-offline** - generates offline test code coverage of all crates using `cargo-tarpulin` crate
 - **format** - runs `cargo fmt` on Rust source and `clang-format` on the C++ source
 - **lint** - runs `cargo clippy` on the Rust source and `cppcheck` on the C++ source
+- **docs** - builds the cargo docs for the crates and the doxygen docs for gosling-ffi
+- **pages** - builds the static website
 
 Further information about CMake build types can be found in the CMake documentation:
 - https://cmake.org/cmake/help/v3.16/variable/CMAKE_BUILD_TYPE.html

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16.6)
+cmake_minimum_required(VERSION 3.17)
 
 # cmake variables reference: https://cmake.org/cmake/help/v3.21/manual/cmake-variables.7.html
 
@@ -24,4 +24,5 @@ set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 add_subdirectory(gosling)
 add_subdirectory(Catch2)
 add_subdirectory(test)
+add_subdirectory(pages)
 

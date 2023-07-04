@@ -31,7 +31,6 @@ test-debug: config-debug
 	@$(MAKE) gosling_functional_test -C out/debug
 	@$(MAKE) gosling_unit_test -C out/debug
 
-
 # build and run release target tests
 test-release: config-release
 	# test each of our crates
@@ -92,4 +91,8 @@ lint: config-debug
 docs: config-release
 	@$(MAKE) gosling_cargo_doc -C out/release
 	@$(MAKE) gosling_ffi_doxygen -C out/release
+
+# build the website
+pages: config-release
+	@$(MAKE) gosling_pages -C out/release
 

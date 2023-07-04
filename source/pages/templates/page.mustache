@@ -1,0 +1,38 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>Gosling - {{ title }}</title>
+  <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="navigation">
+      <div class="logo">
+        <a href="index.xhtml"><img src="images/icon.png" alt="Gosling Icon" /></a>
+      </div>
+      <h2>Navigation</h2>
+      <ul>
+        <li><a href="news.xhtml">News</a></li>
+        <li>Crate Docs
+          <ul>
+            <li><a href="crates/gosling.html">gosling</a></li>
+            <li><a href="crates/tor-interface.html">tor-interface</a></li>
+            <li><a href="crates/honk-rpc.html">honk-rpc</a></li>
+          </ul>
+        </li>
+        <li><a href="libcgosling/doxygen.html">C/C++ Docs</a></li>
+        <li><a href="example.xhtml">Example</a></li>
+      </ul>
+    </div>
+    <div class="content">
+      {{> content }}
+      <hr/>
+      <footer>
+        <p>&copy; 2023 <a href="https://www.blueprintforfreespeech.net">Blueprint for Free Speech</a>. All rights reserved.</p>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>
+
