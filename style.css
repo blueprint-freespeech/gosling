@@ -1,0 +1,24 @@
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  display: flex;
+}
+
+.navigation {
+  width: 196;
+  background-color: #f0f0f0;
+  padding: 0.5em;
+}
+
+.logo {
+  text-align: center;
+  margin-bottom: 1em;
+}
+
+.logo img {
+  width: 100%;
+}
+
