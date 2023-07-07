@@ -2,15 +2,18 @@
 # convert our markdown to html
 #
 
+# list of files to install
+set(install_output)
+
 # our source markdown files
 set(page_sources
     index.md
-    example.md)
+    news.md)
 
 # page titles for each
 set(page_titles
     Gosling
-    Example)
+    News)
 
 # generate xhtml from page.mustache template and markdown
 set(xhtml_output)
@@ -20,8 +23,8 @@ foreach(file_md title IN ZIP_LISTS page_sources page_titles)
     set(file_inc_xhtml "${file}.inc.xhtml")
     add_custom_command(
         OUTPUT ${file_inc_xhtml}
-        COMMAND markdown ${CMAKE_CURRENT_SOURCE_DIR}/content/${file_md} > ${file_inc_xhtml}
-        COMMAND cp ${file_inc_xhtml} content.mustache)
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/content/${file_md}
+        COMMAND markdown ${CMAKE_CURRENT_SOURCE_DIR}/content/${file_md} > ${file_inc_xhtml})
     # create .yml file for title
     set(file_yml "${file}.yml")
     add_custom_command(
@@ -30,12 +33,14 @@ foreach(file_md title IN ZIP_LISTS page_sources page_titles)
     # generate .xhtml from template and sources
     set(file_xhtml "${file}.xhtml")
     add_custom_command(
-        OUTPUT ${file_xhtml}
-        DEPENDS ${file_inc_xhtml} ${file_yml}
+        OUTPUT ${file_xhtml} "${file}.content.mustache"
+        DEPENDS ${file_inc_xhtml} ${file_yml} ${CMAKE_CURRENT_SOURCE_DIR}/templates/page.mustache
+        COMMAND cp ${file_inc_xhtml} content.mustache
         COMMAND mustache ${file_yml} ${CMAKE_CURRENT_SOURCE_DIR}/templates/page.mustache > ${file_xhtml}
         COMMAND mv content.mustache "${file}.content.mustache")
 
     list(APPEND xhtml_output ${file_xhtml})
+    list(APPEND install_output ${CMAKE_CURRENT_BINARY_DIR}/${file_xhtml})
 endforeach()
 
 # files which we will just copy directly
@@ -47,7 +52,9 @@ foreach(file ${copy_sources})
     add_custom_command(
         OUTPUT ${file}
         COMMAND cp -r ${CMAKE_CURRENT_SOURCE_DIR}/${file} ${file})
+
     list(APPEND copy_output ${file})
+    list(APPEND install_output ${CMAKE_CURRENT_BINARY_DIR}/${file})
 endforeach()
 
 add_custom_target(gosling_pages
@@ -55,3 +62,6 @@ add_custom_target(gosling_pages
 )
 
 add_subdirectory(images)
+
+install(FILES ${install_output}
+    DESTINATION pages)

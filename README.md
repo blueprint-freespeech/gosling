@@ -33,6 +33,12 @@ The **coverage-** make targets have the following additional dependencies:
 
 - [cargo-tarpaulin](https://crates.io/crates/cargo-tarpaulin)
 
+The **pages-** make target has the following additional dependencies:
+
+- [markdown](https://daringfireball.net/projects/markdown/)
+- [mustache](http://mustache.github.io/)
+- [doxygen](https://www.doxygen.nl/)
+
 The **format** make target has the following additional dependencies:
 
 - [clang-format](https://clang.llvm.org/docs/ClangFormat.html)
@@ -42,14 +48,6 @@ The **lint** make target has the following additional dependencies:
 - [cppcheck](https://cppcheck.sourceforge.io/)
 - [jq](https://jqlang.github.io/jq/)
 
-The **docs** make target has the following additional dependencies:
-
-- [doxygen](https://www.doxygen.nl/)
-
-The **pages** make target has the following additional dependencies:
-
-- [markdown](https://daringfireball.net/projects/markdown/)
-- [mustache](http://mustache.github.io/)
 
 The documentation has the following build dependencies:
 
@@ -73,16 +71,20 @@ The following make targets are supported:
 - **config-release** - builds Makefile for the **RelWithDebInfo** CMake build type: optimize for speed, asserts disabled, debug symbols generated; build artifacts placed in `out/release`
 - **debug** - builds debug version of the gosling library
 - **release** - builds release version of the gosling library
-- **test-debug** - builds and runs debug versions of all tests
-- **test-release** - builds and runs release versions of all tests
-- **test-offline-debug** - builds and runs debug versions of only tests which do not need access to the internet
-- **test-offline-release** - builds and runs release versions of only tests which do not need access to the internet
-- **coverage** - generates test code coverage of all crates using `cargo-tarpaulin` crate
-- **coverage-offline** - generates offline test code coverage of all crates using `cargo-tarpulin` crate
+- **test-debug** - builds and runs all tests (debug target)
+- **test-release** - builds and runs all tests (release target)
+- **test-offline-debug** - builds and runs only tests which do not need access to the internet (debug target)
+- **test-offline-release** - builds and runs only tests which do not need access to the internet (release target)
+- **coverage-debug** - generates test code coverage of all crates using `cargo-tarpaulin` crate (debug target)
+- **coverage-release** - generates test code coverage of all crates using `cargo-tarpaulin` crate (release target)
+- **coverage-offline-debug** - generates offline test code coverage of all crates using `cargo-tarpulin` crate (debug target)
+- **coverage-offline-debug** - generates offline test code coverage of all crates using `cargo-tarpulin` crate (release target)
+- **pages-debug** - builds the static website (debug target)
+- **pages-release** - builds the static website (release target)
+- **install-debug** - builds code and docs and installs to `dist/debug`
+- **install-release** - builds code and docs and installs to `dist/release`
 - **format** - runs `cargo fmt` on Rust source and `clang-format` on the C++ source
 - **lint** - runs `cargo clippy` on the Rust source and `cppcheck` on the C++ source
-- **docs** - builds the cargo docs for the crates and the doxygen docs for gosling-ffi
-- **pages** - builds the static website
 
 Further information about CMake build types can be found in the CMake documentation:
 - https://cmake.org/cmake/help/v3.16/variable/CMAKE_BUILD_TYPE.html

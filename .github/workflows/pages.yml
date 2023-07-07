@@ -18,23 +18,16 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libboost-all-dev
           cargo install cargo-tarpaulin
-          sudo apt-get install -y doxygen
-      - name: Build Docs
-        run: |
-          make docs
+          sudo apt-get install -y doxygen markdown ruby-mustache
       - name: Build Code Coverage
         run: |
-          make coverage-offline
+          make coverage-offline-release
       - name: Move Outputs
         run: |
-          mkdir pages
-          mv out/release/gosling/crates/gosling-ffi/html pages/gosling-ffi
-          mv out/release/gosling/crates/doc pages/gosling
-          mv out/release/gosling/tarpaulin-offline pages/coverage
-          ln -s tarpaulin-report.html pages/coverage/index.html
-          cp source/pages/index.xhtml pages/index.xhtml
+          make release
+          make install-release
       - name: Deploy to Github Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: pages
+          publish_dir: dist/release/pages

@@ -3,16 +3,21 @@
 # delete all build artifacts
 clean:
 	rm -rf out
+	rm -rf dist
+
+define config
+	mkdir -p out/$(1)
+	cd out/$(1) && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=$(2) -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ../../source/ -DCMAKE_INSTALL_PREFIX=../../dist/$(1)
+endef
 
 # cmake debug config
 config-debug:
-	mkdir -p out/debug
-	cd out/debug && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ../../source/
+	@$(call config,"debug","Debug")
 
 # cmake release config
 config-release:
-	mkdir -p out/release
-	cd out/release && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ../../source/
+	@$(call config,"release","RelWithDebInfo")
+
 # build debug target
 debug: config-debug
 	@$(MAKE) -C out/debug
@@ -21,50 +26,53 @@ debug: config-debug
 release: config-release
 	@$(MAKE) -C out/release
 
+define test
+	@$(MAKE) honk_rpc_cargo_test -C out/$(1)
+	@$(MAKE) tor_interface_cargo_test -C out/$(1)
+	@$(MAKE) gosling_cargo_test -C out/$(1)
+	@$(MAKE) gosling_ffi_cargo_test -C out/$(1)
+	@$(MAKE) gosling_functional_test -C out/$(1)
+	@$(MAKE) gosling_unit_test -C out/$(1)
+endef
+
 # build and run debug target tests
 test-debug: config-debug
-	# test each of our crates
-	@$(MAKE) honk_rpc_cargo_test -C out/debug
-	@$(MAKE) tor_interface_cargo_test -C out/debug
-	@$(MAKE) gosling_cargo_test -C out/debug
-	@$(MAKE) gosling_ffi_cargo_test -C out/debug
-	@$(MAKE) gosling_functional_test -C out/debug
-	@$(MAKE) gosling_unit_test -C out/debug
+	@$(call test,"debug")
 
 # build and run release target tests
 test-release: config-release
-	# test each of our crates
-	@$(MAKE) honk_rpc_cargo_test -C out/release
-	@$(MAKE) tor_interface_cargo_test -C out/release
-	@$(MAKE) gosling_cargo_test -C out/release
-	@$(MAKE) gosling_ffi_cargo_test -C out/release
-	@$(MAKE) gosling_functional_test -C out/release
-	@$(MAKE) gosling_unit_test -C out/release
+	@$(call test,"release")
+
+define test-offline
+	@$(MAKE) honk_rpc_cargo_test -C out/$(1)
+	@$(MAKE) tor_interface_cargo_test_offline -C out/$(1)
+	@$(MAKE) gosling_cargo_test_offline -C out/$(1)
+	@$(MAKE) gosling_ffi_cargo_test -C out/$(1)
+	@$(MAKE) gosling_unit_test -C out/$(1)
+endef
 
 # debug tests which do not require access to the tor network
 test-offline-debug: config-debug
-	# test each of our crates
-	@$(MAKE) honk_rpc_cargo_test -C out/debug
-	@$(MAKE) tor_interface_cargo_test_offline -C out/debug
-	@$(MAKE) gosling_cargo_test_offline -C out/debug
-	@$(MAKE) gosling_ffi_cargo_test -C out/debug
-	@$(MAKE) gosling_unit_test -C out/debug
+	@$(call test-offline,"debug")
 
 # release tests which do not require access to the tor network
 test-offline-release: config-release
-	# test each of our crates
-	@$(MAKE) honk_rpc_cargo_test -C out/release
-	@$(MAKE) tor_interface_cargo_test_offline -C out/release
-	@$(MAKE) gosling_cargo_test_offline -C out/release
-	@$(MAKE) gosling_ffi_cargo_test -C out/release
-	@$(MAKE) gosling_unit_test -C out/release
+	@$(call test-offline,"release")
 
-# build test code coverage report
-coverage: config-release
+# build release test code coverage report
+coverage-debug: config-debug
+	@$(MAKE) gosling_cargo_tarpaulin -C out/debug
+
+# build debug test code coverage report
+coverage-release: config-release
 	@$(MAKE) gosling_cargo_tarpaulin -C out/release
 
-# build test code coverge report using only the mock tor backend
-coverage-offline: config-release
+# build debug test code coverge report using only the mock tor backend
+coverage-offline-debug: config-debug
+	@$(MAKE) gosling_cargo_tarpaulin_offline -C out/debug
+
+# build release test code coverge report using only the mock tor backend
+coverage-offline-release: config-release
 	@$(MAKE) gosling_cargo_tarpaulin_offline -C out/release
 
 # format Rust code with cargo fmt and C++ code with clang-format
@@ -87,12 +95,24 @@ lint: config-debug
 		--project=out/debug/compile_commands.sans-catch2.json\
 		-isource/sans-catch2
 
-# build programmer documentation
-docs: config-release
-	@$(MAKE) gosling_cargo_doc -C out/release
-	@$(MAKE) gosling_ffi_doxygen -C out/release
+define pages
+	@$(MAKE) gosling_cargo_doc -C out/$(1)
+	@$(MAKE) gosling_ffi_doxygen -C out/$(1)
+	@$(MAKE) gosling_pages -C out/$(1)
+endef
 
-# build the website
-pages: config-release
-	@$(MAKE) gosling_pages -C out/release
+# debug build the website, code coverage, c/c++ apis, and rust docs
+pages-debug: config-debug coverage-offline-debug
+	@$(call pages,"debug")
 
+# release build the website, code coverage, c/c++ apis, and rust docs
+pages-release: config-release coverage-offline-release
+	@$(call pages,"release")
+
+# debug build everything and deploy to dist
+install-debug: debug pages-debug
+	@$(MAKE) install -C out/debug
+
+# release build everything and deploy to dist
+install-release: release pages-release
+	@$(MAKE) install -C out/release
