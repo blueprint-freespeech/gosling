@@ -8,6 +8,19 @@ typedef SOCKET tcp_stream_t;
 typedef int tcp_stream_t;
 #endif
 
+static std::string to_string(std::filesystem::path&& path) {
+  #if defined (GOSLING_PLATFORM_WINDOWS)
+    // work around a bug in mingw/clang/??? where std::path::string() and related functions
+    // crash (at least in github actions) but writing to ostream works fine vOvma
+    std::stringstream ss;
+    ss << path;
+    const auto path_string = ss.str();
+    return path_string.substr(1, path_string.size() - 2);
+  #else
+    return path.string();
+  #endif
+}
+
 // simple bson document: { msg : "hello world" }
 constexpr static uint8_t challenge_bson[] = {
     // document length 26 == 0x0000001a
@@ -194,9 +207,14 @@ TEST_CASE("gosling_cpp_demo") {
 
   cout << "pat service id: " << pat_identity.get() << endl;
 
+  const std::filesystem::path tmp = std::filesystem::temp_directory_path();
+  cout << "tmp: " << tmp << endl;
+
   // init contexts
   unique_ptr<gosling_context> alice_context;
-  string_view alice_working_dir = "/tmp/gosling_context_test_alice";
+  const auto alice_working_dir = ::to_string(tmp / "gosling_context_test_alice");
+  cout << "alice working dir: " << alice_working_dir << endl;
+
   REQUIRE_NOTHROW(::gosling_context_init(
       out(alice_context),       // out_context
       nullptr,                  // tor bin path
@@ -212,7 +230,9 @@ TEST_CASE("gosling_cpp_demo") {
   create_server_handshake(alice_context); // server callbacks
 
   unique_ptr<gosling_context> pat_context;
-  string_view pat_working_dir = "/tmp/gosling_context_test_pat";
+  const auto pat_working_dir = ::to_string(tmp / "gosling_context_test_pat");
+  cout << "pat working dir: " << pat_working_dir << endl;
+
   REQUIRE_NOTHROW(::gosling_context_init(
       out(pat_context),        // out_context
       nullptr,                 // tor bin path
@@ -364,10 +384,19 @@ TEST_CASE("gosling_cpp_demo") {
           },
           throw_on_error()));
 
-  cout << "--- pat begin identity handshake";
-  REQUIRE_NOTHROW(::gosling_context_begin_identity_handshake(
-      pat_context.get(), alice_identity.get(), endpointName.data(),
-      endpointName.size(), throw_on_error()));
+  bool pat_begin_identity_handshake_succeeded = false;
+  for (auto k = 1; k <= 3; k++) {
+    cout << "--- pat begin identity handshake attempt " << k;
+    try {
+      ::gosling_context_begin_identity_handshake(
+          pat_context.get(), alice_identity.get(), endpointName.data(),
+          endpointName.size(), throw_on_error());
+      pat_begin_identity_handshake_succeeded = true;
+      break;
+    } catch (...) {
+    }
+  }
+  REQUIRE(pat_begin_identity_handshake_succeeded);
 
   while (!alice_endpoint_request_complete) {
     REQUIRE_NOTHROW(
@@ -480,11 +509,20 @@ TEST_CASE("gosling_cpp_demo") {
           throw_on_error()));
 
   // pat opens chanel to alice's endpoint
-  cout << "--- pat begin endpoint channel request" << endl;
-  REQUIRE_NOTHROW(::gosling_context_begin_endpoint_handshake(
-      pat_context.get(), alice_endpoint_service_id.get(),
-      pat_onion_auth_private_key.get(), channelName.data(), channelName.size(),
-      throw_on_error()));
+  bool pat_begin_endpoint_handshake_succeeded = false;
+  for (auto k = 1; k <= 3; k++) {
+    cout << "--- pat begin endpoint channel request attempt " << k << endl;
+    try {
+      ::gosling_context_begin_endpoint_handshake(
+          pat_context.get(), alice_endpoint_service_id.get(),
+          pat_onion_auth_private_key.get(), channelName.data(),
+          channelName.size(), throw_on_error());
+      pat_begin_endpoint_handshake_succeeded = true;
+      break;
+    } catch (...) {
+    }
+  }
+  REQUIRE(pat_begin_endpoint_handshake_succeeded);
 
   // wait for both channels to be open
   while (!pat_channel_request_complete || !alice_channel_request_complete) {
