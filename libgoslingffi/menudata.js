@@ -23,28 +23,4 @@
  @licend  The above is the entire license notice for the JavaScript code in this file
 */
 var menudata={children:[
-{text:"Main Page",url:"index.html"},
-{text:"Namespaces",url:"namespaces.html",children:[
-{text:"Namespace List",url:"namespaces.html"},
-{text:"Namespace Members",url:"namespacemembers.html",children:[
-{text:"All",url:"namespacemembers.html"},
-{text:"Functions",url:"namespacemembers_func.html"}]}]},
-{text:"Data Structures",url:"annotated.html",children:[
-{text:"Data Structures",url:"annotated.html"},
-{text:"Data Structure Index",url:"classes.html"},
-{text:"Data Fields",url:"functions.html",children:[
-{text:"All",url:"functions.html"},
-{text:"Functions",url:"functions_func.html"}]}]},
-{text:"Files",url:"files.html",children:[
-{text:"File List",url:"files.html"},
-{text:"Globals",url:"globals.html",children:[
-{text:"All",url:"globals.html",children:[
-{text:"e",url:"globals.html#index_e"},
-{text:"g",url:"globals.html#index_g"},
-{text:"v",url:"globals.html#index_v"},
-{text:"x",url:"globals.html#index_x"}]},
-{text:"Functions",url:"globals_func.html",children:[
-{text:"g",url:"globals_func.html#index_g"}]},
-{text:"Typedefs",url:"globals_type.html",children:[
-{text:"g",url:"globals_type.html#index_g"}]},
-{text:"Macros",url:"globals_defs.html"}]}]}]}
+{text:"Main Page",url:"index.html"}]}

@@ -1329,6 +1329,34 @@
 <a href="#1329" id="1329">1329</a>
 <a href="#1330" id="1330">1330</a>
 <a href="#1331" id="1331">1331</a>
+<a href="#1332" id="1332">1332</a>
+<a href="#1333" id="1333">1333</a>
+<a href="#1334" id="1334">1334</a>
+<a href="#1335" id="1335">1335</a>
+<a href="#1336" id="1336">1336</a>
+<a href="#1337" id="1337">1337</a>
+<a href="#1338" id="1338">1338</a>
+<a href="#1339" id="1339">1339</a>
+<a href="#1340" id="1340">1340</a>
+<a href="#1341" id="1341">1341</a>
+<a href="#1342" id="1342">1342</a>
+<a href="#1343" id="1343">1343</a>
+<a href="#1344" id="1344">1344</a>
+<a href="#1345" id="1345">1345</a>
+<a href="#1346" id="1346">1346</a>
+<a href="#1347" id="1347">1347</a>
+<a href="#1348" id="1348">1348</a>
+<a href="#1349" id="1349">1349</a>
+<a href="#1350" id="1350">1350</a>
+<a href="#1351" id="1351">1351</a>
+<a href="#1352" id="1352">1352</a>
+<a href="#1353" id="1353">1353</a>
+<a href="#1354" id="1354">1354</a>
+<a href="#1355" id="1355">1355</a>
+<a href="#1356" id="1356">1356</a>
+<a href="#1357" id="1357">1357</a>
+<a href="#1358" id="1358">1358</a>
+<a href="#1359" id="1359">1359</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::clone::Clone;
 <span class="kw">use </span>std::collections::{BTreeMap, HashMap, VecDeque};
@@ -2218,7 +2246,6 @@
     alice_tor_client: Box&lt;<span class="kw">dyn </span>TorProvider&gt;,
     pat_tor_client: Box&lt;<span class="kw">dyn </span>TorProvider&gt;,
 ) -&gt; anyhow::Result&lt;()&gt; {
-
     <span class="comment">// Bootstrap Alice
     </span><span class="kw">let </span>alice_private_key = Ed25519PrivateKey::generate();
     <span class="kw">let </span>alice_service_id = V3OnionServiceId::from_private_key(<span class="kw-2">&amp;</span>alice_private_key);
@@ -2301,7 +2328,7 @@
                 ContextEvent::IdentityServerPublished =&gt; {
                     alice_identity_published = <span class="bool-val">true</span>;
                     <span class="macro">println!</span>(<span class="string">&quot;Alice identity server published&quot;</span>);
-                },
+                }
                 <span class="kw">_ </span>=&gt; {
                     <span class="macro">bail!</span>(<span class="string">&quot;alice.update() returned unexpected event&quot;</span>);
                 }
@@ -2314,7 +2341,9 @@
     <span class="kw">let </span><span class="kw-2">mut </span>pat_identity_handshake_handle: HandshakeHandle = INVALID_HANDSHAKE_HANDLE;
     {
         <span class="kw">let </span><span class="kw-2">mut </span>pat_identity_handshake_tries_remaining = <span class="number">3</span>;
-        <span class="kw">while </span>pat_identity_handshake_tries_remaining &gt; <span class="number">0 </span>&amp;&amp; pat_identity_handshake_handle == INVALID_HANDSHAKE_HANDLE{
+        <span class="kw">while </span>pat_identity_handshake_tries_remaining &gt; <span class="number">0
+            </span>&amp;&amp; pat_identity_handshake_handle == INVALID_HANDSHAKE_HANDLE
+        {
             <span class="kw">match </span>pat.identity_client_begin_handshake(
                 alice_service_id.clone(),
                 <span class="string">&quot;test_endpoint&quot;</span>.to_string(),
@@ -2345,14 +2374,14 @@
         <span class="kw">while </span>!alice_identity_server_endpoint_request_received {
             <span class="kw">for </span>event <span class="kw">in </span>alice.update()<span class="question-mark">?</span>.drain(..) {
                 <span class="kw">match </span>event {
-                    ContextEvent::IdentityServerHandshakeStarted{handle} =&gt; {
+                    ContextEvent::IdentityServerHandshakeStarted { handle } =&gt; {
                         alice_identity_handshake_handle = handle;
                         <span class="macro">println!</span>(<span class="string">&quot;Pat has connected to Alice identity server&quot;</span>);
                     }
-                    ContextEvent::IdentityServerEndpointRequestReceived{
+                    ContextEvent::IdentityServerEndpointRequestReceived {
                         handle,
                         client_service_id,
-                        requested_endpoint
+                        requested_endpoint,
                     } =&gt; {
                         <span class="macro">assert_eq!</span>(alice_identity_handshake_handle, handle);
                         <span class="macro">assert_eq!</span>(pat_service_id, client_service_id);
@@ -2360,12 +2389,12 @@
                         alice_identity_server_endpoint_request_received = <span class="bool-val">true</span>;
                         <span class="macro">println!</span>(<span class="string">&quot;Alice receives initial identity handshake request&quot;</span>);
                     }
-                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;alice.update() returned unexpected event&quot;</span>)
+                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;alice.update() returned unexpected event&quot;</span>),
                 }
             }
             <span class="kw">for </span>event <span class="kw">in </span>pat.update()<span class="question-mark">?</span>.drain(..) {
                 <span class="kw">match </span>event {
-                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;pat.update() returned unexpected event&quot;</span>)
+                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;pat.update() returned unexpected event&quot;</span>),
                 }
             }
         }
@@ -2377,7 +2406,8 @@
         alice_identity_handshake_handle,
         <span class="bool-val">true</span>,
         <span class="bool-val">true</span>,
-        <span class="macro">doc! </span>{})<span class="question-mark">?</span>;
+        <span class="macro">doc! </span>{},
+    )<span class="question-mark">?</span>;
 
     <span class="comment">// Pat responds to challenge
     </span><span class="macro">println!</span>(<span class="string">&quot;Pat waits for server challenge&quot;</span>);
@@ -2386,28 +2416,28 @@
         <span class="kw">while </span>pat_identity_client_challenge.is_none() {
             <span class="kw">for </span>event <span class="kw">in </span>pat.update()<span class="question-mark">?</span>.drain(..) {
                 <span class="kw">match </span>event {
-                    ContextEvent::IdentityClientChallengeReceived{
+                    ContextEvent::IdentityClientChallengeReceived {
                         handle,
-                        endpoint_challenge
+                        endpoint_challenge,
                     } =&gt; {
                         <span class="macro">assert_eq!</span>(handle, pat_identity_handshake_handle);
                         pat_identity_client_challenge = <span class="prelude-val">Some</span>(endpoint_challenge);
-                    },
-                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;pat.update() returned unexpected event&quot;</span>)
+                    }
+                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;pat.update() returned unexpected event&quot;</span>),
                 }
             }
             <span class="kw">for </span>event <span class="kw">in </span>alice.update()<span class="question-mark">?</span>.drain(..) {
                 <span class="kw">match </span>event {
-                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;alice.upate() returned unexpected event&quot;</span>)
+                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;alice.upate() returned unexpected event&quot;</span>),
                 }
             }
         }
 
         <span class="macro">println!</span>(<span class="string">&quot;Pat responds to challenge&quot;</span>);
         <span class="kw">if let </span><span class="prelude-val">Some</span>(challenge) = pat_identity_client_challenge {
-            <span class="macro">assert_eq!</span>(challenge, <span class="macro">doc!</span>{});
+            <span class="macro">assert_eq!</span>(challenge, <span class="macro">doc! </span>{});
             <span class="comment">// send empty doc in response
-            </span>pat.identity_client_handle_challenge_received(pat_identity_handshake_handle, <span class="macro">doc!</span>{})<span class="question-mark">?</span>;
+            </span>pat.identity_client_handle_challenge_received(pat_identity_handshake_handle, <span class="macro">doc! </span>{})<span class="question-mark">?</span>;
         } <span class="kw">else </span>{
             <span class="macro">bail!</span>(<span class="string">&quot;missing pat_identity_client_challenge&quot;</span>);
         }
@@ -2420,27 +2450,30 @@
         <span class="kw">while </span>alice_identity_server_challenge_response.is_none() {
             <span class="kw">for </span>event <span class="kw">in </span>alice.update()<span class="question-mark">?</span>.drain(..) {
                 <span class="kw">match </span>event {
-                    ContextEvent::IdentityServerChallengeResponseReceived{
+                    ContextEvent::IdentityServerChallengeResponseReceived {
                         handle,
-                        challenge_response
+                        challenge_response,
                     } =&gt; {
                         <span class="macro">assert_eq!</span>(handle, alice_identity_handshake_handle);
                         alice_identity_server_challenge_response = <span class="prelude-val">Some</span>(challenge_response);
                     }
-                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;alice.update() returned unexepecte event&quot;</span>)
+                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;alice.update() returned unexepecte event&quot;</span>),
                 }
             }
             <span class="kw">for </span>event <span class="kw">in </span>pat.update()<span class="question-mark">?</span>.drain(..) {
                 <span class="kw">match </span>event {
-                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;pat.update() returned unexpected event&quot;</span>)
+                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;pat.update() returned unexpected event&quot;</span>),
                 }
             }
         }
         <span class="macro">println!</span>(<span class="string">&quot;Alice evaluates challenge response&quot;</span>);
         <span class="kw">if let </span><span class="prelude-val">Some</span>(challenge_response) = alice_identity_server_challenge_response {
-            <span class="macro">assert_eq!</span>(challenge_response, <span class="macro">doc!</span>{});
+            <span class="macro">assert_eq!</span>(challenge_response, <span class="macro">doc! </span>{});
             <span class="macro">println!</span>(<span class="string">&quot;Alice accepts challenge response&quot;</span>);
-            alice.identity_server_handle_challenge_response_received(alice_identity_handshake_handle, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
+            alice.identity_server_handle_challenge_response_received(
+                alice_identity_handshake_handle,
+                <span class="bool-val">true</span>,
+            )<span class="question-mark">?</span>;
         } <span class="kw">else </span>{
             <span class="macro">bail!</span>(<span class="string">&quot;missing challenge response&quot;</span>);
         }
@@ -2448,8 +2481,12 @@
 
     <span class="comment">// Alice and Pat awaits handshake results
     </span><span class="macro">println!</span>(<span class="string">&quot;Identity handshake completing&quot;</span>);
-    <span class="kw">let </span>(alice_endpoint_private_key, alice_endpoint_service_id, pat_auth_private_key, pat_auth_public_key) =
-    {
+    <span class="kw">let </span>(
+        alice_endpoint_private_key,
+        alice_endpoint_service_id,
+        pat_auth_private_key,
+        pat_auth_public_key,
+    ) = {
         <span class="kw">let </span><span class="kw-2">mut </span>alice_endpoint_private_key: <span class="prelude-ty">Option</span>&lt;Ed25519PrivateKey&gt; = <span class="prelude-val">None</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>alice_endpoint_service_id: <span class="prelude-ty">Option</span>&lt;V3OnionServiceId&gt; = <span class="prelude-val">None</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>pat_auth_private_key: <span class="prelude-ty">Option</span>&lt;X25519PrivateKey&gt; = <span class="prelude-val">None</span>;
@@ -2457,7 +2494,8 @@
 
         <span class="kw">let </span><span class="kw-2">mut </span>pat_identity_client_handshake_completed: bool = <span class="bool-val">false</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>alice_identity_server_hanshake_completed: bool = <span class="bool-val">false</span>;
-        <span class="kw">while </span>!pat_identity_client_handshake_completed || !alice_identity_server_hanshake_completed {
+        <span class="kw">while </span>!pat_identity_client_handshake_completed || !alice_identity_server_hanshake_completed
+        {
             <span class="kw">for </span>event <span class="kw">in </span>alice.update()<span class="question-mark">?</span>.drain(..) {
                 <span class="kw">match </span>event {
                     ContextEvent::IdentityServerHandshakeCompleted {
@@ -2474,7 +2512,7 @@
                         pat_auth_public_key = <span class="prelude-val">Some</span>(client_auth_public_key);
                         alice_identity_server_hanshake_completed = <span class="bool-val">true</span>;
                     }
-                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;alice.update() returned unexpected event&quot;</span>)
+                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;alice.update() returned unexpected event&quot;</span>),
                 }
             }
             <span class="kw">for </span>event <span class="kw">in </span>pat.update()<span class="question-mark">?</span>.drain(..) {
@@ -2493,25 +2531,33 @@
                         pat_auth_private_key = <span class="prelude-val">Some</span>(client_auth_private_key);
                         pat_identity_client_handshake_completed = <span class="bool-val">true</span>;
                     }
-                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;pat.update() returned unexpected event&quot;</span>)
+                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;pat.update() returned unexpected event&quot;</span>),
                 }
             }
         }
 
         <span class="comment">// verify the private key returned by alice matches service id returned by pat
-        </span><span class="macro">assert_eq!</span>(V3OnionServiceId::from_private_key(
-            alice_endpoint_private_key.as_ref().unwrap()),
-            <span class="kw-2">*</span>alice_endpoint_service_id.as_ref().unwrap());
+        </span><span class="macro">assert_eq!</span>(
+            V3OnionServiceId::from_private_key(alice_endpoint_private_key.as_ref().unwrap()),
+            <span class="kw-2">*</span>alice_endpoint_service_id.as_ref().unwrap()
+        );
 
-        (alice_endpoint_private_key.unwrap(),
+        (
+            alice_endpoint_private_key.unwrap(),
             alice_endpoint_service_id.unwrap(),
             pat_auth_private_key.unwrap(),
-            pat_auth_public_key.unwrap())
+            pat_auth_public_key.unwrap(),
+        )
     };
 
     <span class="comment">// Alice starts endpoint server
     </span><span class="macro">println!</span>(<span class="string">&quot;Alice endpoint server starting&quot;</span>);
-    alice.endpoint_server_start(alice_endpoint_private_key, <span class="string">&quot;test_endpoint&quot;</span>.to_string(), pat_service_id.clone(), pat_auth_public_key.clone())<span class="question-mark">?</span>;
+    alice.endpoint_server_start(
+        alice_endpoint_private_key,
+        <span class="string">&quot;test_endpoint&quot;</span>.to_string(),
+        pat_service_id.clone(),
+        pat_auth_public_key.clone(),
+    )<span class="question-mark">?</span>;
     {
         <span class="kw">let </span><span class="kw-2">mut </span>alice_endpoint_server_published: bool = <span class="bool-val">false</span>;
         <span class="kw">while </span>!alice_endpoint_server_published {
@@ -2519,14 +2565,14 @@
                 <span class="kw">match </span>event {
                     ContextEvent::EndpointServerPublished {
                         endpoint_service_id,
-                        endpoint_name
+                        endpoint_name,
                     } =&gt; {
                         <span class="macro">assert_eq!</span>(endpoint_service_id, alice_endpoint_service_id);
                         <span class="macro">assert_eq!</span>(endpoint_name, <span class="string">&quot;test_endpoint&quot;</span>);
                         <span class="macro">println!</span>(<span class="string">&quot;Alice endpoint server published&quot;</span>);
                         alice_endpoint_server_published = <span class="bool-val">true</span>;
                     }
-                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;alice.update() returned unexpected event&quot;</span>)
+                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;alice.update() returned unexpected event&quot;</span>),
                 }
             }
         }
@@ -2537,8 +2583,14 @@
     <span class="kw">let </span><span class="kw-2">mut </span>pat_endpoint_handshake_handle: HandshakeHandle = INVALID_HANDSHAKE_HANDLE;
     {
         <span class="kw">let </span><span class="kw-2">mut </span>pat_endpoint_handshake_tries_remaining = <span class="number">3</span>;
-        <span class="kw">while </span>pat_endpoint_handshake_tries_remaining &gt; <span class="number">0 </span>&amp;&amp; pat_endpoint_handshake_handle == INVALID_HANDSHAKE_HANDLE {
-            <span class="kw">match </span>pat.endpoint_client_begin_handshake(alice_endpoint_service_id.clone(), pat_auth_private_key.clone(), <span class="string">&quot;test_channel&quot;</span>.to_string()) {
+        <span class="kw">while </span>pat_endpoint_handshake_tries_remaining &gt; <span class="number">0
+            </span>&amp;&amp; pat_endpoint_handshake_handle == INVALID_HANDSHAKE_HANDLE
+        {
+            <span class="kw">match </span>pat.endpoint_client_begin_handshake(
+                alice_endpoint_service_id.clone(),
+                pat_auth_private_key.clone(),
+                <span class="string">&quot;test_channel&quot;</span>.to_string(),
+            ) {
                 <span class="prelude-val">Ok</span>(handle) =&gt; {
                     pat_endpoint_handshake_handle = handle;
                 }
@@ -2565,11 +2617,11 @@
         <span class="kw">while </span>!alice_endpoint_server_request_recieved {
             <span class="kw">for </span>event <span class="kw">in </span>alice.update()<span class="question-mark">?</span>.drain(..) {
                 <span class="kw">match </span>event {
-                    ContextEvent::EndpointServerHandshakeStarted{handle} =&gt; {
+                    ContextEvent::EndpointServerHandshakeStarted { handle } =&gt; {
                         alice_endpoint_server_handshake_handle = handle;
                         <span class="macro">println!</span>(<span class="string">&quot;Pat has connected to Alice endpoint server&quot;</span>)
                     }
-                    ContextEvent::EndpointServerChannelRequestReceived{
+                    ContextEvent::EndpointServerChannelRequestReceived {
                         handle,
                         requested_channel,
                     } =&gt; {
@@ -2578,19 +2630,22 @@
                         alice_endpoint_server_request_recieved = <span class="bool-val">true</span>;
                         <span class="macro">println!</span>(<span class="string">&quot;Pat requesting &#39;{0}&#39; endpoint channel&quot;</span>, requested_channel);
                     }
-                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;alice.update() returned unexpected event&quot;</span>)
+                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;alice.update() returned unexpected event&quot;</span>),
                 }
             }
             <span class="kw">for </span>event <span class="kw">in </span>pat.update()<span class="question-mark">?</span>.drain(..) {
                 <span class="kw">match </span>event {
-                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;pat.update() returned unexpected event&quot;</span>)
+                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;pat.update() returned unexpected event&quot;</span>),
                 }
             }
         }
 
         <span class="comment">// Alice sends handshake response
         </span><span class="macro">println!</span>(<span class="string">&quot;Alice sends endpoint handshake response&quot;</span>);
-        alice.endpoint_server_handle_channel_request_received(alice_endpoint_server_handshake_handle, <span class="bool-val">true</span>)<span class="question-mark">?</span>;
+        alice.endpoint_server_handle_channel_request_received(
+            alice_endpoint_server_handshake_handle,
+            <span class="bool-val">true</span>,
+        )<span class="question-mark">?</span>;
     }
 
     <span class="comment">// Alice and Pat await hndshake result
@@ -2602,15 +2657,16 @@
         <span class="kw">let </span><span class="kw-2">mut </span>pat_endpoint_client_handshake_completed: bool = <span class="bool-val">false</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>alice_endpoint_server_handshake_completed: bool = <span class="bool-val">false</span>;
 
-        <span class="kw">while </span>!pat_endpoint_client_handshake_completed || !alice_endpoint_server_handshake_completed {
+        <span class="kw">while </span>!pat_endpoint_client_handshake_completed || !alice_endpoint_server_handshake_completed
+        {
             <span class="kw">for </span>event <span class="kw">in </span>alice.update()<span class="question-mark">?</span>.drain(..) {
                 <span class="kw">match </span>event {
-                    ContextEvent::EndpointServerHandshakeCompleted{
+                    ContextEvent::EndpointServerHandshakeCompleted {
                         handle,
                         endpoint_service_id,
                         client_service_id,
                         channel_name,
-                        stream
+                        stream,
                     } =&gt; {
                         <span class="macro">assert_eq!</span>(handle, alice_endpoint_server_handshake_handle);
                         <span class="macro">assert_eq!</span>(endpoint_service_id, alice_endpoint_service_id);
@@ -2619,16 +2675,16 @@
                         alice_server_stream = <span class="prelude-val">Some</span>(stream);
                         alice_endpoint_server_handshake_completed = <span class="bool-val">true</span>;
                     }
-                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;alice.upate() returned unexepcted event&quot;</span>)
+                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;alice.upate() returned unexepcted event&quot;</span>),
                 }
             }
             <span class="kw">for </span>event <span class="kw">in </span>pat.update()<span class="question-mark">?</span>.drain(..) {
                 <span class="kw">match </span>event {
-                    ContextEvent::EndpointClientHandshakeCompleted{
+                    ContextEvent::EndpointClientHandshakeCompleted {
                         handle,
                         endpoint_service_id,
                         channel_name,
-                        stream
+                        stream,
                     } =&gt; {
                         <span class="macro">assert_eq!</span>(handle, pat_endpoint_handshake_handle);
                         <span class="macro">assert_eq!</span>(endpoint_service_id, alice_endpoint_service_id);
@@ -2636,7 +2692,7 @@
                         pat_client_stream = <span class="prelude-val">Some</span>(stream);
                         pat_endpoint_client_handshake_completed = <span class="bool-val">true</span>;
                     }
-                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;pat.upate() returned unexepcted event&quot;</span>)
+                    <span class="kw">_ </span>=&gt; <span class="macro">bail!</span>(<span class="string">&quot;pat.upate() returned unexepcted event&quot;</span>),
                 }
             }
         }
