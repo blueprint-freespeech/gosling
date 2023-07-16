@@ -1,26 +1,26 @@
 set(gosling_ffi_sources
+    src/ffi.rs
+    src/lib.rs
+    src/object_registry.rs
     build.rs
     Cargo.toml
     cbindgen.toml
-    libgosling.hpp
-    src/ffi.rs
-    src/lib.rs
-    src/object_registry.rs)
+    libgosling.hpp)
 
 set(gosling_ffi_outputs
-    ${CMAKE_CURRENT_BINARY_DIR}/include/libgosling.h
-    ${CMAKE_CURRENT_BINARY_DIR}/include/libgosling.hpp
-    ${CMAKE_CURRENT_BINARY_DIR}/${CARGO_PROFILE}/libgoslingffi.a)
+    ${CARGO_TARGET_DIR}/include/libgosling.h
+    ${CARGO_TARGET_DIR}/include/libgosling.hpp
+    ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/libgoslingffi.a)
 #
 # gosling_ffi build target
 #
 add_custom_command(
     OUTPUT ${gosling_ffi_outputs}
-    DEPENDS ${gosling_ffi_sources}
+    DEPENDS ${gosling_ffi_sources} gosling_target
     # cargo test of this same project will also run build.rs, so we need to touch build.rs
     # to force cargo to re-run it and generate cbindgen headers (cmake seems to delete the first output file)
     COMMAND touch ${CMAKE_CURRENT_SOURCE_DIR}/build.rs
-    COMMAND CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR} RUSTFLAGS=${RUSTFLAGS} cargo -vv build ${CARGO_FLAGS}
+    COMMAND CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo build ${CARGO_FLAGS}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 add_custom_target(gosling_ffi_target
     DEPENDS ${gosling_ffi_outputs})
@@ -35,10 +35,10 @@ add_dependencies(gosling_ffi gosling_ffi_target)
 #
 
 # create include directory ahead of time or else cmake falls over
-set(GOSLING_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
+set(GOSLING_INCLUDE_DIR ${CARGO_TARGET_DIR}/include)
 file(MAKE_DIRECTORY ${GOSLING_INCLUDE_DIR})
 # define our binary directory
-set(GOSLING_LIBRARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/${CARGO_PROFILE})
+set(GOSLING_LIBRARY_DIR ${CARGO_TARGET_DIR}/${CARGO_PROFILE})
 
 # specify goslings link target for consumers
 set_target_properties(gosling_ffi PROPERTIES
@@ -89,6 +89,6 @@ install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/
 # cargo test target
 #
 add_custom_target(gosling_ffi_cargo_test
-    COMMAND RUSTFLAGS=${RUSTFLAGS} CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR} RUST_BACKTRACE=full cargo test ${CARGO_FLAGS}
+    COMMAND RUSTFLAGS=${RUSTFLAGS} CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUST_BACKTRACE=full cargo test ${CARGO_FLAGS}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )

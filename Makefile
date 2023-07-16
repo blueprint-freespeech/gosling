@@ -90,8 +90,8 @@ lint: config-debug
 		--enable=all\
 		--inline-suppr\
 		--suppress=missingIncludeSystem\
-		--include=out/debug/gosling/crates/gosling-ffi/include/libgosling.h\
-		--include=out/debug/gosling/crates/gosling-ffi/include/libgosling.hpp\
+		--include=out/debug/gosling/include/libgosling.h\
+		--include=out/debug/gosling/include/libgosling.hpp\
 		--project=out/debug/compile_commands.sans-catch2.json\
 		-isource/sans-catch2
 
