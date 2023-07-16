@@ -1,3 +1,3 @@
 (function() {var implementors = {
-"tor_interface":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.70.0/std/io/trait.Write.html\" title=\"trait std::io::Write\">Write</a> for <a class=\"struct\" href=\"tor_interface/tor_provider/struct.OnionStream.html\" title=\"struct tor_interface::tor_provider::OnionStream\">OnionStream</a>"]]
+"tor_interface":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.69.0/std/io/trait.Write.html\" title=\"trait std::io::Write\">Write</a> for <a class=\"struct\" href=\"tor_interface/tor_provider/struct.OnionStream.html\" title=\"struct tor_interface::tor_provider::OnionStream\">OnionStream</a>"]]
 };if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
