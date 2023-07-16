@@ -887,7 +887,6 @@ fn gosling_context_test(
     alice_tor_client: Box<dyn TorProvider>,
     pat_tor_client: Box<dyn TorProvider>,
 ) -> anyhow::Result<()> {
-
     // Bootstrap Alice
     let alice_private_key = Ed25519PrivateKey::generate();
     let alice_service_id = V3OnionServiceId::from_private_key(&alice_private_key);
@@ -970,7 +969,7 @@ fn gosling_context_test(
                 ContextEvent::IdentityServerPublished => {
                     alice_identity_published = true;
                     println!("Alice identity server published");
-                },
+                }
                 _ => {
                     bail!("alice.update() returned unexpected event");
                 }
@@ -983,7 +982,9 @@ fn gosling_context_test(
     let mut pat_identity_handshake_handle: HandshakeHandle = INVALID_HANDSHAKE_HANDLE;
     {
         let mut pat_identity_handshake_tries_remaining = 3;
-        while pat_identity_handshake_tries_remaining > 0 && pat_identity_handshake_handle == INVALID_HANDSHAKE_HANDLE{
+        while pat_identity_handshake_tries_remaining > 0
+            && pat_identity_handshake_handle == INVALID_HANDSHAKE_HANDLE
+        {
             match pat.identity_client_begin_handshake(
                 alice_service_id.clone(),
                 "test_endpoint".to_string(),
@@ -1014,14 +1015,14 @@ fn gosling_context_test(
         while !alice_identity_server_endpoint_request_received {
             for event in alice.update()?.drain(..) {
                 match event {
-                    ContextEvent::IdentityServerHandshakeStarted{handle} => {
+                    ContextEvent::IdentityServerHandshakeStarted { handle } => {
                         alice_identity_handshake_handle = handle;
                         println!("Pat has connected to Alice identity server");
                     }
-                    ContextEvent::IdentityServerEndpointRequestReceived{
+                    ContextEvent::IdentityServerEndpointRequestReceived {
                         handle,
                         client_service_id,
-                        requested_endpoint
+                        requested_endpoint,
                     } => {
                         assert_eq!(alice_identity_handshake_handle, handle);
                         assert_eq!(pat_service_id, client_service_id);
@@ -1029,12 +1030,12 @@ fn gosling_context_test(
                         alice_identity_server_endpoint_request_received = true;
                         println!("Alice receives initial identity handshake request");
                     }
-                    _ => bail!("alice.update() returned unexpected event")
+                    _ => bail!("alice.update() returned unexpected event"),
                 }
             }
             for event in pat.update()?.drain(..) {
                 match event {
-                    _ => bail!("pat.update() returned unexpected event")
+                    _ => bail!("pat.update() returned unexpected event"),
                 }
             }
         }
@@ -1046,7 +1047,8 @@ fn gosling_context_test(
         alice_identity_handshake_handle,
         true,
         true,
-        doc! {})?;
+        doc! {},
+    )?;
 
     // Pat responds to challenge
     println!("Pat waits for server challenge");
@@ -1055,28 +1057,28 @@ fn gosling_context_test(
         while pat_identity_client_challenge.is_none() {
             for event in pat.update()?.drain(..) {
                 match event {
-                    ContextEvent::IdentityClientChallengeReceived{
+                    ContextEvent::IdentityClientChallengeReceived {
                         handle,
-                        endpoint_challenge
+                        endpoint_challenge,
                     } => {
                         assert_eq!(handle, pat_identity_handshake_handle);
                         pat_identity_client_challenge = Some(endpoint_challenge);
-                    },
-                    _ => bail!("pat.update() returned unexpected event")
+                    }
+                    _ => bail!("pat.update() returned unexpected event"),
                 }
             }
             for event in alice.update()?.drain(..) {
                 match event {
-                    _ => bail!("alice.upate() returned unexpected event")
+                    _ => bail!("alice.upate() returned unexpected event"),
                 }
             }
         }
 
         println!("Pat responds to challenge");
         if let Some(challenge) = pat_identity_client_challenge {
-            assert_eq!(challenge, doc!{});
+            assert_eq!(challenge, doc! {});
             // send empty doc in response
-            pat.identity_client_handle_challenge_received(pat_identity_handshake_handle, doc!{})?;
+            pat.identity_client_handle_challenge_received(pat_identity_handshake_handle, doc! {})?;
         } else {
             bail!("missing pat_identity_client_challenge");
         }
@@ -1089,27 +1091,30 @@ fn gosling_context_test(
         while alice_identity_server_challenge_response.is_none() {
             for event in alice.update()?.drain(..) {
                 match event {
-                    ContextEvent::IdentityServerChallengeResponseReceived{
+                    ContextEvent::IdentityServerChallengeResponseReceived {
                         handle,
-                        challenge_response
+                        challenge_response,
                     } => {
                         assert_eq!(handle, alice_identity_handshake_handle);
                         alice_identity_server_challenge_response = Some(challenge_response);
                     }
-                    _ => bail!("alice.update() returned unexepecte event")
+                    _ => bail!("alice.update() returned unexepecte event"),
                 }
             }
             for event in pat.update()?.drain(..) {
                 match event {
-                    _ => bail!("pat.update() returned unexpected event")
+                    _ => bail!("pat.update() returned unexpected event"),
                 }
             }
         }
         println!("Alice evaluates challenge response");
         if let Some(challenge_response) = alice_identity_server_challenge_response {
-            assert_eq!(challenge_response, doc!{});
+            assert_eq!(challenge_response, doc! {});
             println!("Alice accepts challenge response");
-            alice.identity_server_handle_challenge_response_received(alice_identity_handshake_handle, true)?;
+            alice.identity_server_handle_challenge_response_received(
+                alice_identity_handshake_handle,
+                true,
+            )?;
         } else {
             bail!("missing challenge response");
         }
@@ -1117,8 +1122,12 @@ fn gosling_context_test(
 
     // Alice and Pat awaits handshake results
     println!("Identity handshake completing");
-    let (alice_endpoint_private_key, alice_endpoint_service_id, pat_auth_private_key, pat_auth_public_key) =
-    {
+    let (
+        alice_endpoint_private_key,
+        alice_endpoint_service_id,
+        pat_auth_private_key,
+        pat_auth_public_key,
+    ) = {
         let mut alice_endpoint_private_key: Option<Ed25519PrivateKey> = None;
         let mut alice_endpoint_service_id: Option<V3OnionServiceId> = None;
         let mut pat_auth_private_key: Option<X25519PrivateKey> = None;
@@ -1126,7 +1135,8 @@ fn gosling_context_test(
 
         let mut pat_identity_client_handshake_completed: bool = false;
         let mut alice_identity_server_hanshake_completed: bool = false;
-        while !pat_identity_client_handshake_completed || !alice_identity_server_hanshake_completed {
+        while !pat_identity_client_handshake_completed || !alice_identity_server_hanshake_completed
+        {
             for event in alice.update()?.drain(..) {
                 match event {
                     ContextEvent::IdentityServerHandshakeCompleted {
@@ -1143,7 +1153,7 @@ fn gosling_context_test(
                         pat_auth_public_key = Some(client_auth_public_key);
                         alice_identity_server_hanshake_completed = true;
                     }
-                    _ => bail!("alice.update() returned unexpected event")
+                    _ => bail!("alice.update() returned unexpected event"),
                 }
             }
             for event in pat.update()?.drain(..) {
@@ -1162,25 +1172,33 @@ fn gosling_context_test(
                         pat_auth_private_key = Some(client_auth_private_key);
                         pat_identity_client_handshake_completed = true;
                     }
-                    _ => bail!("pat.update() returned unexpected event")
+                    _ => bail!("pat.update() returned unexpected event"),
                 }
             }
         }
 
         // verify the private key returned by alice matches service id returned by pat
-        assert_eq!(V3OnionServiceId::from_private_key(
-            alice_endpoint_private_key.as_ref().unwrap()),
-            *alice_endpoint_service_id.as_ref().unwrap());
+        assert_eq!(
+            V3OnionServiceId::from_private_key(alice_endpoint_private_key.as_ref().unwrap()),
+            *alice_endpoint_service_id.as_ref().unwrap()
+        );
 
-        (alice_endpoint_private_key.unwrap(),
+        (
+            alice_endpoint_private_key.unwrap(),
             alice_endpoint_service_id.unwrap(),
             pat_auth_private_key.unwrap(),
-            pat_auth_public_key.unwrap())
+            pat_auth_public_key.unwrap(),
+        )
     };
 
     // Alice starts endpoint server
     println!("Alice endpoint server starting");
-    alice.endpoint_server_start(alice_endpoint_private_key, "test_endpoint".to_string(), pat_service_id.clone(), pat_auth_public_key.clone())?;
+    alice.endpoint_server_start(
+        alice_endpoint_private_key,
+        "test_endpoint".to_string(),
+        pat_service_id.clone(),
+        pat_auth_public_key.clone(),
+    )?;
     {
         let mut alice_endpoint_server_published: bool = false;
         while !alice_endpoint_server_published {
@@ -1188,14 +1206,14 @@ fn gosling_context_test(
                 match event {
                     ContextEvent::EndpointServerPublished {
                         endpoint_service_id,
-                        endpoint_name
+                        endpoint_name,
                     } => {
                         assert_eq!(endpoint_service_id, alice_endpoint_service_id);
                         assert_eq!(endpoint_name, "test_endpoint");
                         println!("Alice endpoint server published");
                         alice_endpoint_server_published = true;
                     }
-                    _ => bail!("alice.update() returned unexpected event")
+                    _ => bail!("alice.update() returned unexpected event"),
                 }
             }
         }
@@ -1206,8 +1224,14 @@ fn gosling_context_test(
     let mut pat_endpoint_handshake_handle: HandshakeHandle = INVALID_HANDSHAKE_HANDLE;
     {
         let mut pat_endpoint_handshake_tries_remaining = 3;
-        while pat_endpoint_handshake_tries_remaining > 0 && pat_endpoint_handshake_handle == INVALID_HANDSHAKE_HANDLE {
-            match pat.endpoint_client_begin_handshake(alice_endpoint_service_id.clone(), pat_auth_private_key.clone(), "test_channel".to_string()) {
+        while pat_endpoint_handshake_tries_remaining > 0
+            && pat_endpoint_handshake_handle == INVALID_HANDSHAKE_HANDLE
+        {
+            match pat.endpoint_client_begin_handshake(
+                alice_endpoint_service_id.clone(),
+                pat_auth_private_key.clone(),
+                "test_channel".to_string(),
+            ) {
                 Ok(handle) => {
                     pat_endpoint_handshake_handle = handle;
                 }
@@ -1234,11 +1258,11 @@ fn gosling_context_test(
         while !alice_endpoint_server_request_recieved {
             for event in alice.update()?.drain(..) {
                 match event {
-                    ContextEvent::EndpointServerHandshakeStarted{handle} => {
+                    ContextEvent::EndpointServerHandshakeStarted { handle } => {
                         alice_endpoint_server_handshake_handle = handle;
                         println!("Pat has connected to Alice endpoint server")
                     }
-                    ContextEvent::EndpointServerChannelRequestReceived{
+                    ContextEvent::EndpointServerChannelRequestReceived {
                         handle,
                         requested_channel,
                     } => {
@@ -1247,19 +1271,22 @@ fn gosling_context_test(
                         alice_endpoint_server_request_recieved = true;
                         println!("Pat requesting '{0}' endpoint channel", requested_channel);
                     }
-                    _ => bail!("alice.update() returned unexpected event")
+                    _ => bail!("alice.update() returned unexpected event"),
                 }
             }
             for event in pat.update()?.drain(..) {
                 match event {
-                    _ => bail!("pat.update() returned unexpected event")
+                    _ => bail!("pat.update() returned unexpected event"),
                 }
             }
         }
 
         // Alice sends handshake response
         println!("Alice sends endpoint handshake response");
-        alice.endpoint_server_handle_channel_request_received(alice_endpoint_server_handshake_handle, true)?;
+        alice.endpoint_server_handle_channel_request_received(
+            alice_endpoint_server_handshake_handle,
+            true,
+        )?;
     }
 
     // Alice and Pat await hndshake result
@@ -1271,15 +1298,16 @@ fn gosling_context_test(
         let mut pat_endpoint_client_handshake_completed: bool = false;
         let mut alice_endpoint_server_handshake_completed: bool = false;
 
-        while !pat_endpoint_client_handshake_completed || !alice_endpoint_server_handshake_completed {
+        while !pat_endpoint_client_handshake_completed || !alice_endpoint_server_handshake_completed
+        {
             for event in alice.update()?.drain(..) {
                 match event {
-                    ContextEvent::EndpointServerHandshakeCompleted{
+                    ContextEvent::EndpointServerHandshakeCompleted {
                         handle,
                         endpoint_service_id,
                         client_service_id,
                         channel_name,
-                        stream
+                        stream,
                     } => {
                         assert_eq!(handle, alice_endpoint_server_handshake_handle);
                         assert_eq!(endpoint_service_id, alice_endpoint_service_id);
@@ -1288,16 +1316,16 @@ fn gosling_context_test(
                         alice_server_stream = Some(stream);
                         alice_endpoint_server_handshake_completed = true;
                     }
-                    _ => bail!("alice.upate() returned unexepcted event")
+                    _ => bail!("alice.upate() returned unexepcted event"),
                 }
             }
             for event in pat.update()?.drain(..) {
                 match event {
-                    ContextEvent::EndpointClientHandshakeCompleted{
+                    ContextEvent::EndpointClientHandshakeCompleted {
                         handle,
                         endpoint_service_id,
                         channel_name,
-                        stream
+                        stream,
                     } => {
                         assert_eq!(handle, pat_endpoint_handshake_handle);
                         assert_eq!(endpoint_service_id, alice_endpoint_service_id);
@@ -1305,7 +1333,7 @@ fn gosling_context_test(
                         pat_client_stream = Some(stream);
                         pat_endpoint_client_handshake_completed = true;
                     }
-                    _ => bail!("pat.upate() returned unexepcted event")
+                    _ => bail!("pat.upate() returned unexepcted event"),
                 }
             }
         }

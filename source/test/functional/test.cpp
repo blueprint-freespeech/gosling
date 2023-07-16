@@ -373,7 +373,8 @@ TEST_CASE("gosling_cpp_demo") {
 
   bool pat_begin_identity_handshake_succeeded = false;
   for (auto k = 1; k <= 3; k++) {
-    cout << "--- pat begin identity handshake attempt " << k << endl;;
+    cout << "--- pat begin identity handshake attempt " << k << endl;
+
     try {
       ::gosling_context_begin_identity_handshake(
           pat_context.get(), alice_identity.get(), endpointName.data(),
