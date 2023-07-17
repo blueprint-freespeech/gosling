@@ -40,19 +40,14 @@ jobs:
             make
             mingw-w64-clang-x86_64-cmake
             mingw-w64-clang-x86_64-clang
+            mingw-w64-clang-x86_64-rust
             mingw-w64-clang-x86_64-boost
             mingw-w64-clang-x86_64-tor
-      - name: Configure Rust
-        run: |
-          PATH=$(cygpath $USERPROFILE)/.cargo/bin:$PATH
-          rustup default stable-x86_64-pc-windows-gnu
       - name: Test Debug
         run: |
-          PATH=$(cygpath $USERPROFILE)/.cargo/bin:$PATH
           make test-debug
       - name: Test Release
         run: |
-          PATH=$(cygpath $USERPROFILE)/.cargo/bin:$PATH
           make test-release
 
   macos:

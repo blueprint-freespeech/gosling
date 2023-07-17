@@ -54,14 +54,10 @@ jobs:
             make
             mingw-w64-clang-x86_64-cmake
             mingw-w64-clang-x86_64-clang
+            mingw-w64-clang-x86_64-rust
             mingw-w64-clang-x86_64-boost
-      - name: Configure Rust
-        run: |
-          PATH=$(cygpath $USERPROFILE)/.cargo/bin:$PATH
-          rustup default stable-x86_64-pc-windows-gnu
       - name: Build Debug
         run: |
-          PATH=$(cygpath $USERPROFILE)/.cargo/bin:$PATH
           make debug
       - name: Archive Debug
         uses: actions/upload-artifact@v3
@@ -72,8 +68,6 @@ jobs:
             out/debug/gosling/crates/gosling-ffi/include/libgosling.h
       - name: Build Release
         run: |
-          echo $PATH
-          PATH=$(cygpath $USERPROFILE)/.cargo/bin:$PATH
           make release
       - name: Archive Release
         uses: actions/upload-artifact@v3
