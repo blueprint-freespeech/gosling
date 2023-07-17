@@ -58,7 +58,7 @@ if(WINDOWS)
     target_link_libraries(gosling_ffi INTERFACE ws2_32)
     target_link_libraries(gosling_ffi INTERFACE userenv)
     target_link_libraries(gosling_ffi INTERFACE bcrypt)
-    target_link_libraries(gosling_ffi INTERFACE ntoskrnl)
+    target_link_libraries(gosling_ffi INTERFACE ntdll)
 endif()
 
 install(FILES ${GOSLING_INCLUDE_DIR}/libgosling.h ${GOSLING_INCLUDE_DIR}/libgosling.hpp
