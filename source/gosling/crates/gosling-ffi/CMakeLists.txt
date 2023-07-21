@@ -70,19 +70,19 @@ install(FILES ${GOSLING_LIBRARY_DIR}/libgoslingffi.a
 # libgoslingffi documentation
 #
 set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
-set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+set(DOXYGEN_OUT ${CARGO_TARGET_DIR}/Doxyfile)
 configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
 # doxygen command
 add_custom_command(
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/html
+    OUTPUT ${CARGO_TARGET_DIR}/html
     COMMAND doxygen ${DOXYGEN_OUT}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    WORKING_DIRECTORY ${CARGO_TARGET_DIR})
 # make target
 add_custom_target(gosling_ffi_doxygen
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html)
+    DEPENDS ${CARGO_TARGET_DIR}/html)
 add_dependencies(gosling_ffi_doxygen gosling_ffi_target)
 # install
-install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/
+install(DIRECTORY ${CARGO_TARGET_DIR}/html/
     DESTINATION pages/libgoslingffi)
 
 #
