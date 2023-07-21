@@ -38,6 +38,7 @@ The **pages-** make target has the following additional dependencies:
 - [markdown](https://daringfireball.net/projects/markdown/)
 - [mustache](http://mustache.github.io/)
 - [doxygen](https://www.doxygen.nl/)
+- [graphviz](https://www.graphviz.org/)
 
 The **format** make target has the following additional dependencies:
 
