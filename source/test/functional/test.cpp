@@ -28,7 +28,10 @@ constexpr static uint8_t challenge_response_bson[] = {
     // document null-terminator
     0x00};
 
-static void create_client_handshake(unique_ptr<gosling_context> &ctx) {
+const std::string endpointName("endpoint_name");
+const std::string channelName("channel_name");
+
+static void create_client_identity_handshake(unique_ptr<gosling_context> &ctx) {
 
   const auto challenge_response_size_callback =
       [](gosling_context *context, size_t handshake_handle,
@@ -71,7 +74,7 @@ static void create_client_handshake(unique_ptr<gosling_context> &ctx) {
           ctx.get(), build_challenge_response_callback, throw_on_error()));
 }
 
-static void create_server_handshake(unique_ptr<gosling_context> &ctx) {
+static void create_server_identity_handshake(unique_ptr<gosling_context> &ctx) {
 
   const auto client_allowed_callback =
       [](gosling_context *context, size_t handshake_handle,
@@ -93,7 +96,7 @@ static void create_server_handshake(unique_ptr<gosling_context> &ctx) {
     cout << "--- endpoint_supported_callback: { context: " << context
          << ", handshake_handle: " << handshake_handle << " }" << endl;
 
-    if (string(endpoint_name, endpoint_name_length) == "default") {
+    if (string(endpoint_name, endpoint_name_length) == endpointName) {
       return true;
     }
 
@@ -161,6 +164,28 @@ static void create_server_handshake(unique_ptr<gosling_context> &ctx) {
           ctx.get(), verify_challenge_response_callback, throw_on_error()));
 }
 
+static void create_server_endpoint_handshake(unique_ptr<gosling_context> &ctx) {
+    const auto channel_supported_callback = [](gosling_context *context, size_t handshake_handle,
+    const char *channel_name, size_t channel_name_length) -> bool {
+    REQUIRE(context != nullptr);
+    cout << "--- channel_supported_callback: { context: " << context
+       << ", handshake_handle: " << handshake_handle
+       << ", channel_name: '" << channel_name << "' }" << endl;
+
+    if (string(channel_name, channel_name_length) == channelName) {
+      return true;
+    }
+
+    return false;
+  };
+
+
+  REQUIRE_NOTHROW(
+      ::gosling_context_set_endpoint_server_channel_supported_callback(
+          ctx.get(), channel_supported_callback , throw_on_error()));
+}
+
+
 // gosling demo
 TEST_CASE("gosling_cpp_demo") {
   // init gosling library statically so gosling objects with static lifetime
@@ -213,8 +238,9 @@ TEST_CASE("gosling_cpp_demo") {
       alice_private_key.get(),  // identity private key
       throw_on_error()));
 
-  create_client_handshake(alice_context); // client callbacks
-  create_server_handshake(alice_context); // server callbacks
+  // server callbacks
+  create_server_identity_handshake(alice_context);
+  create_server_endpoint_handshake(alice_context);
 
   unique_ptr<gosling_context> pat_context;
   const auto pat_working_dir = (tmp / "gosling_context_test_pat").string();
@@ -231,8 +257,8 @@ TEST_CASE("gosling_cpp_demo") {
       alice_private_key.get(), // identity private key
       throw_on_error()));
 
-  create_client_handshake(pat_context); // client callbacks
-  create_server_handshake(pat_context); // server callbacks
+  // client callbacks
+  create_client_identity_handshake(pat_context);
 
   // bootstrap alice
   static bool alice_bootstrap_complete = false;
@@ -264,7 +290,7 @@ TEST_CASE("gosling_cpp_demo") {
       },
       throw_on_error()));
 
-  cout << "--- init alice identity server" << endl;
+  cout << "--- start alice identity server" << endl;
   REQUIRE_NOTHROW(::gosling_context_start_identity_server(alice_context.get(),
                                                           throw_on_error()));
 
@@ -297,7 +323,7 @@ TEST_CASE("gosling_cpp_demo") {
   static bool pat_endpoint_request_complete = false;
   static unique_ptr<gosling_v3_onion_service_id> alice_endpoint_service_id;
   static unique_ptr<gosling_x25519_private_key> pat_onion_auth_private_key;
-  std::string endpointName = "default";
+
   REQUIRE_NOTHROW(
       ::gosling_context_set_identity_client_handshake_completed_callback(
           pat_context.get(),
@@ -307,7 +333,7 @@ TEST_CASE("gosling_cpp_demo") {
              const char *endpoint_name, size_t endpoint_name_length,
              const gosling_x25519_private_key *client_auth_private_key)
               -> void {
-            REQUIRE(string(endpoint_name, endpoint_name_length) == "default");
+            REQUIRE(string(endpoint_name, endpoint_name_length) == endpointName);
 
             REQUIRE_NOTHROW(::gosling_v3_onion_service_id_clone(
                 out(alice_endpoint_service_id), endpoint_service_id,
@@ -344,7 +370,7 @@ TEST_CASE("gosling_cpp_demo") {
              const char *endpoint_name, size_t endpoint_name_length,
              const gosling_v3_onion_service_id *client_service_id,
              const gosling_x25519_public_key *client_auth_public_key) -> void {
-            REQUIRE(string(endpoint_name, endpoint_name_length) == "default");
+            REQUIRE(string(endpoint_name, endpoint_name_length) == endpointName);
 
             REQUIRE_NOTHROW(::gosling_ed25519_private_key_clone(
                 out(alice_endpoint_private_key), endpoint_private_key,
@@ -400,7 +426,7 @@ TEST_CASE("gosling_cpp_demo") {
       [](gosling_context *context,
          const gosling_v3_onion_service_id *endpoint_service_id,
          const char *endpoint_name, size_t endpoint_name_length) -> void {
-        REQUIRE(string(endpoint_name, endpoint_name_length) == "default");
+        REQUIRE(string(endpoint_name, endpoint_name_length) == endpointName);
         alice_endpoint_published = true;
         cout << "--- alice endpoint server published" << endl;
       },
@@ -429,7 +455,6 @@ TEST_CASE("gosling_cpp_demo") {
   static boost::asio::ip::tcp::socket pat_socket(io_service);
   static boost::asio::ip::tcp::socket alice_socket(io_service);
 
-  string channelName("funky");
   REQUIRE_NOTHROW(
       ::gosling_context_set_endpoint_client_handshake_completed_callback(
           pat_context.get(),
@@ -437,7 +462,7 @@ TEST_CASE("gosling_cpp_demo") {
              const gosling_v3_onion_service_id *endpoint_service_id,
              const char *channel_name, size_t channel_name_length,
              tcp_stream_t stream) -> void {
-            REQUIRE(string(channel_name, channel_name_length) == "funky");
+            REQUIRE(string(channel_name, channel_name_length) == channelName);
 
             cout << "--- pat endpoint handshake complete" << endl;
             pat_channel_request_complete = true;
@@ -454,23 +479,7 @@ TEST_CASE("gosling_cpp_demo") {
             REQUIRE(false);
           },
           throw_on_error()));
-  REQUIRE_NOTHROW(
-      ::gosling_context_set_endpoint_server_channel_supported_callback(
-          alice_context.get(),
-          [](gosling_context *context, size_t handshake_handle,
-             const char *channel_name, size_t channel_name_length) -> bool {
-            REQUIRE(context != nullptr);
-            cout << "--- channel_supported_callback: { context: " << context
-                 << ", handshake_handle: " << handshake_handle
-                 << ", channel_name: '" << channel_name << "' }" << endl;
 
-            if (string(channel_name, channel_name_length) == "funky") {
-              return true;
-            }
-
-            return false;
-          },
-          throw_on_error()));
   REQUIRE_NOTHROW(
       ::gosling_context_set_endpoint_server_handshake_completed_callback(
           alice_context.get(),
@@ -479,7 +488,7 @@ TEST_CASE("gosling_cpp_demo") {
              const gosling_v3_onion_service_id *client_service_id,
              const char *channel_name, size_t channel_name_length,
              tcp_stream_t stream) -> void {
-            REQUIRE(string(channel_name, channel_name_length) == "funky");
+            REQUIRE(string(channel_name, channel_name_length) == channelName);
             cout << "--- alice channel request complete" << endl;
             alice_channel_request_complete = true;
             alice_socket.assign(boost::asio::ip::tcp::v4(), stream);
