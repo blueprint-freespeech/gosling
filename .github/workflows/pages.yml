@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  deploy:
+  build_and_deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Gosling
@@ -16,15 +16,17 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libboost-all-dev
+          sudo apt-get install -y libboost-all-dev tor
           cargo install cargo-tarpaulin
           sudo apt-get install -y doxygen markdown ruby-mustache graphviz
-      - name: Build Code Coverage
+      - name: Calculate Code Coverage
         run: |
-          make coverage-offline-release
+          make coverage-release
+      - name: Build Pages
+        run: |
+          make pages-release
       - name: Move Outputs
         run: |
-          make release
           make install-release
       - name: Deploy to Github Pages
         uses: peaceiris/actions-gh-pages@v3

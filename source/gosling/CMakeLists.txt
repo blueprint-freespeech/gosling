@@ -35,6 +35,10 @@ add_custom_target(gosling_cargo_tarpaulin
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+install(FILES ${CARGO_TARGET_DIR}/tarpaulin/tarpaulin-report.html
+    DESTINATION pages
+    RENAME coverage.html)
+
 #
 # offline code coverage
 #
@@ -47,10 +51,6 @@ add_custom_target(gosling_cargo_tarpaulin_offline
     DEPENDS ${CARGO_TARGET_DIR}/tarpaulin-offline/tarpaulin-report.html
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
-
-install(FILES ${CARGO_TARGET_DIR}/tarpaulin-offline/tarpaulin-report.html
-    DESTINATION pages
-    RENAME coverage.html)
 
 #
 # crate linting

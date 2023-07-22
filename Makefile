@@ -102,11 +102,11 @@ define pages
 endef
 
 # debug build the website, code coverage, c/c++ apis, and rust docs
-pages-debug: config-debug coverage-offline-debug
+pages-debug: config-debug coverage-debug
 	@$(call pages,"debug")
 
 # release build the website, code coverage, c/c++ apis, and rust docs
-pages-release: config-release coverage-offline-release
+pages-release: config-release coverage-release
 	@$(call pages,"release")
 
 # debug build everything and deploy to dist
