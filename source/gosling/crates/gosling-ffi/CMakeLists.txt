@@ -74,6 +74,7 @@ set(DOXYGEN_OUT ${CARGO_TARGET_DIR}/Doxyfile)
 configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
 # doxygen command
 add_custom_command(
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${GOSLING_INCLUDE_DIR}/libgosling.h ${GOSLING_INCLUDE_DIR}/libgosling.hpp
     OUTPUT ${CARGO_TARGET_DIR}/html
     COMMAND doxygen ${DOXYGEN_OUT}
     WORKING_DIRECTORY ${CARGO_TARGET_DIR})
