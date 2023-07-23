@@ -2,19 +2,13 @@
 use std::collections::VecDeque;
 use std::fmt::Debug;
 use std::io::{Cursor, ErrorKind};
+#[cfg(test)]
+use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::option::Option;
 
 // extern crates
 use bson::doc;
 use bson::document::ValueAccessError;
-#[cfg(test)]
-use crypto::digest::Digest;
-#[cfg(test)]
-use crypto::sha3::Sha3;
-
-// internal crates
-#[cfg(test)]
-use crate::memory_stream::MemoryStream;
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum ErrorCode {
@@ -61,7 +55,7 @@ pub enum Error {
     MessageWriteFailed(#[source] bson::ser::Error),
 
     #[error("failed to write message to write stream")]
-    WriterWriteAllFailed(#[source] std::io::Error),
+    WriterWriteFailed(#[source] std::io::Error),
 
     #[error("failed to flush message to write stream")]
     WriterFlushFailed(#[source] std::io::Error),
@@ -250,7 +244,7 @@ struct RequestSection {
 }
 
 #[repr(i32)]
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 enum RequestState {
     Pending = 0i32,
     Complete = 1i32,
@@ -502,14 +496,16 @@ pub enum Response {
 }
 
 // 4 kilobytes per specification
-const DEFAULT_MAX_MESSAGE_SIZE: usize = 4 * 1024 * 1024;
-const DEFAULT_MAX_WAIT_TIME: std::time::Duration = std::time::Duration::from_secs(60);
+pub const DEFAULT_MAX_MESSAGE_SIZE: usize = 4 * 1024 * 1024;
+pub const DEFAULT_MAX_WAIT_TIME: std::time::Duration = std::time::Duration::from_secs(60);
 
 pub struct Session<R, W> {
     // read stream
     reader: R,
     // write stream
     writer: W,
+    // we write outgoing data to an intermediate buffer to handle writer blocking
+    message_write_buffer: Vec<u8>,
 
     // message read data
 
@@ -527,8 +523,8 @@ pub struct Session<R, W> {
 
     // message write data
 
-    // we write outgoing messages to this buffer first to verify size limitations
-    message_write_buffer: Vec<u8>,
+    // we serialize outgoing messages to this buffer first to verify size limitations
+    message_serialization_buffer: Vec<u8>,
     // the next request cookie to use when making a remote prodedure call
     next_cookie: RequestCookie,
     // sections to be sent to the remote server
@@ -553,15 +549,19 @@ where
         let mut message_write_buffer: Vec<u8> = Default::default();
         message_write_buffer.reserve(DEFAULT_MAX_MESSAGE_SIZE);
 
+        let mut message_serialization_buffer: Vec<u8> = Default::default();
+        message_serialization_buffer.reserve(DEFAULT_MAX_MESSAGE_SIZE);
+
         Session {
             reader,
             writer,
+            message_write_buffer,
             remaining_byte_count: None,
             message_read_buffer: Default::default(),
             pending_sections: Default::default(),
             inbound_requests: Default::default(),
             inbound_responses: Default::default(),
-            message_write_buffer,
+            message_serialization_buffer,
             next_cookie: Default::default(),
             outbound_sections: Default::default(),
             max_message_size: DEFAULT_MAX_MESSAGE_SIZE,
@@ -579,7 +579,9 @@ where
                 // may have been partially read already so ensure it's the right size
                 assert!(self.message_read_buffer.len() < std::mem::size_of::<i32>());
                 let bytes_needed = std::mem::size_of::<i32>() - self.message_read_buffer.len();
+                // ensure we have enough space for an entire int32
                 let mut buffer = [0u8; std::mem::size_of::<i32>()];
+                // but shrink view down to number of bytes remaining
                 let buffer = &mut buffer[0..bytes_needed];
                 match self.reader.read(buffer) {
                     Err(err) => {
@@ -635,6 +637,9 @@ where
         self.read_message_size()?;
         // read the message bytes
         if let Some(remaining) = self.remaining_byte_count {
+            #[cfg(test)]
+            println!("--- message requires {} more bytes", remaining);
+
             let mut buffer = vec![0u8; remaining];
             match self.reader.read(&mut buffer) {
                 Err(err) => {
@@ -648,6 +653,8 @@ where
                     ErrorKind::UnexpectedEof,
                 ))),
                 Ok(count) => {
+                    #[cfg(test)]
+                    println!("<<< read {} bytes", count);
                     // append read bytes
                     self.message_read_buffer
                         .extend_from_slice(&buffer[0..count]);
@@ -662,10 +669,15 @@ where
                         self.message_read_buffer = cursor.into_inner();
                         self.message_read_buffer.clear();
 
+                        #[cfg(test)]
+                        println!("<<< read message: {}", bson);
+
                         Ok(Some(
                             Message::try_from(bson).map_err(Error::MessageConversionFailed)?,
                         ))
                     } else {
+                        // update the remaining byte count
+                        self.remaining_byte_count = Some(remaining - count);
                         Ok(None)
                     }
                 }
@@ -733,39 +745,8 @@ where
         Ok(())
     }
 
-    // try and send a message bson doc, spitting in half and trying again
-    // if found to be too large
-    fn send_message_impl(&mut self, message: &mut bson::document::Document) -> Result<(), Error> {
-        self.message_write_buffer.clear();
-        message
-            .to_writer(&mut self.message_write_buffer)
-            .map_err(Error::MessageWriteFailed)?;
-
-        if self.message_write_buffer.len() > DEFAULT_MAX_MESSAGE_SIZE {
-            // if we can't split a message anymore then we have a problem
-            let sections = message.get_array_mut("sections").unwrap();
-            assert!(sections.len() > 1);
-
-            let mut right = doc! {
-                "honk_rpc" : HONK_RPC_VERSION,
-                "sections" : sections.split_off(sections.len() / 2),
-            };
-            let left = message;
-
-            self.send_message_impl(left)?;
-            self.send_message_impl(&mut right)?;
-        } else {
-            // println!("sent: {}", message);
-            self.writer
-                .write_all(&self.message_write_buffer)
-                .map_err(Error::WriterWriteAllFailed)?;
-            self.writer.flush().map_err(Error::WriterFlushFailed)?;
-        }
-
-        Ok(())
-    }
-
-    fn send_messages(&mut self) -> Result<(), Error> {
+    // package outbound sections into a message, and serialize message to the message_write_buffer
+    fn serialize_messages(&mut self) -> Result<(), Error> {
         // if no pending sections there is nothing to do
         if self.outbound_sections.is_empty() {
             return Ok(());
@@ -776,15 +757,74 @@ where
             honk_rpc: HONK_RPC_VERSION,
             sections: std::mem::take(&mut self.outbound_sections),
         };
+        let message = bson::document::Document::from(message);
+        self.serialize_messages_impl(message)
+    }
 
-        // chance to early out if no pending sections
-        if message.sections.is_empty() {
-            return Ok(());
+    fn serialize_messages_impl(
+        &mut self,
+        mut message: bson::document::Document,
+    ) -> Result<(), Error> {
+        self.message_serialization_buffer.clear();
+        message
+            .to_writer(&mut self.message_serialization_buffer)
+            .map_err(Error::MessageWriteFailed)?;
+
+        if self.message_serialization_buffer.len() > DEFAULT_MAX_MESSAGE_SIZE {
+            // if we can't split a message anymore then we have a problem
+            let sections = message.get_array_mut("sections").unwrap();
+            assert!(sections.len() > 1);
+
+            let right = doc! {
+                "honk_rpc" : HONK_RPC_VERSION,
+                "sections" : sections.split_off(sections.len() / 2),
+            };
+            let left = message;
+
+            self.serialize_messages_impl(left)?;
+            self.serialize_messages_impl(right)?;
+        } else {
+            // copy the serialized message into the pending write buffer
+            self.message_write_buffer
+                .append(&mut self.message_serialization_buffer);
         }
 
-        let mut message = bson::document::Document::from(message);
+        Ok(())
+    }
 
-        self.send_message_impl(&mut message)
+    fn write_pending_data(&mut self) -> Result<(), Error> {
+        let bytes_written = self.write_pending_data_impl()?;
+        self.writer.flush().map_err(Error::WriterWriteFailed)?;
+        self.message_write_buffer = self.message_write_buffer.split_off(bytes_written);
+        Ok(())
+    }
+
+    fn write_pending_data_impl(&mut self) -> Result<usize, Error> {
+        // write pending data
+        let mut pending_data: &[u8] = &self.message_write_buffer;
+        let pending_bytes: usize = pending_data.len();
+        let mut bytes_written: usize = 0usize;
+
+        while bytes_written != pending_bytes {
+            match self.writer.write(pending_data) {
+                Err(err) => {
+                    let kind = err.kind();
+                    if kind == ErrorKind::WouldBlock || kind == ErrorKind::TimedOut {
+                        return Ok(bytes_written);
+                    } else {
+                        return Err(err).map_err(Error::WriterWriteFailed);
+                    }
+                }
+                Ok(count) => {
+                    bytes_written += count;
+                    #[cfg(test)]
+                    println!(">>> sent {} of {} bytes", bytes_written, pending_bytes);
+                    pending_data = &self.message_write_buffer[bytes_written..];
+                }
+            }
+        }
+
+        Ok(bytes_written)
     }
 
     pub fn update(&mut self, apisets: Option<&mut [&mut dyn ApiSet]>) -> Result<(), Error> {
@@ -802,8 +842,11 @@ where
         let apisets = apisets.unwrap_or(&mut []);
         self.handle_requests(apisets)?;
 
-        // send any responses
-        self.send_messages()?;
+        // serialize pending responses
+        self.serialize_messages()?;
+
+        // write pendng data to writer
+        self.write_pending_data()?;
 
         Ok(())
     }
@@ -936,17 +979,30 @@ where
 
 #[test]
 fn test_honk_client_read_write() -> anyhow::Result<()> {
-    let stream1 = MemoryStream::new();
-    let stream2 = MemoryStream::new();
+    let socket_addr = SocketAddr::from(([127, 0, 0, 1], 0u16));
+    let listener = TcpListener::bind(socket_addr)?;
+    let socket_addr = listener.local_addr()?;
 
-    let mut alice = Session::new(stream1.clone(), stream2.clone());
-    let mut pat = Session::new(stream2, stream1);
+    let stream1 = TcpStream::connect(socket_addr)?;
+    stream1.set_nonblocking(true)?;
+    let (stream2, _socket_addr) = listener.accept()?;
+    stream2.set_nonblocking(true)?;
+
+    let mut alice = Session::new(stream1.try_clone()?, stream1);
+    let mut pat = Session::new(stream2.try_clone()?, stream2);
+
+    println!("--- pat reads message, but none has been sent");
 
     // no message sent yet
     assert!(pat.read_message()?.is_none());
 
+    println!("--- alice sends no message, but no pending sections so no message sent");
+
     // send an empty message
-    alice.send_messages()?;
+    alice.serialize_messages()?;
+    alice.write_pending_data()?;
+
+    println!("--- pat reads message, but none has been sent");
 
     // ensure no mesage as actually sent
     match pat.read_message() {
@@ -958,6 +1014,8 @@ fn test_honk_client_read_write() -> anyhow::Result<()> {
         Err(err) => panic!("{:?}", err),
     }
 
+    println!("--- pat sends an error message");
+
     const CUSTOM_ERROR: &str = "Custom Error!";
 
     pat.outbound_sections.push(Section::Error(ErrorSection {
@@ -966,26 +1024,38 @@ fn test_honk_client_read_write() -> anyhow::Result<()> {
         message: Some(CUSTOM_ERROR.to_string()),
         data: None,
     }));
-    pat.send_messages()?;
 
-    if let Ok(Some(mut msg)) = alice.read_message() {
-        assert!(msg.sections.len() == 1);
-        match msg.sections.pop() {
-            Some(Section::Error(section)) => {
-                match (section.cookie, section.code, section.message) {
-                    (Some(42069), ErrorCode::Runtime(1), Some(message)) => {
-                        assert!(message == CUSTOM_ERROR)
-                    }
-                    (cookie, code, message) => panic!(
-                        "unexpected error section: cookie: {:?}, code: {:?}, message: {:?}",
-                        cookie, code, message
-                    ),
-                };
+    pat.serialize_messages()?;
+    pat.write_pending_data()?;
+
+    println!("--- alice reads and verifies message");
+
+    // wait for alice to receive message
+    let mut alice_read_message: bool = false;
+    while !alice_read_message {
+        // println!("reading...");
+        if let Some(mut msg) = alice.read_message()? {
+            assert_eq!(msg.sections.len(), 1);
+            match msg.sections.pop() {
+                Some(Section::Error(section)) => {
+                    match (section.cookie, section.code, section.message) {
+                        (Some(42069), ErrorCode::Runtime(1), Some(message)) => {
+                            assert_eq!(message, CUSTOM_ERROR);
+                            alice_read_message = true;
+                        }
+                        (cookie, code, message) => panic!(
+                            "unexpected error section: cookie: {:?}, code: {:?}, message: {:?}",
+                            cookie, code, message
+                        ),
+                    };
+                }
+                Some(_) => panic!("was expecting an Error section"),
+                None => panic!("we should have a message"),
             }
-            Some(_) => panic!("was expecting an Error section"),
-            None => panic!("we should have a message"),
         }
     }
+
+    println!("--- alice sends multi-section message");
 
     alice.outbound_sections.append(&mut vec![
         Section::Error(ErrorSection {
@@ -1007,37 +1077,39 @@ fn test_honk_client_read_write() -> anyhow::Result<()> {
             result: None,
         }),
     ]);
-
     // send a multi-section mesage
-    alice.send_messages()?;
+    alice.serialize_messages()?;
+    alice.write_pending_data()?;
+
+    println!("--- pat reads and verifies multi-section message");
 
     // read sections sent to pat
-    pat.read_sections()?;
-    for section in pat.pending_sections.iter() {
-        match section {
-            Section::Error(section) => {
-                assert!(
-                    section.cookie == Some(42069)
-                        && section.code == ErrorCode::Runtime(2)
-                        && section.message == Some(CUSTOM_ERROR.to_string())
-                        && section.data == None
-                );
+    let mut pat_read_message: bool = false;
+    while !pat_read_message {
+        if let Some(msg) = pat.read_message()? {
+            assert_eq!(msg.sections.len(), 3);
+            for section in msg.sections.iter() {
+                match section {
+                    Section::Error(section) => {
+                        assert_eq!(section.cookie, Some(42069));
+                        assert_eq!(section.code, ErrorCode::Runtime(2));
+                        assert_eq!(section.message, Some(CUSTOM_ERROR.to_string()));
+                        assert_eq!(section.data, None);
+                    }
+                    Section::Request(section) => {
+                        assert_eq!(section.cookie, None);
+                        assert_eq!(section.namespace, "std");
+                        assert_eq!(section.function, "print");
+                        assert_eq!(section.version, 0i32);
+                    }
+                    Section::Response(section) => {
+                        assert_eq!(section.cookie, 123456);
+                        assert_eq!(section.state, RequestState::Pending);
+                        assert_eq!(section.result, None);
+                    }
+                }
             }
-            Section::Request(section) => {
-                assert!(
-                    section.cookie == None
-                        && section.namespace == "std"
-                        && section.function == "print"
-                        && section.version == 0i32
-                );
-            }
-            Section::Response(section) => {
-                assert!(
-                    section.cookie == 123456
-                        && section.state == RequestState::Pending
-                        && section.result == None
-                );
-            }
+            pat_read_message = true;
         }
     }
 
@@ -1046,11 +1118,17 @@ fn test_honk_client_read_write() -> anyhow::Result<()> {
 
 #[test]
 fn test_honk_timeout() -> anyhow::Result<()> {
-    let stream1 = MemoryStream::new();
-    let stream2 = MemoryStream::new();
+    let socket_addr = SocketAddr::from(([127, 0, 0, 1], 0u16));
+    let listener = TcpListener::bind(socket_addr)?;
+    let socket_addr = listener.local_addr()?;
 
-    let mut alice = Session::new(stream1.clone(), stream2.clone());
-    let mut pat = Session::new(stream2, stream1);
+    let stream1 = TcpStream::connect(socket_addr)?;
+    stream1.set_nonblocking(true)?;
+    let (stream2, _socket_addr) = listener.accept()?;
+    stream2.set_nonblocking(true)?;
+
+    let mut alice = Session::new(stream1.try_clone()?, stream1);
+    let mut pat = Session::new(stream2.try_clone()?, stream2);
 
     assert!(alice.update(None).is_ok());
     alice.max_wait_time = std::time::Duration::from_secs(2);
@@ -1075,312 +1153,5 @@ fn test_honk_timeout() -> anyhow::Result<()> {
         Ok(()) => panic!("should have timed out"),
         Err(_err) => (),
     }
-    Ok(())
-}
-
-#[cfg(test)]
-#[derive(Default)]
-struct TestApiSet {
-    delay_echo_results: VecDeque<(RequestCookie, Option<bson::Bson>, ErrorCode)>,
-}
-
-#[cfg(test)]
-const RUNTIME_ERROR_INVALID_ARG: ErrorCode = ErrorCode::Runtime(1i32);
-#[cfg(test)]
-const RUNTIME_ERROR_NOT_IMPLEMENTED: ErrorCode = ErrorCode::Runtime(2i32);
-
-#[cfg(test)]
-impl TestApiSet {
-    // returns the same string arg sent
-    fn echo_0(
-        &mut self,
-        mut args: bson::document::Document,
-    ) -> Result<Option<bson::Bson>, ErrorCode> {
-        if let Some(bson::Bson::String(val)) = args.get_mut("val") {
-            println!("TestApiSet::echo_0(val): val = '{}'", val);
-            Ok(Some(bson::Bson::String(std::mem::take(val))))
-        } else {
-            Err(RUNTIME_ERROR_INVALID_ARG)
-        }
-    }
-
-    // second version of echo that isn't implemented
-    fn echo_1(&mut self, _args: bson::document::Document) -> Result<Option<bson::Bson>, ErrorCode> {
-        Err(RUNTIME_ERROR_NOT_IMPLEMENTED)
-    }
-
-    // same as echo but takes awhile and appends ' - Delayed!' to source string before returning
-    fn delay_echo_0(
-        &mut self,
-        request_cookie: Option<RequestCookie>,
-        mut args: bson::document::Document,
-    ) -> Result<Option<bson::Bson>, ErrorCode> {
-        if let Some(bson::Bson::String(val)) = args.get_mut("val") {
-            println!("TestApiSet::delay_echo_0(val): val = '{}'", val);
-            // only enqueue response if a request cookie is provided
-            if let Some(request_cookie) = request_cookie {
-                val.push_str(" - Delayed!");
-                self.delay_echo_results.push_back((
-                    request_cookie,
-                    Some(bson::Bson::String(std::mem::take(val))),
-                    ErrorCode::Success,
-                ));
-            }
-            // async func so don't return result immediately
-            Ok(None)
-        } else {
-            Err(RUNTIME_ERROR_INVALID_ARG)
-        }
-    }
-
-    fn sha256_0(
-        &mut self,
-        mut args: bson::document::Document,
-    ) -> Result<Option<bson::Bson>, ErrorCode> {
-        if let Some(bson::Bson::Binary(val)) = args.get_mut("data") {
-            let mut sha256 = Sha3::sha3_256();
-            sha256.input(&val.bytes);
-
-            Ok(Some(bson::Bson::String(sha256.result_str())))
-        } else {
-            Err(RUNTIME_ERROR_INVALID_ARG)
-        }
-    }
-}
-
-#[cfg(test)]
-impl ApiSet for TestApiSet {
-    fn namespace(&self) -> &str {
-        "test"
-    }
-
-    fn exec_function(
-        &mut self,
-        name: &str,
-        version: i32,
-        args: bson::document::Document,
-        request_cookie: Option<RequestCookie>,
-    ) -> Result<Option<bson::Bson>, ErrorCode> {
-        match (name, version) {
-            ("echo", 0) => self.echo_0(args),
-            ("echo", 1) => self.echo_1(args),
-            ("delay_echo", 0) => self.delay_echo_0(request_cookie, args),
-            ("sha256", 0) => self.sha256_0(args),
-            (name, version) => {
-                println!("received {{ name: '{}', version: {} }}", name, version);
-                Err(ErrorCode::RequestFunctionInvalid)
-            }
-        }
-    }
-
-    fn next_result(&mut self) -> Option<(RequestCookie, Option<bson::Bson>, ErrorCode)> {
-        self.delay_echo_results.pop_front()
-    }
-}
-
-#[test]
-fn test_honk_client_apiset() -> anyhow::Result<()> {
-    let stream1 = MemoryStream::new();
-    let stream2 = MemoryStream::new();
-
-    let mut alice = Session::new(stream1.clone(), stream2.clone());
-    let mut pat = Session::new(stream2, stream1);
-
-    let mut test_api_set: TestApiSet = Default::default();
-    let alice_apisets: &mut [&mut dyn ApiSet] = &mut [&mut test_api_set];
-
-    // Pat calls remote test::echo_0 call
-    //
-    let sent_cookie = pat.client_call("test", "echo", 0, doc! {"val" : "Hello Alice!"})?;
-    pat.update(None)?;
-
-    // alice receives and handles request
-    alice.update(Some(alice_apisets))?;
-
-    // pat recieves and handles alices response
-    pat.update(None)?;
-    if let Some(response) = pat.client_next_response() {
-        match response {
-            Response::Pending { cookie } => {
-                panic!("received unexpected pending, cookie: {}", cookie);
-            }
-            Response::Success { cookie, result } => {
-                assert!(sent_cookie == cookie);
-                if let bson::Bson::String(result) = result {
-                    assert!(result == "Hello Alice!");
-                }
-            }
-            Response::Error { cookie, error_code } => {
-                panic!(
-                    "received unexpected error: {}, cookie: {}",
-                    error_code, cookie
-                );
-            }
-        }
-    } else {
-        panic!("expected response");
-    }
-
-    //
-    // Pat calls remote test::echo_0 call (with wrong arg)
-    //
-    let sent_cookie = pat.client_call("test", "echo", 0, doc! {"string" : "Hello Alice!"})?;
-    pat.update(None)?;
-
-    // alice receives and handles request
-    alice.update(Some(alice_apisets))?;
-
-    // pat recieves and handles alices response
-    pat.update(None)?;
-    if let Some(response) = pat.client_next_response() {
-        match response {
-            Response::Pending { cookie } => {
-                panic!("received unexpected pending, cookie: {}", cookie);
-            }
-            Response::Success { cookie, result } => {
-                panic!("received unexpected result: {}, cookie: {}", result, cookie);
-            }
-            Response::Error { cookie, error_code } => {
-                assert!(sent_cookie == cookie);
-                assert!(error_code == RUNTIME_ERROR_INVALID_ARG);
-            }
-        }
-    } else {
-        panic!("expected response");
-    }
-
-    //
-    // Pat calls v2 remote test::echo_1 call (which is not implemented)
-    //
-    let sent_cookie = pat.client_call("test", "echo", 1, doc! {"val" : "Hello Again!"})?;
-    pat.update(None)?;
-
-    // alice receives and handles request
-    alice.update(Some(alice_apisets))?;
-
-    // pat recieves and handles alices response
-    pat.update(None)?;
-    if let Some(response) = pat.client_next_response() {
-        match response {
-            Response::Pending { cookie } => {
-                panic!("received unexpected pending, cookie: {}", cookie);
-            }
-            Response::Success { cookie, result } => {
-                panic!("received unexpected result: {}, cookie: {}", result, cookie);
-            }
-            Response::Error { cookie, error_code } => {
-                assert!(sent_cookie == cookie);
-                assert!(error_code == RUNTIME_ERROR_NOT_IMPLEMENTED);
-            }
-        }
-    } else {
-        panic!("expected response");
-    }
-
-    //
-    // Pat calls test::delay_echo_0 which goes through the async machinery
-    //
-    let sent_cookie = pat.client_call("test", "delay_echo", 0, doc! {"val" : "Hello Delayed?"})?;
-    pat.update(None)?;
-
-    // alice receives and handles request
-    alice.update(Some(alice_apisets))?;
-
-    // pat recieves and handles alices response
-    pat.update(None)?;
-    if let Some(response) = pat.client_next_response() {
-        match response {
-            Response::Pending { cookie } => {
-                assert!(sent_cookie == cookie);
-            }
-            Response::Error { cookie, error_code } => {
-                panic!(
-                    "received unexpected error: {}, cookie: {}",
-                    error_code, cookie
-                );
-            }
-            Response::Success { cookie, result } => {
-                panic!("received unexpected sucess: {}, cookie: {}", result, cookie);
-            }
-        }
-    } else {
-        panic!("expected response");
-    }
-    if let Some(response) = pat.client_next_response() {
-        match response {
-            Response::Pending { cookie } => {
-                panic!("received unexpected pending, cookie: {}", cookie);
-            }
-            Response::Error { cookie, error_code } => {
-                panic!(
-                    "received unexpected error: {}, cookie: {}",
-                    error_code, cookie
-                );
-            }
-            Response::Success { cookie, result } => {
-                assert!(sent_cookie == cookie);
-                if let bson::Bson::String(result) = result {
-                    assert!(result == "Hello Delayed? - Delayed!");
-                }
-            }
-        }
-    } else {
-        panic!("expected response");
-    }
-
-    let mut args: bson::document::Document = Default::default();
-    let data = vec![0u8; DEFAULT_MAX_MESSAGE_SIZE / 2];
-    args.insert(
-        "data",
-        bson::Bson::Binary(bson::Binary {
-            subtype: bson::spec::BinarySubtype::Generic,
-            bytes: data,
-        }),
-    );
-
-    let cookie1 = pat.client_call("test", "sha256", 0, args)?;
-
-    let mut args: bson::document::Document = Default::default();
-    let data = vec![0xFFu8; DEFAULT_MAX_MESSAGE_SIZE / 2];
-    args.insert(
-        "data",
-        bson::Bson::Binary(bson::Binary {
-            subtype: bson::spec::BinarySubtype::Generic,
-            bytes: data,
-        }),
-    );
-
-    let cookie2 = pat.client_call("test", "sha256", 0, args)?;
-    pat.update(None)?;
-
-    // alice handle requests
-    alice.update(Some(alice_apisets))?;
-
-    // pat handle responses
-    pat.update(None)?;
-    for response in pat.client_drain_responses() {
-        match response {
-            Response::Pending { cookie } => {
-                panic!("received unexpected pending, cookie: {}", cookie);
-            }
-            Response::Error { cookie, error_code } => {
-                panic!(
-                    "received unexpected error: {}, cookie: {}",
-                    error_code, cookie
-                );
-            }
-            Response::Success { cookie, result } => {
-                println!("cookie: {}, result: {}", cookie, result);
-                if let bson::Bson::String(result) = result {
-                    if cookie == cookie1 {
-                        assert!(result == "5866229a219b739e5a9a6b7ff01c842f6ab9877ac4a30ddc90e76278e5ac4305");
-                    } else if cookie == cookie2 {
-                        assert!(result == "2b9d259845615e9f2840297569af9ff94c17793e0fdd013d88a277d46437e1e8")
-                    }
-                }
-            }
-        }
-    }
-
     Ok(())
 }

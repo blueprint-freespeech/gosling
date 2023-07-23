@@ -1,7 +1,6 @@
 set(honk_rpc_sources
     src/honk_rpc.rs
-    src/lib.rs
-    src/memory_stream.rs)
+    src/lib.rs)
 
 #
 # build target
