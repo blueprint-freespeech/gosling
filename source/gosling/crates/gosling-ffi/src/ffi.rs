@@ -10,14 +10,14 @@ use std::io::{BufRead, BufReader, Write};
 #[cfg(test)]
 use std::net::TcpStream;
 use std::os::raw::c_char;
-#[cfg(unix)]
-use std::os::unix::io::{IntoRawFd, RawFd};
 #[cfg(all(test, unix))]
 use std::os::unix::io::FromRawFd;
-#[cfg(windows)]
-use std::os::windows::io::{IntoRawSocket, RawSocket};
+#[cfg(unix)]
+use std::os::unix::io::{IntoRawFd, RawFd};
 #[cfg(all(test, windows))]
 use std::os::windows::io::FromRawSocket;
+#[cfg(windows)]
+use std::os::windows::io::{IntoRawSocket, RawSocket};
 use std::panic;
 use std::path::Path;
 use std::ptr;
@@ -2955,7 +2955,6 @@ pub extern "C" fn gosling_context_set_endpoint_server_handshake_failed_callback(
     );
 }
 
-
 //
 // Test
 //
@@ -2980,30 +2979,25 @@ macro_rules! require_noerror {
 #[cfg(test)]
 // simple bson document: { msg : "hello world" }
 const CHALLENGE_BSON: [u8; 26] = [
-    // document length 26 == 0x0000001a
-    0x1a, 0x00, 0x00, 0x00,
-    // string msg
-    0x02, b'm', b's', b'g', 0x00,
-    // strlen("hello world\x00") 12 = 0x0000000c
-    0x0c, 0x00, 0x00, 0x00,
-    // "hello world"
-    b'h', b'e', b'l', b'l', b'o', b' ', b'w', b'o', b'r', b'l', b'd', 0x00,
-    // document null-terminator
-    0x00];
+    0x1a, 0x00, 0x00, 0x00, // document length 26 == 0x0000001a
+    0x02, b'm', b's', b'g', 0x00, // string msg
+    0x0c, 0x00, 0x00, 0x00, // strlen("hello world\x00") 12 = 0x0000000c
+    b'h', b'e', b'l', b'l', b'o', b' ', b'w', b'o', b'r', b'l', b'd', 0x00, // "hello world"
+    0x00, // document null-terminator
+];
 
 #[cfg(test)]
-// empty bson document
+// empty bson document: {}
 const CHALLENGE_RESPONSE_BSON: [u8; 5] = [
-    // document length 5 == 0x00000005
-    0x05, 0x00, 0x00, 0x00,
-    // document null-terminator
-    0x00];
+    0x05, 0x00, 0x00, 0x00, // document length 5 == 0x00000005
+    0x00, // document null-terminator
+];
 
 #[cfg(test)]
 static ENDPOINT_NAME: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"endpoint_name\0") };
 
 #[cfg(test)]
-static CHANNEL_NAME: &CStr = unsafe {CStr::from_bytes_with_nul_unchecked(b"channel_name\0") };
+static CHANNEL_NAME: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"channel_name\0") };
 
 #[cfg(test)]
 fn create_client_identity_handshake(context: *mut GoslingContext) -> anyhow::Result<()> {
@@ -3011,13 +3005,19 @@ fn create_client_identity_handshake(context: *mut GoslingContext) -> anyhow::Res
         context: *mut GoslingContext,
         _handshake_handle: usize,
         _challenge_buffer: *const u8,
-        challenge_buffer_size: usize) -> usize {
+        challenge_buffer_size: usize,
+    ) -> usize {
         assert!(!context.is_null());
         assert_eq!(challenge_buffer_size, CHALLENGE_BSON.len());
 
         CHALLENGE_RESPONSE_BSON.len()
     }
-    require_noerror!(gosling_context_set_identity_client_challenge_response_size_callback(context, Some(challenge_response_size_callback)));
+    require_noerror!(
+        gosling_context_set_identity_client_challenge_response_size_callback(
+            context,
+            Some(challenge_response_size_callback)
+        )
+    );
 
     extern "C" fn build_challenge_response_callback(
         context: *mut GoslingContext,
@@ -3025,18 +3025,31 @@ fn create_client_identity_handshake(context: *mut GoslingContext) -> anyhow::Res
         challenge_buffer: *const u8,
         challenge_buffer_size: usize,
         out_challenge_response_buffer: *mut u8,
-        challenge_response_buffer_size: usize) -> () {
+        challenge_response_buffer_size: usize,
+    ) -> () {
         assert!(!context.is_null());
         assert!(!challenge_buffer.is_null());
         assert_eq!(challenge_buffer_size, CHALLENGE_BSON.len());
-        let challenge_buffer = unsafe { std::slice::from_raw_parts(challenge_buffer as *const u8, challenge_buffer_size) };
+        let challenge_buffer = unsafe {
+            std::slice::from_raw_parts(challenge_buffer as *const u8, challenge_buffer_size)
+        };
         assert_eq!(challenge_buffer, CHALLENGE_BSON);
         assert!(!out_challenge_response_buffer.is_null());
-        let out_challenge_response_buffer = unsafe {std::slice::from_raw_parts_mut(out_challenge_response_buffer as *mut u8, challenge_response_buffer_size) };
+        let out_challenge_response_buffer = unsafe {
+            std::slice::from_raw_parts_mut(
+                out_challenge_response_buffer as *mut u8,
+                challenge_response_buffer_size,
+            )
+        };
 
         out_challenge_response_buffer.clone_from_slice(&CHALLENGE_RESPONSE_BSON);
     }
-    require_noerror!(gosling_context_set_identity_client_build_challenge_response_callback(context, Some(build_challenge_response_callback)));
+    require_noerror!(
+        gosling_context_set_identity_client_build_challenge_response_callback(
+            context,
+            Some(build_challenge_response_callback)
+        )
+    );
 
     Ok(())
 }
@@ -3046,19 +3059,24 @@ fn create_server_identity_handshake(context: *mut GoslingContext) -> anyhow::Res
     extern "C" fn client_allowed_callback(
         context: *mut GoslingContext,
         _handshake_handle: usize,
-        client_service_id: *const GoslingV3OnionServiceId) -> bool {
+        client_service_id: *const GoslingV3OnionServiceId,
+    ) -> bool {
         assert!(!context.is_null());
         assert!(!client_service_id.is_null());
 
         true
     }
-    require_noerror!(gosling_context_set_identity_server_client_allowed_callback(context, Some(client_allowed_callback)));
+    require_noerror!(gosling_context_set_identity_server_client_allowed_callback(
+        context,
+        Some(client_allowed_callback)
+    ));
 
     extern "C" fn endpoint_supported_callback(
         context: *mut GoslingContext,
         _handshake_handle: usize,
         endpoint_name: *const c_char,
-        endpoint_name_length: usize) -> bool {
+        endpoint_name_length: usize,
+    ) -> bool {
         assert!(!context.is_null());
         let endpoint_name = unsafe { CStr::from_ptr(endpoint_name) };
         assert_eq!(endpoint_name.to_bytes().len(), endpoint_name_length);
@@ -3067,48 +3085,73 @@ fn create_server_identity_handshake(context: *mut GoslingContext) -> anyhow::Res
         }
         false
     }
-    require_noerror!(gosling_context_set_identity_server_endpoint_supported_callback(context, Some(endpoint_supported_callback)));
+    require_noerror!(
+        gosling_context_set_identity_server_endpoint_supported_callback(
+            context,
+            Some(endpoint_supported_callback)
+        )
+    );
 
     extern "C" fn challenge_size_callback(
         context: *mut GoslingContext,
-        _handshake_handle: usize) -> usize {
+        _handshake_handle: usize,
+    ) -> usize {
         assert!(!context.is_null());
         CHALLENGE_BSON.len()
     }
-    require_noerror!(gosling_context_set_identity_server_challenge_size_callack(context, Some(challenge_size_callback)));
+    require_noerror!(gosling_context_set_identity_server_challenge_size_callack(
+        context,
+        Some(challenge_size_callback)
+    ));
 
     extern "C" fn build_challenge_callback(
         context: *mut GoslingContext,
         _handshake_handle: usize,
         out_challenge_buffer: *mut u8,
-        challenge_buffer_size: usize) -> () {
+        challenge_buffer_size: usize,
+    ) -> () {
         assert!(!context.is_null());
         assert!(!out_challenge_buffer.is_null());
         assert_eq!(challenge_buffer_size, CHALLENGE_BSON.len());
 
-        let out_challenge_buffer = unsafe {std::slice::from_raw_parts_mut(out_challenge_buffer as *mut u8,challenge_buffer_size) };
+        let out_challenge_buffer = unsafe {
+            std::slice::from_raw_parts_mut(out_challenge_buffer as *mut u8, challenge_buffer_size)
+        };
         out_challenge_buffer.clone_from_slice(&CHALLENGE_BSON);
     }
-    require_noerror!(gosling_context_set_identity_server_build_challenge_callback(context, Some(build_challenge_callback)));
+    require_noerror!(
+        gosling_context_set_identity_server_build_challenge_callback(
+            context,
+            Some(build_challenge_callback)
+        )
+    );
 
     extern "C" fn verify_challenge_response_callback(
         context: *mut GoslingContext,
         _handshake_handle: usize,
         challenge_response_buffer: *const u8,
-        challenge_response_buffer_size: usize) -> bool {
+        challenge_response_buffer_size: usize,
+    ) -> bool {
         assert!(!context.is_null());
         assert!(!challenge_response_buffer.is_null());
         if challenge_response_buffer_size != CHALLENGE_RESPONSE_BSON.len() {
             return false;
         }
 
-        let challenge_response_buffer = unsafe {std::slice::from_raw_parts(challenge_response_buffer, challenge_response_buffer_size) };
+        let challenge_response_buffer = unsafe {
+            std::slice::from_raw_parts(challenge_response_buffer, challenge_response_buffer_size)
+        };
         if challenge_response_buffer != CHALLENGE_RESPONSE_BSON {
             return false;
         }
         true
     }
-    require_noerror!(gosling_context_set_identity_server_verify_challenge_response_callback(context, Some(verify_challenge_response_callback)));
+    require_noerror!(
+        gosling_context_set_identity_server_verify_challenge_response_callback(
+            context,
+            Some(verify_challenge_response_callback)
+        )
+    );
 
     Ok(())
 }
@@ -3119,7 +3162,8 @@ fn create_server_endpoint_handshake(context: *mut GoslingContext) -> anyhow::Res
         context: *mut GoslingContext,
         _handshake_handle: usize,
         channel_name: *const c_char,
-        channel_name_length: usize) -> bool {
+        channel_name_length: usize,
+    ) -> bool {
         assert!(!context.is_null());
         assert!(!channel_name.is_null());
         let channel_name = unsafe { CStr::from_ptr(channel_name) };
@@ -3129,14 +3173,18 @@ fn create_server_endpoint_handshake(context: *mut GoslingContext) -> anyhow::Res
         }
         false
     }
-    require_noerror!(gosling_context_set_endpoint_server_channel_supported_callback(context, Some(channel_supported_callback)));
+    require_noerror!(
+        gosling_context_set_endpoint_server_channel_supported_callback(
+            context,
+            Some(channel_supported_callback)
+        )
+    );
 
     Ok(())
 }
 
 #[test]
 fn test_context_init() -> anyhow::Result<()> {
-
     // init libary
 
     println!("--- init gosling library");
@@ -3152,22 +3200,26 @@ fn test_context_init() -> anyhow::Result<()> {
     require_noerror!(gosling_ed25519_private_key_generate(&mut alice_private_key));
 
     let mut alice_identity: *mut GoslingV3OnionServiceId = ptr::null_mut();
-    require_noerror!(gosling_v3_onion_service_id_from_ed25519_private_key(&mut alice_identity, alice_private_key));
+    require_noerror!(gosling_v3_onion_service_id_from_ed25519_private_key(
+        &mut alice_identity,
+        alice_private_key
+    ));
 
     let mut alice_working_dir = std::env::temp_dir();
     alice_working_dir.push("gosling_context_test_alice");
     let alice_working_dir: CString = CString::new(alice_working_dir.to_str().unwrap())?;
 
     let mut alice_context: *mut GoslingContext = ptr::null_mut();
-    require_noerror!(gosling_context_init
-        (&mut alice_context,
-            ptr::null(),
-            0usize,
-            alice_working_dir.as_ptr(),
-            alice_working_dir.as_bytes().len(),
-            420,
-            420,
-            alice_private_key));
+    require_noerror!(gosling_context_init(
+        &mut alice_context,
+        ptr::null(),
+        0usize,
+        alice_working_dir.as_ptr(),
+        alice_working_dir.as_bytes().len(),
+        420,
+        420,
+        alice_private_key
+    ));
 
     create_server_identity_handshake(alice_context)?;
     create_server_endpoint_handshake(alice_context)?;
@@ -3178,35 +3230,41 @@ fn test_context_init() -> anyhow::Result<()> {
     require_noerror!(gosling_ed25519_private_key_generate(&mut pat_private_key));
 
     let mut pat_identity: *mut GoslingV3OnionServiceId = ptr::null_mut();
-    require_noerror!(gosling_v3_onion_service_id_from_ed25519_private_key(&mut pat_identity, pat_private_key));
+    require_noerror!(gosling_v3_onion_service_id_from_ed25519_private_key(
+        &mut pat_identity,
+        pat_private_key
+    ));
 
     let mut pat_working_dir = std::env::temp_dir();
     pat_working_dir.push("gosling_context_test_pat");
     let pat_working_dir: CString = CString::new(pat_working_dir.to_str().unwrap())?;
 
     let mut pat_context: *mut GoslingContext = ptr::null_mut();
-    require_noerror!(gosling_context_init
-        (&mut pat_context,
-            ptr::null(),
-            0usize,
-            pat_working_dir.as_ptr(),
-            pat_working_dir.as_bytes().len(),
-            420,
-            420,
-            pat_private_key));
+    require_noerror!(gosling_context_init(
+        &mut pat_context,
+        ptr::null(),
+        0usize,
+        pat_working_dir.as_ptr(),
+        pat_working_dir.as_bytes().len(),
+        420,
+        420,
+        pat_private_key
+    ));
 
     create_client_identity_handshake(pat_context)?;
 
     // bootstrap alice
 
     static ALICE_BOOTSTRAP_COMPLETE: AtomicBool = AtomicBool::new(false);
-    extern "C" fn alice_bootstrap_complete_callback(
-        context: *mut GoslingContext) -> () {
+    extern "C" fn alice_bootstrap_complete_callback(context: *mut GoslingContext) -> () {
         assert!(!context.is_null());
         ALICE_BOOTSTRAP_COMPLETE.store(true, Ordering::Relaxed);
         println!("--- alice bootstraped");
     }
-    require_noerror!(gosling_context_set_tor_bootstrap_completed_callback(alice_context, Some(alice_bootstrap_complete_callback)));
+    require_noerror!(gosling_context_set_tor_bootstrap_completed_callback(
+        alice_context,
+        Some(alice_bootstrap_complete_callback)
+    ));
 
     println!("--- begin alice bootstrap");
     require_noerror!(gosling_context_bootstrap_tor(alice_context));
@@ -3216,14 +3274,16 @@ fn test_context_init() -> anyhow::Result<()> {
 
     // init alice's identity server
     static ALICE_IDENTITY_SERVER_READY: AtomicBool = AtomicBool::new(false);
-    extern "C" fn alice_identity_server_published_callback(
-        context: *mut GoslingContext) -> () {
+    extern "C" fn alice_identity_server_published_callback(context: *mut GoslingContext) -> () {
         assert!(!context.is_null());
         println!("--- alice identity server published");
 
         ALICE_IDENTITY_SERVER_READY.store(true, Ordering::Relaxed);
     }
-    require_noerror!(gosling_context_set_identity_server_published_callback(alice_context, Some(alice_identity_server_published_callback)));
+    require_noerror!(gosling_context_set_identity_server_published_callback(
+        alice_context,
+        Some(alice_identity_server_published_callback)
+    ));
 
     println!("--- start alice identity server");
     require_noerror!(gosling_context_start_identity_server(alice_context));
@@ -3235,15 +3295,17 @@ fn test_context_init() -> anyhow::Result<()> {
     // bootstrap pat
 
     static PAT_BOOTSTRAP_COMPLETE: AtomicBool = AtomicBool::new(false);
-    extern "C" fn pat_bootstrap_complete_callback(
-        context: *mut GoslingContext) -> () {
+    extern "C" fn pat_bootstrap_complete_callback(context: *mut GoslingContext) -> () {
         assert!(!context.is_null());
 
         println!("--- pat bootstrapped");
 
         PAT_BOOTSTRAP_COMPLETE.store(true, Ordering::Relaxed);
     }
-    require_noerror!(gosling_context_set_tor_bootstrap_completed_callback(pat_context, Some(pat_bootstrap_complete_callback)));
+    require_noerror!(gosling_context_set_tor_bootstrap_completed_callback(
+        pat_context,
+        Some(pat_bootstrap_complete_callback)
+    ));
 
     println!("--- begin pat bootstrap");
     require_noerror!(gosling_context_bootstrap_tor(pat_context));
@@ -3263,7 +3325,8 @@ fn test_context_init() -> anyhow::Result<()> {
         endpoint_service_id: *const GoslingV3OnionServiceId,
         endpoint_name: *const c_char,
         endpoint_name_length: usize,
-        client_auth_private_key: *const GoslingX25519PrivateKey) -> () {
+        client_auth_private_key: *const GoslingX25519PrivateKey,
+    ) -> () {
         assert!(!context.is_null());
         assert!(!identity_service_id.is_null());
         assert!(!endpoint_service_id.is_null());
@@ -3276,34 +3339,63 @@ fn test_context_init() -> anyhow::Result<()> {
         let mut error: *mut GoslingFFIError = ptr::null_mut();
 
         let mut alice_endpoint_service_id: *mut GoslingV3OnionServiceId = ptr::null_mut();
-        gosling_v3_onion_service_id_clone(&mut alice_endpoint_service_id, endpoint_service_id, &mut error);
+        gosling_v3_onion_service_id_clone(
+            &mut alice_endpoint_service_id,
+            endpoint_service_id,
+            &mut error,
+        );
         assert!(error.is_null());
         assert!(!alice_endpoint_service_id.is_null());
-        unsafe { ALICE_ENDPOINT_SERVICE_ID = alice_endpoint_service_id; }
+        unsafe {
+            ALICE_ENDPOINT_SERVICE_ID = alice_endpoint_service_id;
+        }
 
         let mut pat_onion_auth_private_key: *mut GoslingX25519PrivateKey = ptr::null_mut();
-        gosling_x25519_private_key_clone(&mut pat_onion_auth_private_key, client_auth_private_key, &mut error);
+        gosling_x25519_private_key_clone(
+            &mut pat_onion_auth_private_key,
+            client_auth_private_key,
+            &mut error,
+        );
         assert!(error.is_null());
         assert!(!pat_onion_auth_private_key.is_null());
-        unsafe { PAT_ONION_AUTH_PRIVATE_KEY = pat_onion_auth_private_key; }
+        unsafe {
+            PAT_ONION_AUTH_PRIVATE_KEY = pat_onion_auth_private_key;
+        }
 
         println!("--- pat identity handshake completed");
 
-        unsafe { PAT_ENDPOINT_REQUEST_COMPLETE = true; }
+        unsafe {
+            PAT_ENDPOINT_REQUEST_COMPLETE = true;
+        }
     }
-    require_noerror!(gosling_context_set_identity_client_handshake_completed_callback(pat_context, Some(pat_identity_client_handshake_completed_callback)));
+    require_noerror!(
+        gosling_context_set_identity_client_handshake_completed_callback(
+            pat_context,
+            Some(pat_identity_client_handshake_completed_callback)
+        )
+    );
 
     extern "C" fn pat_identity_client_handshake_failed_callback(
         context: *mut GoslingContext,
         _handshake_handle: usize,
-        error: *const GoslingFFIError) -> () {
+        error: *const GoslingFFIError,
+    ) -> () {
         assert!(!context.is_null());
         assert!(!error.is_null());
-        let error_message = unsafe { CStr::from_ptr(gosling_error_get_message(error)).to_str().unwrap() };
+        let error_message = unsafe {
+            CStr::from_ptr(gosling_error_get_message(error))
+                .to_str()
+                .unwrap()
+        };
 
         panic!("--- pat identity handshake failed: {}", error_message);
     }
-    require_noerror!(gosling_context_set_identity_client_handshake_failed_callback(pat_context, Some(pat_identity_client_handshake_failed_callback)));
+    require_noerror!(
+        gosling_context_set_identity_client_handshake_failed_callback(
+            pat_context,
+            Some(pat_identity_client_handshake_failed_callback)
+        )
+    );
 
     static mut ALICE_ENDPOINT_REQUEST_COMPLETE: bool = false;
     static mut ALICE_ENDPOINT_PRIVATE_KEY: *mut GoslingEd25519PrivateKey = ptr::null_mut();
@@ -3317,11 +3409,12 @@ fn test_context_init() -> anyhow::Result<()> {
         endpoint_name: *const c_char,
         endpoint_name_length: usize,
         client_service_id: *const GoslingV3OnionServiceId,
-        client_auth_public_key: *const GoslingX25519PublicKey) -> () {
+        client_auth_public_key: *const GoslingX25519PublicKey,
+    ) -> () {
         assert!(!context.is_null());
         assert!(!endpoint_private_key.is_null());
         assert!(!endpoint_name.is_null());
-        let endpoint_name = unsafe {CStr::from_ptr(endpoint_name)};
+        let endpoint_name = unsafe { CStr::from_ptr(endpoint_name) };
         assert_eq!(endpoint_name.to_bytes().len(), endpoint_name_length);
         assert_eq!(endpoint_name, ENDPOINT_NAME);
         assert!(!client_service_id.is_null());
@@ -3330,53 +3423,98 @@ fn test_context_init() -> anyhow::Result<()> {
         let mut error: *mut GoslingFFIError = ptr::null_mut();
 
         let mut alice_endpoint_private_key: *mut GoslingEd25519PrivateKey = ptr::null_mut();
-        gosling_ed25519_private_key_clone(&mut alice_endpoint_private_key, endpoint_private_key, &mut error);
+        gosling_ed25519_private_key_clone(
+            &mut alice_endpoint_private_key,
+            endpoint_private_key,
+            &mut error,
+        );
         assert!(error.is_null());
         assert!(!alice_endpoint_private_key.is_null());
-        unsafe { ALICE_ENDPOINT_PRIVATE_KEY = alice_endpoint_private_key; }
+        unsafe {
+            ALICE_ENDPOINT_PRIVATE_KEY = alice_endpoint_private_key;
+        }
 
         let mut pat_identity_service_id: *mut GoslingV3OnionServiceId = ptr::null_mut();
-        gosling_v3_onion_service_id_clone(&mut pat_identity_service_id, client_service_id, &mut error);
+        gosling_v3_onion_service_id_clone(
+            &mut pat_identity_service_id,
+            client_service_id,
+            &mut error,
+        );
         assert!(error.is_null());
         assert!(!pat_identity_service_id.is_null());
-        unsafe { PAT_IDENTITY_SERVICE_ID = pat_identity_service_id; }
+        unsafe {
+            PAT_IDENTITY_SERVICE_ID = pat_identity_service_id;
+        }
 
         let mut pat_onion_auth_public_key: *mut GoslingX25519PublicKey = ptr::null_mut();
-        gosling_x25519_public_key_clone(&mut pat_onion_auth_public_key, client_auth_public_key, &mut error);
+        gosling_x25519_public_key_clone(
+            &mut pat_onion_auth_public_key,
+            client_auth_public_key,
+            &mut error,
+        );
         assert!(error.is_null());
         assert!(!pat_onion_auth_public_key.is_null());
-        unsafe { PAT_ONION_AUTH_PUBLIC_KEY = pat_onion_auth_public_key; }
+        unsafe {
+            PAT_ONION_AUTH_PUBLIC_KEY = pat_onion_auth_public_key;
+        }
 
         println!("--- alice identity handshake completed");
 
-        unsafe { ALICE_ENDPOINT_REQUEST_COMPLETE = true; }
+        unsafe {
+            ALICE_ENDPOINT_REQUEST_COMPLETE = true;
+        }
     }
-    require_noerror!(gosling_context_set_identity_server_handshake_completed_callback(alice_context, Some(alice_identity_server_handshake_completed_callback)));
+    require_noerror!(
+        gosling_context_set_identity_server_handshake_completed_callback(
+            alice_context,
+            Some(alice_identity_server_handshake_completed_callback)
+        )
+    );
 
     extern "C" fn alice_identity_server_handshake_failed_callback(
         context: *mut GoslingContext,
         _handshake_handle: usize,
-        error: *const GoslingFFIError) -> () {
+        error: *const GoslingFFIError,
+    ) -> () {
         assert!(!context.is_null());
         assert!(!error.is_null());
-        let error_message = unsafe { CStr::from_ptr(gosling_error_get_message(error)).to_str().unwrap() };
+        let error_message = unsafe {
+            CStr::from_ptr(gosling_error_get_message(error))
+                .to_str()
+                .unwrap()
+        };
 
         panic!("--- alice identity handshake failed: {}", error_message);
     }
-    require_noerror!(gosling_context_set_identity_server_handshake_failed_callback(alice_context, Some(alice_identity_server_handshake_failed_callback)));
+    require_noerror!(
+        gosling_context_set_identity_server_handshake_failed_callback(
+            alice_context,
+            Some(alice_identity_server_handshake_failed_callback)
+        )
+    );
 
     let mut pat_begin_identity_handshake_succeeded = false;
     for k in 1..=3 {
         println!("--- pat begin identity handshake attempt {}", k);
 
         let mut error: *mut GoslingFFIError = ptr::null_mut();
-        gosling_context_begin_identity_handshake(pat_context, alice_identity, ENDPOINT_NAME.as_ptr(), ENDPOINT_NAME.to_bytes().len(), &mut error);
+        gosling_context_begin_identity_handshake(
+            pat_context,
+            alice_identity,
+            ENDPOINT_NAME.as_ptr(),
+            ENDPOINT_NAME.to_bytes().len(),
+            &mut error,
+        );
 
         if error.is_null() {
             pat_begin_identity_handshake_succeeded = true;
             break;
         } else {
-            let error_message = unsafe { CStr::from_ptr(gosling_error_get_message(error)).to_str().unwrap() };
+            let error_message = unsafe {
+                CStr::from_ptr(gosling_error_get_message(error))
+                    .to_str()
+                    .unwrap()
+            };
             println!("--- pat begin identity hanshake failed: {}", error_message);
             gosling_error_free(error);
         }
@@ -3396,7 +3534,8 @@ fn test_context_init() -> anyhow::Result<()> {
         context: *mut GoslingContext,
         endpoint_service_id: *const GoslingV3OnionServiceId,
         endpoint_name: *const c_char,
-        endpoint_name_length: usize) -> () {
+        endpoint_name_length: usize,
+    ) -> () {
         assert!(!context.is_null());
         assert!(!endpoint_service_id.is_null());
         let endpoint_name = unsafe { CStr::from_ptr(endpoint_name) };
@@ -3404,12 +3543,24 @@ fn test_context_init() -> anyhow::Result<()> {
         assert_eq!(endpoint_name, ENDPOINT_NAME);
 
         println!("--- alice endpoint server published");
-        unsafe { ALICE_ENDPOINT_PUBLISHED = true; }
+        unsafe {
+            ALICE_ENDPOINT_PUBLISHED = true;
+        }
     }
-    require_noerror!(gosling_context_set_endpoint_server_published_callback(alice_context, Some(alice_endpoint_server_published_callback)));
+    require_noerror!(gosling_context_set_endpoint_server_published_callback(
+        alice_context,
+        Some(alice_endpoint_server_published_callback)
+    ));
 
     println!("--- start init alice endpoint server");
-    require_noerror!(gosling_context_start_endpoint_server(alice_context, ALICE_ENDPOINT_PRIVATE_KEY, ENDPOINT_NAME.as_ptr(), ENDPOINT_NAME.to_bytes().len(), PAT_IDENTITY_SERVICE_ID, PAT_ONION_AUTH_PUBLIC_KEY));
+    require_noerror!(gosling_context_start_endpoint_server(
+        alice_context,
+        ALICE_ENDPOINT_PRIVATE_KEY,
+        ENDPOINT_NAME.as_ptr(),
+        ENDPOINT_NAME.to_bytes().len(),
+        PAT_IDENTITY_SERVICE_ID,
+        PAT_ONION_AUTH_PUBLIC_KEY
+    ));
 
     while unsafe { !PAT_ENDPOINT_REQUEST_COMPLETE || !ALICE_ENDPOINT_PUBLISHED } {
         require_noerror!(gosling_context_poll_events(alice_context));
@@ -3430,7 +3581,8 @@ fn test_context_init() -> anyhow::Result<()> {
         endpoint_service_id: *const GoslingV3OnionServiceId,
         channel_name: *const c_char,
         channel_name_length: usize,
-        stream: TcpSocket) -> () {
+        stream: TcpSocket,
+    ) -> () {
         assert!(!context.is_null());
         assert!(!endpoint_service_id.is_null());
         assert!(!channel_name.is_null());
@@ -3438,22 +3590,39 @@ fn test_context_init() -> anyhow::Result<()> {
         assert_eq!(channel_name.to_bytes().len(), channel_name_length);
         assert_eq!(channel_name, CHANNEL_NAME);
 
-        unsafe { PAT_SOCKET = Some(stream); }
+        unsafe {
+            PAT_SOCKET = Some(stream);
+        }
         println!("--- pat endpoint handshake complete");
     }
-    require_noerror!(gosling_context_set_endpoint_client_handshake_completed_callback(pat_context, Some(pat_enpdoint_client_handshake_completed_callback)));
+    require_noerror!(
+        gosling_context_set_endpoint_client_handshake_completed_callback(
+            pat_context,
+            Some(pat_enpdoint_client_handshake_completed_callback)
+        )
+    );
 
     extern "C" fn pat_endpoint_client_handshake_failed_callback(
         context: *mut GoslingContext,
         _handshake_handle: usize,
-        error: *const GoslingFFIError) -> () {
+        error: *const GoslingFFIError,
+    ) -> () {
         assert!(!context.is_null());
         assert!(!error.is_null());
 
-        let error_message = unsafe { CStr::from_ptr(gosling_error_get_message(error)).to_str().unwrap() };
+        let error_message = unsafe {
+            CStr::from_ptr(gosling_error_get_message(error))
+                .to_str()
+                .unwrap()
+        };
         panic!("--- pat endpoint handshake failed: {}", error_message);
     }
-    require_noerror!(gosling_context_set_endpoint_client_handshake_failed_callback(pat_context, Some(pat_endpoint_client_handshake_failed_callback)));
+    require_noerror!(
+        gosling_context_set_endpoint_client_handshake_failed_callback(
+            pat_context,
+            Some(pat_endpoint_client_handshake_failed_callback)
+        )
+    );
 
     extern "C" fn alice_endpoint_server_handshake_completed_callback(
         context: *mut GoslingContext,
@@ -3462,7 +3631,8 @@ fn test_context_init() -> anyhow::Result<()> {
         client_service_id: *const GoslingV3OnionServiceId,
         channel_name: *const c_char,
         channel_name_length: usize,
-        stream: TcpSocket) -> () {
+        stream: TcpSocket,
+    ) -> () {
         assert!(!context.is_null());
         assert!(!endpoint_service_id.is_null());
         assert!(!client_service_id.is_null());
@@ -3474,19 +3644,34 @@ fn test_context_init() -> anyhow::Result<()> {
         unsafe { ALICE_SOCKET = Some(stream) };
         println!("--- alice endpoint hanshake complete");
     }
-    require_noerror!(gosling_context_set_endpoint_server_handshake_completed_callback(alice_context, Some(alice_endpoint_server_handshake_completed_callback)));
+    require_noerror!(
+        gosling_context_set_endpoint_server_handshake_completed_callback(
+            alice_context,
+            Some(alice_endpoint_server_handshake_completed_callback)
+        )
+    );
 
     extern "C" fn alice_endpoint_server_handshake_failed_callback(
         context: *mut GoslingContext,
         _handshake_handle: usize,
-        error: *const GoslingFFIError) -> () {
+        error: *const GoslingFFIError,
+    ) -> () {
         assert!(!context.is_null());
         assert!(!error.is_null());
 
-        let error_message = unsafe { CStr::from_ptr(gosling_error_get_message(error)).to_str().unwrap() };
+        let error_message = unsafe {
+            CStr::from_ptr(gosling_error_get_message(error))
+                .to_str()
+                .unwrap()
+        };
         panic!("--- alice endpoint handshake failed: {}", error_message);
     }
-    require_noerror!(gosling_context_set_endpoint_server_handshake_failed_callback(alice_context, Some(alice_endpoint_server_handshake_failed_callback)));
+    require_noerror!(
+        gosling_context_set_endpoint_server_handshake_failed_callback(
+            alice_context,
+            Some(alice_endpoint_server_handshake_failed_callback)
+        )
+    );
 
     let mut pat_begin_endpoint_handshake_succeeded = false;
     for k in 1..=3 {
@@ -3494,14 +3679,25 @@ fn test_context_init() -> anyhow::Result<()> {
 
         let mut error: *mut GoslingFFIError = ptr::null_mut();
         unsafe {
-            gosling_context_begin_endpoint_handshake(pat_context, ALICE_ENDPOINT_SERVICE_ID, PAT_ONION_AUTH_PRIVATE_KEY, CHANNEL_NAME.as_ptr(), CHANNEL_NAME.to_bytes().len(), &mut error);
+            gosling_context_begin_endpoint_handshake(
+                pat_context,
+                ALICE_ENDPOINT_SERVICE_ID,
+                PAT_ONION_AUTH_PRIVATE_KEY,
+                CHANNEL_NAME.as_ptr(),
+                CHANNEL_NAME.to_bytes().len(),
+                &mut error,
+            );
         }
 
         if error.is_null() {
             pat_begin_endpoint_handshake_succeeded = true;
             break;
         } else {
-            let error_message = unsafe { CStr::from_ptr(gosling_error_get_message(error)).to_str().unwrap() };
+            let error_message = unsafe {
+                CStr::from_ptr(gosling_error_get_message(error))
+                    .to_str()
+                    .unwrap()
+            };
             println!("--- pat begin endpoint hanshake failed: {}", error_message);
             gosling_error_free(error);
         }
@@ -3514,9 +3710,19 @@ fn test_context_init() -> anyhow::Result<()> {
     }
 
     #[cfg(unix)]
-    let (mut pat_stream, alice_stream) = unsafe { (TcpStream::from_raw_fd(PAT_SOCKET.unwrap()), TcpStream::from_raw_fd(ALICE_SOCKET.unwrap())) };
+    let (mut pat_stream, alice_stream) = unsafe {
+        (
+            TcpStream::from_raw_fd(PAT_SOCKET.unwrap()),
+            TcpStream::from_raw_fd(ALICE_SOCKET.unwrap()),
+        )
+    };
     #[cfg(windows)]
-    let (mut pat_stream, alice_stream) = unsafe { (TcpStream::from_raw_socket(PAT_SOCKET.unwrap()), TcpStream::from_raw_socket(ALICE_SOCKET.unwrap())) };
+    let (mut pat_stream, alice_stream) = unsafe {
+        (
+            TcpStream::from_raw_socket(PAT_SOCKET.unwrap()),
+            TcpStream::from_raw_socket(ALICE_SOCKET.unwrap()),
+        )
+    };
 
     println!("--- pat writes message");
 

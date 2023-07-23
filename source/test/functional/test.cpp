@@ -165,12 +165,13 @@ static void create_server_identity_handshake(unique_ptr<gosling_context> &ctx) {
 }
 
 static void create_server_endpoint_handshake(unique_ptr<gosling_context> &ctx) {
-    const auto channel_supported_callback = [](gosling_context *context, size_t handshake_handle,
-    const char *channel_name, size_t channel_name_length) -> bool {
+  const auto channel_supported_callback =
+      [](gosling_context *context, size_t handshake_handle,
+         const char *channel_name, size_t channel_name_length) -> bool {
     REQUIRE(context != nullptr);
     cout << "--- channel_supported_callback: { context: " << context
-       << ", handshake_handle: " << handshake_handle
-       << ", channel_name: '" << channel_name << "' }" << endl;
+         << ", handshake_handle: " << handshake_handle << ", channel_name: '"
+         << channel_name << "' }" << endl;
 
     if (string(channel_name, channel_name_length) == channelName) {
       return true;
@@ -179,12 +180,10 @@ static void create_server_endpoint_handshake(unique_ptr<gosling_context> &ctx) {
     return false;
   };
 
-
   REQUIRE_NOTHROW(
       ::gosling_context_set_endpoint_server_channel_supported_callback(
-          ctx.get(), channel_supported_callback , throw_on_error()));
+          ctx.get(), channel_supported_callback, throw_on_error()));
 }
-
 
 // gosling demo
 TEST_CASE("gosling_cpp_demo") {
@@ -333,7 +332,8 @@ TEST_CASE("gosling_cpp_demo") {
              const char *endpoint_name, size_t endpoint_name_length,
              const gosling_x25519_private_key *client_auth_private_key)
               -> void {
-            REQUIRE(string(endpoint_name, endpoint_name_length) == endpointName);
+            REQUIRE(string(endpoint_name, endpoint_name_length) ==
+                    endpointName);
 
             REQUIRE_NOTHROW(::gosling_v3_onion_service_id_clone(
                 out(alice_endpoint_service_id), endpoint_service_id,
@@ -370,7 +370,8 @@ TEST_CASE("gosling_cpp_demo") {
              const char *endpoint_name, size_t endpoint_name_length,
              const gosling_v3_onion_service_id *client_service_id,
              const gosling_x25519_public_key *client_auth_public_key) -> void {
-            REQUIRE(string(endpoint_name, endpoint_name_length) == endpointName);
+            REQUIRE(string(endpoint_name, endpoint_name_length) ==
+                    endpointName);
 
             REQUIRE_NOTHROW(::gosling_ed25519_private_key_clone(
                 out(alice_endpoint_private_key), endpoint_private_key,
