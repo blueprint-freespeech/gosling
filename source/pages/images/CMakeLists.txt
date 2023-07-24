@@ -3,7 +3,7 @@ set(install_output)
 
 # files which we will just copy directly
 set(copy_sources
-    icon.png)
+    gosling-square-small-opt.svg)
 
 set(copy_output)
 foreach(file ${copy_sources})
