@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Error","ErrorCode","Response"],"struct":["Session"],"trait":["ApiSet"],"type":["RequestCookie"]};
+window.SIDEBAR_ITEMS = {"constant":["DEFAULT_MAX_MESSAGE_SIZE","DEFAULT_MAX_WAIT_TIME"],"enum":["Error","ErrorCode","Response"],"struct":["Session"],"trait":["ApiSet"],"type":["RequestCookie"]};
