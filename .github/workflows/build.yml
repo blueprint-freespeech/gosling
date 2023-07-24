@@ -22,8 +22,8 @@ jobs:
         with:
           name: linux-debug
           path: |
-            out/debug/gosling/crates/gosling-ffi/debug/libgoslingffi.a
-            out/debug/gosling/crates/gosling-ffi/include/libgosling.h
+            out/debug/gosling/debug/libgoslingffi.a
+            out/debug/gosling/include/libgosling.h
       - name: Build Release
         run: |
           make release
@@ -32,8 +32,8 @@ jobs:
         with:
           name: linux-release
           path: |
-            out/release/gosling/crates/gosling-ffi/release/libgoslingffi.a
-            out/release/gosling/crates/gosling-ffi/include/libgosling.h
+            out/release/gosling/release/libgoslingffi.a
+            out/release/gosling/include/libgosling.h
 
   windows:
     runs-on: windows-latest
@@ -64,8 +64,8 @@ jobs:
         with:
           name: windows-debug
           path: |
-            out/debug/gosling/crates/gosling-ffi/debug/libgoslingffi.a
-            out/debug/gosling/crates/gosling-ffi/include/libgosling.h
+            out/debug/gosling/debug/libgoslingffi.a
+            out/debug/gosling/include/libgosling.h
       - name: Build Release
         run: |
           make release
@@ -74,8 +74,8 @@ jobs:
         with:
           name: windows-release
           path: |
-            out/release/gosling/crates/gosling-ffi/release/libgoslingffi.a
-            out/release/gosling/crates/gosling-ffi/include/libgosling.h
+            out/release/gosling/release/libgoslingffi.a
+            out/release/gosling/include/libgosling.h
 
   macos:
     runs-on: macos-latest
@@ -95,8 +95,8 @@ jobs:
         with:
           name: macos-debug
           path: |
-            out/debug/gosling/crates/gosling-ffi/debug/libgoslingffi.a
-            out/debug/gosling/crates/gosling-ffi/include/libgosling.h
+            out/debug/gosling/debug/libgoslingffi.a
+            out/debug/gosling/include/libgosling.h
       - name: Build Release
         run: |
           make release
@@ -105,5 +105,5 @@ jobs:
         with:
           name: macos-release
           path: |
-            out/release/gosling/crates/gosling-ffi/release/libgoslingffi.a
-            out/release/gosling/crates/gosling-ffi/include/libgosling.h
+            out/release/gosling/release/libgoslingffi.a
+            out/release/gosling/include/libgosling.h
