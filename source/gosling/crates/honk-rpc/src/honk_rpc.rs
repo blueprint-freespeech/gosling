@@ -505,7 +505,7 @@ pub struct Session<R, W> {
     // write stream
     writer: W,
     // we write outgoing data to an intermediate buffer to handle writer blocking
-    message_write_buffer: Vec<u8>,
+    message_write_buffer: VecDeque<u8>,
 
     // message read data
 
@@ -524,7 +524,7 @@ pub struct Session<R, W> {
     // message write data
 
     // we serialize outgoing messages to this buffer first to verify size limitations
-    message_serialization_buffer: Vec<u8>,
+    message_serialization_buffer: VecDeque<u8>,
     // the next request cookie to use when making a remote prodedure call
     next_cookie: RequestCookie,
     // sections to be sent to the remote server
@@ -546,10 +546,10 @@ where
     W: std::io::Write + Send,
 {
     pub fn new(reader: R, writer: W) -> Self {
-        let mut message_write_buffer: Vec<u8> = Default::default();
+        let mut message_write_buffer: VecDeque<u8> = Default::default();
         message_write_buffer.reserve(DEFAULT_MAX_MESSAGE_SIZE);
 
-        let mut message_serialization_buffer: Vec<u8> = Default::default();
+        let mut message_serialization_buffer: VecDeque<u8> = Default::default();
         message_serialization_buffer.reserve(DEFAULT_MAX_MESSAGE_SIZE);
 
         Session {
@@ -795,13 +795,18 @@ where
     fn write_pending_data(&mut self) -> Result<(), Error> {
         let bytes_written = self.write_pending_data_impl()?;
         self.writer.flush().map_err(Error::WriterWriteFailed)?;
-        self.message_write_buffer = self.message_write_buffer.split_off(bytes_written);
+        // removes the written bytes
+        self.message_write_buffer.drain(0..bytes_written);
+        // and shuffles the data so it is contiguous
+        self.message_write_buffer.make_contiguous();
+
         Ok(())
     }
 
     fn write_pending_data_impl(&mut self) -> Result<usize, Error> {
         // write pending data
-        let mut pending_data: &[u8] = &self.message_write_buffer;
+        let (mut pending_data, empty): (&[u8], &[u8]) = self.message_write_buffer.as_slices();
+        assert!(empty.is_empty());
         let pending_bytes: usize = pending_data.len();
         let mut bytes_written: usize = 0usize;
 
@@ -819,7 +824,7 @@ where
                     bytes_written += count;
                     #[cfg(test)]
                     println!(">>> sent {} of {} bytes", bytes_written, pending_bytes);
-                    pending_data = &self.message_write_buffer[bytes_written..];
+                    pending_data = &pending_data[count..];
                 }
             }
         }
