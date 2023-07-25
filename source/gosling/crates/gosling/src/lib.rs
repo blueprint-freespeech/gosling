@@ -8,5 +8,3 @@ mod endpoint_server;
 mod gosling;
 mod identity_client;
 mod identity_server;
-#[cfg(test)]
-mod memory_stream;

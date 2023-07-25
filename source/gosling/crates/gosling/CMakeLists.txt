@@ -6,8 +6,7 @@ set(gosling_sources
     src/gosling.rs
     src/identity_client.rs
     src/identity_server.rs
-    src/lib.rs
-    src/memory_stream.rs)
+    src/lib.rs)
 
 #
 # build target

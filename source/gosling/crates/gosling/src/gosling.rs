@@ -1,3 +1,7 @@
+// standard
+#[cfg(test)]
+use std::net::{SocketAddr, TcpListener, TcpStream};
+
 // extern crates
 #[cfg(test)]
 use bson::doc;
@@ -22,8 +26,6 @@ use crate::identity_client::*;
 use crate::identity_server;
 #[cfg(test)]
 use crate::identity_server::*;
-#[cfg(test)]
-use crate::memory_stream::MemoryStream;
 
 #[derive(Debug, Eq, PartialEq, TryFromPrimitive)]
 #[repr(i32)]
@@ -140,8 +142,14 @@ fn identity_test(
     should_fail: bool,
 ) -> anyhow::Result<()> {
     // test sockets
-    let stream1 = MemoryStream::new();
-    let stream2 = MemoryStream::new();
+    let socket_addr = SocketAddr::from(([127, 0, 0, 1], 0u16));
+    let listener = TcpListener::bind(socket_addr)?;
+    let socket_addr = listener.local_addr()?;
+
+    let stream1 = TcpStream::connect(socket_addr)?;
+    stream1.set_nonblocking(true)?;
+    let (stream2, _socket_addr) = listener.accept()?;
+    stream2.set_nonblocking(true)?;
 
     // client setup
     let client_ed25519_private = Ed25519PrivateKey::generate();
@@ -160,7 +168,7 @@ fn identity_test(
     };
 
     // rpc setup
-    let client_rpc = Session::new(stream1.clone(), stream2.clone());
+    let client_rpc = Session::new(stream1.try_clone()?, stream1);
     let mut ident_client = IdentityClient::new(
         client_rpc,
         server_service_id.clone(),
@@ -170,7 +178,7 @@ fn identity_test(
     )
     .unwrap();
 
-    let server_rpc = Session::new(stream2, stream1);
+    let server_rpc = Session::new(stream2.try_clone()?, stream2);
     let mut ident_server = IdentityServer::new(server_rpc, server_service_id.clone());
 
     let mut failure_ocurred = false;
@@ -393,8 +401,14 @@ fn endpoint_test(
     channel_allowed: bool,
 ) -> anyhow::Result<()> {
     // test sockets
-    let stream1 = MemoryStream::new();
-    let stream2 = MemoryStream::new();
+    let socket_addr = SocketAddr::from(([127, 0, 0, 1], 0u16));
+    let listener = TcpListener::bind(socket_addr)?;
+    let socket_addr = listener.local_addr()?;
+
+    let stream1 = TcpStream::connect(socket_addr)?;
+    stream1.set_nonblocking(true)?;
+    let (stream2, _socket_addr) = listener.accept()?;
+    stream2.set_nonblocking(true)?;
 
     // server+client setup
     let server_ed25519_private = Ed25519PrivateKey::generate();
@@ -414,7 +428,7 @@ fn endpoint_test(
         V3OnionServiceId::from_public_key(&ed25519_public)
     };
 
-    let server_rpc = Session::new(stream1.clone(), stream2.clone());
+    let server_rpc = Session::new(stream1.try_clone()?, stream1);
 
     let mut endpoint_server = EndpointServer::new(
         server_rpc,
@@ -422,7 +436,7 @@ fn endpoint_test(
         server_service_id.clone(),
     );
 
-    let client_rpc = Session::new(stream2, stream1);
+    let client_rpc = Session::new(stream2.try_clone()?, stream2);
 
     let channel = match AsciiString::new(channel.to_string()) {
         Ok(channel) => channel,
