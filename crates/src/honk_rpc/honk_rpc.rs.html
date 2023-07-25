@@ -2297,25 +2297,25 @@
     <span class="kw">let </span><span class="kw-2">mut </span>alice = Session::new(stream1.try_clone()<span class="question-mark">?</span>, stream1);
     <span class="kw">let </span><span class="kw-2">mut </span>pat = Session::new(stream2.try_clone()<span class="question-mark">?</span>, stream2);
 
-    <span class="macro">assert!</span>(alice.update(<span class="prelude-val">None</span>).is_ok());
-    alice.max_wait_time = std::time::Duration::from_secs(<span class="number">2</span>);
-    <span class="macro">assert!</span>(alice.update(<span class="prelude-val">None</span>).is_ok());
+    alice.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+    alice.max_wait_time = std::time::Duration::from_secs(<span class="number">3</span>);
+    alice.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
 
     <span class="comment">// a read will happen so time should reset
-    </span>std::thread::sleep(std::time::Duration::from_secs(<span class="number">1</span>));
+    </span>std::thread::sleep(std::time::Duration::from_secs(<span class="number">2</span>));
     pat.client_call(<span class="string">&quot;namespace&quot;</span>, <span class="string">&quot;function&quot;</span>, <span class="number">0</span>, <span class="macro">doc! </span>{})<span class="question-mark">?</span>;
-    <span class="macro">assert!</span>(pat.update(<span class="prelude-val">None</span>).is_ok());
-    <span class="macro">assert!</span>(alice.update(<span class="prelude-val">None</span>).is_ok());
+    pat.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+    alice.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
 
     <span class="comment">// a read will happen so time should reset
-    </span>std::thread::sleep(std::time::Duration::from_secs(<span class="number">1</span>));
+    </span>std::thread::sleep(std::time::Duration::from_secs(<span class="number">2</span>));
     pat.client_call(<span class="string">&quot;namespace&quot;</span>, <span class="string">&quot;function&quot;</span>, <span class="number">0</span>, <span class="macro">doc! </span>{})<span class="question-mark">?</span>;
-    <span class="macro">assert!</span>(pat.update(<span class="prelude-val">None</span>).is_ok());
-    <span class="macro">assert!</span>(alice.update(<span class="prelude-val">None</span>).is_ok());
+    pat.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+    alice.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
 
     <span class="comment">// on reads occur so alice should timeout
-    </span>std::thread::sleep(std::time::Duration::from_secs(<span class="number">3</span>));
-    <span class="macro">assert!</span>(pat.update(<span class="prelude-val">None</span>).is_ok());
+    </span>std::thread::sleep(std::time::Duration::from_secs(<span class="number">4</span>));
+    pat.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
     <span class="kw">match </span>alice.update(<span class="prelude-val">None</span>) {
         <span class="prelude-val">Ok</span>(()) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;should have timed out&quot;</span>),
         <span class="prelude-val">Err</span>(_err) =&gt; (),
