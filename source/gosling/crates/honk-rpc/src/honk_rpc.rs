@@ -1135,25 +1135,25 @@ fn test_honk_timeout() -> anyhow::Result<()> {
     let mut alice = Session::new(stream1.try_clone()?, stream1);
     let mut pat = Session::new(stream2.try_clone()?, stream2);
 
-    assert!(alice.update(None).is_ok());
-    alice.max_wait_time = std::time::Duration::from_secs(2);
-    assert!(alice.update(None).is_ok());
+    alice.update(None)?;
+    alice.max_wait_time = std::time::Duration::from_secs(3);
+    alice.update(None)?;
 
     // a read will happen so time should reset
-    std::thread::sleep(std::time::Duration::from_secs(1));
+    std::thread::sleep(std::time::Duration::from_secs(2));
     pat.client_call("namespace", "function", 0, doc! {})?;
-    assert!(pat.update(None).is_ok());
-    assert!(alice.update(None).is_ok());
+    pat.update(None)?;
+    alice.update(None)?;
 
     // a read will happen so time should reset
-    std::thread::sleep(std::time::Duration::from_secs(1));
+    std::thread::sleep(std::time::Duration::from_secs(2));
     pat.client_call("namespace", "function", 0, doc! {})?;
-    assert!(pat.update(None).is_ok());
-    assert!(alice.update(None).is_ok());
+    pat.update(None)?;
+    alice.update(None)?;
 
     // on reads occur so alice should timeout
-    std::thread::sleep(std::time::Duration::from_secs(3));
-    assert!(pat.update(None).is_ok());
+    std::thread::sleep(std::time::Duration::from_secs(4));
+    pat.update(None)?;
     match alice.update(None) {
         Ok(()) => panic!("should have timed out"),
         Err(_err) => (),
