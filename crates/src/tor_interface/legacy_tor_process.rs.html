@@ -286,6 +286,96 @@
 <a href="#286" id="286">286</a>
 <a href="#287" id="287">287</a>
 <a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
+<a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
+<a href="#343" id="343">343</a>
+<a href="#344" id="344">344</a>
+<a href="#345" id="345">345</a>
+<a href="#346" id="346">346</a>
+<a href="#347" id="347">347</a>
+<a href="#348" id="348">348</a>
+<a href="#349" id="349">349</a>
+<a href="#350" id="350">350</a>
+<a href="#351" id="351">351</a>
+<a href="#352" id="352">352</a>
+<a href="#353" id="353">353</a>
+<a href="#354" id="354">354</a>
+<a href="#355" id="355">355</a>
+<a href="#356" id="356">356</a>
+<a href="#357" id="357">357</a>
+<a href="#358" id="358">358</a>
+<a href="#359" id="359">359</a>
+<a href="#360" id="360">360</a>
+<a href="#361" id="361">361</a>
+<a href="#362" id="362">362</a>
+<a href="#363" id="363">363</a>
+<a href="#364" id="364">364</a>
+<a href="#365" id="365">365</a>
+<a href="#366" id="366">366</a>
+<a href="#367" id="367">367</a>
+<a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
+<a href="#370" id="370">370</a>
+<a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
+<a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a>
+<a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::default::Default;
 <span class="kw">use </span>std::fs;
@@ -301,8 +391,15 @@
 <span class="kw">use </span>std::sync::{Arc, Mutex};
 <span class="kw">use </span>std::time::{Duration, Instant};
 
+<span class="comment">// extern crates
+</span><span class="kw">use </span>crypto::digest::Digest;
+<span class="kw">use </span>crypto::sha1::Sha1;
+<span class="kw">use </span>data_encoding::HEXUPPER;
+<span class="kw">use </span>rand::rngs::OsRng;
+<span class="kw">use </span>rand::RngCore;
+
 <span class="comment">// internal crates
-</span><span class="kw">use </span><span class="kw">crate</span>::tor_crypto::<span class="kw-2">*</span>;
+</span><span class="kw">use </span><span class="kw">crate</span>::tor_crypto::generate_password;
 
 <span class="attr">#[derive(thiserror::Error, Debug)]
 </span><span class="kw">pub enum </span>Error {
@@ -392,6 +489,60 @@
 }
 
 <span class="kw">impl </span>LegacyTorProcess {
+    <span class="kw">const </span>S2K_RFC2440_SPECIFIER_LEN: usize = <span class="number">9</span>;
+
+    <span class="kw">fn </span>hash_tor_password_with_salt(
+        salt: <span class="kw-2">&amp;</span>[u8; <span class="self">Self</span>::S2K_RFC2440_SPECIFIER_LEN],
+        password: <span class="kw-2">&amp;</span>str,
+    ) -&gt; String {
+        <span class="macro">assert_eq!</span>(salt[<span class="self">Self</span>::S2K_RFC2440_SPECIFIER_LEN - <span class="number">1</span>], <span class="number">0x60</span>);
+
+        <span class="comment">// tor-specific rfc 2440 constants
+        </span><span class="kw">const </span>EXPBIAS: u8 = <span class="number">6u8</span>;
+        <span class="kw">const </span>C: u8 = <span class="number">0x60</span>; <span class="comment">// salt[S2K_RFC2440_SPECIFIER_LEN - 1]
+        </span><span class="kw">const </span>COUNT: usize = (<span class="number">16usize </span>+ ((C &amp; <span class="number">15u8</span>) <span class="kw">as </span>usize)) &lt;&lt; ((C &gt;&gt; <span class="number">4</span>) + EXPBIAS);
+
+        <span class="comment">// squash together our hash input
+        </span><span class="kw">let </span><span class="kw-2">mut </span>input: Vec&lt;u8&gt; = Default::default();
+        <span class="comment">// append salt (sans the &#39;C&#39; constant&#39;)
+        </span>input.extend_from_slice(<span class="kw-2">&amp;</span>salt[<span class="number">0</span>..<span class="self">Self</span>::S2K_RFC2440_SPECIFIER_LEN - <span class="number">1</span>]);
+        <span class="comment">// append password bytes
+        </span>input.extend_from_slice(password.as_bytes());
+
+        <span class="kw">let </span>input = input.as_slice();
+        <span class="kw">let </span>input_len = input.len();
+
+        <span class="kw">let </span><span class="kw-2">mut </span>sha1 = Sha1::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>count = COUNT;
+        <span class="kw">while </span>count &gt; <span class="number">0 </span>{
+            <span class="kw">if </span>count &gt; input_len {
+                sha1.input(input);
+                count -= input_len;
+            } <span class="kw">else </span>{
+                sha1.input(<span class="kw-2">&amp;</span>input[<span class="number">0</span>..count]);
+                <span class="kw">break</span>;
+            }
+        }
+
+        <span class="kw">const </span>SHA1_BYTES: usize = <span class="number">160 </span>/ <span class="number">8</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>key = [<span class="number">0u8</span>; SHA1_BYTES];
+        sha1.result(key.as_mut_slice());
+
+        <span class="kw">let </span><span class="kw-2">mut </span>hash = <span class="string">&quot;16:&quot;</span>.to_string();
+        HEXUPPER.encode_append(salt, <span class="kw-2">&amp;mut </span>hash);
+        HEXUPPER.encode_append(<span class="kw-2">&amp;</span>key, <span class="kw-2">&amp;mut </span>hash);
+
+        hash
+    }
+
+    <span class="kw">fn </span>hash_tor_password(password: <span class="kw-2">&amp;</span>str) -&gt; String {
+        <span class="kw">let </span><span class="kw-2">mut </span>salt = [<span class="number">0x00u8</span>; <span class="self">Self</span>::S2K_RFC2440_SPECIFIER_LEN];
+        OsRng.fill_bytes(<span class="kw-2">&amp;mut </span>salt);
+        salt[<span class="self">Self</span>::S2K_RFC2440_SPECIFIER_LEN - <span class="number">1</span>] = <span class="number">0x60u8</span>;
+
+        <span class="self">Self</span>::hash_tor_password_with_salt(<span class="kw-2">&amp;</span>salt, password)
+    }
+
     <span class="kw">pub fn </span>get_control_addr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>SocketAddr {
         <span class="kw-2">&amp;</span><span class="self">self</span>.control_addr
     }
@@ -459,7 +610,7 @@
 
         <span class="kw">const </span>CONTROL_PORT_PASSWORD_LENGTH: usize = <span class="number">32usize</span>;
         <span class="kw">let </span>password = generate_password(CONTROL_PORT_PASSWORD_LENGTH);
-        <span class="kw">let </span>password_hash = hash_tor_password(<span class="kw-2">&amp;</span>password);
+        <span class="kw">let </span>password_hash = <span class="self">Self</span>::hash_tor_password(<span class="kw-2">&amp;</span>password);
 
         <span class="kw">let </span><span class="kw-2">mut </span>process = Command::new(tor_bin_path.as_os_str())
             .stdout(Stdio::piped())
@@ -573,5 +724,34 @@
     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">let _ </span>= <span class="self">self</span>.process.kill();
     }
+}
+
+<span class="attr">#[test]
+</span><span class="kw">fn </span>test_password_hash() -&gt; <span class="prelude-ty">Result</span>&lt;(), anyhow::Error&gt; {
+    <span class="kw">let </span>salt1: [u8; LegacyTorProcess::S2K_RFC2440_SPECIFIER_LEN] = [
+        <span class="number">0xbeu8</span>, <span class="number">0x2au8</span>, <span class="number">0x25u8</span>, <span class="number">0x1du8</span>, <span class="number">0xe6u8</span>, <span class="number">0x2cu8</span>, <span class="number">0xb2u8</span>, <span class="number">0x7au8</span>, <span class="number">0x60u8</span>,
+    ];
+    <span class="kw">let </span>hash1 = LegacyTorProcess::hash_tor_password_with_salt(<span class="kw-2">&amp;</span>salt1, <span class="string">&quot;abcdefghijklmnopqrstuvwxyz&quot;</span>);
+    <span class="macro">assert_eq!</span>(
+        hash1,
+        <span class="string">&quot;16:BE2A251DE62CB27A60AC9178A937990E8ED0AB662FA82A5C7DE3EBB23A&quot;
+    </span>);
+
+    <span class="kw">let </span>salt2: [u8; LegacyTorProcess::S2K_RFC2440_SPECIFIER_LEN] = [
+        <span class="number">0x36u8</span>, <span class="number">0x73u8</span>, <span class="number">0x0eu8</span>, <span class="number">0xefu8</span>, <span class="number">0xd1u8</span>, <span class="number">0x8cu8</span>, <span class="number">0x60u8</span>, <span class="number">0xd6u8</span>, <span class="number">0x60u8</span>,
+    ];
+    <span class="kw">let </span>hash2 = LegacyTorProcess::hash_tor_password_with_salt(<span class="kw-2">&amp;</span>salt2, <span class="string">&quot;password&quot;</span>);
+    <span class="macro">assert_eq!</span>(
+        hash2,
+        <span class="string">&quot;16:36730EEFD18C60D66052E7EA535438761C0928D316EEA56A190C99B50A&quot;
+    </span>);
+
+    <span class="comment">// ensure same password is hashed to different things
+    </span><span class="macro">assert_ne!</span>(
+        LegacyTorProcess::hash_tor_password(<span class="string">&quot;password&quot;</span>),
+        LegacyTorProcess::hash_tor_password(<span class="string">&quot;password&quot;</span>)
+    );
+
+    <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div></section></main></body></html>
