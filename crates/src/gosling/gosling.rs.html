@@ -543,7 +543,25 @@
 <a href="#543" id="543">543</a>
 <a href="#544" id="544">544</a>
 <a href="#545" id="545">545</a>
-</pre></div><pre class="rust"><code><span class="comment">// extern crates
+<a href="#546" id="546">546</a>
+<a href="#547" id="547">547</a>
+<a href="#548" id="548">548</a>
+<a href="#549" id="549">549</a>
+<a href="#550" id="550">550</a>
+<a href="#551" id="551">551</a>
+<a href="#552" id="552">552</a>
+<a href="#553" id="553">553</a>
+<a href="#554" id="554">554</a>
+<a href="#555" id="555">555</a>
+<a href="#556" id="556">556</a>
+<a href="#557" id="557">557</a>
+<a href="#558" id="558">558</a>
+<a href="#559" id="559">559</a>
+</pre></div><pre class="rust"><code><span class="comment">// standard
+</span><span class="attr">#[cfg(test)]
+</span><span class="kw">use </span>std::net::{SocketAddr, TcpListener, TcpStream};
+
+<span class="comment">// extern crates
 </span><span class="attr">#[cfg(test)]
 </span><span class="kw">use </span>bson::doc;
 <span class="kw">use </span>data_encoding::HEXLOWER;
@@ -567,8 +585,6 @@
 <span class="kw">use </span><span class="kw">crate</span>::identity_server;
 <span class="attr">#[cfg(test)]
 </span><span class="kw">use </span><span class="kw">crate</span>::identity_server::<span class="kw-2">*</span>;
-<span class="attr">#[cfg(test)]
-</span><span class="kw">use </span><span class="kw">crate</span>::memory_stream::MemoryStream;
 
 <span class="attr">#[derive(Debug, Eq, PartialEq, TryFromPrimitive)]
 #[repr(i32)]
@@ -685,8 +701,14 @@
     should_fail: bool,
 ) -&gt; anyhow::Result&lt;()&gt; {
     <span class="comment">// test sockets
-    </span><span class="kw">let </span>stream1 = MemoryStream::new();
-    <span class="kw">let </span>stream2 = MemoryStream::new();
+    </span><span class="kw">let </span>socket_addr = SocketAddr::from(([<span class="number">127</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>], <span class="number">0u16</span>));
+    <span class="kw">let </span>listener = TcpListener::bind(socket_addr)<span class="question-mark">?</span>;
+    <span class="kw">let </span>socket_addr = listener.local_addr()<span class="question-mark">?</span>;
+
+    <span class="kw">let </span>stream1 = TcpStream::connect(socket_addr)<span class="question-mark">?</span>;
+    stream1.set_nonblocking(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>(stream2, _socket_addr) = listener.accept()<span class="question-mark">?</span>;
+    stream2.set_nonblocking(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
 
     <span class="comment">// client setup
     </span><span class="kw">let </span>client_ed25519_private = Ed25519PrivateKey::generate();
@@ -705,7 +727,7 @@
     };
 
     <span class="comment">// rpc setup
-    </span><span class="kw">let </span>client_rpc = Session::new(stream1.clone(), stream2.clone());
+    </span><span class="kw">let </span>client_rpc = Session::new(stream1.try_clone()<span class="question-mark">?</span>, stream1);
     <span class="kw">let </span><span class="kw-2">mut </span>ident_client = IdentityClient::new(
         client_rpc,
         server_service_id.clone(),
@@ -715,7 +737,7 @@
     )
     .unwrap();
 
-    <span class="kw">let </span>server_rpc = Session::new(stream2, stream1);
+    <span class="kw">let </span>server_rpc = Session::new(stream2.try_clone()<span class="question-mark">?</span>, stream2);
     <span class="kw">let </span><span class="kw-2">mut </span>ident_server = IdentityServer::new(server_rpc, server_service_id.clone());
 
     <span class="kw">let </span><span class="kw-2">mut </span>failure_ocurred = <span class="bool-val">false</span>;
@@ -938,8 +960,14 @@
     channel_allowed: bool,
 ) -&gt; anyhow::Result&lt;()&gt; {
     <span class="comment">// test sockets
-    </span><span class="kw">let </span>stream1 = MemoryStream::new();
-    <span class="kw">let </span>stream2 = MemoryStream::new();
+    </span><span class="kw">let </span>socket_addr = SocketAddr::from(([<span class="number">127</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>], <span class="number">0u16</span>));
+    <span class="kw">let </span>listener = TcpListener::bind(socket_addr)<span class="question-mark">?</span>;
+    <span class="kw">let </span>socket_addr = listener.local_addr()<span class="question-mark">?</span>;
+
+    <span class="kw">let </span>stream1 = TcpStream::connect(socket_addr)<span class="question-mark">?</span>;
+    stream1.set_nonblocking(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>(stream2, _socket_addr) = listener.accept()<span class="question-mark">?</span>;
+    stream2.set_nonblocking(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
 
     <span class="comment">// server+client setup
     </span><span class="kw">let </span>server_ed25519_private = Ed25519PrivateKey::generate();
@@ -959,7 +987,7 @@
         V3OnionServiceId::from_public_key(<span class="kw-2">&amp;</span>ed25519_public)
     };
 
-    <span class="kw">let </span>server_rpc = Session::new(stream1.clone(), stream2.clone());
+    <span class="kw">let </span>server_rpc = Session::new(stream1.try_clone()<span class="question-mark">?</span>, stream1);
 
     <span class="kw">let </span><span class="kw-2">mut </span>endpoint_server = EndpointServer::new(
         server_rpc,
@@ -967,7 +995,7 @@
         server_service_id.clone(),
     );
 
-    <span class="kw">let </span>client_rpc = Session::new(stream2, stream1);
+    <span class="kw">let </span>client_rpc = Session::new(stream2.try_clone()<span class="question-mark">?</span>, stream2);
 
     <span class="kw">let </span>channel = <span class="kw">match </span>AsciiString::new(channel.to_string()) {
         <span class="prelude-val">Ok</span>(channel) =&gt; channel,
