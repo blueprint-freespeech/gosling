@@ -268,6 +268,13 @@
 <a href="#268" id="268">268</a>
 <a href="#269" id="269">269</a>
 <a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::clone::Clone;
 <span class="kw">use </span>std::convert::TryInto;
@@ -306,7 +313,9 @@
 }
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">enum </span>EndpointClientEvent {
-    HandshakeCompleted,
+    HandshakeCompleted {
+        stream: TcpStream,
+    }
 }
 
 <span class="attr">#[derive(Debug, PartialEq)]
@@ -319,7 +328,7 @@
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>EndpointClient {
     <span class="comment">// session data
-    </span>rpc: Session&lt;TcpStream&gt;,
+    </span>rpc: <span class="prelude-ty">Option</span>&lt;Session&lt;TcpStream&gt;&gt;,
     <span class="kw">pub </span>server_service_id: V3OnionServiceId,
     <span class="kw">pub </span>requested_channel: AsciiString,
     client_service_id: V3OnionServiceId,
@@ -343,7 +352,7 @@
         client_ed25519_private: Ed25519PrivateKey,
     ) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
-            rpc,
+            rpc: <span class="prelude-val">Some</span>(rpc),
             server_service_id,
             requested_channel,
             client_service_id: V3OnionServiceId::from_private_key(<span class="kw-2">&amp;</span>client_ed25519_private),
@@ -361,180 +370,185 @@
         }
 
         <span class="comment">// update our rpc session
-        </span><span class="self">self</span>.rpc.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(rpc) = <span class="self">self</span>.rpc.as_mut() {
+            rpc.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
 
-        <span class="comment">// client state machine
-        </span><span class="kw">match </span>(
-            <span class="kw-2">&amp;</span><span class="self">self</span>.state,
-            <span class="self">self</span>.begin_handshake_request_cookie,
-            <span class="self">self</span>.send_response_request_cookie,
-        ) {
-            (<span class="kw-2">&amp;</span>EndpointClientState::BeginHandshake, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; {
-                <span class="self">self</span>.begin_handshake_request_cookie = <span class="prelude-val">Some</span>(<span class="self">self</span>.rpc.client_call(
-                    <span class="string">&quot;gosling_endpoint&quot;</span>,
-                    <span class="string">&quot;begin_handshake&quot;</span>,
-                    <span class="number">0</span>,
-                    <span class="macro">doc! </span>{
-                        <span class="string">&quot;version&quot; </span>: bson::Bson::String(GOSLING_VERSION.to_string()),
-                        <span class="string">&quot;client_identity&quot; </span>: bson::Bson::String(<span class="self">self</span>.client_service_id.to_string()),
-                        <span class="string">&quot;channel&quot; </span>: bson::Bson::String(<span class="self">self</span>.requested_channel.to_string()),
-                    },
-                ).unwrap());
-                <span class="self">self</span>.state = EndpointClientState::WaitingForServerCookie;
-                <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
-            }
-            (
-                <span class="kw-2">&amp;</span>EndpointClientState::WaitingForServerCookie,
-                <span class="prelude-val">Some</span>(begin_handshake_request_cookie),
-                <span class="prelude-val">None</span>, <span class="comment">// send_response_request_cookie
-            </span>) =&gt; {
-                <span class="kw">if let </span><span class="prelude-val">Some</span>(response) = <span class="self">self</span>.rpc.client_next_response() {
-                    <span class="kw">let </span>result = <span class="kw">match </span>response {
-                        Response::Pending { cookie } =&gt; {
-                            <span class="kw">if </span>cookie == begin_handshake_request_cookie {
-                                <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
-                            } <span class="kw">else </span>{
-                                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(
-                                    <span class="string">&quot;received unexpected pending response&quot;</span>.to_string(),
-                                ));
-                            }
-                        }
-                        Response::Error { cookie, error_code } =&gt; {
-                            <span class="kw">if </span>cookie != begin_handshake_request_cookie {
-                                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(<span class="macro">format!</span>(
-                                    <span class="string">&quot;received unexpected error response; rpc error_code: {}&quot;</span>,
-                                    error_code
-                                )));
-                            }
-                            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(<span class="macro">format!</span>(
-                                <span class="string">&quot;received unexpected rpc error_code: {}&quot;</span>,
-                                error_code
-                            )));
-                        }
-                        Response::Success { cookie, result } =&gt; {
-                            <span class="kw">if </span>cookie == begin_handshake_request_cookie {
-                                result
-                            } <span class="kw">else </span>{
-                                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(
-                                    <span class="string">&quot;received unexpected success response&quot;</span>.to_string(),
-                                ));
-                            }
-                        }
-                    };
-
-                    <span class="kw">if let </span>bson::Bson::Document(result) = result {
-                        <span class="kw">if let </span><span class="prelude-val">Some</span>(Bson::Binary(Binary {
-                            subtype: BinarySubtype::Generic,
-                            bytes: server_cookie,
-                        })) = result.get(<span class="string">&quot;server_cookie&quot;</span>)
-                        {
-                            <span class="comment">// build arguments for send_response()
-
-                            // client_cookie
-                            </span><span class="kw">let </span><span class="kw-2">mut </span>client_cookie: ClientCookie = Default::default();
-                            OsRng.fill_bytes(<span class="kw-2">&amp;mut </span>client_cookie);
-
-                            <span class="comment">// client_identity_proof_signature
-                            </span><span class="kw">let </span>server_cookie: ServerCookie = <span class="kw">match </span>server_cookie.clone().try_into()
-                            {
-                                <span class="prelude-val">Ok</span>(server_cookie) =&gt; server_cookie,
-                                <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
-                                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(<span class="macro">format!</span>(
-                                        <span class="string">&quot;unable to convert &#39;{:?}&#39; to server cookie&quot;</span>,
-                                        server_cookie
-                                    )))
-                                }
-                            };
-                            <span class="kw">let </span>client_identity_proof = build_client_proof(
-                                DomainSeparator::GoslingEndpoint,
-                                <span class="kw-2">&amp;</span><span class="self">self</span>.requested_channel,
-                                <span class="kw-2">&amp;</span><span class="self">self</span>.client_service_id,
-                                <span class="kw-2">&amp;</span><span class="self">self</span>.server_service_id,
-                                <span class="kw-2">&amp;</span>client_cookie,
-                                <span class="kw-2">&amp;</span>server_cookie,
-                            );
-                            <span class="kw">let </span>client_identity_proof_signature = <span class="self">self
-                                </span>.client_ed25519_private
-                                .sign_message(<span class="kw-2">&amp;</span>client_identity_proof);
-
-                            <span class="comment">// build our args object for rpc call
-                            </span><span class="kw">let </span>args = <span class="macro">doc! </span>{
-                                <span class="string">&quot;client_cookie&quot; </span>: Bson::Binary(bson::Binary{subtype: BinarySubtype::Generic, bytes: client_cookie.to_vec()}),
-                                <span class="string">&quot;client_identity_proof_signature&quot; </span>: Bson::Binary(bson::Binary{subtype: BinarySubtype::Generic, bytes: client_identity_proof_signature.to_bytes().to_vec()}),
-                            };
-
-                            <span class="comment">// make rpc call
-                            </span><span class="self">self</span>.send_response_request_cookie = <span class="prelude-val">Some</span>(
-                                <span class="self">self</span>.rpc
-                                    .client_call(<span class="string">&quot;gosling_endpoint&quot;</span>, <span class="string">&quot;send_response&quot;</span>, <span class="number">0</span>, args)
-                                    .unwrap(),
-                            );
-
-                            <span class="self">self</span>.state = EndpointClientState::WaitingForProofVerification;
-                        }
-                    } <span class="kw">else </span>{
-                        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(<span class="macro">format!</span>(
-                            <span class="string">&quot;begin_handshake() returned unexpected value: {}&quot;</span>,
-                            result
-                        )));
-                    }
+            <span class="comment">// client state machine
+            </span><span class="kw">match </span>(
+                <span class="kw-2">&amp;</span><span class="self">self</span>.state,
+                <span class="self">self</span>.begin_handshake_request_cookie,
+                <span class="self">self</span>.send_response_request_cookie,
+            ) {
+                (<span class="kw-2">&amp;</span>EndpointClientState::BeginHandshake, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; {
+                    <span class="self">self</span>.begin_handshake_request_cookie = <span class="prelude-val">Some</span>(rpc.client_call(
+                        <span class="string">&quot;gosling_endpoint&quot;</span>,
+                        <span class="string">&quot;begin_handshake&quot;</span>,
+                        <span class="number">0</span>,
+                        <span class="macro">doc! </span>{
+                            <span class="string">&quot;version&quot; </span>: bson::Bson::String(GOSLING_VERSION.to_string()),
+                            <span class="string">&quot;client_identity&quot; </span>: bson::Bson::String(<span class="self">self</span>.client_service_id.to_string()),
+                            <span class="string">&quot;channel&quot; </span>: bson::Bson::String(<span class="self">self</span>.requested_channel.to_string()),
+                        },
+                    ).unwrap());
+                    <span class="self">self</span>.state = EndpointClientState::WaitingForServerCookie;
+                    <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
                 }
-                <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
-            }
-            (
-                <span class="kw-2">&amp;</span>EndpointClientState::WaitingForProofVerification,
-                <span class="prelude-val">Some</span>(_begin_handshake_request_cookie),
-                <span class="prelude-val">Some</span>(send_response_request_cookie),
-            ) =&gt; {
-                <span class="kw">if let </span><span class="prelude-val">Some</span>(response) = <span class="self">self</span>.rpc.client_next_response() {
-                    <span class="kw">let </span>result = <span class="kw">match </span>response {
-                        Response::Pending { cookie } =&gt; {
-                            <span class="kw">if </span>cookie == send_response_request_cookie {
-                                <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
-                            } <span class="kw">else </span>{
-                                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(
-                                    <span class="string">&quot;received unexpected pending response&quot;</span>.to_string(),
-                                ));
+                (
+                    <span class="kw-2">&amp;</span>EndpointClientState::WaitingForServerCookie,
+                    <span class="prelude-val">Some</span>(begin_handshake_request_cookie),
+                    <span class="prelude-val">None</span>, <span class="comment">// send_response_request_cookie
+                </span>) =&gt; {
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(response) = rpc.client_next_response() {
+                        <span class="kw">let </span>result = <span class="kw">match </span>response {
+                            Response::Pending { cookie } =&gt; {
+                                <span class="kw">if </span>cookie == begin_handshake_request_cookie {
+                                    <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
+                                } <span class="kw">else </span>{
+                                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(
+                                        <span class="string">&quot;received unexpected pending response&quot;</span>.to_string(),
+                                    ));
+                                }
                             }
-                        }
-                        Response::Error { cookie, error_code } =&gt; {
-                            <span class="kw">if </span>cookie == send_response_request_cookie {
+                            Response::Error { cookie, error_code } =&gt; {
+                                <span class="kw">if </span>cookie != begin_handshake_request_cookie {
+                                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(<span class="macro">format!</span>(
+                                        <span class="string">&quot;received unexpected error response; rpc error_code: {}&quot;</span>,
+                                        error_code
+                                    )));
+                                }
                                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(<span class="macro">format!</span>(
-                                    <span class="string">&quot;received unexpected error response; rpc error_code: {}&quot;</span>,
+                                    <span class="string">&quot;received unexpected rpc error_code: {}&quot;</span>,
                                     error_code
                                 )));
                             }
-                            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(<span class="macro">format!</span>(
-                                <span class="string">&quot;received unexpected rpc error_code: {}&quot;</span>,
-                                error_code
-                            )));
-                        }
-                        Response::Success { cookie, result } =&gt; {
-                            <span class="kw">if </span>cookie == send_response_request_cookie {
-                                result
-                            } <span class="kw">else </span>{
-                                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(
-                                    <span class="string">&quot;received unexpected success response&quot;</span>.to_string(),
-                                ));
+                            Response::Success { cookie, result } =&gt; {
+                                <span class="kw">if </span>cookie == begin_handshake_request_cookie {
+                                    result
+                                } <span class="kw">else </span>{
+                                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(
+                                        <span class="string">&quot;received unexpected success response&quot;</span>.to_string(),
+                                    ));
+                                }
                             }
-                        }
-                    };
+                        };
 
-                    <span class="kw">if let </span>Bson::Document(result) = result {
-                        <span class="kw">if </span>result.is_empty() {
-                            <span class="self">self</span>.state = EndpointClientState::HandshakeComplete;
-                            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(EndpointClientEvent::HandshakeCompleted));
+                        <span class="kw">if let </span>bson::Bson::Document(result) = result {
+                            <span class="kw">if let </span><span class="prelude-val">Some</span>(Bson::Binary(Binary {
+                                subtype: BinarySubtype::Generic,
+                                bytes: server_cookie,
+                            })) = result.get(<span class="string">&quot;server_cookie&quot;</span>)
+                            {
+                                <span class="comment">// build arguments for send_response()
+
+                                // client_cookie
+                                </span><span class="kw">let </span><span class="kw-2">mut </span>client_cookie: ClientCookie = Default::default();
+                                OsRng.fill_bytes(<span class="kw-2">&amp;mut </span>client_cookie);
+
+                                <span class="comment">// client_identity_proof_signature
+                                </span><span class="kw">let </span>server_cookie: ServerCookie = <span class="kw">match </span>server_cookie.clone().try_into()
+                                {
+                                    <span class="prelude-val">Ok</span>(server_cookie) =&gt; server_cookie,
+                                    <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
+                                        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(<span class="macro">format!</span>(
+                                            <span class="string">&quot;unable to convert &#39;{:?}&#39; to server cookie&quot;</span>,
+                                            server_cookie
+                                        )))
+                                    }
+                                };
+                                <span class="kw">let </span>client_identity_proof = build_client_proof(
+                                    DomainSeparator::GoslingEndpoint,
+                                    <span class="kw-2">&amp;</span><span class="self">self</span>.requested_channel,
+                                    <span class="kw-2">&amp;</span><span class="self">self</span>.client_service_id,
+                                    <span class="kw-2">&amp;</span><span class="self">self</span>.server_service_id,
+                                    <span class="kw-2">&amp;</span>client_cookie,
+                                    <span class="kw-2">&amp;</span>server_cookie,
+                                );
+                                <span class="kw">let </span>client_identity_proof_signature = <span class="self">self
+                                    </span>.client_ed25519_private
+                                    .sign_message(<span class="kw-2">&amp;</span>client_identity_proof);
+
+                                <span class="comment">// build our args object for rpc call
+                                </span><span class="kw">let </span>args = <span class="macro">doc! </span>{
+                                    <span class="string">&quot;client_cookie&quot; </span>: Bson::Binary(bson::Binary{subtype: BinarySubtype::Generic, bytes: client_cookie.to_vec()}),
+                                    <span class="string">&quot;client_identity_proof_signature&quot; </span>: Bson::Binary(bson::Binary{subtype: BinarySubtype::Generic, bytes: client_identity_proof_signature.to_bytes().to_vec()}),
+                                };
+
+                                <span class="comment">// make rpc call
+                                </span><span class="self">self</span>.send_response_request_cookie = <span class="prelude-val">Some</span>(
+                                    rpc
+                                        .client_call(<span class="string">&quot;gosling_endpoint&quot;</span>, <span class="string">&quot;send_response&quot;</span>, <span class="number">0</span>, args)
+                                        .unwrap(),
+                                );
+
+                                <span class="self">self</span>.state = EndpointClientState::WaitingForProofVerification;
+                            }
                         } <span class="kw">else </span>{
                             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(<span class="macro">format!</span>(
-                                <span class="string">&quot;received unexpected data from send_response(): {:?}&quot;</span>,
+                                <span class="string">&quot;begin_handshake() returned unexpected value: {}&quot;</span>,
                                 result
                             )));
                         }
                     }
+                    <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
                 }
-                <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
+                (
+                    <span class="kw-2">&amp;</span>EndpointClientState::WaitingForProofVerification,
+                    <span class="prelude-val">Some</span>(_begin_handshake_request_cookie),
+                    <span class="prelude-val">Some</span>(send_response_request_cookie),
+                ) =&gt; {
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(response) = rpc.client_next_response() {
+                        <span class="kw">let </span>result = <span class="kw">match </span>response {
+                            Response::Pending { cookie } =&gt; {
+                                <span class="kw">if </span>cookie == send_response_request_cookie {
+                                    <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
+                                } <span class="kw">else </span>{
+                                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(
+                                        <span class="string">&quot;received unexpected pending response&quot;</span>.to_string(),
+                                    ));
+                                }
+                            }
+                            Response::Error { cookie, error_code } =&gt; {
+                                <span class="kw">if </span>cookie == send_response_request_cookie {
+                                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(<span class="macro">format!</span>(
+                                        <span class="string">&quot;received unexpected error response; rpc error_code: {}&quot;</span>,
+                                        error_code
+                                    )));
+                                }
+                                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(<span class="macro">format!</span>(
+                                    <span class="string">&quot;received unexpected rpc error_code: {}&quot;</span>,
+                                    error_code
+                                )));
+                            }
+                            Response::Success { cookie, result } =&gt; {
+                                <span class="kw">if </span>cookie == send_response_request_cookie {
+                                    result
+                                } <span class="kw">else </span>{
+                                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(
+                                        <span class="string">&quot;received unexpected success response&quot;</span>.to_string(),
+                                    ));
+                                }
+                            }
+                        };
+
+                        <span class="kw">if let </span>Bson::Document(result) = result {
+                            <span class="kw">if </span>result.is_empty() {
+                                <span class="self">self</span>.state = EndpointClientState::HandshakeComplete;
+                                <span class="kw">let </span>stream = std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.rpc).unwrap().into_stream();
+                                <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(EndpointClientEvent::HandshakeCompleted{stream}));
+                            } <span class="kw">else </span>{
+                                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(<span class="macro">format!</span>(
+                                    <span class="string">&quot;received unexpected data from send_response(): {:?}&quot;</span>,
+                                    result
+                                )));
+                            }
+                        }
+                    }
+                    <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
+                }
+                <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(Error::InvalidState(<span class="self">self</span>.get_state())),
             }
-            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(Error::InvalidState(<span class="self">self</span>.get_state())),
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Err</span>(Error::InvalidState(<span class="self">self</span>.get_state()))
         }
     }
 }

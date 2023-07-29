@@ -399,6 +399,9 @@
 <a href="#399" id="399">399</a>
 <a href="#400" id="400">400</a>
 <a href="#401" id="401">401</a>
+<a href="#402" id="402">402</a>
+<a href="#403" id="403">403</a>
+<a href="#404" id="404">404</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::clone::Clone;
 <span class="kw">use </span>std::convert::TryInto;
@@ -441,6 +444,7 @@
     </span>HandshakeCompleted {
         client_service_id: V3OnionServiceId,
         channel_name: AsciiString,
+        stream: TcpStream,
     },
     <span class="comment">// endpoint server has reject an incoming channel request
     </span>HandshakeRejected {
@@ -579,9 +583,11 @@
             =&gt; {
                 <span class="self">self</span>.state = EndpointServerState::HandshakeComplete;
                 <span class="kw">if </span>handshake_succeeded {
+                    <span class="kw">let </span>stream = std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.rpc).unwrap().into_stream();
                     <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(EndpointServerEvent::HandshakeCompleted{
                         client_service_id: client_identity.clone(),
-                        channel_name: requested_channel.clone()}));
+                        channel_name: requested_channel.clone(),
+                        stream}));
                 } <span class="kw">else </span>{
                     <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(EndpointServerEvent::HandshakeRejected{
                         client_allowed: <span class="self">self</span>.client_allowed,

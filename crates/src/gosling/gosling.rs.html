@@ -557,6 +557,7 @@
 <a href="#557" id="557">557</a>
 <a href="#558" id="558">558</a>
 <a href="#559" id="559">559</a>
+<a href="#560" id="560">560</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="attr">#[cfg(test)]
 </span><span class="kw">use </span>std::net::{SocketAddr, TcpListener, TcpStream};
@@ -1025,6 +1026,7 @@
                 <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(EndpointServerEvent::HandshakeCompleted {
                     client_service_id: ret_client_service_id,
                     channel_name: ret_channel,
+                    stream: <span class="kw">_</span>,
                 })) =&gt; {
                     <span class="macro">assert!</span>(ret_client_service_id == client_service_id);
                     <span class="macro">assert!</span>(ret_channel == channel);
@@ -1050,7 +1052,7 @@
 
         <span class="kw">if </span>!client_complete {
             <span class="kw">match </span>endpoint_client.update() {
-                <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(EndpointClientEvent::HandshakeCompleted)) =&gt; {
+                <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(EndpointClientEvent::HandshakeCompleted { stream: <span class="kw">_ </span>})) =&gt; {
                     client_complete = <span class="bool-val">true</span>;
                 }
                 <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; {}

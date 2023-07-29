@@ -816,26 +816,6 @@
 <a href="#816" id="816">816</a>
 <a href="#817" id="817">817</a>
 <a href="#818" id="818">818</a>
-<a href="#819" id="819">819</a>
-<a href="#820" id="820">820</a>
-<a href="#821" id="821">821</a>
-<a href="#822" id="822">822</a>
-<a href="#823" id="823">823</a>
-<a href="#824" id="824">824</a>
-<a href="#825" id="825">825</a>
-<a href="#826" id="826">826</a>
-<a href="#827" id="827">827</a>
-<a href="#828" id="828">828</a>
-<a href="#829" id="829">829</a>
-<a href="#830" id="830">830</a>
-<a href="#831" id="831">831</a>
-<a href="#832" id="832">832</a>
-<a href="#833" id="833">833</a>
-<a href="#834" id="834">834</a>
-<a href="#835" id="835">835</a>
-<a href="#836" id="836">836</a>
-<a href="#837" id="837">837</a>
-<a href="#838" id="838">838</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::clone::Clone;
 <span class="kw">use </span>std::collections::{BTreeMap, HashMap, VecDeque};
@@ -873,8 +853,8 @@
     </span>next_handshake_handle: HandshakeHandle,
     identity_clients: BTreeMap&lt;HandshakeHandle, IdentityClient&gt;,
     identity_servers: BTreeMap&lt;HandshakeHandle, IdentityServer&gt;,
-    endpoint_clients: BTreeMap&lt;HandshakeHandle, (EndpointClient, TcpStream)&gt;,
-    endpoint_servers: BTreeMap&lt;HandshakeHandle, (EndpointServer, TcpStream)&gt;,
+    endpoint_clients: BTreeMap&lt;HandshakeHandle, EndpointClient&gt;,
+    endpoint_servers: BTreeMap&lt;HandshakeHandle, EndpointServer&gt;,
 
     <span class="comment">//
     // Listeners for incoming connections
@@ -894,7 +874,8 @@
     </span>identity_service_id: V3OnionServiceId,
 }
 
-<span class="kw">pub enum </span>ContextEvent {
+<span class="attr">#[derive(Debug)]
+</span><span class="kw">pub enum </span>ContextEvent {
     <span class="comment">//
     // Tor Events
     //
@@ -1249,10 +1230,9 @@
             .connect(<span class="kw-2">&amp;</span>endpoint_server_id, <span class="self">self</span>.endpoint_port, <span class="prelude-val">None</span>)<span class="question-mark">?
             </span>.into();
         stream.set_nonblocking(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
-        <span class="kw">let </span>client_rpc = Session::new(stream.try_clone()<span class="question-mark">?</span>);
 
         <span class="kw">let </span>endpoint_client = EndpointClient::new(
-            client_rpc,
+            Session::new(stream),
             endpoint_server_id,
             channel,
             <span class="self">self</span>.identity_private_key.clone(),
@@ -1261,7 +1241,7 @@
         <span class="kw">let </span>handshake_handle = <span class="self">self</span>.next_handshake_handle;
         <span class="self">self</span>.next_handshake_handle += <span class="number">1</span>;
         <span class="self">self</span>.endpoint_clients
-            .insert(handshake_handle, (endpoint_client, stream));
+            .insert(handshake_handle, endpoint_client);
         <span class="prelude-val">Ok</span>(handshake_handle)
     }
 
@@ -1308,7 +1288,7 @@
         handle: HandshakeHandle,
         channel_supported: bool,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>((endpoint_server, _stream)) = <span class="self">self</span>.endpoint_servers.get_mut(<span class="kw-2">&amp;</span>handle) {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(endpoint_server) = <span class="self">self</span>.endpoint_servers.get_mut(<span class="kw-2">&amp;</span>handle) {
             <span class="prelude-val">Ok</span>(endpoint_server.handle_channel_request_received(channel_supported)<span class="question-mark">?</span>)
         } <span class="kw">else </span>{
             <span class="prelude-val">Err</span>(Error::HandshakeHandleNotFound(handle))
@@ -1355,21 +1335,20 @@
         endpoint_listener: <span class="kw-2">&amp;</span>OnionListener,
         client_service_id: <span class="kw-2">&amp;</span>V3OnionServiceId,
         endpoint_service_id: <span class="kw-2">&amp;</span>V3OnionServiceId,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;(EndpointServer, TcpStream)&gt;, Error&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;EndpointServer&gt;, Error&gt; {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(stream) = endpoint_listener.accept()<span class="question-mark">? </span>{
             <span class="kw">let </span>stream: TcpStream = stream.into();
             <span class="kw">if </span>stream.set_nonblocking(<span class="bool-val">true</span>).is_err() {
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
             }
 
-            <span class="kw">let </span>server_rpc = Session::new(stream.try_clone()<span class="question-mark">?</span>);
             <span class="kw">let </span>endpoint_server = EndpointServer::new(
-                server_rpc,
+                Session::new(stream),
                 client_service_id.clone(),
                 endpoint_service_id.clone(),
             );
 
-            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>((endpoint_server, stream)))
+            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(endpoint_server))
         } <span class="kw">else </span>{
             <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
         }
@@ -1404,11 +1383,11 @@
                     allowed_client,
                     endpoint_service_id,
                 ) {
-                    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>((endpoint_server, stream))) =&gt; {
+                    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(endpoint_server)) =&gt; {
                         <span class="kw">let </span>handle = <span class="self">self</span>.next_handshake_handle;
                         <span class="self">self</span>.next_handshake_handle += <span class="number">1</span>;
                         <span class="self">self</span>.endpoint_servers
-                            .insert(handle, (endpoint_server, stream));
+                            .insert(handle, endpoint_server);
                         events.push_back(ContextEvent::EndpointServerHandshakeStarted { handle });
                         <span class="bool-val">true
                     </span>}
@@ -1579,26 +1558,16 @@
 
         <span class="comment">// update the endpoint client handshakes
         </span><span class="self">self</span>.endpoint_clients
-            .retain(|handle, (endpoint_client, stream)| -&gt; bool {
+            .retain(|handle, endpoint_client| -&gt; bool {
                 <span class="kw">let </span>handle = <span class="kw-2">*</span>handle;
                 <span class="kw">match </span>endpoint_client.update() {
-                    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(EndpointClientEvent::HandshakeCompleted)) =&gt; {
-                        <span class="kw">match </span>stream.try_clone() {
-                            <span class="prelude-val">Ok</span>(stream) =&gt; {
-                                events.push_back(ContextEvent::EndpointClientHandshakeCompleted {
-                                    handle,
-                                    endpoint_service_id: endpoint_client.server_service_id.clone(),
-                                    channel_name: endpoint_client.requested_channel.to_string(),
-                                    stream,
-                                });
-                            }
-                            <span class="prelude-val">Err</span>(err) =&gt; {
-                                events.push_back(ContextEvent::EndpointClientHandshakeFailed {
-                                    handle,
-                                    reason: err.into(),
-                                });
-                            }
-                        }
+                    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(EndpointClientEvent::HandshakeCompleted { stream } )) =&gt; {
+                        events.push_back(ContextEvent::EndpointClientHandshakeCompleted {
+                            handle,
+                            endpoint_service_id: endpoint_client.server_service_id.clone(),
+                            channel_name: endpoint_client.requested_channel.to_string(),
+                            stream,
+                        });
                         <span class="bool-val">false
                     </span>}
                     <span class="prelude-val">Err</span>(err) =&gt; {
@@ -1614,7 +1583,7 @@
 
         <span class="comment">// update the endpoint server handshakes
         </span><span class="self">self</span>.endpoint_servers
-            .retain(|handle, (endpoint_server, stream)| -&gt; bool {
+            .retain(|handle, endpoint_server| -&gt; bool {
                 <span class="kw">let </span>handle = <span class="kw-2">*</span>handle;
                 <span class="kw">match </span>endpoint_server.update() {
                     <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(EndpointServerEvent::ChannelRequestReceived { requested_channel })) =&gt; {
@@ -1627,24 +1596,15 @@
                     <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(EndpointServerEvent::HandshakeCompleted {
                         client_service_id,
                         channel_name,
+                        stream,
                     })) =&gt; {
-                        <span class="kw">match </span>stream.try_clone() {
-                            <span class="prelude-val">Ok</span>(stream) =&gt; {
-                                events.push_back(ContextEvent::EndpointServerHandshakeCompleted {
-                                    handle,
-                                    endpoint_service_id: endpoint_server.server_identity.clone(),
-                                    client_service_id,
-                                    channel_name: channel_name.to_string(),
-                                    stream,
-                                });
-                            }
-                            <span class="prelude-val">Err</span>(err) =&gt; {
-                                events.push_back(ContextEvent::EndpointServerHandshakeFailed {
-                                    handle,
-                                    reason: err.into(),
-                                });
-                            }
-                        }
+                        events.push_back(ContextEvent::EndpointServerHandshakeCompleted {
+                            handle,
+                            endpoint_service_id: endpoint_server.server_identity.clone(),
+                            client_service_id,
+                            channel_name: channel_name.to_string(),
+                            stream,
+                        });
                         <span class="bool-val">false
                     </span>}
                     <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(EndpointServerEvent::HandshakeRejected {
