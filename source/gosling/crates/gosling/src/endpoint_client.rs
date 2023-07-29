@@ -36,7 +36,9 @@ pub enum Error {
 }
 
 pub(crate) enum EndpointClientEvent {
-    HandshakeCompleted,
+    HandshakeCompleted {
+        stream: TcpStream,
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -49,7 +51,7 @@ enum EndpointClientState {
 
 pub(crate) struct EndpointClient {
     // session data
-    rpc: Session<TcpStream>,
+    rpc: Option<Session<TcpStream>>,
     pub server_service_id: V3OnionServiceId,
     pub requested_channel: AsciiString,
     client_service_id: V3OnionServiceId,
@@ -73,7 +75,7 @@ impl EndpointClient {
         client_ed25519_private: Ed25519PrivateKey,
     ) -> Self {
         Self {
-            rpc,
+            rpc: Some(rpc),
             server_service_id,
             requested_channel,
             client_service_id: V3OnionServiceId::from_private_key(&client_ed25519_private),
@@ -91,180 +93,185 @@ impl EndpointClient {
         }
 
         // update our rpc session
-        self.rpc.update(None)?;
+        if let Some(rpc) = self.rpc.as_mut() {
+            rpc.update(None)?;
 
-        // client state machine
-        match (
-            &self.state,
-            self.begin_handshake_request_cookie,
-            self.send_response_request_cookie,
-        ) {
-            (&EndpointClientState::BeginHandshake, None, None) => {
-                self.begin_handshake_request_cookie = Some(self.rpc.client_call(
-                    "gosling_endpoint",
-                    "begin_handshake",
-                    0,
-                    doc! {
-                        "version" : bson::Bson::String(GOSLING_VERSION.to_string()),
-                        "client_identity" : bson::Bson::String(self.client_service_id.to_string()),
-                        "channel" : bson::Bson::String(self.requested_channel.to_string()),
-                    },
-                ).unwrap());
-                self.state = EndpointClientState::WaitingForServerCookie;
-                Ok(None)
-            }
-            (
-                &EndpointClientState::WaitingForServerCookie,
-                Some(begin_handshake_request_cookie),
-                None, // send_response_request_cookie
-            ) => {
-                if let Some(response) = self.rpc.client_next_response() {
-                    let result = match response {
-                        Response::Pending { cookie } => {
-                            if cookie == begin_handshake_request_cookie {
-                                return Ok(None);
-                            } else {
-                                return Err(Error::UnexpectedResponseReceived(
-                                    "received unexpected pending response".to_string(),
-                                ));
-                            }
-                        }
-                        Response::Error { cookie, error_code } => {
-                            if cookie != begin_handshake_request_cookie {
-                                return Err(Error::UnexpectedResponseReceived(format!(
-                                    "received unexpected error response; rpc error_code: {}",
-                                    error_code
-                                )));
-                            }
-                            return Err(Error::UnexpectedResponseReceived(format!(
-                                "received unexpected rpc error_code: {}",
-                                error_code
-                            )));
-                        }
-                        Response::Success { cookie, result } => {
-                            if cookie == begin_handshake_request_cookie {
-                                result
-                            } else {
-                                return Err(Error::UnexpectedResponseReceived(
-                                    "received unexpected success response".to_string(),
-                                ));
-                            }
-                        }
-                    };
-
-                    if let bson::Bson::Document(result) = result {
-                        if let Some(Bson::Binary(Binary {
-                            subtype: BinarySubtype::Generic,
-                            bytes: server_cookie,
-                        })) = result.get("server_cookie")
-                        {
-                            // build arguments for send_response()
-
-                            // client_cookie
-                            let mut client_cookie: ClientCookie = Default::default();
-                            OsRng.fill_bytes(&mut client_cookie);
-
-                            // client_identity_proof_signature
-                            let server_cookie: ServerCookie = match server_cookie.clone().try_into()
-                            {
-                                Ok(server_cookie) => server_cookie,
-                                Err(_) => {
-                                    return Err(Error::UnexpectedResponseReceived(format!(
-                                        "unable to convert '{:?}' to server cookie",
-                                        server_cookie
-                                    )))
-                                }
-                            };
-                            let client_identity_proof = build_client_proof(
-                                DomainSeparator::GoslingEndpoint,
-                                &self.requested_channel,
-                                &self.client_service_id,
-                                &self.server_service_id,
-                                &client_cookie,
-                                &server_cookie,
-                            );
-                            let client_identity_proof_signature = self
-                                .client_ed25519_private
-                                .sign_message(&client_identity_proof);
-
-                            // build our args object for rpc call
-                            let args = doc! {
-                                "client_cookie" : Bson::Binary(bson::Binary{subtype: BinarySubtype::Generic, bytes: client_cookie.to_vec()}),
-                                "client_identity_proof_signature" : Bson::Binary(bson::Binary{subtype: BinarySubtype::Generic, bytes: client_identity_proof_signature.to_bytes().to_vec()}),
-                            };
-
-                            // make rpc call
-                            self.send_response_request_cookie = Some(
-                                self.rpc
-                                    .client_call("gosling_endpoint", "send_response", 0, args)
-                                    .unwrap(),
-                            );
-
-                            self.state = EndpointClientState::WaitingForProofVerification;
-                        }
-                    } else {
-                        return Err(Error::UnexpectedResponseReceived(format!(
-                            "begin_handshake() returned unexpected value: {}",
-                            result
-                        )));
-                    }
+            // client state machine
+            match (
+                &self.state,
+                self.begin_handshake_request_cookie,
+                self.send_response_request_cookie,
+            ) {
+                (&EndpointClientState::BeginHandshake, None, None) => {
+                    self.begin_handshake_request_cookie = Some(rpc.client_call(
+                        "gosling_endpoint",
+                        "begin_handshake",
+                        0,
+                        doc! {
+                            "version" : bson::Bson::String(GOSLING_VERSION.to_string()),
+                            "client_identity" : bson::Bson::String(self.client_service_id.to_string()),
+                            "channel" : bson::Bson::String(self.requested_channel.to_string()),
+                        },
+                    ).unwrap());
+                    self.state = EndpointClientState::WaitingForServerCookie;
+                    Ok(None)
                 }
-                Ok(None)
-            }
-            (
-                &EndpointClientState::WaitingForProofVerification,
-                Some(_begin_handshake_request_cookie),
-                Some(send_response_request_cookie),
-            ) => {
-                if let Some(response) = self.rpc.client_next_response() {
-                    let result = match response {
-                        Response::Pending { cookie } => {
-                            if cookie == send_response_request_cookie {
-                                return Ok(None);
-                            } else {
-                                return Err(Error::UnexpectedResponseReceived(
-                                    "received unexpected pending response".to_string(),
-                                ));
+                (
+                    &EndpointClientState::WaitingForServerCookie,
+                    Some(begin_handshake_request_cookie),
+                    None, // send_response_request_cookie
+                ) => {
+                    if let Some(response) = rpc.client_next_response() {
+                        let result = match response {
+                            Response::Pending { cookie } => {
+                                if cookie == begin_handshake_request_cookie {
+                                    return Ok(None);
+                                } else {
+                                    return Err(Error::UnexpectedResponseReceived(
+                                        "received unexpected pending response".to_string(),
+                                    ));
+                                }
                             }
-                        }
-                        Response::Error { cookie, error_code } => {
-                            if cookie == send_response_request_cookie {
+                            Response::Error { cookie, error_code } => {
+                                if cookie != begin_handshake_request_cookie {
+                                    return Err(Error::UnexpectedResponseReceived(format!(
+                                        "received unexpected error response; rpc error_code: {}",
+                                        error_code
+                                    )));
+                                }
                                 return Err(Error::UnexpectedResponseReceived(format!(
-                                    "received unexpected error response; rpc error_code: {}",
+                                    "received unexpected rpc error_code: {}",
                                     error_code
                                 )));
                             }
-                            return Err(Error::UnexpectedResponseReceived(format!(
-                                "received unexpected rpc error_code: {}",
-                                error_code
-                            )));
-                        }
-                        Response::Success { cookie, result } => {
-                            if cookie == send_response_request_cookie {
-                                result
-                            } else {
-                                return Err(Error::UnexpectedResponseReceived(
-                                    "received unexpected success response".to_string(),
-                                ));
+                            Response::Success { cookie, result } => {
+                                if cookie == begin_handshake_request_cookie {
+                                    result
+                                } else {
+                                    return Err(Error::UnexpectedResponseReceived(
+                                        "received unexpected success response".to_string(),
+                                    ));
+                                }
                             }
-                        }
-                    };
+                        };
 
-                    if let Bson::Document(result) = result {
-                        if result.is_empty() {
-                            self.state = EndpointClientState::HandshakeComplete;
-                            return Ok(Some(EndpointClientEvent::HandshakeCompleted));
+                        if let bson::Bson::Document(result) = result {
+                            if let Some(Bson::Binary(Binary {
+                                subtype: BinarySubtype::Generic,
+                                bytes: server_cookie,
+                            })) = result.get("server_cookie")
+                            {
+                                // build arguments for send_response()
+
+                                // client_cookie
+                                let mut client_cookie: ClientCookie = Default::default();
+                                OsRng.fill_bytes(&mut client_cookie);
+
+                                // client_identity_proof_signature
+                                let server_cookie: ServerCookie = match server_cookie.clone().try_into()
+                                {
+                                    Ok(server_cookie) => server_cookie,
+                                    Err(_) => {
+                                        return Err(Error::UnexpectedResponseReceived(format!(
+                                            "unable to convert '{:?}' to server cookie",
+                                            server_cookie
+                                        )))
+                                    }
+                                };
+                                let client_identity_proof = build_client_proof(
+                                    DomainSeparator::GoslingEndpoint,
+                                    &self.requested_channel,
+                                    &self.client_service_id,
+                                    &self.server_service_id,
+                                    &client_cookie,
+                                    &server_cookie,
+                                );
+                                let client_identity_proof_signature = self
+                                    .client_ed25519_private
+                                    .sign_message(&client_identity_proof);
+
+                                // build our args object for rpc call
+                                let args = doc! {
+                                    "client_cookie" : Bson::Binary(bson::Binary{subtype: BinarySubtype::Generic, bytes: client_cookie.to_vec()}),
+                                    "client_identity_proof_signature" : Bson::Binary(bson::Binary{subtype: BinarySubtype::Generic, bytes: client_identity_proof_signature.to_bytes().to_vec()}),
+                                };
+
+                                // make rpc call
+                                self.send_response_request_cookie = Some(
+                                    rpc
+                                        .client_call("gosling_endpoint", "send_response", 0, args)
+                                        .unwrap(),
+                                );
+
+                                self.state = EndpointClientState::WaitingForProofVerification;
+                            }
                         } else {
                             return Err(Error::UnexpectedResponseReceived(format!(
-                                "received unexpected data from send_response(): {:?}",
+                                "begin_handshake() returned unexpected value: {}",
                                 result
                             )));
                         }
                     }
+                    Ok(None)
                 }
-                Ok(None)
+                (
+                    &EndpointClientState::WaitingForProofVerification,
+                    Some(_begin_handshake_request_cookie),
+                    Some(send_response_request_cookie),
+                ) => {
+                    if let Some(response) = rpc.client_next_response() {
+                        let result = match response {
+                            Response::Pending { cookie } => {
+                                if cookie == send_response_request_cookie {
+                                    return Ok(None);
+                                } else {
+                                    return Err(Error::UnexpectedResponseReceived(
+                                        "received unexpected pending response".to_string(),
+                                    ));
+                                }
+                            }
+                            Response::Error { cookie, error_code } => {
+                                if cookie == send_response_request_cookie {
+                                    return Err(Error::UnexpectedResponseReceived(format!(
+                                        "received unexpected error response; rpc error_code: {}",
+                                        error_code
+                                    )));
+                                }
+                                return Err(Error::UnexpectedResponseReceived(format!(
+                                    "received unexpected rpc error_code: {}",
+                                    error_code
+                                )));
+                            }
+                            Response::Success { cookie, result } => {
+                                if cookie == send_response_request_cookie {
+                                    result
+                                } else {
+                                    return Err(Error::UnexpectedResponseReceived(
+                                        "received unexpected success response".to_string(),
+                                    ));
+                                }
+                            }
+                        };
+
+                        if let Bson::Document(result) = result {
+                            if result.is_empty() {
+                                self.state = EndpointClientState::HandshakeComplete;
+                                let stream = std::mem::take(&mut self.rpc).unwrap().into_stream();
+                                return Ok(Some(EndpointClientEvent::HandshakeCompleted{stream}));
+                            } else {
+                                return Err(Error::UnexpectedResponseReceived(format!(
+                                    "received unexpected data from send_response(): {:?}",
+                                    result
+                                )));
+                            }
+                        }
+                    }
+                    Ok(None)
+                }
+                _ => Err(Error::InvalidState(self.get_state())),
             }
-            _ => Err(Error::InvalidState(self.get_state())),
+        } else {
+            Err(Error::InvalidState(self.get_state()))
         }
     }
 }

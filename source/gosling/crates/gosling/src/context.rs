@@ -35,8 +35,8 @@ pub struct Context {
     next_handshake_handle: HandshakeHandle,
     identity_clients: BTreeMap<HandshakeHandle, IdentityClient>,
     identity_servers: BTreeMap<HandshakeHandle, IdentityServer>,
-    endpoint_clients: BTreeMap<HandshakeHandle, (EndpointClient, TcpStream)>,
-    endpoint_servers: BTreeMap<HandshakeHandle, (EndpointServer, TcpStream)>,
+    endpoint_clients: BTreeMap<HandshakeHandle, EndpointClient>,
+    endpoint_servers: BTreeMap<HandshakeHandle, EndpointServer>,
 
     //
     // Listeners for incoming connections
@@ -411,10 +411,9 @@ impl Context {
             .connect(&endpoint_server_id, self.endpoint_port, None)?
             .into();
         stream.set_nonblocking(true)?;
-        let client_rpc = Session::new(stream.try_clone()?);
 
         let endpoint_client = EndpointClient::new(
-            client_rpc,
+            Session::new(stream),
             endpoint_server_id,
             channel,
             self.identity_private_key.clone(),
@@ -423,7 +422,7 @@ impl Context {
         let handshake_handle = self.next_handshake_handle;
         self.next_handshake_handle += 1;
         self.endpoint_clients
-            .insert(handshake_handle, (endpoint_client, stream));
+            .insert(handshake_handle, endpoint_client);
         Ok(handshake_handle)
     }
 
@@ -470,7 +469,7 @@ impl Context {
         handle: HandshakeHandle,
         channel_supported: bool,
     ) -> Result<(), Error> {
-        if let Some((endpoint_server, _stream)) = self.endpoint_servers.get_mut(&handle) {
+        if let Some(endpoint_server) = self.endpoint_servers.get_mut(&handle) {
             Ok(endpoint_server.handle_channel_request_received(channel_supported)?)
         } else {
             Err(Error::HandshakeHandleNotFound(handle))
@@ -517,21 +516,20 @@ impl Context {
         endpoint_listener: &OnionListener,
         client_service_id: &V3OnionServiceId,
         endpoint_service_id: &V3OnionServiceId,
-    ) -> Result<Option<(EndpointServer, TcpStream)>, Error> {
+    ) -> Result<Option<EndpointServer>, Error> {
         if let Some(stream) = endpoint_listener.accept()? {
             let stream: TcpStream = stream.into();
             if stream.set_nonblocking(true).is_err() {
                 return Ok(None);
             }
 
-            let server_rpc = Session::new(stream.try_clone()?);
             let endpoint_server = EndpointServer::new(
-                server_rpc,
+                Session::new(stream),
                 client_service_id.clone(),
                 endpoint_service_id.clone(),
             );
 
-            Ok(Some((endpoint_server, stream)))
+            Ok(Some(endpoint_server))
         } else {
             Ok(None)
         }
@@ -566,11 +564,11 @@ impl Context {
                     allowed_client,
                     endpoint_service_id,
                 ) {
-                    Ok(Some((endpoint_server, stream))) => {
+                    Ok(Some(endpoint_server)) => {
                         let handle = self.next_handshake_handle;
                         self.next_handshake_handle += 1;
                         self.endpoint_servers
-                            .insert(handle, (endpoint_server, stream));
+                            .insert(handle, endpoint_server);
                         events.push_back(ContextEvent::EndpointServerHandshakeStarted { handle });
                         true
                     }
@@ -741,26 +739,16 @@ impl Context {
 
         // update the endpoint client handshakes
         self.endpoint_clients
-            .retain(|handle, (endpoint_client, stream)| -> bool {
+            .retain(|handle, endpoint_client| -> bool {
                 let handle = *handle;
                 match endpoint_client.update() {
-                    Ok(Some(EndpointClientEvent::HandshakeCompleted)) => {
-                        match stream.try_clone() {
-                            Ok(stream) => {
-                                events.push_back(ContextEvent::EndpointClientHandshakeCompleted {
-                                    handle,
-                                    endpoint_service_id: endpoint_client.server_service_id.clone(),
-                                    channel_name: endpoint_client.requested_channel.to_string(),
-                                    stream,
-                                });
-                            }
-                            Err(err) => {
-                                events.push_back(ContextEvent::EndpointClientHandshakeFailed {
-                                    handle,
-                                    reason: err.into(),
-                                });
-                            }
-                        }
+                    Ok(Some(EndpointClientEvent::HandshakeCompleted { stream } )) => {
+                        events.push_back(ContextEvent::EndpointClientHandshakeCompleted {
+                            handle,
+                            endpoint_service_id: endpoint_client.server_service_id.clone(),
+                            channel_name: endpoint_client.requested_channel.to_string(),
+                            stream,
+                        });
                         false
                     }
                     Err(err) => {
@@ -776,7 +764,7 @@ impl Context {
 
         // update the endpoint server handshakes
         self.endpoint_servers
-            .retain(|handle, (endpoint_server, stream)| -> bool {
+            .retain(|handle, endpoint_server| -> bool {
                 let handle = *handle;
                 match endpoint_server.update() {
                     Ok(Some(EndpointServerEvent::ChannelRequestReceived { requested_channel })) => {
@@ -789,24 +777,15 @@ impl Context {
                     Ok(Some(EndpointServerEvent::HandshakeCompleted {
                         client_service_id,
                         channel_name,
+                        stream,
                     })) => {
-                        match stream.try_clone() {
-                            Ok(stream) => {
-                                events.push_back(ContextEvent::EndpointServerHandshakeCompleted {
-                                    handle,
-                                    endpoint_service_id: endpoint_server.server_identity.clone(),
-                                    client_service_id,
-                                    channel_name: channel_name.to_string(),
-                                    stream,
-                                });
-                            }
-                            Err(err) => {
-                                events.push_back(ContextEvent::EndpointServerHandshakeFailed {
-                                    handle,
-                                    reason: err.into(),
-                                });
-                            }
-                        }
+                        events.push_back(ContextEvent::EndpointServerHandshakeCompleted {
+                            handle,
+                            endpoint_service_id: endpoint_server.server_identity.clone(),
+                            client_service_id,
+                            channel_name: channel_name.to_string(),
+                            stream,
+                        });
                         false
                     }
                     Ok(Some(EndpointServerEvent::HandshakeRejected {

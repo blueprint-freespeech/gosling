@@ -782,25 +782,24 @@ fn test_context_init() -> anyhow::Result<()> {
         )
     };
 
-    println!("--- free gosling library");
-    // leave this commented out for now, TcpStreams currently seem to get closed
-    // when GoslingContext is dropped
-    // gosling_library_free(library);
-
     println!("--- pat writes message");
 
     static MESSAGE: &str = "Hello Alice!\n";
 
     pat_stream.write(MESSAGE.as_bytes())?;
+    pat_stream.flush()?;
 
     println!("--- alice waits for message");
 
     alice_stream.set_nonblocking(false)?;
     let mut alice_reader = BufReader::new(alice_stream);
     let mut alice_read_string: String = Default::default();
-    loop {
+    let mut alice_message_read: bool = false;
+    while !alice_message_read {
         match alice_reader.read_line(&mut alice_read_string) {
-            Ok(0) => {}
+            Ok(0) => {
+                println!("--- alice reads 0");
+            }
             Ok(val) => {
                 assert_eq!(val, MESSAGE.len());
                 assert_eq!(alice_read_string, MESSAGE);
@@ -808,9 +807,16 @@ fn test_context_init() -> anyhow::Result<()> {
                 alice_read_string.truncate(alice_read_string.len() - 1);
 
                 println!("--- alice received '{}'", alice_read_string);
-                return Ok(());
+                alice_message_read = true;
             }
             Err(err) => bail!("{}", err),
         }
     }
+
+    // we have to free gosling library at the end or else the backing TorProvider will go away
+    // and then pat_stream and alice_stream will no longer be valid
+    println!("--- free gosling library");
+    gosling_library_free(library);
+
+    Ok(())
 }

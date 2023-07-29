@@ -466,6 +466,7 @@ fn endpoint_test(
                 Ok(Some(EndpointServerEvent::HandshakeCompleted {
                     client_service_id: ret_client_service_id,
                     channel_name: ret_channel,
+                    stream: _,
                 })) => {
                     assert!(ret_client_service_id == client_service_id);
                     assert!(ret_channel == channel);
@@ -491,7 +492,7 @@ fn endpoint_test(
 
         if !client_complete {
             match endpoint_client.update() {
-                Ok(Some(EndpointClientEvent::HandshakeCompleted)) => {
+                Ok(Some(EndpointClientEvent::HandshakeCompleted { stream: _ })) => {
                     client_complete = true;
                 }
                 Ok(None) => {}

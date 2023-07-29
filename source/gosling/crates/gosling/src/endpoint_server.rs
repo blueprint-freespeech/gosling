@@ -40,6 +40,7 @@ pub(crate) enum EndpointServerEvent {
     HandshakeCompleted {
         client_service_id: V3OnionServiceId,
         channel_name: AsciiString,
+        stream: TcpStream,
     },
     // endpoint server has reject an incoming channel request
     HandshakeRejected {
@@ -178,9 +179,11 @@ impl EndpointServer {
             => {
                 self.state = EndpointServerState::HandshakeComplete;
                 if handshake_succeeded {
+                    let stream = std::mem::take(&mut self.rpc).unwrap().into_stream();
                     return Ok(Some(EndpointServerEvent::HandshakeCompleted{
                         client_service_id: client_identity.clone(),
-                        channel_name: requested_channel.clone()}));
+                        channel_name: requested_channel.clone(),
+                        stream}));
                 } else {
                     return Ok(Some(EndpointServerEvent::HandshakeRejected{
                         client_allowed: self.client_allowed,
