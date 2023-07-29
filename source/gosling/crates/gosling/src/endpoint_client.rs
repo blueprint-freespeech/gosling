@@ -1,6 +1,7 @@
 // standard
 use std::clone::Clone;
 use std::convert::TryInto;
+use std::net::TcpStream;
 
 // extern crates
 use bson::doc;
@@ -46,9 +47,9 @@ enum EndpointClientState {
     HandshakeComplete,
 }
 
-pub(crate) struct EndpointClient<RW> {
+pub(crate) struct EndpointClient {
     // session data
-    rpc: Session<RW, RW>,
+    rpc: Session<TcpStream, TcpStream>,
     pub server_service_id: V3OnionServiceId,
     pub requested_channel: AsciiString,
     client_service_id: V3OnionServiceId,
@@ -60,16 +61,14 @@ pub(crate) struct EndpointClient<RW> {
     send_response_request_cookie: Option<RequestCookie>,
 }
 
-impl<RW> EndpointClient<RW>
-where
-    RW: std::io::Read + std::io::Write + Send,
+impl EndpointClient
 {
     fn get_state(&self) -> String {
         format!("{{ state: {:?}, begin_handshake_request_cookie: {:?}, send_response_request_cookie: {:?} }}", self.state, self.begin_handshake_request_cookie, self.send_response_request_cookie)
     }
 
     pub fn new(
-        rpc: Session<RW, RW>,
+        rpc: Session<TcpStream, TcpStream>,
         server_service_id: V3OnionServiceId,
         requested_channel: AsciiString,
         client_ed25519_private: Ed25519PrivateKey,

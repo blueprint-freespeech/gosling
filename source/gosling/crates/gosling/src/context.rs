@@ -33,10 +33,10 @@ pub struct Context {
     // Servers and Clients for in-process handshakes
     //
     next_handshake_handle: HandshakeHandle,
-    identity_clients: BTreeMap<HandshakeHandle, IdentityClient<OnionStream>>,
-    identity_servers: BTreeMap<HandshakeHandle, IdentityServer<OnionStream>>,
-    endpoint_clients: BTreeMap<HandshakeHandle, (EndpointClient<OnionStream>, TcpStream)>,
-    endpoint_servers: BTreeMap<HandshakeHandle, (EndpointServer<OnionStream>, TcpStream)>,
+    identity_clients: BTreeMap<HandshakeHandle, IdentityClient>,
+    identity_servers: BTreeMap<HandshakeHandle, IdentityServer>,
+    endpoint_clients: BTreeMap<HandshakeHandle, (EndpointClient, TcpStream)>,
+    endpoint_servers: BTreeMap<HandshakeHandle, (EndpointServer, TcpStream)>,
 
     //
     // Listeners for incoming connections
@@ -267,9 +267,10 @@ impl Context {
         }
 
         // open tcp stream to remove ident server
-        let stream = self
+        let stream: TcpStream = self
             .tor_provider
-            .connect(&identity_server_id, self.identity_port, None)?;
+            .connect(&identity_server_id, self.identity_port, None)?
+            .into();
         stream.set_nonblocking(true)?;
         let client_rpc = Session::new(stream.try_clone()?, stream);
 
@@ -405,9 +406,10 @@ impl Context {
 
         self.tor_provider
             .add_client_auth(&endpoint_server_id, &client_auth_key)?;
-        let stream = self
+        let stream: TcpStream = self
             .tor_provider
-            .connect(&endpoint_server_id, self.endpoint_port, None)?;
+            .connect(&endpoint_server_id, self.endpoint_port, None)?
+            .into();
         stream.set_nonblocking(true)?;
         let client_rpc = Session::new(stream.try_clone()?, stream.try_clone()?);
 
@@ -421,7 +423,7 @@ impl Context {
         let handshake_handle = self.next_handshake_handle;
         self.next_handshake_handle += 1;
         self.endpoint_clients
-            .insert(handshake_handle, (endpoint_client, stream.into()));
+            .insert(handshake_handle, (endpoint_client, stream));
         Ok(handshake_handle)
     }
 
@@ -494,8 +496,9 @@ impl Context {
     fn identity_server_handle_accept(
         identity_listener: &OnionListener,
         identity_private_key: &Ed25519PrivateKey,
-    ) -> Result<Option<IdentityServer<OnionStream>>, Error> {
+    ) -> Result<Option<IdentityServer>, Error> {
         if let Some(stream) = identity_listener.accept()? {
+            let stream: TcpStream = stream.into();
             if stream.set_nonblocking(true).is_err() {
                 return Ok(None);
             }
@@ -519,8 +522,9 @@ impl Context {
         endpoint_listener: &OnionListener,
         client_service_id: &V3OnionServiceId,
         endpoint_service_id: &V3OnionServiceId,
-    ) -> Result<Option<(EndpointServer<OnionStream>, TcpStream)>, Error> {
+    ) -> Result<Option<(EndpointServer, TcpStream)>, Error> {
         if let Some(stream) = endpoint_listener.accept()? {
+            let stream: TcpStream = stream.into();
             if stream.set_nonblocking(true).is_err() {
                 return Ok(None);
             }

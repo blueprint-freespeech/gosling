@@ -1,6 +1,7 @@
 // standard
 use std::clone::Clone;
 use std::convert::TryInto;
+use std::net::TcpStream;
 
 // extern crates
 use bson::doc;
@@ -58,9 +59,9 @@ enum EndpointServerState {
     HandshakeComplete,
 }
 
-pub(crate) struct EndpointServer<RW> {
+pub(crate) struct EndpointServer {
     // Session Data
-    rpc: Option<Session<RW, RW>>,
+    rpc: Option<Session<TcpStream, TcpStream>>,
     pub server_identity: V3OnionServiceId,
     allowed_client_identity: V3OnionServiceId,
 
@@ -82,16 +83,14 @@ pub(crate) struct EndpointServer<RW> {
     client_proof_signature_valid: bool,
 }
 
-impl<RW> EndpointServer<RW>
-where
-    RW: std::io::Read + std::io::Write + Send,
+impl EndpointServer
 {
     fn get_state(&self) -> String {
         format!("{{ state: {:?}, begin_handshake_request_cookie: {:?}, client_identity: {:?}, requested_channel: {:?}, server_cookie: {:?}, handshake_succeeded:{:?} }}", self.state, self.begin_handshake_request_cookie, self.client_identity, self.requested_channel, self.server_cookie, self.handshake_succeeded)
     }
 
     pub fn new(
-        rpc: Session<RW, RW>,
+        rpc: Session<TcpStream, TcpStream>,
         client_identity: V3OnionServiceId,
         server_identity: V3OnionServiceId,
     ) -> Self {
@@ -284,9 +283,7 @@ where
     }
 }
 
-impl<RW> ApiSet for EndpointServer<RW>
-where
-    RW: std::io::Read + std::io::Write + Send,
+impl ApiSet for EndpointServer
 {
     fn namespace(&self) -> &str {
         "gosling_endpoint"
