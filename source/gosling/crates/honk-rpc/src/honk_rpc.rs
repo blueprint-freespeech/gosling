@@ -596,6 +596,8 @@ where
                         ErrorKind::UnexpectedEof,
                     ))),
                     Ok(count) => {
+                        #[cfg(test)]
+                        println!("<<< read {} bytes for message header", count);
                         self.message_read_buffer
                             .extend_from_slice(&buffer[0..count]);
 
@@ -1123,6 +1125,7 @@ fn test_honk_client_read_write() -> anyhow::Result<()> {
 
 #[test]
 fn test_honk_timeout() -> anyhow::Result<()> {
+
     let socket_addr = SocketAddr::from(([127, 0, 0, 1], 0u16));
     let listener = TcpListener::bind(socket_addr)?;
     let socket_addr = listener.local_addr()?;
@@ -1135,24 +1138,36 @@ fn test_honk_timeout() -> anyhow::Result<()> {
     let mut alice = Session::new(stream1);
     let mut pat = Session::new(stream2);
 
+    let start = std::time::Instant::now();
+
+    println!("--- {:?} alice set max_wait_time to 3 seconds", std::time::Instant::now().duration_since(start));
     alice.update(None)?;
     alice.max_wait_time = std::time::Duration::from_secs(3);
     alice.update(None)?;
 
     // a read will happen so time should reset
+    println!("--- {:?} sleep 2 seconds", std::time::Instant::now().duration_since(start));
     std::thread::sleep(std::time::Duration::from_secs(2));
+
+    println!("--- {:?} pat calls namespace::function_0()", std::time::Instant::now().duration_since(start));
     pat.client_call("namespace", "function", 0, doc! {})?;
     pat.update(None)?;
     alice.update(None)?;
 
     // a read will happen so time should reset
+    println!("--- {:?} sleep 2 seconds", std::time::Instant::now().duration_since(start));
     std::thread::sleep(std::time::Duration::from_secs(2));
+
+    println!("--- {:?} pat calls namespace::function_0()", std::time::Instant::now().duration_since(start));
     pat.client_call("namespace", "function", 0, doc! {})?;
     pat.update(None)?;
     alice.update(None)?;
 
     // on reads occur so alice should timeout
+    println!("--- {:?} sleep 4 seconds", std::time::Instant::now().duration_since(start));
     std::thread::sleep(std::time::Duration::from_secs(4));
+
+    println!("--- {:?} pat+alice update", std::time::Instant::now().duration_since(start));
     pat.update(None)?;
     match alice.update(None) {
         Ok(()) => panic!("should have timed out"),
