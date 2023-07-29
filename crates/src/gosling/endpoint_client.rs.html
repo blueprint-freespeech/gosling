@@ -268,11 +268,10 @@
 <a href="#268" id="268">268</a>
 <a href="#269" id="269">269</a>
 <a href="#270" id="270">270</a>
-<a href="#271" id="271">271</a>
-<a href="#272" id="272">272</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::clone::Clone;
 <span class="kw">use </span>std::convert::TryInto;
+<span class="kw">use </span>std::net::TcpStream;
 
 <span class="comment">// extern crates
 </span><span class="kw">use </span>bson::doc;
@@ -318,9 +317,9 @@
     HandshakeComplete,
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>EndpointClient&lt;RW&gt; {
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>EndpointClient {
     <span class="comment">// session data
-    </span>rpc: Session&lt;RW, RW&gt;,
+    </span>rpc: Session&lt;TcpStream&gt;,
     <span class="kw">pub </span>server_service_id: V3OnionServiceId,
     <span class="kw">pub </span>requested_channel: AsciiString,
     client_service_id: V3OnionServiceId,
@@ -332,16 +331,13 @@
     send_response_request_cookie: <span class="prelude-ty">Option</span>&lt;RequestCookie&gt;,
 }
 
-<span class="kw">impl</span>&lt;RW&gt; EndpointClient&lt;RW&gt;
-<span class="kw">where
-    </span>RW: std::io::Read + std::io::Write + Send,
-{
+<span class="kw">impl </span>EndpointClient {
     <span class="kw">fn </span>get_state(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
         <span class="macro">format!</span>(<span class="string">&quot;{{ state: {:?}, begin_handshake_request_cookie: {:?}, send_response_request_cookie: {:?} }}&quot;</span>, <span class="self">self</span>.state, <span class="self">self</span>.begin_handshake_request_cookie, <span class="self">self</span>.send_response_request_cookie)
     }
 
     <span class="kw">pub fn </span>new(
-        rpc: Session&lt;RW, RW&gt;,
+        rpc: Session&lt;TcpStream&gt;,
         server_service_id: V3OnionServiceId,
         requested_channel: AsciiString,
         client_ed25519_private: Ed25519PrivateKey,

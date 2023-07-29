@@ -674,14 +674,10 @@
 <a href="#674" id="674">674</a>
 <a href="#675" id="675">675</a>
 <a href="#676" id="676">676</a>
-<a href="#677" id="677">677</a>
-<a href="#678" id="678">678</a>
-<a href="#679" id="679">679</a>
-<a href="#680" id="680">680</a>
-<a href="#681" id="681">681</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::clone::Clone;
 <span class="kw">use </span>std::convert::TryInto;
+<span class="kw">use </span>std::net::TcpStream;
 
 <span class="comment">// extern crates
 </span><span class="kw">use </span>bson::doc;
@@ -755,9 +751,9 @@
     HandshakeComplete,
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>IdentityServer&lt;RW&gt; {
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>IdentityServer {
     <span class="comment">// Session Data
-    </span>rpc: <span class="prelude-ty">Option</span>&lt;Session&lt;RW, RW&gt;&gt;,
+    </span>rpc: <span class="prelude-ty">Option</span>&lt;Session&lt;TcpStream&gt;&gt;,
     server_identity: V3OnionServiceId,
 
     <span class="comment">// State Machine Data
@@ -786,15 +782,12 @@
     </span>challenge_response_valid: bool,
 }
 
-<span class="kw">impl</span>&lt;RW&gt; IdentityServer&lt;RW&gt;
-<span class="kw">where
-    </span>RW: std::io::Read + std::io::Write + Send,
-{
+<span class="kw">impl </span>IdentityServer {
     <span class="kw">fn </span>get_state(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
         <span class="macro">format!</span>(<span class="string">&quot;{{ state: {:?}, begin_handshake_request_cookie: {:?}, client_identity: {:?}, requested_endpoint: {:?}, server_cookie: {:?}, endpoint_challenge: {:?}, send_response_request_cookie: {:?}, client_auth_key: {:?}, challenge_response: {:?}, endpoint_private_key: {:?} }}&quot;</span>, <span class="self">self</span>.state, <span class="self">self</span>.begin_handshake_request_cookie, <span class="self">self</span>.client_identity, <span class="self">self</span>.requested_endpoint, <span class="self">self</span>.server_cookie, <span class="self">self</span>.endpoint_challenge, <span class="self">self</span>.send_response_request_cookie, <span class="self">self</span>.client_auth_key, <span class="self">self</span>.challenge_response, <span class="self">self</span>.endpoint_private_key)
     }
 
-    <span class="kw">pub fn </span>new(rpc: Session&lt;RW, RW&gt;, server_identity: V3OnionServiceId) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>new(rpc: Session&lt;TcpStream&gt;, server_identity: V3OnionServiceId) -&gt; <span class="self">Self </span>{
         IdentityServer {
             <span class="comment">// Session Data
             </span>rpc: <span class="prelude-val">Some</span>(rpc),
@@ -1096,10 +1089,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;RW&gt; ApiSet <span class="kw">for </span>IdentityServer&lt;RW&gt;
-<span class="kw">where
-    </span>RW: std::io::Read + std::io::Write + Send,
-{
+<span class="kw">impl </span>ApiSet <span class="kw">for </span>IdentityServer {
     <span class="kw">fn </span>namespace(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>str {
         <span class="string">&quot;gosling_identity&quot;
     </span>}

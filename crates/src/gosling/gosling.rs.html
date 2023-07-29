@@ -727,7 +727,7 @@
     };
 
     <span class="comment">// rpc setup
-    </span><span class="kw">let </span>client_rpc = Session::new(stream1.try_clone()<span class="question-mark">?</span>, stream1);
+    </span><span class="kw">let </span>client_rpc = Session::new(stream1);
     <span class="kw">let </span><span class="kw-2">mut </span>ident_client = IdentityClient::new(
         client_rpc,
         server_service_id.clone(),
@@ -737,7 +737,7 @@
     )
     .unwrap();
 
-    <span class="kw">let </span>server_rpc = Session::new(stream2.try_clone()<span class="question-mark">?</span>, stream2);
+    <span class="kw">let </span>server_rpc = Session::new(stream2);
     <span class="kw">let </span><span class="kw-2">mut </span>ident_server = IdentityServer::new(server_rpc, server_service_id.clone());
 
     <span class="kw">let </span><span class="kw-2">mut </span>failure_ocurred = <span class="bool-val">false</span>;
@@ -987,7 +987,7 @@
         V3OnionServiceId::from_public_key(<span class="kw-2">&amp;</span>ed25519_public)
     };
 
-    <span class="kw">let </span>server_rpc = Session::new(stream1.try_clone()<span class="question-mark">?</span>, stream1);
+    <span class="kw">let </span>server_rpc = Session::new(stream1);
 
     <span class="kw">let </span><span class="kw-2">mut </span>endpoint_server = EndpointServer::new(
         server_rpc,
@@ -995,7 +995,7 @@
         server_service_id.clone(),
     );
 
-    <span class="kw">let </span>client_rpc = Session::new(stream2.try_clone()<span class="question-mark">?</span>, stream2);
+    <span class="kw">let </span>client_rpc = Session::new(stream2);
 
     <span class="kw">let </span>channel = <span class="kw">match </span>AsciiString::new(channel.to_string()) {
         <span class="prelude-val">Ok</span>(channel) =&gt; channel,

@@ -399,14 +399,10 @@
 <a href="#399" id="399">399</a>
 <a href="#400" id="400">400</a>
 <a href="#401" id="401">401</a>
-<a href="#402" id="402">402</a>
-<a href="#403" id="403">403</a>
-<a href="#404" id="404">404</a>
-<a href="#405" id="405">405</a>
-<a href="#406" id="406">406</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::clone::Clone;
 <span class="kw">use </span>std::convert::TryInto;
+<span class="kw">use </span>std::net::TcpStream;
 
 <span class="comment">// extern crates
 </span><span class="kw">use </span>bson::doc;
@@ -464,9 +460,9 @@
     HandshakeComplete,
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>EndpointServer&lt;RW&gt; {
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>EndpointServer {
     <span class="comment">// Session Data
-    </span>rpc: <span class="prelude-ty">Option</span>&lt;Session&lt;RW, RW&gt;&gt;,
+    </span>rpc: <span class="prelude-ty">Option</span>&lt;Session&lt;TcpStream&gt;&gt;,
     <span class="kw">pub </span>server_identity: V3OnionServiceId,
     allowed_client_identity: V3OnionServiceId,
 
@@ -488,16 +484,13 @@
     </span>client_proof_signature_valid: bool,
 }
 
-<span class="kw">impl</span>&lt;RW&gt; EndpointServer&lt;RW&gt;
-<span class="kw">where
-    </span>RW: std::io::Read + std::io::Write + Send,
-{
+<span class="kw">impl </span>EndpointServer {
     <span class="kw">fn </span>get_state(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
         <span class="macro">format!</span>(<span class="string">&quot;{{ state: {:?}, begin_handshake_request_cookie: {:?}, client_identity: {:?}, requested_channel: {:?}, server_cookie: {:?}, handshake_succeeded:{:?} }}&quot;</span>, <span class="self">self</span>.state, <span class="self">self</span>.begin_handshake_request_cookie, <span class="self">self</span>.client_identity, <span class="self">self</span>.requested_channel, <span class="self">self</span>.server_cookie, <span class="self">self</span>.handshake_succeeded)
     }
 
     <span class="kw">pub fn </span>new(
-        rpc: Session&lt;RW, RW&gt;,
+        rpc: Session&lt;TcpStream&gt;,
         client_identity: V3OnionServiceId,
         server_identity: V3OnionServiceId,
     ) -&gt; <span class="self">Self </span>{
@@ -690,10 +683,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;RW&gt; ApiSet <span class="kw">for </span>EndpointServer&lt;RW&gt;
-<span class="kw">where
-    </span>RW: std::io::Read + std::io::Write + Send,
-{
+<span class="kw">impl </span>ApiSet <span class="kw">for </span>EndpointServer {
     <span class="kw">fn </span>namespace(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>str {
         <span class="string">&quot;gosling_endpoint&quot;
     </span>}

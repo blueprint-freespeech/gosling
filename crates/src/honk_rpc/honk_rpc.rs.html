@@ -1156,10 +1156,6 @@
 <a href="#1156" id="1156">1156</a>
 <a href="#1157" id="1157">1157</a>
 <a href="#1158" id="1158">1158</a>
-<a href="#1159" id="1159">1159</a>
-<a href="#1160" id="1160">1160</a>
-<a href="#1161" id="1161">1161</a>
-<a href="#1162" id="1162">1162</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::collections::VecDeque;
 <span class="kw">use </span>std::fmt::Debug;
@@ -1661,11 +1657,9 @@
 </span><span class="kw">pub const </span>DEFAULT_MAX_MESSAGE_SIZE: usize = <span class="number">4 </span>* <span class="number">1024 </span>* <span class="number">1024</span>;
 <span class="kw">pub const </span>DEFAULT_MAX_WAIT_TIME: std::time::Duration = std::time::Duration::from_secs(<span class="number">60</span>);
 
-<span class="kw">pub struct </span>Session&lt;R, W&gt; {
-    <span class="comment">// read stream
-    </span>reader: R,
-    <span class="comment">// write stream
-    </span>writer: W,
+<span class="kw">pub struct </span>Session&lt;RW&gt; {
+    <span class="comment">// read-write stream
+    </span>stream: RW,
     <span class="comment">// we write outgoing data to an intermediate buffer to handle writer blocking
     </span>message_write_buffer: VecDeque&lt;u8&gt;,
 
@@ -1702,12 +1696,11 @@
 }
 
 <span class="attr">#[allow(dead_code)]
-</span><span class="kw">impl</span>&lt;R, W&gt; Session&lt;R, W&gt;
+</span><span class="kw">impl</span>&lt;RW&gt; Session&lt;RW&gt;
 <span class="kw">where
-    </span>R: std::io::Read + Send,
-    W: std::io::Write + Send,
+    </span>RW: std::io::Read + std::io::Write + Send,
 {
-    <span class="kw">pub fn </span>new(reader: R, writer: W) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>new(stream: RW) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span><span class="kw-2">mut </span>message_write_buffer: VecDeque&lt;u8&gt; = Default::default();
         message_write_buffer.reserve(DEFAULT_MAX_MESSAGE_SIZE);
 
@@ -1715,8 +1708,7 @@
         message_serialization_buffer.reserve(DEFAULT_MAX_MESSAGE_SIZE);
 
         Session {
-            reader,
-            writer,
+            stream,
             message_write_buffer,
             remaining_byte_count: <span class="prelude-val">None</span>,
             message_read_buffer: Default::default(),
@@ -1745,7 +1737,7 @@
                 </span><span class="kw">let </span><span class="kw-2">mut </span>buffer = [<span class="number">0u8</span>; std::mem::size_of::&lt;i32&gt;()];
                 <span class="comment">// but shrink view down to number of bytes remaining
                 </span><span class="kw">let </span>buffer = <span class="kw-2">&amp;mut </span>buffer[<span class="number">0</span>..bytes_needed];
-                <span class="kw">match </span><span class="self">self</span>.reader.read(buffer) {
+                <span class="kw">match </span><span class="self">self</span>.stream.read(buffer) {
                     <span class="prelude-val">Err</span>(err) =&gt; {
                         <span class="kw">if </span>err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut
                         {
@@ -1803,7 +1795,7 @@
             </span><span class="macro">println!</span>(<span class="string">&quot;--- message requires {} more bytes&quot;</span>, remaining);
 
             <span class="kw">let </span><span class="kw-2">mut </span>buffer = <span class="macro">vec!</span>[<span class="number">0u8</span>; remaining];
-            <span class="kw">match </span><span class="self">self</span>.reader.read(<span class="kw-2">&amp;mut </span>buffer) {
+            <span class="kw">match </span><span class="self">self</span>.stream.read(<span class="kw-2">&amp;mut </span>buffer) {
                 <span class="prelude-val">Err</span>(err) =&gt; {
                     <span class="kw">if </span>err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut {
                         <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
@@ -1956,7 +1948,7 @@
 
     <span class="kw">fn </span>write_pending_data(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
         <span class="kw">let </span>bytes_written = <span class="self">self</span>.write_pending_data_impl()<span class="question-mark">?</span>;
-        <span class="self">self</span>.writer.flush().map_err(Error::WriterWriteFailed)<span class="question-mark">?</span>;
+        <span class="self">self</span>.stream.flush().map_err(Error::WriterWriteFailed)<span class="question-mark">?</span>;
         <span class="comment">// removes the written bytes
         </span><span class="self">self</span>.message_write_buffer.drain(<span class="number">0</span>..bytes_written);
         <span class="comment">// and shuffles the data so it is contiguous
@@ -1973,7 +1965,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>bytes_written: usize = <span class="number">0usize</span>;
 
         <span class="kw">while </span>bytes_written != pending_bytes {
-            <span class="kw">match </span><span class="self">self</span>.writer.write(pending_data) {
+            <span class="kw">match </span><span class="self">self</span>.stream.write(pending_data) {
                 <span class="prelude-val">Err</span>(err) =&gt; {
                     <span class="kw">let </span>kind = err.kind();
                     <span class="kw">if </span>kind == ErrorKind::WouldBlock || kind == ErrorKind::TimedOut {
@@ -2155,8 +2147,8 @@
     <span class="kw">let </span>(stream2, _socket_addr) = listener.accept()<span class="question-mark">?</span>;
     stream2.set_nonblocking(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
 
-    <span class="kw">let </span><span class="kw-2">mut </span>alice = Session::new(stream1.try_clone()<span class="question-mark">?</span>, stream1);
-    <span class="kw">let </span><span class="kw-2">mut </span>pat = Session::new(stream2.try_clone()<span class="question-mark">?</span>, stream2);
+    <span class="kw">let </span><span class="kw-2">mut </span>alice = Session::new(stream1);
+    <span class="kw">let </span><span class="kw-2">mut </span>pat = Session::new(stream2);
 
     <span class="macro">println!</span>(<span class="string">&quot;--- pat reads message, but none has been sent&quot;</span>);
 
@@ -2294,8 +2286,8 @@
     <span class="kw">let </span>(stream2, _socket_addr) = listener.accept()<span class="question-mark">?</span>;
     stream2.set_nonblocking(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
 
-    <span class="kw">let </span><span class="kw-2">mut </span>alice = Session::new(stream1.try_clone()<span class="question-mark">?</span>, stream1);
-    <span class="kw">let </span><span class="kw-2">mut </span>pat = Session::new(stream2.try_clone()<span class="question-mark">?</span>, stream2);
+    <span class="kw">let </span><span class="kw-2">mut </span>alice = Session::new(stream1);
+    <span class="kw">let </span><span class="kw-2">mut </span>pat = Session::new(stream2);
 
     alice.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
     alice.max_wait_time = std::time::Duration::from_secs(<span class="number">3</span>);

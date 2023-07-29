@@ -836,15 +836,6 @@
 <a href="#836" id="836">836</a>
 <a href="#837" id="837">837</a>
 <a href="#838" id="838">838</a>
-<a href="#839" id="839">839</a>
-<a href="#840" id="840">840</a>
-<a href="#841" id="841">841</a>
-<a href="#842" id="842">842</a>
-<a href="#843" id="843">843</a>
-<a href="#844" id="844">844</a>
-<a href="#845" id="845">845</a>
-<a href="#846" id="846">846</a>
-<a href="#847" id="847">847</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::clone::Clone;
 <span class="kw">use </span>std::collections::{BTreeMap, HashMap, VecDeque};
@@ -880,10 +871,10 @@
     // Servers and Clients for in-process handshakes
     //
     </span>next_handshake_handle: HandshakeHandle,
-    identity_clients: BTreeMap&lt;HandshakeHandle, IdentityClient&lt;OnionStream&gt;&gt;,
-    identity_servers: BTreeMap&lt;HandshakeHandle, IdentityServer&lt;OnionStream&gt;&gt;,
-    endpoint_clients: BTreeMap&lt;HandshakeHandle, (EndpointClient&lt;OnionStream&gt;, TcpStream)&gt;,
-    endpoint_servers: BTreeMap&lt;HandshakeHandle, (EndpointServer&lt;OnionStream&gt;, TcpStream)&gt;,
+    identity_clients: BTreeMap&lt;HandshakeHandle, IdentityClient&gt;,
+    identity_servers: BTreeMap&lt;HandshakeHandle, IdentityServer&gt;,
+    endpoint_clients: BTreeMap&lt;HandshakeHandle, (EndpointClient, TcpStream)&gt;,
+    endpoint_servers: BTreeMap&lt;HandshakeHandle, (EndpointServer, TcpStream)&gt;,
 
     <span class="comment">//
     // Listeners for incoming connections
@@ -1114,11 +1105,12 @@
         }
 
         <span class="comment">// open tcp stream to remove ident server
-        </span><span class="kw">let </span>stream = <span class="self">self
+        </span><span class="kw">let </span>stream: TcpStream = <span class="self">self
             </span>.tor_provider
-            .connect(<span class="kw-2">&amp;</span>identity_server_id, <span class="self">self</span>.identity_port, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+            .connect(<span class="kw-2">&amp;</span>identity_server_id, <span class="self">self</span>.identity_port, <span class="prelude-val">None</span>)<span class="question-mark">?
+            </span>.into();
         stream.set_nonblocking(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
-        <span class="kw">let </span>client_rpc = Session::new(stream.try_clone()<span class="question-mark">?</span>, stream);
+        <span class="kw">let </span>client_rpc = Session::new(stream);
 
         <span class="kw">let </span>ident_client = IdentityClient::new(
             client_rpc,
@@ -1252,11 +1244,12 @@
 
         <span class="self">self</span>.tor_provider
             .add_client_auth(<span class="kw-2">&amp;</span>endpoint_server_id, <span class="kw-2">&amp;</span>client_auth_key)<span class="question-mark">?</span>;
-        <span class="kw">let </span>stream = <span class="self">self
+        <span class="kw">let </span>stream: TcpStream = <span class="self">self
             </span>.tor_provider
-            .connect(<span class="kw-2">&amp;</span>endpoint_server_id, <span class="self">self</span>.endpoint_port, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+            .connect(<span class="kw-2">&amp;</span>endpoint_server_id, <span class="self">self</span>.endpoint_port, <span class="prelude-val">None</span>)<span class="question-mark">?
+            </span>.into();
         stream.set_nonblocking(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
-        <span class="kw">let </span>client_rpc = Session::new(stream.try_clone()<span class="question-mark">?</span>, stream.try_clone()<span class="question-mark">?</span>);
+        <span class="kw">let </span>client_rpc = Session::new(stream.try_clone()<span class="question-mark">?</span>);
 
         <span class="kw">let </span>endpoint_client = EndpointClient::new(
             client_rpc,
@@ -1268,7 +1261,7 @@
         <span class="kw">let </span>handshake_handle = <span class="self">self</span>.next_handshake_handle;
         <span class="self">self</span>.next_handshake_handle += <span class="number">1</span>;
         <span class="self">self</span>.endpoint_clients
-            .insert(handshake_handle, (endpoint_client, stream.into()));
+            .insert(handshake_handle, (endpoint_client, stream));
         <span class="prelude-val">Ok</span>(handshake_handle)
     }
 
@@ -1341,18 +1334,14 @@
     <span class="kw">fn </span>identity_server_handle_accept(
         identity_listener: <span class="kw-2">&amp;</span>OnionListener,
         identity_private_key: <span class="kw-2">&amp;</span>Ed25519PrivateKey,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;IdentityServer&lt;OnionStream&gt;&gt;, Error&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;IdentityServer&gt;, Error&gt; {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(stream) = identity_listener.accept()<span class="question-mark">? </span>{
+            <span class="kw">let </span>stream: TcpStream = stream.into();
             <span class="kw">if </span>stream.set_nonblocking(<span class="bool-val">true</span>).is_err() {
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
             }
 
-            <span class="kw">let </span>reader = <span class="kw">match </span>stream.try_clone() {
-                <span class="prelude-val">Ok</span>(reader) =&gt; reader,
-                <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
-            };
-            <span class="kw">let </span>writer = stream;
-            <span class="kw">let </span>server_rpc = Session::new(reader, writer);
+            <span class="kw">let </span>server_rpc = Session::new(stream);
             <span class="kw">let </span>service_id = V3OnionServiceId::from_private_key(identity_private_key);
             <span class="kw">let </span>identity_server = IdentityServer::new(server_rpc, service_id);
 
@@ -1366,28 +1355,21 @@
         endpoint_listener: <span class="kw-2">&amp;</span>OnionListener,
         client_service_id: <span class="kw-2">&amp;</span>V3OnionServiceId,
         endpoint_service_id: <span class="kw-2">&amp;</span>V3OnionServiceId,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;(EndpointServer&lt;OnionStream&gt;, TcpStream)&gt;, Error&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;(EndpointServer, TcpStream)&gt;, Error&gt; {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(stream) = endpoint_listener.accept()<span class="question-mark">? </span>{
+            <span class="kw">let </span>stream: TcpStream = stream.into();
             <span class="kw">if </span>stream.set_nonblocking(<span class="bool-val">true</span>).is_err() {
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
             }
 
-            <span class="kw">let </span>reader = <span class="kw">match </span>stream.try_clone() {
-                <span class="prelude-val">Ok</span>(reader) =&gt; reader,
-                <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
-            };
-            <span class="kw">let </span>writer = <span class="kw">match </span>stream.try_clone() {
-                <span class="prelude-val">Ok</span>(reader) =&gt; reader,
-                <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
-            };
-            <span class="kw">let </span>server_rpc = Session::new(reader, writer);
+            <span class="kw">let </span>server_rpc = Session::new(stream.try_clone()<span class="question-mark">?</span>);
             <span class="kw">let </span>endpoint_server = EndpointServer::new(
                 server_rpc,
                 client_service_id.clone(),
                 endpoint_service_id.clone(),
             );
 
-            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>((endpoint_server, stream.into())))
+            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>((endpoint_server, stream)))
         } <span class="kw">else </span>{
             <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
         }
