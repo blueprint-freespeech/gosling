@@ -272,7 +272,7 @@ impl Context {
             .connect(&identity_server_id, self.identity_port, None)?
             .into();
         stream.set_nonblocking(true)?;
-        let client_rpc = Session::new(stream.try_clone()?, stream);
+        let client_rpc = Session::new(stream);
 
         let ident_client = IdentityClient::new(
             client_rpc,
@@ -411,7 +411,7 @@ impl Context {
             .connect(&endpoint_server_id, self.endpoint_port, None)?
             .into();
         stream.set_nonblocking(true)?;
-        let client_rpc = Session::new(stream.try_clone()?, stream.try_clone()?);
+        let client_rpc = Session::new(stream.try_clone()?);
 
         let endpoint_client = EndpointClient::new(
             client_rpc,
@@ -503,12 +503,7 @@ impl Context {
                 return Ok(None);
             }
 
-            let reader = match stream.try_clone() {
-                Ok(reader) => reader,
-                Err(_) => return Ok(None),
-            };
-            let writer = stream;
-            let server_rpc = Session::new(reader, writer);
+            let server_rpc = Session::new(stream);
             let service_id = V3OnionServiceId::from_private_key(identity_private_key);
             let identity_server = IdentityServer::new(server_rpc, service_id);
 
@@ -529,22 +524,14 @@ impl Context {
                 return Ok(None);
             }
 
-            let reader = match stream.try_clone() {
-                Ok(reader) => reader,
-                Err(_) => return Ok(None),
-            };
-            let writer = match stream.try_clone() {
-                Ok(reader) => reader,
-                Err(_) => return Ok(None),
-            };
-            let server_rpc = Session::new(reader, writer);
+            let server_rpc = Session::new(stream.try_clone()?);
             let endpoint_server = EndpointServer::new(
                 server_rpc,
                 client_service_id.clone(),
                 endpoint_service_id.clone(),
             );
 
-            Ok(Some((endpoint_server, stream.into())))
+            Ok(Some((endpoint_server, stream)))
         } else {
             Ok(None)
         }

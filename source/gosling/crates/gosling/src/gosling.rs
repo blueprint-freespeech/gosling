@@ -168,7 +168,7 @@ fn identity_test(
     };
 
     // rpc setup
-    let client_rpc = Session::new(stream1.try_clone()?, stream1);
+    let client_rpc = Session::new(stream1);
     let mut ident_client = IdentityClient::new(
         client_rpc,
         server_service_id.clone(),
@@ -178,7 +178,7 @@ fn identity_test(
     )
     .unwrap();
 
-    let server_rpc = Session::new(stream2.try_clone()?, stream2);
+    let server_rpc = Session::new(stream2);
     let mut ident_server = IdentityServer::new(server_rpc, server_service_id.clone());
 
     let mut failure_ocurred = false;
@@ -428,7 +428,7 @@ fn endpoint_test(
         V3OnionServiceId::from_public_key(&ed25519_public)
     };
 
-    let server_rpc = Session::new(stream1.try_clone()?, stream1);
+    let server_rpc = Session::new(stream1);
 
     let mut endpoint_server = EndpointServer::new(
         server_rpc,
@@ -436,7 +436,7 @@ fn endpoint_test(
         server_service_id.clone(),
     );
 
-    let client_rpc = Session::new(stream2.try_clone()?, stream2);
+    let client_rpc = Session::new(stream2);
 
     let channel = match AsciiString::new(channel.to_string()) {
         Ok(channel) => channel,

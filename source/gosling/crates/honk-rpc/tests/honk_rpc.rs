@@ -116,8 +116,8 @@ fn test_honk_client_apiset() -> anyhow::Result<()> {
     let (stream2, _socket_addr) = listener.accept()?;
     stream2.set_nonblocking(true)?;
 
-    let mut alice = Session::new(stream1.try_clone()?, stream1);
-    let mut pat = Session::new(stream2.try_clone()?, stream2);
+    let mut alice = Session::new(stream1);
+    let mut pat = Session::new(stream2);
 
     let mut test_api_set: TestApiSet = Default::default();
     let alice_apisets: &mut [&mut dyn ApiSet] = &mut [&mut test_api_set];

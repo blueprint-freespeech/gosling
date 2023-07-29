@@ -499,11 +499,9 @@ pub enum Response {
 pub const DEFAULT_MAX_MESSAGE_SIZE: usize = 4 * 1024 * 1024;
 pub const DEFAULT_MAX_WAIT_TIME: std::time::Duration = std::time::Duration::from_secs(60);
 
-pub struct Session<R, W> {
-    // read stream
-    reader: R,
-    // write stream
-    writer: W,
+pub struct Session<RW> {
+    // read-write stream
+    stream: RW,
     // we write outgoing data to an intermediate buffer to handle writer blocking
     message_write_buffer: VecDeque<u8>,
 
@@ -540,12 +538,11 @@ pub struct Session<R, W> {
 }
 
 #[allow(dead_code)]
-impl<R, W> Session<R, W>
+impl<RW> Session<RW>
 where
-    R: std::io::Read + Send,
-    W: std::io::Write + Send,
+    RW: std::io::Read + std::io::Write + Send,
 {
-    pub fn new(reader: R, writer: W) -> Self {
+    pub fn new(stream: RW) -> Self {
         let mut message_write_buffer: VecDeque<u8> = Default::default();
         message_write_buffer.reserve(DEFAULT_MAX_MESSAGE_SIZE);
 
@@ -553,8 +550,7 @@ where
         message_serialization_buffer.reserve(DEFAULT_MAX_MESSAGE_SIZE);
 
         Session {
-            reader,
-            writer,
+            stream,
             message_write_buffer,
             remaining_byte_count: None,
             message_read_buffer: Default::default(),
@@ -583,7 +579,7 @@ where
                 let mut buffer = [0u8; std::mem::size_of::<i32>()];
                 // but shrink view down to number of bytes remaining
                 let buffer = &mut buffer[0..bytes_needed];
-                match self.reader.read(buffer) {
+                match self.stream.read(buffer) {
                     Err(err) => {
                         if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut
                         {
@@ -641,7 +637,7 @@ where
             println!("--- message requires {} more bytes", remaining);
 
             let mut buffer = vec![0u8; remaining];
-            match self.reader.read(&mut buffer) {
+            match self.stream.read(&mut buffer) {
                 Err(err) => {
                     if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut {
                         Ok(None)
@@ -794,7 +790,7 @@ where
 
     fn write_pending_data(&mut self) -> Result<(), Error> {
         let bytes_written = self.write_pending_data_impl()?;
-        self.writer.flush().map_err(Error::WriterWriteFailed)?;
+        self.stream.flush().map_err(Error::WriterWriteFailed)?;
         // removes the written bytes
         self.message_write_buffer.drain(0..bytes_written);
         // and shuffles the data so it is contiguous
@@ -811,7 +807,7 @@ where
         let mut bytes_written: usize = 0usize;
 
         while bytes_written != pending_bytes {
-            match self.writer.write(pending_data) {
+            match self.stream.write(pending_data) {
                 Err(err) => {
                     let kind = err.kind();
                     if kind == ErrorKind::WouldBlock || kind == ErrorKind::TimedOut {
@@ -993,8 +989,8 @@ fn test_honk_client_read_write() -> anyhow::Result<()> {
     let (stream2, _socket_addr) = listener.accept()?;
     stream2.set_nonblocking(true)?;
 
-    let mut alice = Session::new(stream1.try_clone()?, stream1);
-    let mut pat = Session::new(stream2.try_clone()?, stream2);
+    let mut alice = Session::new(stream1);
+    let mut pat = Session::new(stream2);
 
     println!("--- pat reads message, but none has been sent");
 
@@ -1132,8 +1128,8 @@ fn test_honk_timeout() -> anyhow::Result<()> {
     let (stream2, _socket_addr) = listener.accept()?;
     stream2.set_nonblocking(true)?;
 
-    let mut alice = Session::new(stream1.try_clone()?, stream1);
-    let mut pat = Session::new(stream2.try_clone()?, stream2);
+    let mut alice = Session::new(stream1);
+    let mut pat = Session::new(stream2);
 
     alice.update(None)?;
     alice.max_wait_time = std::time::Duration::from_secs(3);

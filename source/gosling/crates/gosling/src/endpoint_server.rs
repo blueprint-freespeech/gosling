@@ -61,7 +61,7 @@ enum EndpointServerState {
 
 pub(crate) struct EndpointServer {
     // Session Data
-    rpc: Option<Session<TcpStream, TcpStream>>,
+    rpc: Option<Session<TcpStream>>,
     pub server_identity: V3OnionServiceId,
     allowed_client_identity: V3OnionServiceId,
 
@@ -83,14 +83,13 @@ pub(crate) struct EndpointServer {
     client_proof_signature_valid: bool,
 }
 
-impl EndpointServer
-{
+impl EndpointServer {
     fn get_state(&self) -> String {
         format!("{{ state: {:?}, begin_handshake_request_cookie: {:?}, client_identity: {:?}, requested_channel: {:?}, server_cookie: {:?}, handshake_succeeded:{:?} }}", self.state, self.begin_handshake_request_cookie, self.client_identity, self.requested_channel, self.server_cookie, self.handshake_succeeded)
     }
 
     pub fn new(
-        rpc: Session<TcpStream, TcpStream>,
+        rpc: Session<TcpStream>,
         client_identity: V3OnionServiceId,
         server_identity: V3OnionServiceId,
     ) -> Self {
@@ -283,8 +282,7 @@ impl EndpointServer
     }
 }
 
-impl ApiSet for EndpointServer
-{
+impl ApiSet for EndpointServer {
     fn namespace(&self) -> &str {
         "gosling_endpoint"
     }
