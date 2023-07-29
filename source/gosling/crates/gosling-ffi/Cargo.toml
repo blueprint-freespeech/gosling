@@ -20,4 +20,4 @@ which = "4.3.0"
 
 [lib]
 name = "goslingffi"
-crate-type = ["staticlib"]
+crate-type = ["staticlib", "rlib"]
