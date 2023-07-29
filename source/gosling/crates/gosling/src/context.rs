@@ -56,6 +56,7 @@ pub struct Context {
     identity_service_id: V3OnionServiceId,
 }
 
+#[derive(Debug)]
 pub enum ContextEvent {
     //
     // Tor Events

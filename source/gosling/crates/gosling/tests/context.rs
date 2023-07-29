@@ -126,9 +126,7 @@ fn gosling_context_test(
                     alice_identity_published = true;
                     println!("Alice identity server published");
                 }
-                _ => {
-                    bail!("alice.update() returned unexpected event");
-                }
+                evt => bail!("alice.update() returned unexpected event: {:?}", evt)
             }
         }
     }
@@ -186,12 +184,13 @@ fn gosling_context_test(
                         alice_identity_server_endpoint_request_received = true;
                         println!("Alice receives initial identity handshake request");
                     }
-                    _ => bail!("alice.update() returned unexpected event"),
+                    evt => bail!("alice.update() returned unexpected event: {:?}", evt)
+
                 }
             }
             for event in pat.update()?.drain(..) {
                 match event {
-                    _ => bail!("pat.update() returned unexpected event"),
+                    evt => bail!("pat.update() returned unexpected event: {:?}", evt)
                 }
             }
         }
@@ -220,12 +219,12 @@ fn gosling_context_test(
                         assert_eq!(handle, pat_identity_handshake_handle);
                         pat_identity_client_challenge = Some(endpoint_challenge);
                     }
-                    _ => bail!("pat.update() returned unexpected event"),
+                    evt => bail!("pat.update() returned unexpected event: {:?}", evt)
                 }
             }
             for event in alice.update()?.drain(..) {
                 match event {
-                    _ => bail!("alice.upate() returned unexpected event"),
+                    evt => bail!("alice.update() returned unexpected event: {:?}", evt)
                 }
             }
         }
@@ -254,12 +253,12 @@ fn gosling_context_test(
                         assert_eq!(handle, alice_identity_handshake_handle);
                         alice_identity_server_challenge_response = Some(challenge_response);
                     }
-                    _ => bail!("alice.update() returned unexepecte event"),
+                    evt => bail!("alice.update() returned unexpected event: {:?}", evt)
                 }
             }
             for event in pat.update()?.drain(..) {
                 match event {
-                    _ => bail!("pat.update() returned unexpected event"),
+                    evt => bail!("pat.update() returned unexpected event: {:?}", evt)
                 }
             }
         }
@@ -309,7 +308,7 @@ fn gosling_context_test(
                         pat_auth_public_key = Some(client_auth_public_key);
                         alice_identity_server_hanshake_completed = true;
                     }
-                    _ => bail!("alice.update() returned unexpected event"),
+                    evt => bail!("alice.update() returned unexpected event: {:?}", evt)
                 }
             }
             for event in pat.update()?.drain(..) {
@@ -328,7 +327,7 @@ fn gosling_context_test(
                         pat_auth_private_key = Some(client_auth_private_key);
                         pat_identity_client_handshake_completed = true;
                     }
-                    _ => bail!("pat.update() returned unexpected event"),
+                    evt => bail!("pat.update() returned unexpected event: {:?}", evt)
                 }
             }
         }
@@ -369,7 +368,7 @@ fn gosling_context_test(
                         println!("Alice endpoint server published");
                         alice_endpoint_server_published = true;
                     }
-                    _ => bail!("alice.update() returned unexpected event"),
+                    evt => bail!("alice.update() returned unexpected event: {:?}", evt)
                 }
             }
         }
@@ -427,12 +426,12 @@ fn gosling_context_test(
                         alice_endpoint_server_request_recieved = true;
                         println!("Pat requesting '{0}' endpoint channel", requested_channel);
                     }
-                    _ => bail!("alice.update() returned unexpected event"),
+                    evt => bail!("alice.update() returned unexpected event: {:?}", evt)
                 }
             }
             for event in pat.update()?.drain(..) {
                 match event {
-                    _ => bail!("pat.update() returned unexpected event"),
+                    evt => bail!("pat.update() returned unexpected event: {:?}", evt)
                 }
             }
         }
