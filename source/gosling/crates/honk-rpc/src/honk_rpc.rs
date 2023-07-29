@@ -566,6 +566,10 @@ where
         }
     }
 
+    pub fn into_stream(self: Self) -> RW {
+        self.stream
+    }
+
     fn read_message_size(&mut self) -> Result<(), Error> {
         match self.remaining_byte_count {
             // we've already read the size header
