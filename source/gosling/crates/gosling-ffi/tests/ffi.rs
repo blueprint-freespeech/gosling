@@ -232,7 +232,7 @@ fn create_server_endpoint_handshake(context: *mut GoslingContext) -> anyhow::Res
 }
 
 #[test]
-fn test_context_init() -> anyhow::Result<()> {
+fn test_gosling_ffi_handshake() -> anyhow::Result<()> {
     // init libary
 
     println!("--- init gosling library");
