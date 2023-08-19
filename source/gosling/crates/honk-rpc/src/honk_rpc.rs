@@ -570,16 +570,38 @@ where
         self.stream
     }
 
+    fn stream_read(&mut self, buffer: &mut [u8]) -> Result<usize, Error> {
+        match self.stream.read(buffer) {
+            Err(err) => {
+                if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut
+                {
+                    // abort if we've gone too long without a new message
+                    if std::time::Instant::now().duration_since(self.read_timestamp) > self.max_wait_time {
+                        Err(Error::MessageReadTimedOut(self.max_wait_time))
+                    } else {
+                        Ok(0)
+                    }
+                } else {
+                    Err(Error::ReaderReadFailed(err))
+                }
+            }
+            Ok(0) => Err(Error::ReaderReadFailed(std::io::Error::from(
+                ErrorKind::UnexpectedEof,
+            ))),
+            Ok(count) => {
+                // update read_timestamp
+                self.read_timestamp = std::time::Instant::now();
+                Ok(count)
+            }
+        }
+    }
+
     fn read_message_size(&mut self) -> Result<(), Error> {
         match self.remaining_byte_count {
             // we've already read the size header
             Some(_remaining) => Ok(()),
             // still need to read the size header
             None => {
-                // abort if we've gone too long without a new message
-                if std::time::Instant::now().duration_since(self.read_timestamp) > self.max_wait_time {
-                    return Err(Error::MessageReadTimedOut(self.max_wait_time));
-                }
                 // may have been partially read already so ensure it's the right size
                 assert!(self.message_read_buffer.len() < std::mem::size_of::<i32>());
                 let bytes_needed = std::mem::size_of::<i32>() - self.message_read_buffer.len();
@@ -587,18 +609,9 @@ where
                 let mut buffer = [0u8; std::mem::size_of::<i32>()];
                 // but shrink view down to number of bytes remaining
                 let buffer = &mut buffer[0..bytes_needed];
-                match self.stream.read(buffer) {
-                    Err(err) => {
-                        if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut
-                        {
-                            Ok(())
-                        } else {
-                            Err(Error::ReaderReadFailed(err))
-                        }
-                    }
-                    Ok(0) => Err(Error::ReaderReadFailed(std::io::Error::from(
-                        ErrorKind::UnexpectedEof,
-                    ))),
+                match self.stream_read(buffer) {
+                    Err(err) => Err(err),
+                    Ok(0) => Ok(()),
                     Ok(count) => {
                         #[cfg(test)]
                         println!("<<< read {} bytes for message header", count);
@@ -607,9 +620,6 @@ where
 
                         // all bytes required for i32 message size have been read
                         if self.message_read_buffer.len() == std::mem::size_of::<i32>() {
-                            // update read_timestamp
-                            self.read_timestamp = std::time::Instant::now();
-
                             let size = &self.message_read_buffer.as_slice();
                             let size: i32 = (size[0] as i32)
                                 | (size[1] as i32) << 8
@@ -647,17 +657,9 @@ where
             println!("--- message requires {} more bytes", remaining);
 
             let mut buffer = vec![0u8; remaining];
-            match self.stream.read(&mut buffer) {
-                Err(err) => {
-                    if err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut {
-                        Ok(None)
-                    } else {
-                        Err(Error::ReaderReadFailed(err))
-                    }
-                }
-                Ok(0) => Err(Error::ReaderReadFailed(std::io::Error::from(
-                    ErrorKind::UnexpectedEof,
-                ))),
+            match self.stream_read(&mut buffer) {
+                Err(err) => Err(err),
+                Ok(0) => Ok(None),
                 Ok(count) => {
                     #[cfg(test)]
                     println!("<<< read {} bytes", count);
@@ -821,6 +823,7 @@ where
                 Err(err) => {
                     let kind = err.kind();
                     if kind == ErrorKind::WouldBlock || kind == ErrorKind::TimedOut {
+                        // no *additional* bytes written so return bytes written so far
                         return Ok(bytes_written);
                     } else {
                         return Err(err).map_err(Error::WriterWriteFailed);
@@ -1159,6 +1162,8 @@ fn test_honk_timeout() -> anyhow::Result<()> {
     // a read will happen so time should reset
     println!("--- {:?} sleep 2 seconds", std::time::Instant::now().duration_since(start));
     std::thread::sleep(std::time::Duration::from_secs(2));
+    pat.update(None)?;
+    alice.update(None)?;
 
     println!("--- {:?} pat calls namespace::function_0()", std::time::Instant::now().duration_since(start));
     pat.client_call("namespace", "function", 0, doc! {})?;
