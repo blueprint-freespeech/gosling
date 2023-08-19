@@ -1177,6 +1177,11 @@
 <a href="#1177" id="1177">1177</a>
 <a href="#1178" id="1178">1178</a>
 <a href="#1179" id="1179">1179</a>
+<a href="#1180" id="1180">1180</a>
+<a href="#1181" id="1181">1181</a>
+<a href="#1182" id="1182">1182</a>
+<a href="#1183" id="1183">1183</a>
+<a href="#1184" id="1184">1184</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::collections::VecDeque;
 <span class="kw">use </span>std::fmt::Debug;
@@ -1749,16 +1754,38 @@
         <span class="self">self</span>.stream
     }
 
+    <span class="kw">fn </span>stream_read(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buffer: <span class="kw-2">&amp;mut </span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;usize, Error&gt; {
+        <span class="kw">match </span><span class="self">self</span>.stream.read(buffer) {
+            <span class="prelude-val">Err</span>(err) =&gt; {
+                <span class="kw">if </span>err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut
+                {
+                    <span class="comment">// abort if we&#39;ve gone too long without a new message
+                    </span><span class="kw">if </span>std::time::Instant::now().duration_since(<span class="self">self</span>.read_timestamp) &gt; <span class="self">self</span>.max_wait_time {
+                        <span class="prelude-val">Err</span>(Error::MessageReadTimedOut(<span class="self">self</span>.max_wait_time))
+                    } <span class="kw">else </span>{
+                        <span class="prelude-val">Ok</span>(<span class="number">0</span>)
+                    }
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">Err</span>(Error::ReaderReadFailed(err))
+                }
+            }
+            <span class="prelude-val">Ok</span>(<span class="number">0</span>) =&gt; <span class="prelude-val">Err</span>(Error::ReaderReadFailed(std::io::Error::from(
+                ErrorKind::UnexpectedEof,
+            ))),
+            <span class="prelude-val">Ok</span>(count) =&gt; {
+                <span class="comment">// update read_timestamp
+                </span><span class="self">self</span>.read_timestamp = std::time::Instant::now();
+                <span class="prelude-val">Ok</span>(count)
+            }
+        }
+    }
+
     <span class="kw">fn </span>read_message_size(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
         <span class="kw">match </span><span class="self">self</span>.remaining_byte_count {
             <span class="comment">// we&#39;ve already read the size header
             </span><span class="prelude-val">Some</span>(_remaining) =&gt; <span class="prelude-val">Ok</span>(()),
             <span class="comment">// still need to read the size header
             </span><span class="prelude-val">None </span>=&gt; {
-                <span class="comment">// abort if we&#39;ve gone too long without a new message
-                </span><span class="kw">if </span>std::time::Instant::now().duration_since(<span class="self">self</span>.read_timestamp) &gt; <span class="self">self</span>.max_wait_time {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::MessageReadTimedOut(<span class="self">self</span>.max_wait_time));
-                }
                 <span class="comment">// may have been partially read already so ensure it&#39;s the right size
                 </span><span class="macro">assert!</span>(<span class="self">self</span>.message_read_buffer.len() &lt; std::mem::size_of::&lt;i32&gt;());
                 <span class="kw">let </span>bytes_needed = std::mem::size_of::&lt;i32&gt;() - <span class="self">self</span>.message_read_buffer.len();
@@ -1766,18 +1793,9 @@
                 </span><span class="kw">let </span><span class="kw-2">mut </span>buffer = [<span class="number">0u8</span>; std::mem::size_of::&lt;i32&gt;()];
                 <span class="comment">// but shrink view down to number of bytes remaining
                 </span><span class="kw">let </span>buffer = <span class="kw-2">&amp;mut </span>buffer[<span class="number">0</span>..bytes_needed];
-                <span class="kw">match </span><span class="self">self</span>.stream.read(buffer) {
-                    <span class="prelude-val">Err</span>(err) =&gt; {
-                        <span class="kw">if </span>err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut
-                        {
-                            <span class="prelude-val">Ok</span>(())
-                        } <span class="kw">else </span>{
-                            <span class="prelude-val">Err</span>(Error::ReaderReadFailed(err))
-                        }
-                    }
-                    <span class="prelude-val">Ok</span>(<span class="number">0</span>) =&gt; <span class="prelude-val">Err</span>(Error::ReaderReadFailed(std::io::Error::from(
-                        ErrorKind::UnexpectedEof,
-                    ))),
+                <span class="kw">match </span><span class="self">self</span>.stream_read(buffer) {
+                    <span class="prelude-val">Err</span>(err) =&gt; <span class="prelude-val">Err</span>(err),
+                    <span class="prelude-val">Ok</span>(<span class="number">0</span>) =&gt; <span class="prelude-val">Ok</span>(()),
                     <span class="prelude-val">Ok</span>(count) =&gt; {
                         <span class="attr">#[cfg(test)]
                         </span><span class="macro">println!</span>(<span class="string">&quot;&lt;&lt;&lt; read {} bytes for message header&quot;</span>, count);
@@ -1786,9 +1804,6 @@
 
                         <span class="comment">// all bytes required for i32 message size have been read
                         </span><span class="kw">if </span><span class="self">self</span>.message_read_buffer.len() == std::mem::size_of::&lt;i32&gt;() {
-                            <span class="comment">// update read_timestamp
-                            </span><span class="self">self</span>.read_timestamp = std::time::Instant::now();
-
                             <span class="kw">let </span>size = <span class="kw-2">&amp;</span><span class="self">self</span>.message_read_buffer.as_slice();
                             <span class="kw">let </span>size: i32 = (size[<span class="number">0</span>] <span class="kw">as </span>i32)
                                 | (size[<span class="number">1</span>] <span class="kw">as </span>i32) &lt;&lt; <span class="number">8
@@ -1826,17 +1841,9 @@
             </span><span class="macro">println!</span>(<span class="string">&quot;--- message requires {} more bytes&quot;</span>, remaining);
 
             <span class="kw">let </span><span class="kw-2">mut </span>buffer = <span class="macro">vec!</span>[<span class="number">0u8</span>; remaining];
-            <span class="kw">match </span><span class="self">self</span>.stream.read(<span class="kw-2">&amp;mut </span>buffer) {
-                <span class="prelude-val">Err</span>(err) =&gt; {
-                    <span class="kw">if </span>err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut {
-                        <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
-                    } <span class="kw">else </span>{
-                        <span class="prelude-val">Err</span>(Error::ReaderReadFailed(err))
-                    }
-                }
-                <span class="prelude-val">Ok</span>(<span class="number">0</span>) =&gt; <span class="prelude-val">Err</span>(Error::ReaderReadFailed(std::io::Error::from(
-                    ErrorKind::UnexpectedEof,
-                ))),
+            <span class="kw">match </span><span class="self">self</span>.stream_read(<span class="kw-2">&amp;mut </span>buffer) {
+                <span class="prelude-val">Err</span>(err) =&gt; <span class="prelude-val">Err</span>(err),
+                <span class="prelude-val">Ok</span>(<span class="number">0</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
                 <span class="prelude-val">Ok</span>(count) =&gt; {
                     <span class="attr">#[cfg(test)]
                     </span><span class="macro">println!</span>(<span class="string">&quot;&lt;&lt;&lt; read {} bytes&quot;</span>, count);
@@ -2000,7 +2007,8 @@
                 <span class="prelude-val">Err</span>(err) =&gt; {
                     <span class="kw">let </span>kind = err.kind();
                     <span class="kw">if </span>kind == ErrorKind::WouldBlock || kind == ErrorKind::TimedOut {
-                        <span class="kw">return </span><span class="prelude-val">Ok</span>(bytes_written);
+                        <span class="comment">// no *additional* bytes written so return bytes written so far
+                        </span><span class="kw">return </span><span class="prelude-val">Ok</span>(bytes_written);
                     } <span class="kw">else </span>{
                         <span class="kw">return </span><span class="prelude-val">Err</span>(err).map_err(Error::WriterWriteFailed);
                     }
@@ -2338,6 +2346,8 @@
     <span class="comment">// a read will happen so time should reset
     </span><span class="macro">println!</span>(<span class="string">&quot;--- {:?} sleep 2 seconds&quot;</span>, std::time::Instant::now().duration_since(start));
     std::thread::sleep(std::time::Duration::from_secs(<span class="number">2</span>));
+    pat.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+    alice.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
 
     <span class="macro">println!</span>(<span class="string">&quot;--- {:?} pat calls namespace::function_0()&quot;</span>, std::time::Instant::now().duration_since(start));
     pat.client_call(<span class="string">&quot;namespace&quot;</span>, <span class="string">&quot;function&quot;</span>, <span class="number">0</span>, <span class="macro">doc! </span>{})<span class="question-mark">?</span>;
