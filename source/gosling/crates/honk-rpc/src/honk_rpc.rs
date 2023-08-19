@@ -576,6 +576,10 @@ where
             Some(_remaining) => Ok(()),
             // still need to read the size header
             None => {
+                // abort if we've gone too long without a new message
+                if std::time::Instant::now().duration_since(self.read_timestamp) > self.max_wait_time {
+                    return Err(Error::MessageReadTimedOut(self.max_wait_time));
+                }
                 // may have been partially read already so ensure it's the right size
                 assert!(self.message_read_buffer.len() < std::mem::size_of::<i32>());
                 let bytes_needed = std::mem::size_of::<i32>() - self.message_read_buffer.len();
@@ -835,11 +839,6 @@ where
     }
 
     pub fn update(&mut self, apisets: Option<&mut [&mut dyn ApiSet]>) -> Result<(), Error> {
-        // abort if we've gone too long without a new message
-        if std::time::Instant::now().duration_since(self.read_timestamp) > self.max_wait_time {
-            return Err(Error::MessageReadTimedOut(self.max_wait_time));
-        }
-
         // read sections from remote
         self.read_sections()?;
         // route sections to buffers
@@ -1130,13 +1129,16 @@ fn test_honk_timeout() -> anyhow::Result<()> {
     let listener = TcpListener::bind(socket_addr)?;
     let socket_addr = listener.local_addr()?;
 
-    let stream1 = TcpStream::connect(socket_addr)?;
-    stream1.set_nonblocking(true)?;
-    let (stream2, _socket_addr) = listener.accept()?;
-    stream2.set_nonblocking(true)?;
+    let alice_stream = TcpStream::connect(socket_addr)?;
+    alice_stream.set_nonblocking(true)?;
+    alice_stream.set_nodelay(true)?;
+    println!("--- alice peer_addr: {}", alice_stream.peer_addr()?);
+    let (pat_stream, _socket_addr) = listener.accept()?;
+    pat_stream.set_nonblocking(true)?;
+    pat_stream.set_nodelay(true)?;
 
-    let mut alice = Session::new(stream1);
-    let mut pat = Session::new(stream2);
+    let mut alice = Session::new(alice_stream);
+    let mut pat = Session::new(pat_stream);
 
     let start = std::time::Instant::now();
 
