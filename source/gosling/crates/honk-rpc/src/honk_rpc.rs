@@ -477,6 +477,7 @@ pub trait ApiSet {
         args: bson::document::Document,
         request_cookie: Option<RequestCookie>,
     ) -> Result<Option<bson::Bson>, ErrorCode>;
+    fn update(&mut self) -> () { }
     // TODO: add support for more error data per spec (string, debug)?
     fn next_result(&mut self) -> Option<(RequestCookie, Option<bson::Bson>, ErrorCode)>;
 }
@@ -922,6 +923,8 @@ where
 
         // next send out async responses from apisets
         for apiset in apisets.iter_mut() {
+            // allow apiset to do any required repetitive work
+            apiset.update();
             // put pending results in our message
             while let Some((cookie, result, error_code)) = apiset.next_result() {
                 match (cookie, result, error_code) {
