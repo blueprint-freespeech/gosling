@@ -33,6 +33,12 @@ The **coverage-** make targets have the following additional dependencies:
 
 - [cargo-tarpaulin](https://crates.io/crates/cargo-tarpaulin)
 
+The **fuzz-** make targets have the following additional dependencies:
+
+- rust nightly (for `-z`  rustc compiler flag)
+- [cargo-fuzz](https://github.com/rust-fuzz/cargo-fuzz)
+- [libfuzzer](https://www.llvm.org/docs/LibFuzzer.html)
+
 The **pages-** make target has the following additional dependencies:
 
 - [markdown](https://daringfireball.net/projects/markdown/)
