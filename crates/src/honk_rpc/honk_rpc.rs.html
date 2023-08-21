@@ -1182,6 +1182,9 @@
 <a href="#1182" id="1182">1182</a>
 <a href="#1183" id="1183">1183</a>
 <a href="#1184" id="1184">1184</a>
+<a href="#1185" id="1185">1185</a>
+<a href="#1186" id="1186">1186</a>
+<a href="#1187" id="1187">1187</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::collections::VecDeque;
 <span class="kw">use </span>std::fmt::Debug;
@@ -1661,6 +1664,7 @@
         args: bson::document::Document,
         request_cookie: <span class="prelude-ty">Option</span>&lt;RequestCookie&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;bson::Bson&gt;, ErrorCode&gt;;
+    <span class="kw">fn </span>update(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; () { }
     <span class="comment">// TODO: add support for more error data per spec (string, debug)?
     </span><span class="kw">fn </span>next_result(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;(RequestCookie, <span class="prelude-ty">Option</span>&lt;bson::Bson&gt;, ErrorCode)&gt;;
 }
@@ -2106,6 +2110,8 @@
 
         <span class="comment">// next send out async responses from apisets
         </span><span class="kw">for </span>apiset <span class="kw">in </span>apisets.iter_mut() {
+            <span class="comment">// allow apiset to do any required repetitive work
+            </span>apiset.update();
             <span class="comment">// put pending results in our message
             </span><span class="kw">while let </span><span class="prelude-val">Some</span>((cookie, result, error_code)) = apiset.next_result() {
                 <span class="kw">match </span>(cookie, result, error_code) {
