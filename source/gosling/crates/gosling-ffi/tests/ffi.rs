@@ -232,6 +232,7 @@ fn create_server_endpoint_handshake(context: *mut GoslingContext) -> anyhow::Res
 }
 
 #[test]
+#[cfg(not(feature = "offline-test"))]
 fn test_gosling_ffi_handshake() -> anyhow::Result<()> {
     // init libary
 

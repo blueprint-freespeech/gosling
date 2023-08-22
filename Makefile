@@ -47,7 +47,7 @@ define test-offline
 	@$(MAKE) honk_rpc_cargo_test -C out/$(1)
 	@$(MAKE) tor_interface_cargo_test_offline -C out/$(1)
 	@$(MAKE) gosling_cargo_test_offline -C out/$(1)
-	@$(MAKE) gosling_ffi_cargo_test -C out/$(1)
+	@$(MAKE) gosling_ffi_cargo_test_offline -C out/$(1)
 	@$(MAKE) gosling_unit_test -C out/$(1)
 endef
 
