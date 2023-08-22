@@ -1,0 +1,28 @@
+[package]
+name = "honk-rpc-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+bson = "2.2.0"
+libfuzzer-sys = { version = "0.4.0", features = ["arbitrary-derive"] }
+
+[dependencies.honk-rpc]
+path = ".."
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "fuzz_session"
+path = "fuzz_targets/fuzz_session.rs"
+test = false
+doc = false

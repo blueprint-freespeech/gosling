@@ -116,3 +116,11 @@ install-debug: debug pages-debug
 # release build everything and deploy to dist
 install-release: release pages-release
 	@$(MAKE) install -C out/release
+
+# fuzzing targets
+define fuzz
+	@$(MAKE) $(1) -C out/$(2)
+endef
+
+fuzz-honk-rpc-session: config-release
+	@$(call fuzz,"honk_rpc_cargo_fuzz_session","release/gosling/crates/honk-rpc")
