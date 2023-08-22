@@ -479,7 +479,9 @@ pub trait ApiSet {
     ) -> Result<Option<bson::Bson>, ErrorCode>;
     fn update(&mut self) -> () { }
     // TODO: add support for more error data per spec (string, debug)?
-    fn next_result(&mut self) -> Option<(RequestCookie, Option<bson::Bson>, ErrorCode)>;
+    fn next_result(&mut self) -> Option<(RequestCookie, Option<bson::Bson>, ErrorCode)> {
+        None
+    }
 }
 
 pub enum Response {
@@ -1128,9 +1130,36 @@ fn test_honk_client_read_write() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[cfg(test)]
+struct TestApiSet {
+    call_count: usize,
+}
+
+#[cfg(test)]
+impl ApiSet for TestApiSet {
+    fn namespace(&self) -> &str {
+        "namespace"
+    }
+
+    fn exec_function(
+        &mut self,
+        name: &str,
+        version: i32,
+        _args: bson::document::Document,
+        _request_section: Option<RequestCookie>) -> Result<Option<bson::Bson>, ErrorCode> {
+        match (name, version) {
+            ("function", 0) => {
+                println!("--- namespace::function_0() called");
+                self.call_count += 1;
+            }
+            _ => (),
+        }
+        Ok(Some(bson::Bson::Null))
+    }
+}
+
 #[test]
 fn test_honk_timeout() -> anyhow::Result<()> {
-
     let socket_addr = SocketAddr::from(([127, 0, 0, 1], 0u16));
     let listener = TcpListener::bind(socket_addr)?;
     let socket_addr = listener.local_addr()?;
@@ -1144,6 +1173,7 @@ fn test_honk_timeout() -> anyhow::Result<()> {
     pat_stream.set_nodelay(true)?;
 
     let mut alice = Session::new(alice_stream);
+    let mut alice_apiset = TestApiSet{call_count: 0usize};
     let mut pat = Session::new(pat_stream);
 
     let start = std::time::Instant::now();
@@ -1159,8 +1189,10 @@ fn test_honk_timeout() -> anyhow::Result<()> {
 
     println!("--- {:?} pat calls namespace::function_0()", std::time::Instant::now().duration_since(start));
     pat.client_call("namespace", "function", 0, doc! {})?;
-    pat.update(None)?;
-    alice.update(None)?;
+    while alice_apiset.call_count != 1 {
+        pat.update(None)?;
+        alice.update(Some(&mut [&mut alice_apiset]))?;
+    }
 
     // a read will happen so time should reset
     println!("--- {:?} sleep 2 seconds", std::time::Instant::now().duration_since(start));
@@ -1170,8 +1202,10 @@ fn test_honk_timeout() -> anyhow::Result<()> {
 
     println!("--- {:?} pat calls namespace::function_0()", std::time::Instant::now().duration_since(start));
     pat.client_call("namespace", "function", 0, doc! {})?;
-    pat.update(None)?;
-    alice.update(None)?;
+    while alice_apiset.call_count != 2 {
+        pat.update(None)?;
+        alice.update(Some(&mut [&mut alice_apiset]))?;
+    }
 
     // on reads occur so alice should timeout
     println!("--- {:?} sleep 4 seconds", std::time::Instant::now().duration_since(start));
@@ -1181,7 +1215,8 @@ fn test_honk_timeout() -> anyhow::Result<()> {
     pat.update(None)?;
     match alice.update(None) {
         Ok(()) => panic!("should have timed out"),
-        Err(_err) => (),
+        Err(Error::MessageReadTimedOut(duration)) => println!("--- expected time out after {:?}", duration),
+        Err(err) => panic!("unexpected error: {:?}", err),
     }
     Ok(())
 }
