@@ -1185,6 +1185,41 @@
 <a href="#1185" id="1185">1185</a>
 <a href="#1186" id="1186">1186</a>
 <a href="#1187" id="1187">1187</a>
+<a href="#1188" id="1188">1188</a>
+<a href="#1189" id="1189">1189</a>
+<a href="#1190" id="1190">1190</a>
+<a href="#1191" id="1191">1191</a>
+<a href="#1192" id="1192">1192</a>
+<a href="#1193" id="1193">1193</a>
+<a href="#1194" id="1194">1194</a>
+<a href="#1195" id="1195">1195</a>
+<a href="#1196" id="1196">1196</a>
+<a href="#1197" id="1197">1197</a>
+<a href="#1198" id="1198">1198</a>
+<a href="#1199" id="1199">1199</a>
+<a href="#1200" id="1200">1200</a>
+<a href="#1201" id="1201">1201</a>
+<a href="#1202" id="1202">1202</a>
+<a href="#1203" id="1203">1203</a>
+<a href="#1204" id="1204">1204</a>
+<a href="#1205" id="1205">1205</a>
+<a href="#1206" id="1206">1206</a>
+<a href="#1207" id="1207">1207</a>
+<a href="#1208" id="1208">1208</a>
+<a href="#1209" id="1209">1209</a>
+<a href="#1210" id="1210">1210</a>
+<a href="#1211" id="1211">1211</a>
+<a href="#1212" id="1212">1212</a>
+<a href="#1213" id="1213">1213</a>
+<a href="#1214" id="1214">1214</a>
+<a href="#1215" id="1215">1215</a>
+<a href="#1216" id="1216">1216</a>
+<a href="#1217" id="1217">1217</a>
+<a href="#1218" id="1218">1218</a>
+<a href="#1219" id="1219">1219</a>
+<a href="#1220" id="1220">1220</a>
+<a href="#1221" id="1221">1221</a>
+<a href="#1222" id="1222">1222</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::collections::VecDeque;
 <span class="kw">use </span>std::fmt::Debug;
@@ -1666,7 +1701,9 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;bson::Bson&gt;, ErrorCode&gt;;
     <span class="kw">fn </span>update(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; () { }
     <span class="comment">// TODO: add support for more error data per spec (string, debug)?
-    </span><span class="kw">fn </span>next_result(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;(RequestCookie, <span class="prelude-ty">Option</span>&lt;bson::Bson&gt;, ErrorCode)&gt;;
+    </span><span class="kw">fn </span>next_result(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;(RequestCookie, <span class="prelude-ty">Option</span>&lt;bson::Bson&gt;, ErrorCode)&gt; {
+        <span class="prelude-val">None
+    </span>}
 }
 
 <span class="kw">pub enum </span>Response {
@@ -2315,9 +2352,36 @@
     <span class="prelude-val">Ok</span>(())
 }
 
+<span class="attr">#[cfg(test)]
+</span><span class="kw">struct </span>TestApiSet {
+    call_count: usize,
+}
+
+<span class="attr">#[cfg(test)]
+</span><span class="kw">impl </span>ApiSet <span class="kw">for </span>TestApiSet {
+    <span class="kw">fn </span>namespace(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>str {
+        <span class="string">&quot;namespace&quot;
+    </span>}
+
+    <span class="kw">fn </span>exec_function(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        name: <span class="kw-2">&amp;</span>str,
+        version: i32,
+        _args: bson::document::Document,
+        _request_section: <span class="prelude-ty">Option</span>&lt;RequestCookie&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;bson::Bson&gt;, ErrorCode&gt; {
+        <span class="kw">match </span>(name, version) {
+            (<span class="string">&quot;function&quot;</span>, <span class="number">0</span>) =&gt; {
+                <span class="macro">println!</span>(<span class="string">&quot;--- namespace::function_0() called&quot;</span>);
+                <span class="self">self</span>.call_count += <span class="number">1</span>;
+            }
+            <span class="kw">_ </span>=&gt; (),
+        }
+        <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(bson::Bson::Null))
+    }
+}
+
 <span class="attr">#[test]
 </span><span class="kw">fn </span>test_honk_timeout() -&gt; anyhow::Result&lt;()&gt; {
-
     <span class="kw">let </span>socket_addr = SocketAddr::from(([<span class="number">127</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>], <span class="number">0u16</span>));
     <span class="kw">let </span>listener = TcpListener::bind(socket_addr)<span class="question-mark">?</span>;
     <span class="kw">let </span>socket_addr = listener.local_addr()<span class="question-mark">?</span>;
@@ -2331,6 +2395,7 @@
     pat_stream.set_nodelay(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
 
     <span class="kw">let </span><span class="kw-2">mut </span>alice = Session::new(alice_stream);
+    <span class="kw">let </span><span class="kw-2">mut </span>alice_apiset = TestApiSet{call_count: <span class="number">0usize</span>};
     <span class="kw">let </span><span class="kw-2">mut </span>pat = Session::new(pat_stream);
 
     <span class="kw">let </span>start = std::time::Instant::now();
@@ -2346,8 +2411,10 @@
 
     <span class="macro">println!</span>(<span class="string">&quot;--- {:?} pat calls namespace::function_0()&quot;</span>, std::time::Instant::now().duration_since(start));
     pat.client_call(<span class="string">&quot;namespace&quot;</span>, <span class="string">&quot;function&quot;</span>, <span class="number">0</span>, <span class="macro">doc! </span>{})<span class="question-mark">?</span>;
-    pat.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
-    alice.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+    <span class="kw">while </span>alice_apiset.call_count != <span class="number">1 </span>{
+        pat.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+        alice.update(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut </span>[<span class="kw-2">&amp;mut </span>alice_apiset]))<span class="question-mark">?</span>;
+    }
 
     <span class="comment">// a read will happen so time should reset
     </span><span class="macro">println!</span>(<span class="string">&quot;--- {:?} sleep 2 seconds&quot;</span>, std::time::Instant::now().duration_since(start));
@@ -2357,8 +2424,10 @@
 
     <span class="macro">println!</span>(<span class="string">&quot;--- {:?} pat calls namespace::function_0()&quot;</span>, std::time::Instant::now().duration_since(start));
     pat.client_call(<span class="string">&quot;namespace&quot;</span>, <span class="string">&quot;function&quot;</span>, <span class="number">0</span>, <span class="macro">doc! </span>{})<span class="question-mark">?</span>;
-    pat.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
-    alice.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+    <span class="kw">while </span>alice_apiset.call_count != <span class="number">2 </span>{
+        pat.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+        alice.update(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut </span>[<span class="kw-2">&amp;mut </span>alice_apiset]))<span class="question-mark">?</span>;
+    }
 
     <span class="comment">// on reads occur so alice should timeout
     </span><span class="macro">println!</span>(<span class="string">&quot;--- {:?} sleep 4 seconds&quot;</span>, std::time::Instant::now().duration_since(start));
@@ -2368,7 +2437,8 @@
     pat.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
     <span class="kw">match </span>alice.update(<span class="prelude-val">None</span>) {
         <span class="prelude-val">Ok</span>(()) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;should have timed out&quot;</span>),
-        <span class="prelude-val">Err</span>(_err) =&gt; (),
+        <span class="prelude-val">Err</span>(Error::MessageReadTimedOut(duration)) =&gt; <span class="macro">println!</span>(<span class="string">&quot;--- expected time out after {:?}&quot;</span>, duration),
+        <span class="prelude-val">Err</span>(err) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;unexpected error: {:?}&quot;</span>, err),
     }
     <span class="prelude-val">Ok</span>(())
 }
