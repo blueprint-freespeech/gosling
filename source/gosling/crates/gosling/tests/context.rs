@@ -126,6 +126,7 @@ fn gosling_context_test(
                     alice_identity_published = true;
                     println!("Alice identity server published");
                 }
+                ContextEvent::TorLogReceived{line: _} => (),
                 evt => bail!("alice.update() returned unexpected event: {:?}", evt)
             }
         }
@@ -184,12 +185,14 @@ fn gosling_context_test(
                         alice_identity_server_endpoint_request_received = true;
                         println!("Alice receives initial identity handshake request");
                     }
+                    ContextEvent::TorLogReceived{line: _} => (),
                     evt => bail!("alice.update() returned unexpected event: {:?}", evt)
 
                 }
             }
             for event in pat.update()?.drain(..) {
                 match event {
+                    ContextEvent::TorLogReceived{line: _} => (),
                     evt => bail!("pat.update() returned unexpected event: {:?}", evt)
                 }
             }
@@ -219,11 +222,13 @@ fn gosling_context_test(
                         assert_eq!(handle, pat_identity_handshake_handle);
                         pat_identity_client_challenge = Some(endpoint_challenge);
                     }
+                    ContextEvent::TorLogReceived{line: _} => (),
                     evt => bail!("pat.update() returned unexpected event: {:?}", evt)
                 }
             }
             for event in alice.update()?.drain(..) {
                 match event {
+                    ContextEvent::TorLogReceived{line: _} => (),
                     evt => bail!("alice.update() returned unexpected event: {:?}", evt)
                 }
             }
@@ -253,11 +258,13 @@ fn gosling_context_test(
                         assert_eq!(handle, alice_identity_handshake_handle);
                         alice_identity_server_challenge_response = Some(challenge_response);
                     }
+                    ContextEvent::TorLogReceived{line: _} => (),
                     evt => bail!("alice.update() returned unexpected event: {:?}", evt)
                 }
             }
             for event in pat.update()?.drain(..) {
                 match event {
+                    ContextEvent::TorLogReceived{line: _} => (),
                     evt => bail!("pat.update() returned unexpected event: {:?}", evt)
                 }
             }
@@ -308,6 +315,7 @@ fn gosling_context_test(
                         pat_auth_public_key = Some(client_auth_public_key);
                         alice_identity_server_hanshake_completed = true;
                     }
+                    ContextEvent::TorLogReceived{line: _} => (),
                     evt => bail!("alice.update() returned unexpected event: {:?}", evt)
                 }
             }
@@ -327,6 +335,7 @@ fn gosling_context_test(
                         pat_auth_private_key = Some(client_auth_private_key);
                         pat_identity_client_handshake_completed = true;
                     }
+                    ContextEvent::TorLogReceived{line: _} => (),
                     evt => bail!("pat.update() returned unexpected event: {:?}", evt)
                 }
             }
@@ -368,6 +377,7 @@ fn gosling_context_test(
                         println!("Alice endpoint server published");
                         alice_endpoint_server_published = true;
                     }
+                    ContextEvent::TorLogReceived{line: _} => (),
                     evt => bail!("alice.update() returned unexpected event: {:?}", evt)
                 }
             }
@@ -426,11 +436,13 @@ fn gosling_context_test(
                         alice_endpoint_server_request_recieved = true;
                         println!("Pat requesting '{0}' endpoint channel", requested_channel);
                     }
+                    ContextEvent::TorLogReceived{line: _} => (),
                     evt => bail!("alice.update() returned unexpected event: {:?}", evt)
                 }
             }
             for event in pat.update()?.drain(..) {
                 match event {
+                    ContextEvent::TorLogReceived{line: _} => (),
                     evt => bail!("pat.update() returned unexpected event: {:?}", evt)
                 }
             }
@@ -471,6 +483,7 @@ fn gosling_context_test(
                         alice_server_stream = Some(stream);
                         alice_endpoint_server_handshake_completed = true;
                     }
+                    ContextEvent::TorLogReceived{line: _} => (),
                     _ => bail!("alice.upate() returned unexepcted event"),
                 }
             }
@@ -488,6 +501,7 @@ fn gosling_context_test(
                         pat_client_stream = Some(stream);
                         pat_endpoint_client_handshake_completed = true;
                     }
+                    ContextEvent::TorLogReceived{line: _} => (),
                     _ => bail!("pat.upate() returned unexepcted event"),
                 }
             }
