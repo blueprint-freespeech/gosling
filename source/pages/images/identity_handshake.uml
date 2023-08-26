@@ -1,0 +1,36 @@
+@startuml
+participant Client
+participant "Identity Server" as Server
+
+Client->Server: begin_handshake(...)
+
+    note over Server: Evaluate Protocol Version
+
+    alt Unsupported Version
+        Client<-Server: error
+        note over Server: Close Connection
+    end
+
+Client<-Server: return {server_cookie, endpoint_challenge}
+
+Client->Server: send_response(...)
+
+    note over Client, Server: Some time may pass as the Server processes request
+
+    note over Server: Check Client Block-List
+    note over Server: Check Client Proof Signature
+    note over Server: Check Client Authorization Signature
+    note over Server: Check Requested Endpoint
+    note over Server: Check Challenge Response
+
+    alt Any Check Failed
+        Client<-Server: error
+        note over Server: Close Connection
+    end
+
+    note over Server: Adds the Client to the Endpoint Allow-List
+
+    Client<-Server: return {service id}
+
+note over Client: Close Connection
+@enduml

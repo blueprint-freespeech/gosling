@@ -8,12 +8,16 @@ set(install_output)
 # our source markdown files
 set(page_sources
     index.md
-    news.md)
+    news.md
+    honk-rpc-spec.md
+    gosling-spec.md)
 
 # page titles for each
 set(page_titles
-    Gosling
-    News)
+    Main
+    News
+    "Honk-RPC Specification"
+    "Gosling Specification")
 
 # generate xhtml from page.mustache template and markdown
 set(xhtml_output)
@@ -51,6 +55,7 @@ set(copy_output)
 foreach(file ${copy_sources})
     add_custom_command(
         OUTPUT ${file}
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${file}
         COMMAND cp -r ${CMAKE_CURRENT_SOURCE_DIR}/${file} ${file})
 
     list(APPEND copy_output ${file})

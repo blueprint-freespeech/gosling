@@ -1,0 +1,33 @@
+@startuml
+participant Client
+participant "Endpoint Server" as Server
+
+Client->Server: begin_handshake(...)
+
+    note over Server: Evaluate Protocol Version
+
+    alt Unsupported Version
+        Client<-Server: error
+        note over Server: Close Connection
+    end
+
+Client<-Server: return {    server cookie}
+
+Client->Server: send_response(...)
+
+    note over Server: Check Client Allow-List
+    note over Server: Check Requested Channel
+    note over Server: Check Client Proof
+
+    alt Any Check Failed
+        Client<-Server: error
+        note over Server: Close Connection
+    end
+
+Server->Client: return {}
+
+note over Client, Server
+    RPC session ends and TCP stream
+    control given to application
+endnote
+@enduml
