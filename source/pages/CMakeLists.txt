@@ -24,7 +24,7 @@ foreach(file_md title IN ZIP_LISTS page_sources page_titles)
     add_custom_command(
         OUTPUT ${file_inc_xhtml}
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/content/${file_md}
-        COMMAND markdown ${CMAKE_CURRENT_SOURCE_DIR}/content/${file_md} > ${file_inc_xhtml})
+        COMMAND pandoc -f markdown -t html5 ${CMAKE_CURRENT_SOURCE_DIR}/content/${file_md} -o ${file_inc_xhtml})
     # create .yml file for title
     set(file_yml "${file}.yml")
     add_custom_command(

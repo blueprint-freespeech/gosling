@@ -41,7 +41,7 @@ The **fuzz-** make targets have the following additional dependencies:
 
 The **pages-** make target has the following additional dependencies:
 
-- [markdown](https://daringfireball.net/projects/markdown/)
+- [pandoc](https://pandoc.org)
 - [mustache](http://mustache.github.io/)
 - [doxygen](https://www.doxygen.nl/)
 - [graphviz](https://www.graphviz.org/)
