@@ -1,0 +1,227 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>Gosling | Gosling Specification</title>
+  <link rel="icon" type="image/x-icon" href="images/favicon.png" />
+  <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="navigation">
+      <div class="logo">
+        <a href="index.xhtml"><img src="images/gosling-square-small-opt.svg" alt="Gosling Icon" /></a>
+      </div>
+      <h2>Navigation</h2>
+      <ul>
+        <li><a href="news.xhtml">News</a></li>
+        <li><a href="https://github.com/blueprint-freespeech/gosling">GitHub</a></li>
+        <li><a href="coverage.html">Test Coverage</a></li>
+        <li>Crate Docs
+          <ul>
+            <li><a href="crates/gosling/index.html">gosling</a></li>
+            <li><a href="crates/tor_interface/index.html">tor-interface</a></li>
+            <li><a href="crates/honk_rpc/index.html">honk-rpc</a></li>
+          </ul>
+        </li>
+        <li><a href="libgoslingffi/index.html">C/C++ Docs</a></li>
+        <li>Protocol Specs
+          <ul>
+            <li><a href="honk-rpc-spec.xhtml">Honk-RPC</a></li>
+            <li><a href="gosling-spec.xhtml">Gosling</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+    <div class="content">
+      <h1 id="gosling-protocol-v0.0.0.1">Gosling Protocol v0.0.0.1</h1>
+      <p>The Gosling protocol allows for the creation of Tor onion-service based peer-to-peer (onion-to-onion) applications. Initial inspiration came from the Ricochet instant messenger’s peer-to-peer onion service architecture. Improvements have been made and some privacy issues have been addressed and fixed.</p>
+      <p>It is assumed that the reader is familiar with onion routing<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>, Tor<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>, and onion services (aka hidden services)<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>. For the purposes of this document, Ricochet and Ricochet Refresh are used interchangeably when referring to properties or guarantees common to both applications.</p>
+      <h2 id="overview">Overview</h2>
+      <p>The purpose of Gosling is to standardize a privacy-preserving architecture for peer-to-peer applications on the Tor network between <strong>nodes</strong>.</p>
+      <ul>
+      <li><strong>Node</strong> - A peer in a service-specific Gosling peer-to-peer network.</li>
+      </ul>
+      <p>Each node has three components: a <strong>client</strong>, an <strong>identity server</strong>, and at least one <strong>endpoint server</strong>. A node can simultaneously have all three components running at the same time on a single computer, or each component could be split across multiple real computers on the tor network. A node is primarily identified by the onion-service id of its identity server.</p>
+      <ul>
+      <li><strong>Client</strong> - A <strong>node’s</strong> component making an outgoing connection to another <strong>node</strong></li>
+      <li><strong>Identity Server</strong> - A <strong>node’s</strong> onion-service which listens for requests coming from <strong>clients</strong> who have never connected before that wish to become ‘friends’. The <strong>identity server</strong> and a <strong>client</strong> perform a handshake and exchange information required to reach the <strong>node’s</strong> <strong>endpoint server(s)</strong>.</li>
+      <li><strong>Endpoint Server</strong> - A <strong>node’s</strong> onion-service(s) which listen for connections coming from <strong>clients</strong>. The route to this server is protected with onion service client authorization<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>, so only trusted Gosling <strong>clients</strong> are able to connect. A <strong>node</strong> may have multiple simultaneous <strong>endpoint servers</strong> (each with a different onion-service id), as tor only supports a finite number of authorized clients per onion service.</li>
+      </ul>
+      <p>For the rest of this document we’ll also use instant messenger term <strong>contact</strong>.</p>
+      <ul>
+      <li><strong>Contact</strong> - a Gosling <strong>node</strong> that has successfully completed the authentication handshake with another <strong>node’s</strong> <strong>identity server</strong> and is allowed to connect to said <strong>node’s</strong> <strong>endpoint server</strong>.</li>
+      </ul>
+      <p>The protocol supports a single <strong>identity server</strong> serving multiple endpoint applications. For example, an application ecosystem may want a single identifier for <strong>nodes</strong> which are part of both a peer-to-peer instant messaging and a file sharing network. This type of arrangement is supported by having each different application using a different endpoint name.</p>
+      <p>The protocol <em>technically</em> supports a single <strong>endpoint server</strong> serving multiple <strong>clients</strong> concurrently. The <strong>identity server</strong> could simply always return the same <strong>endpoint server</strong> service id after a successful introductory handshake. However, the reference implementation here does not implement this architecture for the following reasons:</p>
+      <ul>
+      <li>There is currently no way to update a running tor onion-service’s set of client authorization keys (used to encrypt onion-service’s onion descriptor) without restarting the onion-service. This means we cannot add a new authorized <strong>client</strong> nor revoke the access of a previously authorized <strong>client</strong> to the <strong>endpoint server</strong> without severing all existing <strong>endpoint server</strong> sessions.</li>
+      <li><strong>Clients</strong> would be able to determine the online/offline status of <strong>endpoint servers</strong> after their access has been revoked. This is because tor does not provide a way to have a ‘hidden’ onion-service (even when using client authorization). All of the existing authorized <strong>clients</strong> with access to a common <strong>endpoint server</strong> would need to be migrated to a new <strong>endpoint server</strong> if any of their access were to be revoked. This migration would also necessarily sever any existing <strong>endpoint server</strong> sessions. This issue is being tracked upstream in <a href="https://gitlab.torproject.org/tpo/core/torspec/-/issues/119">torspec#119</a>.</li>
+      <li><strong>Endpoint servers</strong> make use of client authorization as an extra layer of security. An onion-service must upload an encrypted copy of its onion descriptor for each of its authorized clients to the tor-network. The maximum number of authorized clients an individual onion-service may have is not precisely defined or documented, but is estimated to be on the order of about a thousand clients. This is a practical limitation on the number of <strong>clients</strong> an individual <strong>endpoint server</strong> can have.</li>
+      </ul>
+      <p>Due to the above considerations, the reference Gosling implementation will only ever assign one <strong>client</strong> per <strong>endpoint server</strong>.</p>
+      <h3 id="background">Background</h3>
+      <p>The above architecture is informed by our experience with and the limitations of Ricochet’s architecture.</p>
+      <p>Ricochet only uses a single onion service. The service id of this onion service is used as your Ricochet ID for connecting to and chatting with other Ricochet users.</p>
+      <p>This simple architecture has some drawbacks:</p>
+      <h4 id="poor-visibility-control-to-contacts">Poor visibility control to contacts</h4>
+      <p>Though not supported by the Ricochet front-end, in theory if one wanted to appear ‘offline’ while still being able to chat to your friends, they could disable their onion service and only make outgoing connections their friends. However, this must be done for <em>all</em> friends at once.</p>
+      <p><strong>Gosling’s Solution:</strong> Gosling allows finer-grained visibility controls:</p>
+      <ul>
+      <li><p>If a <strong>node</strong> does not wish to receive new contact requests, they can simply not run their <strong>identity server</strong>. Your existing allowed contacts are still be able to connect to the user’s <strong>endpoint server(s)</strong> which are not publicly advertised.</p></li>
+      <li><p>If a user wishes to appear offline to <em>all</em> <strong>contacts</strong>, they can disable their <strong>endpoint server(s)</strong>. A user may still selectively connect to their <strong>contacts</strong> by acting solely as a <strong>client</strong>.</p></li>
+      </ul>
+      <h4 id="cyber-stalking">Cyber-stalking</h4>
+      <p>As a side-effect of Ricochet’s usage of a single onion service and the poor visibility controls, anybody who knows your Ricochet ID can secretly track a your online status. This is because the onion service is necessarily public to receive new friend requests.</p>
+      <p>All a malicious actor needs to do is attempt to open a connection to the target’s Ricochet onion service. Periodically pinging a Ricochet user’s advertised service id will give a nearly perfect profile for when the are and are not using Ricochet.</p>
+      <p>This has some serious privacy implications. If a user uses Ricochet as they would any other IM application (always on in the background), this will give a perfect profile of the target’s computer+internet usage.</p>
+      <p><strong>Gosling’s Solution:</strong> Because of the above described visibility controls, users can control when they are visible to to unauthorized users by selectively running their <strong>identity server</strong>.</p>
+      <p>One could also imagine applications which forego using the <strong>identity server</strong> entirely, and instead allow users to exchange client authorization keys and endpoint servers offline (via QR codes for example).</p>
+      <p><strong>Note:</strong> A Gosling node may still be cyber-stalked by a <em>previously</em> authenticated user if the node is configured to group together multiple <strong>clients</strong> in a single <strong>endpoint server</strong> (rather than handing out a unique <strong>endpoint server</strong> to each client).</p>
+      <h2 id="gosling-handshakes">Gosling Handshakes</h2>
+      <p><strong>Nodes</strong> communicate with each other using a BSON-based RPC protocol<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a>. As described above, each <strong>node</strong> has two server components: an <strong>identity server</strong> and at least one <strong>endpoint server</strong>.</p>
+      <p>A <strong>client</strong> initially connects to an <strong>identity server</strong> to complete the identity handshake. The purpose of this handshake is to prove to the <strong>identity server</strong> that the connecting <strong>client</strong> controls all of the keys they claim to, and (if successful) to exchange credentials the <strong>client</strong> needs to access a <strong>identity server’s</strong> associated <strong>endpoint server</strong>.</p>
+      <p>After a <strong>client</strong> connects to and successfully authenticates with an <strong>endpoint server</strong>, we exit the Gosling handshake state machine and the underlying TCP stream is handed off to the endpoint application.</p>
+      <p>All types used in these RPC calls are BSON<a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a> types. Any type marked <code>binary</code> is specifically the ‘Generic binary subtype’ (<code>\x00</code>). Any type marked <code>document</code> is specifically a BSON document (an encoded set of key/value pairs).</p>
+      <p>Calling these functions out of order must result in an error being returned and the connection being closed.</p>
+      <h3 id="identity-server">Identity Server</h3>
+      <h4 id="sequence-diagram">Sequence Diagram</h4>
+      <p><img src="images/identity_handshake.svg" title="Identity Handshake Sequence Diagram" /></p>
+      <h4 id="identity-server-rpc-api">Identity Server RPC API</h4>
+      <div class="sourceCode" id="cb1"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="kw">namespace</span> gosling_identity {</span>
+      <span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a>  <span class="co">// Begins an identity handshake session.</span></span>
+      <span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a>  <span class="co">//</span></span>
+      <span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a>  <span class="co">// Parameters:</span></span>
+      <span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a>  <span class="co">// - string version : the requested version of the Gosling protocol to use</span></span>
+      <span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a>  <span class="co">// - string client_identity : the client&#39;s identity server v3 onion service id</span></span>
+      <span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a>  <span class="co">// - string endpoint : the application endpoint the client wants to access; this</span></span>
+      <span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a>  <span class="co">//   value must be encodable as ASCII.</span></span>
+      <span id="cb1-9"><a href="#cb1-9" aria-hidden="true"></a>  <span class="co">//</span></span>
+      <span id="cb1-10"><a href="#cb1-10" aria-hidden="true"></a>  <span class="co">// return : on success, a document object with the following members</span></span>
+      <span id="cb1-11"><a href="#cb1-11" aria-hidden="true"></a>  <span class="co">// - binary server_cookie : 32 byte cookie randomly generated by the server</span></span>
+      <span id="cb1-12"><a href="#cb1-12" aria-hidden="true"></a>  <span class="co">// - document endpoint_challenge : a document object containing any data the</span></span>
+      <span id="cb1-13"><a href="#cb1-13" aria-hidden="true"></a>  <span class="co">//   client needs to calculate the endpoint challenge response. The contents</span></span>
+      <span id="cb1-14"><a href="#cb1-14" aria-hidden="true"></a>  <span class="co">//   of this document are deliberately unspecified and are application-specific.</span></span>
+      <span id="cb1-15"><a href="#cb1-15" aria-hidden="true"></a>  <span class="co">//</span></span>
+      <span id="cb1-16"><a href="#cb1-16" aria-hidden="true"></a>  <span class="co">// An error is raised if an invalid version is provided.</span></span>
+      <span id="cb1-17"><a href="#cb1-17" aria-hidden="true"></a>  begin_handshake(string version,</span>
+      <span id="cb1-18"><a href="#cb1-18" aria-hidden="true"></a>                  string client_identity,</span>
+      <span id="cb1-19"><a href="#cb1-19" aria-hidden="true"></a>                  string endpoint) -&gt; document</span>
+      <span id="cb1-20"><a href="#cb1-20" aria-hidden="true"></a></span>
+      <span id="cb1-21"><a href="#cb1-21" aria-hidden="true"></a>  <span class="co">// Submits the client proofs and the challenge response for server verification. If</span></span>
+      <span id="cb1-22"><a href="#cb1-22" aria-hidden="true"></a>  <span class="co">// this function is called before begin_handshake() an error is returned.</span></span>
+      <span id="cb1-23"><a href="#cb1-23" aria-hidden="true"></a>  <span class="co">//</span></span>
+      <span id="cb1-24"><a href="#cb1-24" aria-hidden="true"></a>  <span class="co">// Parameters:</span></span>
+      <span id="cb1-25"><a href="#cb1-25" aria-hidden="true"></a>  <span class="co">// - binary client_cookie : 32-byte cookie randomly generated by the client</span></span>
+      <span id="cb1-26"><a href="#cb1-26" aria-hidden="true"></a>  <span class="co">// - binary client_identity_proof_signature : 64-byte ed25519 signature of the</span></span>
+      <span id="cb1-27"><a href="#cb1-27" aria-hidden="true"></a>  <span class="co">//   client proof, signed with the ed25519 private key used to generate the</span></span>
+      <span id="cb1-28"><a href="#cb1-28" aria-hidden="true"></a>  <span class="co">//   client&#39;s v3 onion service id (see &#39;Client Identity Proof Calculation and</span></span>
+      <span id="cb1-29"><a href="#cb1-29" aria-hidden="true"></a>  <span class="co">//   Verification&#39;)</span></span>
+      <span id="cb1-30"><a href="#cb1-30" aria-hidden="true"></a>  <span class="co">// - binary client_authorization_key : 32-byte x25519 public key to be used to encrypt</span></span>
+      <span id="cb1-31"><a href="#cb1-31" aria-hidden="true"></a>  <span class="co">//   the endpoint onion service descriptor</span></span>
+      <span id="cb1-32"><a href="#cb1-32" aria-hidden="true"></a>  <span class="co">// - bool client_authorization_key_signbit : the signbit of the ed25519 public key to be</span></span>
+      <span id="cb1-33"><a href="#cb1-33" aria-hidden="true"></a>  <span class="co">//   derived from the provided x25519 public key; true =&gt; 1, false =&gt; 0</span></span>
+      <span id="cb1-34"><a href="#cb1-34" aria-hidden="true"></a>  <span class="co">// - binary client_authorization_signature : 64-byte ed25519 signature of the client&#39;s</span></span>
+      <span id="cb1-35"><a href="#cb1-35" aria-hidden="true"></a>  <span class="co">//   provided v3 onion service id, signed with the ed25519 private key derived</span></span>
+      <span id="cb1-36"><a href="#cb1-36" aria-hidden="true"></a>  <span class="co">//   from the private x25519 key associated with the provided public x25519</span></span>
+      <span id="cb1-37"><a href="#cb1-37" aria-hidden="true"></a>  <span class="co">//   &#39;client_authorization_key&#39; (see &#39;Client Authorization Signature Generation</span></span>
+      <span id="cb1-38"><a href="#cb1-38" aria-hidden="true"></a>  <span class="co">//   and Verification&#39;)</span></span>
+      <span id="cb1-39"><a href="#cb1-39" aria-hidden="true"></a>  <span class="co">// - document challenge_response : the calculated challenge response to the</span></span>
+      <span id="cb1-40"><a href="#cb1-40" aria-hidden="true"></a>  <span class="co">//   previous endpoint challenge request. The contents of this document are</span></span>
+      <span id="cb1-41"><a href="#cb1-41" aria-hidden="true"></a>  <span class="co">//   deliberately unspecified and are application-specific.</span></span>
+      <span id="cb1-42"><a href="#cb1-42" aria-hidden="true"></a>  <span class="co">//</span></span>
+      <span id="cb1-43"><a href="#cb1-43" aria-hidden="true"></a>  <span class="co">// return : on success, a string containing the v3 onion service id of the</span></span>
+      <span id="cb1-44"><a href="#cb1-44" aria-hidden="true"></a>  <span class="co">// endpoint server (otherwise an error is raised); the endpoint&#39;s onion</span></span>
+      <span id="cb1-45"><a href="#cb1-45" aria-hidden="true"></a>  <span class="co">// service descriptor will be encrypted with the provided client authorization key</span></span>
+      <span id="cb1-46"><a href="#cb1-46" aria-hidden="true"></a>  <span class="co">//</span></span>
+      <span id="cb1-47"><a href="#cb1-47" aria-hidden="true"></a>  <span class="co">// An error is raised if any of the associated checks or signature verifications fail</span></span>
+      <span id="cb1-48"><a href="#cb1-48" aria-hidden="true"></a>  send_response(binary client_cookie,</span>
+      <span id="cb1-49"><a href="#cb1-49" aria-hidden="true"></a>                binary client_identity_proof_signature,</span>
+      <span id="cb1-50"><a href="#cb1-50" aria-hidden="true"></a>                binary client_authorization_key,</span>
+      <span id="cb1-51"><a href="#cb1-51" aria-hidden="true"></a>                <span class="dt">bool</span> client_authorization_key_signbit,</span>
+      <span id="cb1-52"><a href="#cb1-52" aria-hidden="true"></a>                binary client_authorization_signature,</span>
+      <span id="cb1-53"><a href="#cb1-53" aria-hidden="true"></a>                document challenge_response) -&gt; string;</span>
+      <span id="cb1-54"><a href="#cb1-54" aria-hidden="true"></a>}</span></code></pre></div>
+      <h3 id="endpoint-server">Endpoint Server</h3>
+      <p>A <strong>client</strong> may connect an <strong>endpoint server</strong> multiple times by specifying different channel names. For example, a chat application may have concurrent ‘messaging’ and ‘file transfer’ channels.</p>
+      <h4 id="sequence-diagram-1">Sequence Diagram</h4>
+      <p><img src="images/endpoint_handshake.svg" title="Endpoint handshake sequence diagram" /></p>
+      <h4 id="endpoint-server-rpc-api">Endpoint Server RPC API</h4>
+      <div class="sourceCode" id="cb2"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="kw">namespace</span> gosling_endpoint {</span>
+      <span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a>  <span class="co">// Begins an identity handshake session.</span></span>
+      <span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a>  <span class="co">//</span></span>
+      <span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a>  <span class="co">// Parameters:</span></span>
+      <span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a>  <span class="co">// - string version : the requested version of the Gosling protocol to use</span></span>
+      <span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a>  <span class="co">// - string client_identity : the client&#39;s identity server v3 onion service id</span></span>
+      <span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a>  <span class="co">// - string channel : the application channel the client wants to open; this</span></span>
+      <span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a>  <span class="co">//   value must be encodable as ASCII.</span></span>
+      <span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a>  <span class="co">//</span></span>
+      <span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a>  <span class="co">// return : on success, a document object with the following members</span></span>
+      <span id="cb2-11"><a href="#cb2-11" aria-hidden="true"></a>  <span class="co">// - binary server_cookie: 32 byte cookie randomly generated by the server</span></span>
+      <span id="cb2-12"><a href="#cb2-12" aria-hidden="true"></a>  <span class="co">//</span></span>
+      <span id="cb2-13"><a href="#cb2-13" aria-hidden="true"></a>  <span class="co">// An error is raised if an invalid version is provided.</span></span>
+      <span id="cb2-14"><a href="#cb2-14" aria-hidden="true"></a>  begin_handshake(string version,</span>
+      <span id="cb2-15"><a href="#cb2-15" aria-hidden="true"></a>                  string client_identity,</span>
+      <span id="cb2-16"><a href="#cb2-16" aria-hidden="true"></a>                  string channel) -&gt; document</span>
+      <span id="cb2-17"><a href="#cb2-17" aria-hidden="true"></a></span>
+      <span id="cb2-18"><a href="#cb2-18" aria-hidden="true"></a>  <span class="co">// Submits the client proof for server verification. If this function is called</span></span>
+      <span id="cb2-19"><a href="#cb2-19" aria-hidden="true"></a>  <span class="co">// before begin_handshake() an error is returned.</span></span>
+      <span id="cb2-20"><a href="#cb2-20" aria-hidden="true"></a>  <span class="co">//</span></span>
+      <span id="cb2-21"><a href="#cb2-21" aria-hidden="true"></a>  <span class="co">// Parameters:</span></span>
+      <span id="cb2-22"><a href="#cb2-22" aria-hidden="true"></a>  <span class="co">// - binary client_cookie : 32-byte cookie randomly generated by the client</span></span>
+      <span id="cb2-23"><a href="#cb2-23" aria-hidden="true"></a>  <span class="co">// - binary client_identity_proof_signature : 64-byte ed25519 signature of the</span></span>
+      <span id="cb2-24"><a href="#cb2-24" aria-hidden="true"></a>  <span class="co">//   client proof, signed with the ed25519 private key used to generate the</span></span>
+      <span id="cb2-25"><a href="#cb2-25" aria-hidden="true"></a>  <span class="co">//   client&#39;s v3 onion service id (see &#39;Client Identity Proof Calculation and</span></span>
+      <span id="cb2-26"><a href="#cb2-26" aria-hidden="true"></a>  <span class="co">//   Verification&#39;)</span></span>
+      <span id="cb2-27"><a href="#cb2-27" aria-hidden="true"></a>  <span class="co">//</span></span>
+      <span id="cb2-28"><a href="#cb2-28" aria-hidden="true"></a>  <span class="co">// return : on success, returns an empty document</span></span>
+      <span id="cb2-29"><a href="#cb2-29" aria-hidden="true"></a>  <span class="co">//</span></span>
+      <span id="cb2-30"><a href="#cb2-30" aria-hidden="true"></a>  <span class="co">// An error is raised if any of the associated checks or signature verifications fail</span></span>
+      <span id="cb2-31"><a href="#cb2-31" aria-hidden="true"></a>  send_response(binary client_cookie,</span>
+      <span id="cb2-32"><a href="#cb2-32" aria-hidden="true"></a>                binary client_identity_proof_signature) -&gt; document;</span>
+      <span id="cb2-33"><a href="#cb2-33" aria-hidden="true"></a>}</span></code></pre></div>
+      <h3 id="client-identity-proof-calculation-and-verification">Client Identity Proof Calculation and Verification</h3>
+      <p>The proof signed by client is calculated as:</p>
+      <pre><code>proof = domain_separator  +
+              request           +
+              client_service_id +
+              server_service_id +
+              hex_client_cookie +
+              hex_server_cookie</code></pre>
+      <p>The <code>+</code> operator here indicates concatenation with a null byte in-between. For example, <code>"a" + "b" + "c"</code> would be encoded as the byte array <code>['a', \x00, 'b', \x00, 'c']</code>.</p>
+      <p>Each of the parameters must be representable as an ASCII string and do <em>not</em> include an implicit null-terminator. The parameters are defined as:</p>
+      <ul>
+      <li><code>domain_separator</code> : an ASCII string; for the identity handshake, this string is <code>gosling-identity</code>; for the endpoint handshake, this string is <code>gosling-endpoint</code></li>
+      <li><code>request</code> : an ASCII string; for the identity handshake, this string is the requested endpoint; for the endpoint handshake, this string is the requested channel</li>
+      <li><code>client_service_id</code> : an ASCII string; the base-32 encoded onion service id (without the “.onion” suffix) of the connecting client’s identity server</li>
+      <li><code>server_service_id</code> : an ASCII string; the base-32 encoded onion service id (without the “.onion” suffix) of the connected server (ie: when connected to the identity server, the identity server’s onion service id is used; when connected to an endpoint server, that endpoint server’s onion service id is used)</li>
+      <li><code>client_cookie</code> : an ASCII string; the cryptographically-randomly generated 32-byte client cookie encoded as lower-case hexadecimal (0-9a-f)</li>
+      <li><code>server_cookie</code> : an ASCII string; the cryptographically-randomly generated 32-byte server cookie encoded as lower-case hexadecimal (0-9a-f)</li>
+      </ul>
+      <p>A <strong>client</strong> proves its identity to a gosling server (both <strong>identity</strong> or <strong>endpoint</strong>) by signing the above proof with the associated ed25519 private key of its own <strong>identity server</strong>. A gosling server must verify this signature using the <strong>client’s</strong> public key derived from the provided v3 onion service id coinciding with the <strong>client’s</strong> own <strong>identity server</strong>.</p>
+      <h3 id="client-authorization-signature-generation-and-verification">Client Authorization Signature Generation and Verification</h3>
+      <p>The client authorization signature is calculated by the <strong>client</strong> by signing the <strong>client’s</strong> v3 onion service id with the ed25519 private key derived from the <strong>client’s</strong> x25519 private key used to calculate their provided x25519 public key used for client authorization. The <strong>identity server</strong> verifies this signature with the ed25519 public key derived from the <strong>client’s</strong> provided x25519 key (used for onion service client authorization).</p>
+      <p><img src="images/client_auth_signature.svg" title="Client auth ed25519 signature verification derivation" /></p>
+      <p>A <strong>client</strong> proves they control the x25519 private key associated with the provided x25519 public key (used for onion service client authorization) by generating the above signature and sending it to the <strong>identity server</strong>. A gosling <strong>identity server</strong> must verify the validity of the provided signature to guarantee the <strong>client</strong> controls the private x25519 key used to derive the provided public x25519 key.</p>
+      <h2 id="acknowledgements">Acknowledgements</h2>
+      <p>Creation of innovative free software needs support. We thank the NGI Assure Fund, a fund established by NLnet with financial support from the European Commission’s Next Generation Internet programme, under the aegis of DG Communications Networks, Content and Technology under grant agreement No 957073</p>
+      <section class="footnotes" role="doc-endnotes">
+      <hr />
+      <ol>
+      <li id="fn1" role="doc-endnote"><p>see <a href="https://en.wikipedia.org/wiki/Onion_routing">Onion routing</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+      <li id="fn2" role="doc-endnote"><p>see <a href="https://support.torproject.org/about/">About Tor</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+      <li id="fn3" role="doc-endnote"><p>see <a href="https://community.torproject.org/onion-services/overview/">Onion Sevices</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+      <li id="fn4" role="doc-endnote"><p>see: <a href="https://community.torproject.org/onion-services/advanced/client-auth/">Onion Service Client Authorization</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+      <li id="fn5" role="doc-endnote"><p>see <a href="honk-rpc-spec.xhtml">Honk-RPC Specification</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+      <li id="fn6" role="doc-endnote"><p>see <a href="https://bsonspec.org/spec.html">BSON spec</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+      </ol>
+      </section>
+      <hr/>
+      <footer>
+        <p>&copy; 2023 <a href="https://www.blueprintforfreespeech.net">Blueprint for Free Speech</a>. All rights reserved.</p>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>
+
