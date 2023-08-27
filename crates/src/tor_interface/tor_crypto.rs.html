@@ -675,6 +675,7 @@
 <a href="#675" id="675">675</a>
 <a href="#676" id="676">676</a>
 <a href="#677" id="677">677</a>
+<a href="#678" id="678">678</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::convert::TryInto;
 <span class="kw">use </span>std::iter;
@@ -844,7 +845,8 @@
         }
     }
 
-    <span class="kw">pub fn </span>from_raw(raw: <span class="kw-2">&amp;</span>[u8; ED25519_PRIVATE_KEY_SIZE]) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519PrivateKey, Error&gt; {
+    <span class="comment">// according to nickm, any 64 byte string here is allowed
+    </span><span class="kw">pub fn </span>from_raw(raw: <span class="kw-2">&amp;</span>[u8; ED25519_PRIVATE_KEY_SIZE]) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519PrivateKey, Error&gt; {
         <span class="kw">if let </span><span class="prelude-val">Ok</span>(expanded_secret_key) = pk::ed25519::ExpandedSecretKey::from_bytes(raw) {
             <span class="kw">let </span>public_key = pk::ed25519::PublicKey::from(<span class="kw-2">&amp;</span>expanded_secret_key);
             <span class="comment">// verify signature of a test message
