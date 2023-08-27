@@ -675,7 +675,6 @@
 <a href="#675" id="675">675</a>
 <a href="#676" id="676">676</a>
 <a href="#677" id="677">677</a>
-<a href="#678" id="678">678</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::convert::TryInto;
 <span class="kw">use </span>std::iter;
@@ -700,8 +699,8 @@
     </span>ParseError(String),
     <span class="attr">#[error(<span class="string">&quot;{0}&quot;</span>)]
     </span>ConversionError(String),
-    <span class="attr">#[error(<span class="string">&quot;signature error&quot;</span>)]
-    </span>SignatureError,
+    <span class="attr">#[error(<span class="string">&quot;invalid key&quot;</span>)]
+    </span>KeyInvalid,
 }
 
 <span class="doccomment">/// The number of bytes in an ed25519 secret key
@@ -845,19 +844,18 @@
         }
     }
 
-    <span class="comment">// according to nickm, any 64 byte string here is allowed
-    </span><span class="kw">pub fn </span>from_raw(raw: <span class="kw-2">&amp;</span>[u8; ED25519_PRIVATE_KEY_SIZE]) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519PrivateKey, Error&gt; {
-        <span class="kw">if let </span><span class="prelude-val">Ok</span>(expanded_secret_key) = pk::ed25519::ExpandedSecretKey::from_bytes(raw) {
-            <span class="kw">let </span>public_key = pk::ed25519::PublicKey::from(<span class="kw-2">&amp;</span>expanded_secret_key);
-            <span class="comment">// verify signature of a test message
-            // see: https://gitlab.torproject.org/tpo/core/arti/-/issues/1021
-            </span><span class="kw">const </span>MESSAGE: <span class="kw-2">&amp;</span>[u8] = <span class="kw-2">&amp;</span>[<span class="number">0u8</span>, <span class="number">1u8</span>, <span class="number">2u8</span>, <span class="number">3u8</span>, <span class="number">4u8</span>, <span class="number">5u8</span>, <span class="number">6u8</span>, <span class="number">7u8</span>];
-            <span class="kw">let </span>signature = expanded_secret_key.sign(MESSAGE, <span class="kw-2">&amp;</span>public_key);
-            <span class="kw">if let </span><span class="prelude-val">Ok</span>(()) = public_key.verify(MESSAGE, <span class="kw-2">&amp;</span>signature) {
-                <span class="kw">return </span><span class="prelude-val">Ok</span>(Ed25519PrivateKey{ expanded_secret_key });
+    <span class="kw">pub fn </span>from_raw(raw: <span class="kw-2">&amp;</span>[u8; ED25519_PRIVATE_KEY_SIZE]) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519PrivateKey, Error&gt; {
+        <span class="comment">// Verify the provided bytes have bits set correctly
+        // see: https://gitlab.torproject.org/tpo/core/arti/-/issues/1021
+        </span><span class="kw">if </span>raw[<span class="number">0</span>] == raw[<span class="number">0</span>] &amp; <span class="number">248 </span>&amp;&amp;
+           raw[<span class="number">31</span>] == (raw[<span class="number">31</span>] &amp; <span class="number">63</span>) | <span class="number">64 </span>{
+            <span class="kw">match </span>pk::ed25519::ExpandedSecretKey::from_bytes(raw) {
+                <span class="prelude-val">Ok</span>(expanded_secret_key) =&gt; <span class="prelude-val">Ok</span>(Ed25519PrivateKey{ expanded_secret_key }),
+                <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(Error::KeyInvalid),
             }
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Err</span>(Error::KeyInvalid)
         }
-        <span class="prelude-val">Err</span>(Error::SignatureError)
     }
 
     <span class="kw">pub fn </span>from_key_blob(key_blob: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519PrivateKey, Error&gt; {
