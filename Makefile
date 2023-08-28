@@ -124,3 +124,6 @@ endef
 
 fuzz-honk-rpc-session: config-release
 	@$(call fuzz,"honk_rpc_cargo_fuzz_session","release/gosling/crates/honk-rpc")
+
+fuzz-tor-interface-crypto: config-release
+	@$(call fuzz,"tor_interface_cargo_fuzz_crypto","release/gosling/crates/tor-interface")
