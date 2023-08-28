@@ -675,6 +675,16 @@
 <a href="#675" id="675">675</a>
 <a href="#676" id="676">676</a>
 <a href="#677" id="677">677</a>
+<a href="#678" id="678">678</a>
+<a href="#679" id="679">679</a>
+<a href="#680" id="680">680</a>
+<a href="#681" id="681">681</a>
+<a href="#682" id="682">682</a>
+<a href="#683" id="683">683</a>
+<a href="#684" id="684">684</a>
+<a href="#685" id="685">685</a>
+<a href="#686" id="686">686</a>
+<a href="#687" id="687">687</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::convert::TryInto;
 <span class="kw">use </span>std::iter;
@@ -1122,9 +1132,13 @@
         }
     }
 
-    <span class="kw">pub fn </span>from_raw(raw: <span class="kw-2">&amp;</span>[u8; X25519_PRIVATE_KEY_SIZE]) -&gt; X25519PrivateKey {
-        X25519PrivateKey {
-            secret_key: pk::curve25519::StaticSecret::from(<span class="kw-2">*</span>raw),
+    <span class="kw">pub fn </span>from_raw(raw: <span class="kw-2">&amp;</span>[u8; X25519_PRIVATE_KEY_SIZE]) -&gt; <span class="prelude-ty">Result</span>&lt;X25519PrivateKey, Error&gt; {
+        <span class="comment">// see: https://docs.rs/x25519-dalek/2.0.0-pre.1/src/x25519_dalek/x25519.rs.html#197
+        </span><span class="kw">if </span>raw[<span class="number">0</span>] == raw[<span class="number">0</span>] &amp; <span class="number">240 </span>&amp;&amp;
+           raw[<span class="number">31</span>] == (raw[<span class="number">31</span>] &amp; <span class="number">127</span>) | <span class="number">64 </span>{
+            <span class="prelude-val">Ok</span>(X25519PrivateKey { secret_key: pk::curve25519::StaticSecret::from(<span class="kw-2">*</span>raw) })
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Err</span>(Error::KeyInvalid)
         }
     }
 
@@ -1159,7 +1173,7 @@
             }
         };
 
-        <span class="prelude-val">Ok</span>(X25519PrivateKey::from_raw(<span class="kw-2">&amp;</span>private_key_data_raw))
+        X25519PrivateKey::from_raw(<span class="kw-2">&amp;</span>private_key_data_raw)
     }
 
     <span class="comment">// security note: only ever sign messages the private key owner controls the contents of!
@@ -1177,6 +1191,12 @@
 
     <span class="kw">pub fn </span>to_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; [u8; X25519_PRIVATE_KEY_SIZE] {
         <span class="self">self</span>.secret_key.to_bytes()
+    }
+}
+
+<span class="kw">impl </span>PartialEq <span class="kw">for </span>X25519PrivateKey {
+    <span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
+        <span class="self">self</span>.secret_key.to_bytes() == other.secret_key.to_bytes()
     }
 }
 
