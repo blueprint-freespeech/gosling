@@ -14,6 +14,7 @@ use std::ptr;
 use std::str;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
+use std::time::Duration;
 
 // extern crates
 use anyhow::anyhow;
@@ -950,6 +951,8 @@ pub unsafe extern "C" fn gosling_context_init(
             Box::new(tor_client),
             identity_port,
             endpoint_port,
+            Duration::from_secs(60),
+            Some(Duration::from_secs(60)),
             identity_private_key.clone(),
         )?;
 

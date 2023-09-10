@@ -2,6 +2,7 @@
 use std::clone::Clone;
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::net::TcpStream;
+use std::time::Duration;
 
 // extern crates
 use honk_rpc::honk_rpc::*;
@@ -19,6 +20,7 @@ use crate::identity_server::*;
 /// cbindgen:ignore
 pub type HandshakeHandle = usize;
 pub const INVALID_HANDSHAKE_HANDLE: HandshakeHandle = !0usize;
+const DEFAULT_ENDPOINT_TIMEOUT: Duration = Duration::from_secs(60);
 //
 // The root Gosling Context object
 //
@@ -28,6 +30,8 @@ pub struct Context {
     bootstrap_complete: bool,
     identity_port: u16,
     endpoint_port: u16,
+    identity_timeout: Duration,
+    endpoint_timeout: Duration,
 
     //
     // Servers and Clients for in-process handshakes
@@ -219,6 +223,8 @@ impl Context {
         tor_provider: Box<dyn TorProvider>,
         identity_port: u16,
         endpoint_port: u16,
+        identity_timeout: Duration,
+        endpoint_timeout: Option<Duration>,
         identity_private_key: Ed25519PrivateKey,
     ) -> Result<Self, Error> {
         let identity_service_id = V3OnionServiceId::from_private_key(&identity_private_key);
@@ -228,6 +234,11 @@ impl Context {
             bootstrap_complete: false,
             identity_port,
             endpoint_port,
+            identity_timeout,
+            endpoint_timeout: match endpoint_timeout {
+                Some(timeout) => timeout,
+                None => DEFAULT_ENDPOINT_TIMEOUT
+            },
 
             next_handshake_handle: Default::default(),
             identity_clients: Default::default(),
@@ -273,7 +284,8 @@ impl Context {
             .connect(&identity_server_id, self.identity_port, None)?
             .into();
         stream.set_nonblocking(true)?;
-        let client_rpc = Session::new(stream);
+        let mut client_rpc = Session::new(stream);
+        client_rpc.set_max_wait_time(self.identity_timeout);
 
         let ident_client = IdentityClient::new(
             client_rpc,
@@ -413,8 +425,11 @@ impl Context {
             .into();
         stream.set_nonblocking(true)?;
 
+        let mut session = Session::new(stream);
+        session.set_max_wait_time(self.endpoint_timeout);
+
         let endpoint_client = EndpointClient::new(
-            Session::new(stream),
+            session,
             endpoint_server_id,
             channel,
             self.identity_private_key.clone(),
@@ -495,6 +510,7 @@ impl Context {
 
     fn identity_server_handle_accept(
         identity_listener: &OnionListener,
+        identity_timeout: Duration,
         identity_private_key: &Ed25519PrivateKey,
     ) -> Result<Option<IdentityServer>, Error> {
         if let Some(stream) = identity_listener.accept()? {
@@ -503,7 +519,8 @@ impl Context {
                 return Ok(None);
             }
 
-            let server_rpc = Session::new(stream);
+            let mut server_rpc = Session::new(stream);
+            server_rpc.set_max_wait_time(identity_timeout);
             let service_id = V3OnionServiceId::from_private_key(identity_private_key);
             let identity_server = IdentityServer::new(server_rpc, service_id);
 
@@ -515,6 +532,7 @@ impl Context {
 
     fn endpoint_server_handle_accept(
         endpoint_listener: &OnionListener,
+        endpoint_timeout: Duration,
         client_service_id: &V3OnionServiceId,
         endpoint_service_id: &V3OnionServiceId,
     ) -> Result<Option<EndpointServer>, Error> {
@@ -524,8 +542,10 @@ impl Context {
                 return Ok(None);
             }
 
+            let mut server_rpc = Session::new(stream);
+            server_rpc.set_max_wait_time(endpoint_timeout);
             let endpoint_server = EndpointServer::new(
-                Session::new(stream),
+                server_rpc,
                 client_service_id.clone(),
                 endpoint_service_id.clone(),
             );
@@ -542,7 +562,7 @@ impl Context {
 
         // first handle new identity connections
         if let Some(identity_listener) = &self.identity_listener {
-            match Self::identity_server_handle_accept(identity_listener, &self.identity_private_key)
+            match Self::identity_server_handle_accept(identity_listener, self.identity_timeout, &self.identity_private_key)
             {
                 Ok(Some(identity_server)) => {
                     let handle = self.next_handshake_handle;
@@ -562,6 +582,7 @@ impl Context {
             |endpoint_service_id, (_endpoint_name, allowed_client, listener, _published)| -> bool {
                 match Self::endpoint_server_handle_accept(
                     listener,
+                    self.endpoint_timeout,
                     allowed_client,
                     endpoint_service_id,
                 ) {
