@@ -62,6 +62,9 @@ pub enum Error {
 
     #[error("recieved error section without cookie")]
     UnknownErrorSectionReceived(#[source] crate::honk_rpc::ErrorCode),
+
+    #[error("tried to set invalid max message size; must be >=5 bytes and <= i32::MAX (2147483647)")]
+    InvalidMaxMesageSize(),
 }
 
 impl From<i32> for ErrorCode {
@@ -545,6 +548,20 @@ impl<RW> Session<RW>
 where
     RW: std::io::Read + std::io::Write + Send,
 {
+    pub fn set_max_message_size(&mut self, max_message_size: usize) -> Result<(), Error> {
+        if max_message_size < std::mem::size_of::<i32>() + 1 || // size of an empty bson document
+           max_message_size > i32::MAX as usize {
+            Err(Error::InvalidMaxMesageSize())
+        } else {
+            self.max_message_size = max_message_size;
+            Ok(())
+        }
+    }
+
+    pub fn set_max_wait_time(&mut self, max_wait_time: std::time::Duration) -> () {
+        self.max_wait_time = max_wait_time;
+    }
+
     pub fn new(stream: RW) -> Self {
         let mut message_write_buffer: VecDeque<u8> = Default::default();
         message_write_buffer.reserve(DEFAULT_MAX_MESSAGE_SIZE);
@@ -795,6 +812,8 @@ where
             self.serialize_messages_impl(left)?;
             self.serialize_messages_impl(right)?;
         } else {
+            #[cfg(test)]
+            println!(">>> write message: {:?}", message);
             // copy the serialized message into the pending write buffer
             self.message_write_buffer
                 .append(&mut self.message_serialization_buffer);
@@ -1180,7 +1199,7 @@ fn test_honk_timeout() -> anyhow::Result<()> {
 
     println!("--- {:?} alice set max_wait_time to 3 seconds", std::time::Instant::now().duration_since(start));
     alice.update(None)?;
-    alice.max_wait_time = std::time::Duration::from_secs(3);
+    alice.set_max_wait_time(std::time::Duration::from_secs(3));
     alice.update(None)?;
 
     // a read will happen so time should reset
