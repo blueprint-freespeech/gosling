@@ -270,11 +270,13 @@ impl IdentityServer {
     fn handle_begin_handshake(
         &mut self,
         version: String,
+        client_identity: V3OnionServiceId,
         endpoint_name: AsciiString,
     ) -> Result<(), RpcError> {
         if version != GOSLING_VERSION {
             Err(RpcError::BadVersion)
         } else {
+            self.client_identity = Some(client_identity);
             self.requested_endpoint = Some(endpoint_name);
             Ok(())
         }
@@ -469,8 +471,8 @@ impl ApiSet for IdentityServer {
                     self.begin_handshake_request_cookie = Some(request_cookie);
 
                     // client_identiity
-                    self.client_identity = match V3OnionServiceId::from_string(&client_identity) {
-                        Ok(client_identity) => Some(client_identity),
+                    let client_identity = match V3OnionServiceId::from_string(&client_identity) {
+                        Ok(client_identity) => client_identity,
                         Err(_) => return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)),
                     };
 
@@ -479,7 +481,7 @@ impl ApiSet for IdentityServer {
                         Err(_) => return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)),
                     };
 
-                    match self.handle_begin_handshake(version, endpoint_name) {
+                    match self.handle_begin_handshake(version, client_identity, endpoint_name) {
                         Ok(()) => Ok(None),
                         Err(err) => Err(ErrorCode::Runtime(err as i32)),
                     }
