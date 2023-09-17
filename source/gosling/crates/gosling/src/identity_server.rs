@@ -30,6 +30,9 @@ pub enum Error {
 
     #[error("incorrect usage: {0}")]
     IncorrectUsage(String),
+
+    #[error("client sent invalid request")]
+    BadClient,
 }
 
 pub(crate) enum IdentityServerEvent {
@@ -65,6 +68,7 @@ pub(crate) enum IdentityServerEvent {
 
 #[derive(Debug, PartialEq)]
 enum IdentityServerState {
+    // valid/expected states
     WaitingForBeginHandshake,
     GettingChallenge,
     ChallengeReady,
@@ -73,6 +77,8 @@ enum IdentityServerState {
     ChallengeVerificationReady,
     ChallengeVerificationResponseSent,
     HandshakeComplete,
+    // failure state
+    HandshakeFailed,
 }
 
 pub(crate) struct IdentityServer {
@@ -259,27 +265,15 @@ impl IdentityServer {
                 }));
             },
              _ => {
-                return Err(Error::InvalidState(self.get_state()));
+                if self.state == IdentityServerState::HandshakeFailed {
+                    return Err(Error::BadClient);
+                } else {
+                    return Err(Error::InvalidState(self.get_state()));
+                }
             }
         }
 
         Ok(None)
-    }
-
-    // internal use
-    fn handle_begin_handshake(
-        &mut self,
-        version: String,
-        client_identity: V3OnionServiceId,
-        endpoint_name: AsciiString,
-    ) -> Result<(), RpcError> {
-        if version != GOSLING_VERSION {
-            Err(RpcError::BadVersion)
-        } else {
-            self.client_identity = Some(client_identity);
-            self.requested_endpoint = Some(endpoint_name);
-            Ok(())
-        }
     }
 
     pub fn handle_endpoint_request_received(
@@ -323,57 +317,6 @@ impl IdentityServer {
                 Err(Error::IncorrectUsage("handle_endpoint_request_received() may only be called after EndpointRequestReceived has been returned from update(), and it may only be called once".to_string()))
             }
         }
-    }
-
-    // internal use
-    fn handle_send_response(
-        &mut self,
-        client_cookie: ClientCookie,
-        client_identity: V3OnionServiceId,
-        client_identity_proof_signature: Ed25519Signature,
-        client_authorization_key: X25519PublicKey,
-        client_authorization_key_signbit: SignBit,
-        client_authorization_signature: Ed25519Signature,
-        challenge_response: bson::document::Document,
-    ) -> Result<(), RpcError> {
-        // convert client_identity to client's public ed25519 key
-        if let Ok(client_identity_key) = Ed25519PublicKey::from_service_id(&client_identity) {
-            let (requested_endpoint, server_cookie) = match (
-                self.requested_endpoint.as_ref(),
-                self.server_cookie.as_ref(),
-            ) {
-                (Some(requested_endpoint), Some(server_cookie)) => {
-                    (requested_endpoint, server_cookie)
-                }
-                _ => unreachable!(),
-            };
-
-            // construct + verify client proof
-            let client_proof = build_client_proof(
-                DomainSeparator::GoslingIdentity,
-                requested_endpoint,
-                &client_identity,
-                &self.server_identity,
-                &client_cookie,
-                server_cookie,
-            );
-            self.client_proof_signature_valid =
-                client_identity_proof_signature.verify(&client_proof, &client_identity_key);
-        }
-
-        // evaluate the client authorization signature
-        self.client_auth_signature_valid = client_authorization_signature.verify_x25519(
-            client_identity.as_bytes(),
-            &client_authorization_key,
-            client_authorization_key_signbit,
-        );
-
-        // save off client auth key for future endpoint generation
-        self.client_auth_key = Some(client_authorization_key);
-
-        // safe off challenge response for verification
-        self.challenge_response = Some(challenge_response);
-        Ok(())
     }
 
     pub fn handle_challenge_response_received(
@@ -468,24 +411,39 @@ impl ApiSet for IdentityServer {
                     args.remove("client_identity"),
                     args.remove("endpoint"),
                 ) {
-                    self.begin_handshake_request_cookie = Some(request_cookie);
+                    // gosling version
+                    if version != GOSLING_VERSION {
+                        self.state = IdentityServerState::HandshakeFailed;
+                        return Err(ErrorCode::Runtime(RpcError::BadVersion as i32));
+                    }
 
                     // client_identiity
                     let client_identity = match V3OnionServiceId::from_string(&client_identity) {
                         Ok(client_identity) => client_identity,
-                        Err(_) => return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)),
+                        Err(_) => {
+                            self.state = IdentityServerState::HandshakeFailed;
+                            return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                        }
                     };
 
+                    // endpoint name
                     let endpoint_name = match AsciiString::new(endpoint_name) {
                         Ok(endpoint_name) => endpoint_name,
-                        Err(_) => return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)),
+                        Err(_) => {
+                            self.state = IdentityServerState::HandshakeFailed;
+                            return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                        }
                     };
 
-                    match self.handle_begin_handshake(version, client_identity, endpoint_name) {
-                        Ok(()) => Ok(None),
-                        Err(err) => Err(ErrorCode::Runtime(err as i32)),
-                    }
+                    // save cookie
+                    self.begin_handshake_request_cookie = Some(request_cookie);
+
+                    // save results
+                    self.client_identity = Some(client_identity);
+                    self.requested_endpoint = Some(endpoint_name);
+                    Ok(None)
                 } else {
+                    self.state = IdentityServerState::HandshakeFailed;
                     Err(ErrorCode::Runtime(RpcError::InvalidArg as i32))
                 }
             }
@@ -496,8 +454,8 @@ impl ApiSet for IdentityServer {
                 &IdentityServerState::WaitingForSendResponse,
                 Some(_begin_handshake_request_cookie),
                 Some(client_identity),
-                Some(_endpoint_name),
-                Some(_server_cookie),
+                Some(requested_endpoint),
+                Some(server_cookie),
                 Some(_endpoint_challenge),
                 None, // client_auth_key
                 None, // challenge_response
@@ -531,34 +489,43 @@ impl ApiSet for IdentityServer {
                     args.remove("client_authorization_signature"),
                     args.remove("challenge_response"),
                 ) {
-                    self.send_response_request_cookie = Some(request_cookie);
-
                     // client_cookie
                     let client_cookie: ClientCookie = match client_cookie.try_into() {
                         Ok(client_cookie) => client_cookie,
-                        Err(_) => return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)),
+                        Err(_) => {
+                            self.state = IdentityServerState::HandshakeFailed;
+                            return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                        }
                     };
 
                     // client_identity_proof_signature
                     let client_identity_proof_signature: [u8; ED25519_SIGNATURE_SIZE] =
                         match client_identity_proof_signature.try_into() {
                             Ok(client_identity_proof_signature) => client_identity_proof_signature,
-                            Err(_) => return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)),
+                            Err(_) => {
+                                self.state = IdentityServerState::HandshakeFailed;
+                                return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                            }
                         };
-
                     let client_identity_proof_signature =
                         match Ed25519Signature::from_raw(&client_identity_proof_signature) {
                             Ok(client_identity_proof_signature) => client_identity_proof_signature,
-                            Err(_) => return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)),
+                            Err(_) => {
+                                self.state = IdentityServerState::HandshakeFailed;
+                                return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                            }
                         };
 
                     // client_authorization_key
                     let client_authorization_key: [u8; X25519_PUBLIC_KEY_SIZE] =
                         match client_authorization_key.try_into() {
                             Ok(client_authorization_key) => client_authorization_key,
-                            Err(_) => return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)),
-                        };
+                            Err(_) => {
+                                self.state = IdentityServerState::HandshakeFailed;
+                                return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                            }
 
+                        };
                     let client_authorization_key =
                         X25519PublicKey::from_raw(&client_authorization_key);
 
@@ -570,31 +537,62 @@ impl ApiSet for IdentityServer {
                     let client_authorization_signature: [u8; ED25519_SIGNATURE_SIZE] =
                         match client_authorization_signature.try_into() {
                             Ok(client_authorization_signature) => client_authorization_signature,
-                            Err(_) => return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)),
-                        };
+                            Err(_) => {
+                                self.state = IdentityServerState::HandshakeFailed;
+                                return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                            }
 
+                        };
                     let client_authorization_signature =
                         match Ed25519Signature::from_raw(&client_authorization_signature) {
                             Ok(client_authorization_signature) => client_authorization_signature,
-                            Err(_) => return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)),
+                            Err(_) => {
+                                self.state = IdentityServerState::HandshakeFailed;
+                                return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                            }
                         };
-                    match self.handle_send_response(
-                        client_cookie,
-                        client_identity.clone(),
-                        client_identity_proof_signature,
-                        client_authorization_key,
-                        client_authorization_key_signbit,
-                        client_authorization_signature,
-                        challenge_response,
-                    ) {
-                        Ok(()) => Ok(None),
-                        Err(err) => Err(ErrorCode::Runtime(err as i32)),
+
+                    // save  cookie
+                    self.send_response_request_cookie = Some(request_cookie);
+
+                    // convert client_identity to client's public ed25519 key
+                    if let Ok(client_identity_key) = Ed25519PublicKey::from_service_id(&client_identity) {
+                        // construct + verify client proof
+                        let client_proof = build_client_proof(
+                            DomainSeparator::GoslingIdentity,
+                            requested_endpoint,
+                            &client_identity,
+                            &self.server_identity,
+                            &client_cookie,
+                            server_cookie,
+                        );
+                        self.client_proof_signature_valid =
+                            client_identity_proof_signature.verify(&client_proof, &client_identity_key);
                     }
+
+                    // evaluate the client authorization signature
+                    self.client_auth_signature_valid = client_authorization_signature.verify_x25519(
+                        client_identity.as_bytes(),
+                        &client_authorization_key,
+                        client_authorization_key_signbit,
+                    );
+
+                    // save off client auth key for future endpoint generation
+                    self.client_auth_key = Some(client_authorization_key);
+
+                    // safe off challenge response for verification
+                    self.challenge_response = Some(challenge_response);
+
+                    Ok(None)
                 } else {
+                    self.state = IdentityServerState::HandshakeFailed;
                     Err(ErrorCode::Runtime(RpcError::InvalidArg as i32))
                 }
             }
-            _ => Err(ErrorCode::Runtime(RpcError::Failure as i32)),
+            _ => {
+                self.state = IdentityServerState::HandshakeFailed;
+                Err(ErrorCode::Runtime(RpcError::Failure as i32))
+            }
         }
     }
 

@@ -30,6 +30,9 @@ pub enum Error {
 
     #[error("incorrect usage: {0}")]
     IncorrectUsage(String),
+
+    #[error("client sent invalid request")]
+    BadClient,
 }
 
 pub(crate) enum EndpointServerEvent {
@@ -52,12 +55,15 @@ pub(crate) enum EndpointServerEvent {
 
 #[derive(Debug, PartialEq)]
 enum EndpointServerState {
+    // valid/expected states
     WaitingForBeginHandshake,
     ValidatingChannelRequest,
     ChannelRequestValidated,
     WaitingForSendResponse,
     HandledSendResponse,
     HandshakeComplete,
+    // failure state
+    HandshakeFailed,
 }
 
 pub(crate) struct EndpointServer {
@@ -191,24 +197,16 @@ impl EndpointServer {
                         client_proof_signature_valid: self.client_proof_signature_valid}));
                 }
             },
-            _ => return Err(Error::InvalidState(self.get_state())),
+            _ => {
+                if self.state == EndpointServerState::HandshakeFailed {
+                    return Err(Error::BadClient);
+                } else {
+                    return Err(Error::InvalidState(self.get_state()));
+                }
+            }
         }
 
         Ok(None)
-    }
-
-    // internal use
-    fn handle_begin_handshake(
-        &mut self,
-        version: String,
-        channel_name: AsciiString,
-    ) -> Result<(), RpcError> {
-        if version != GOSLING_VERSION {
-            Err(RpcError::BadVersion)
-        } else {
-            self.requested_channel = Some(channel_name);
-            Ok(())
-        }
     }
 
     pub fn handle_channel_request_received(
@@ -239,50 +237,6 @@ impl EndpointServer {
             _ => Err(Error::IncorrectUsage("handle_channel_request_received() may only be called after ChannelRequestReceived has been returned from update(), and it may only be called once".to_string()))
         }
     }
-
-    // internal use
-    fn handle_send_response(
-        &mut self,
-        client_cookie: ClientCookie,
-        client_identity: V3OnionServiceId,
-        client_identity_proof_signature: Ed25519Signature,
-    ) -> Result<bson::Bson, RpcError> {
-        // convert client_identity to client's public ed25519 key
-        if let (Ok(client_identity_key), Some(requested_channel)) = (
-            Ed25519PublicKey::from_service_id(&client_identity),
-            self.requested_channel.as_ref(),
-        ) {
-            let server_cookie = match self.server_cookie.as_ref() {
-                Some(server_cookie) => server_cookie,
-                None => unreachable!(),
-            };
-
-            // construct + verify client proof
-            let client_proof = build_client_proof(
-                DomainSeparator::GoslingEndpoint,
-                requested_channel,
-                &client_identity,
-                &self.server_identity,
-                &client_cookie,
-                server_cookie,
-            );
-            self.client_proof_signature_valid =
-                client_identity_proof_signature.verify(&client_proof, &client_identity_key);
-
-            if self.client_allowed
-                && self.client_requested_channel_valid
-                && self.client_proof_signature_valid
-            {
-                self.handshake_succeeded = Some(true);
-                self.state = EndpointServerState::HandledSendResponse;
-                // success, return empty doc
-                return Ok(Bson::Document(doc! {}));
-            }
-        }
-        self.handshake_succeeded = Some(false);
-        self.state = EndpointServerState::HandledSendResponse;
-        Err(RpcError::Failure)
-    }
 }
 
 impl ApiSet for EndpointServer {
@@ -306,12 +260,14 @@ impl ApiSet for EndpointServer {
             (name, version,
              &self.state,
              self.client_identity.as_ref(),
-             self.requested_channel.as_ref()) {
+             self.requested_channel.as_ref(),
+             self.server_cookie.as_ref()) {
             // handle begin_handshake call
             ("begin_handshake", 0,
             &EndpointServerState::WaitingForBeginHandshake,
             None, // client_identity
-            None) // requested_channel
+            None, // requested_channel
+            None) // server_cookie
             => {
                 if let (Some(Bson::String(version)),
                         Some(Bson::String(client_identity)),
@@ -319,31 +275,46 @@ impl ApiSet for EndpointServer {
                        (args.remove("version"),
                         args.remove("client_identity"),
                         args.remove("channel")) {
-                    self.begin_handshake_request_cookie = Some(request_cookie);
+                    // gosling version
+                    if version != GOSLING_VERSION {
+                        self.state = EndpointServerState::HandshakeFailed;
+                        return Err(ErrorCode::Runtime(RpcError::BadVersion as i32));
+                    }
 
                     // client_identiity
                     self.client_identity = match V3OnionServiceId::from_string(&client_identity) {
                         Ok(client_identity) => Some(client_identity),
-                        Err(_) => return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)),
+                        Err(_) => {
+                            self.state = EndpointServerState::HandshakeFailed;
+                            return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                        }
                     };
 
                     let channel_name = match AsciiString::new(channel_name) {
                         Ok(channel_name) => channel_name,
-                        Err(_) => return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)),
+                        Err(_) => {
+                            self.state = EndpointServerState::HandshakeFailed;
+                            return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                        }
                     };
 
-                    match self.handle_begin_handshake(version, channel_name) {
-                        Ok(()) => Ok(None),
-                        Err(err) => Err(ErrorCode::Runtime(err as i32)),
-                    }
+                    // save cookie
+                    self.begin_handshake_request_cookie = Some(request_cookie);
+
+                    // save channel name
+                    self.requested_channel = Some(channel_name);
+
+                    Ok(None)
                 } else {
+                    self.state = EndpointServerState::HandshakeFailed;
                     Err(ErrorCode::Runtime(RpcError::InvalidArg as i32))
                 }
             },
             ("send_response", 0,
             &EndpointServerState::WaitingForSendResponse,
             Some(client_identity),
-            Some(_requested_channel))
+            Some(requested_channel),
+            Some(server_cookie))
             => {
                 if let (Some(Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: client_cookie})),
                         Some(Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: client_identity_proof_signature}))) =
@@ -352,29 +323,71 @@ impl ApiSet for EndpointServer {
                     // client_cookie
                     let client_cookie : ClientCookie = match client_cookie.try_into() {
                         Ok(client_cookie) => client_cookie,
-                        Err(_) => return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)),
+                        Err(_) => {
+                            self.state = EndpointServerState::HandshakeFailed;
+                            return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                        }
                     };
 
                     // client_identity_proof_signature
                     let client_identity_proof_signature : [u8; ED25519_SIGNATURE_SIZE] = match client_identity_proof_signature.try_into() {
                         Ok(client_identity_proof_signature) => client_identity_proof_signature,
-                        Err(_) => return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)),
+                        Err(_) => {
+                            self.state = EndpointServerState::HandshakeFailed;
+                            return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                        }
                     };
-
                     let client_identity_proof_signature = match Ed25519Signature::from_raw(&client_identity_proof_signature) {
                         Ok(client_identity_proof_signature) => client_identity_proof_signature,
-                        Err(_) => return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)),
+                        Err(_) => {
+                            self.state = EndpointServerState::HandshakeFailed;
+                            return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                        }
                     };
 
-                    match self.handle_send_response(client_cookie, client_identity.clone(), client_identity_proof_signature) {
-                        Ok(result) => Ok(Some(result)),
-                        Err(err) => Err(ErrorCode::Runtime(err as i32)),
+                    // convert client_identity to client's public ed25519 key
+                    let client_identity_key = match Ed25519PublicKey::from_service_id(client_identity) {
+                        Ok(client_identity_key) => client_identity_key,
+                        Err(_) => {
+                            self.state = EndpointServerState::HandshakeFailed;
+                            return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                        }
+                    };
+
+                    // construct + verify client proof
+                    let client_proof = build_client_proof(
+                        DomainSeparator::GoslingEndpoint,
+                        requested_channel,
+                        client_identity,
+                        &self.server_identity,
+                        &client_cookie,
+                        server_cookie,
+                    );
+                    self.client_proof_signature_valid =
+                        client_identity_proof_signature.verify(&client_proof, &client_identity_key);
+
+                    if self.client_allowed
+                        && self.client_requested_channel_valid
+                        && self.client_proof_signature_valid
+                    {
+                        self.handshake_succeeded = Some(true);
+                        self.state = EndpointServerState::HandledSendResponse;
+                        // success, return empty doc
+                        Ok(Some(Bson::Document(doc! {})))
+                    } else {
+                        self.handshake_succeeded = Some(false);
+                        self.state = EndpointServerState::HandledSendResponse;
+                        Err(ErrorCode::Runtime(RpcError::Failure as i32))
                     }
                 } else {
+                    self.state = EndpointServerState::HandshakeFailed;
                     Err(ErrorCode::Runtime(RpcError::InvalidArg as i32))
                 }
             },
-            _ => Ok(None),
+            _ => {
+                self.state = EndpointServerState::HandshakeFailed;
+                Err(ErrorCode::Runtime(RpcError::Failure as i32))
+            }
         }
     }
 
