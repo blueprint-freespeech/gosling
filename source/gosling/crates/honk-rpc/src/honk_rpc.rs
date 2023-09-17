@@ -502,7 +502,7 @@ pub enum Response {
 }
 
 // 4 kilobytes per specification
-pub const DEFAULT_MAX_MESSAGE_SIZE: usize = 4 * 1024 * 1024;
+pub const DEFAULT_MAX_MESSAGE_SIZE: usize = 4 * 1024;
 pub const DEFAULT_MAX_WAIT_TIME: std::time::Duration = std::time::Duration::from_secs(60);
 
 pub struct Session<RW> {

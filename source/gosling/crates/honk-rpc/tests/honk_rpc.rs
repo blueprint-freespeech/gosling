@@ -326,13 +326,13 @@ fn test_honk_client_apiset() -> anyhow::Result<()> {
                             pat_0x00_buffer_hashed = true;
                             assert_eq!(
                                 result,
-                                "5866229a219b739e5a9a6b7ff01c842f6ab9877ac4a30ddc90e76278e5ac4305"
+                                "463c61ad03873aa9e82581205205acc3d3c8346c7037c43e4e241ee529f2dc27"
                             );
                             println!("--- pat received 0x00 buffer hash");
                         } else if cookie == cookie2 {
                             assert_eq!(
                                 result,
-                                "2b9d259845615e9f2840297569af9ff94c17793e0fdd013d88a277d46437e1e8"
+                                "9bd2dc706dd5251ae8fad858931585c71a1b4587aa7ecb30e15880e1b9dcda16"
                             );
                             pat_0xff_buffer_hashed = true;
                             println!("--- pat received 0xff buffer hash");
