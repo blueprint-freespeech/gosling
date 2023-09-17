@@ -3,8 +3,8 @@
 
 mod ascii_string;
 pub mod context;
-mod endpoint_client;
-mod endpoint_server;
-mod gosling;
-mod identity_client;
-mod identity_server;
+pub mod endpoint_client;
+pub mod endpoint_server;
+pub mod gosling;
+pub mod identity_client;
+pub mod identity_server;
