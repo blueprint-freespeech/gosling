@@ -61,6 +61,9 @@ pub enum Error {
     Io(#[from] std::io::Error),
 
     #[error(transparent)]
+    HonkRpc(#[from] honk_rpc::honk_rpc::Error),
+
+    #[error(transparent)]
     TorCrypto(#[from] tor_interface::tor_crypto::Error),
 
     #[error(transparent)]

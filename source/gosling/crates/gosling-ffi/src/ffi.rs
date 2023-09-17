@@ -952,6 +952,7 @@ pub unsafe extern "C" fn gosling_context_init(
             identity_port,
             endpoint_port,
             Duration::from_secs(60),
+            4096,
             Some(Duration::from_secs(60)),
             identity_private_key.clone(),
         )?;

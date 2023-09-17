@@ -52,7 +52,7 @@ fn gosling_context_test(
         alice_service_id.to_string()
     );
 
-    let mut alice = Context::new(alice_tor_client, 420, 420, std::time::Duration::from_secs(60), None, alice_private_key)?;
+    let mut alice = Context::new(alice_tor_client, 420, 420, std::time::Duration::from_secs(60), 4096, None, alice_private_key)?;
     alice.bootstrap()?;
 
     let mut bootstrap_complete = false;
@@ -87,7 +87,7 @@ fn gosling_context_test(
         "Starting Pat gosling context ({})",
         pat_service_id.to_string()
     );
-    let mut pat = Context::new(pat_tor_client, 420, 420, std::time::Duration::from_secs(60), None, pat_private_key)?;
+    let mut pat = Context::new(pat_tor_client, 420, 420, std::time::Duration::from_secs(60), 4096, None, pat_private_key)?;
     pat.bootstrap()?;
 
     let mut bootstrap_complete = false;

@@ -31,6 +31,7 @@ pub struct Context {
     identity_port: u16,
     endpoint_port: u16,
     identity_timeout: Duration,
+    identity_max_message_size: usize,
     endpoint_timeout: Duration,
 
     //
@@ -224,6 +225,7 @@ impl Context {
         identity_port: u16,
         endpoint_port: u16,
         identity_timeout: Duration,
+        identity_max_message_size: usize,
         endpoint_timeout: Option<Duration>,
         identity_private_key: Ed25519PrivateKey,
     ) -> Result<Self, Error> {
@@ -233,6 +235,7 @@ impl Context {
             tor_provider,
             bootstrap_complete: false,
             identity_port,
+            identity_max_message_size,
             endpoint_port,
             identity_timeout,
             endpoint_timeout: match endpoint_timeout {
@@ -286,6 +289,7 @@ impl Context {
         stream.set_nonblocking(true)?;
         let mut client_rpc = Session::new(stream);
         client_rpc.set_max_wait_time(self.identity_timeout);
+        client_rpc.set_max_message_size(self.identity_max_message_size)?;
 
         let ident_client = IdentityClient::new(
             client_rpc,
@@ -511,6 +515,7 @@ impl Context {
     fn identity_server_handle_accept(
         identity_listener: &OnionListener,
         identity_timeout: Duration,
+        identity_max_message_size: usize,
         identity_private_key: &Ed25519PrivateKey,
     ) -> Result<Option<IdentityServer>, Error> {
         if let Some(stream) = identity_listener.accept()? {
@@ -521,6 +526,7 @@ impl Context {
 
             let mut server_rpc = Session::new(stream);
             server_rpc.set_max_wait_time(identity_timeout);
+            server_rpc.set_max_message_size(identity_max_message_size)?;
             let service_id = V3OnionServiceId::from_private_key(identity_private_key);
             let identity_server = IdentityServer::new(server_rpc, service_id);
 
@@ -562,7 +568,7 @@ impl Context {
 
         // first handle new identity connections
         if let Some(identity_listener) = &self.identity_listener {
-            match Self::identity_server_handle_accept(identity_listener, self.identity_timeout, &self.identity_private_key)
+            match Self::identity_server_handle_accept(identity_listener, self.identity_timeout, self.identity_max_message_size, &self.identity_private_key)
             {
                 Ok(Some(identity_server)) => {
                     let handle = self.next_handshake_handle;
