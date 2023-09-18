@@ -402,6 +402,19 @@
 <a href="#402" id="402">402</a>
 <a href="#403" id="403">403</a>
 <a href="#404" id="404">404</a>
+<a href="#405" id="405">405</a>
+<a href="#406" id="406">406</a>
+<a href="#407" id="407">407</a>
+<a href="#408" id="408">408</a>
+<a href="#409" id="409">409</a>
+<a href="#410" id="410">410</a>
+<a href="#411" id="411">411</a>
+<a href="#412" id="412">412</a>
+<a href="#413" id="413">413</a>
+<a href="#414" id="414">414</a>
+<a href="#415" id="415">415</a>
+<a href="#416" id="416">416</a>
+<a href="#417" id="417">417</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::clone::Clone;
 <span class="kw">use </span>std::convert::TryInto;
@@ -434,6 +447,9 @@
 
     <span class="attr">#[error(<span class="string">&quot;incorrect usage: {0}&quot;</span>)]
     </span>IncorrectUsage(String),
+
+    <span class="attr">#[error(<span class="string">&quot;client sent invalid request&quot;</span>)]
+    </span>BadClient,
 }
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">enum </span>EndpointServerEvent {
@@ -456,12 +472,15 @@
 
 <span class="attr">#[derive(Debug, PartialEq)]
 </span><span class="kw">enum </span>EndpointServerState {
-    WaitingForBeginHandshake,
+    <span class="comment">// valid/expected states
+    </span>WaitingForBeginHandshake,
     ValidatingChannelRequest,
     ChannelRequestValidated,
     WaitingForSendResponse,
     HandledSendResponse,
     HandshakeComplete,
+    <span class="comment">// failure state
+    </span>HandshakeFailed,
 }
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>EndpointServer {
@@ -595,24 +614,16 @@
                         client_proof_signature_valid: <span class="self">self</span>.client_proof_signature_valid}));
                 }
             },
-            <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidState(<span class="self">self</span>.get_state())),
+            <span class="kw">_ </span>=&gt; {
+                <span class="kw">if </span><span class="self">self</span>.state == EndpointServerState::HandshakeFailed {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::BadClient);
+                } <span class="kw">else </span>{
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidState(<span class="self">self</span>.get_state()));
+                }
+            }
         }
 
         <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
-    }
-
-    <span class="comment">// internal use
-    </span><span class="kw">fn </span>handle_begin_handshake(
-        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        version: String,
-        channel_name: AsciiString,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), RpcError&gt; {
-        <span class="kw">if </span>version != GOSLING_VERSION {
-            <span class="prelude-val">Err</span>(RpcError::BadVersion)
-        } <span class="kw">else </span>{
-            <span class="self">self</span>.requested_channel = <span class="prelude-val">Some</span>(channel_name);
-            <span class="prelude-val">Ok</span>(())
-        }
     }
 
     <span class="kw">pub fn </span>handle_channel_request_received(
@@ -643,50 +654,6 @@
             <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(Error::IncorrectUsage(<span class="string">&quot;handle_channel_request_received() may only be called after ChannelRequestReceived has been returned from update(), and it may only be called once&quot;</span>.to_string()))
         }
     }
-
-    <span class="comment">// internal use
-    </span><span class="kw">fn </span>handle_send_response(
-        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        client_cookie: ClientCookie,
-        client_identity: V3OnionServiceId,
-        client_identity_proof_signature: Ed25519Signature,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;bson::Bson, RpcError&gt; {
-        <span class="comment">// convert client_identity to client&#39;s public ed25519 key
-        </span><span class="kw">if let </span>(<span class="prelude-val">Ok</span>(client_identity_key), <span class="prelude-val">Some</span>(requested_channel)) = (
-            Ed25519PublicKey::from_service_id(<span class="kw-2">&amp;</span>client_identity),
-            <span class="self">self</span>.requested_channel.as_ref(),
-        ) {
-            <span class="kw">let </span>server_cookie = <span class="kw">match </span><span class="self">self</span>.server_cookie.as_ref() {
-                <span class="prelude-val">Some</span>(server_cookie) =&gt; server_cookie,
-                <span class="prelude-val">None </span>=&gt; <span class="macro">unreachable!</span>(),
-            };
-
-            <span class="comment">// construct + verify client proof
-            </span><span class="kw">let </span>client_proof = build_client_proof(
-                DomainSeparator::GoslingEndpoint,
-                requested_channel,
-                <span class="kw-2">&amp;</span>client_identity,
-                <span class="kw-2">&amp;</span><span class="self">self</span>.server_identity,
-                <span class="kw-2">&amp;</span>client_cookie,
-                server_cookie,
-            );
-            <span class="self">self</span>.client_proof_signature_valid =
-                client_identity_proof_signature.verify(<span class="kw-2">&amp;</span>client_proof, <span class="kw-2">&amp;</span>client_identity_key);
-
-            <span class="kw">if </span><span class="self">self</span>.client_allowed
-                &amp;&amp; <span class="self">self</span>.client_requested_channel_valid
-                &amp;&amp; <span class="self">self</span>.client_proof_signature_valid
-            {
-                <span class="self">self</span>.handshake_succeeded = <span class="prelude-val">Some</span>(<span class="bool-val">true</span>);
-                <span class="self">self</span>.state = EndpointServerState::HandledSendResponse;
-                <span class="comment">// success, return empty doc
-                </span><span class="kw">return </span><span class="prelude-val">Ok</span>(Bson::Document(<span class="macro">doc! </span>{}));
-            }
-        }
-        <span class="self">self</span>.handshake_succeeded = <span class="prelude-val">Some</span>(<span class="bool-val">false</span>);
-        <span class="self">self</span>.state = EndpointServerState::HandledSendResponse;
-        <span class="prelude-val">Err</span>(RpcError::Failure)
-    }
 }
 
 <span class="kw">impl </span>ApiSet <span class="kw">for </span>EndpointServer {
@@ -710,12 +677,14 @@
             </span>(name, version,
              <span class="kw-2">&amp;</span><span class="self">self</span>.state,
              <span class="self">self</span>.client_identity.as_ref(),
-             <span class="self">self</span>.requested_channel.as_ref()) {
+             <span class="self">self</span>.requested_channel.as_ref(),
+             <span class="self">self</span>.server_cookie.as_ref()) {
             <span class="comment">// handle begin_handshake call
             </span>(<span class="string">&quot;begin_handshake&quot;</span>, <span class="number">0</span>,
             <span class="kw-2">&amp;</span>EndpointServerState::WaitingForBeginHandshake,
             <span class="prelude-val">None</span>, <span class="comment">// client_identity
-            </span><span class="prelude-val">None</span>) <span class="comment">// requested_channel
+            </span><span class="prelude-val">None</span>, <span class="comment">// requested_channel
+            </span><span class="prelude-val">None</span>) <span class="comment">// server_cookie
             </span>=&gt; {
                 <span class="kw">if let </span>(<span class="prelude-val">Some</span>(Bson::String(version)),
                         <span class="prelude-val">Some</span>(Bson::String(client_identity)),
@@ -723,31 +692,46 @@
                        (args.remove(<span class="string">&quot;version&quot;</span>),
                         args.remove(<span class="string">&quot;client_identity&quot;</span>),
                         args.remove(<span class="string">&quot;channel&quot;</span>)) {
-                    <span class="self">self</span>.begin_handshake_request_cookie = <span class="prelude-val">Some</span>(request_cookie);
+                    <span class="comment">// gosling version
+                    </span><span class="kw">if </span>version != GOSLING_VERSION {
+                        <span class="self">self</span>.state = EndpointServerState::HandshakeFailed;
+                        <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::BadVersion <span class="kw">as </span>i32));
+                    }
 
                     <span class="comment">// client_identiity
                     </span><span class="self">self</span>.client_identity = <span class="kw">match </span>V3OnionServiceId::from_string(<span class="kw-2">&amp;</span>client_identity) {
                         <span class="prelude-val">Ok</span>(client_identity) =&gt; <span class="prelude-val">Some</span>(client_identity),
-                        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32)),
+                        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
+                            <span class="self">self</span>.state = EndpointServerState::HandshakeFailed;
+                            <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32));
+                        }
                     };
 
                     <span class="kw">let </span>channel_name = <span class="kw">match </span>AsciiString::new(channel_name) {
                         <span class="prelude-val">Ok</span>(channel_name) =&gt; channel_name,
-                        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32)),
+                        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
+                            <span class="self">self</span>.state = EndpointServerState::HandshakeFailed;
+                            <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32));
+                        }
                     };
 
-                    <span class="kw">match </span><span class="self">self</span>.handle_begin_handshake(version, channel_name) {
-                        <span class="prelude-val">Ok</span>(()) =&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
-                        <span class="prelude-val">Err</span>(err) =&gt; <span class="prelude-val">Err</span>(ErrorCode::Runtime(err <span class="kw">as </span>i32)),
-                    }
+                    <span class="comment">// save cookie
+                    </span><span class="self">self</span>.begin_handshake_request_cookie = <span class="prelude-val">Some</span>(request_cookie);
+
+                    <span class="comment">// save channel name
+                    </span><span class="self">self</span>.requested_channel = <span class="prelude-val">Some</span>(channel_name);
+
+                    <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
                 } <span class="kw">else </span>{
+                    <span class="self">self</span>.state = EndpointServerState::HandshakeFailed;
                     <span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32))
                 }
             },
             (<span class="string">&quot;send_response&quot;</span>, <span class="number">0</span>,
             <span class="kw-2">&amp;</span>EndpointServerState::WaitingForSendResponse,
             <span class="prelude-val">Some</span>(client_identity),
-            <span class="prelude-val">Some</span>(_requested_channel))
+            <span class="prelude-val">Some</span>(requested_channel),
+            <span class="prelude-val">Some</span>(server_cookie))
             =&gt; {
                 <span class="kw">if let </span>(<span class="prelude-val">Some</span>(Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: client_cookie})),
                         <span class="prelude-val">Some</span>(Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: client_identity_proof_signature}))) =
@@ -756,29 +740,71 @@
                     <span class="comment">// client_cookie
                     </span><span class="kw">let </span>client_cookie : ClientCookie = <span class="kw">match </span>client_cookie.try_into() {
                         <span class="prelude-val">Ok</span>(client_cookie) =&gt; client_cookie,
-                        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32)),
+                        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
+                            <span class="self">self</span>.state = EndpointServerState::HandshakeFailed;
+                            <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32));
+                        }
                     };
 
                     <span class="comment">// client_identity_proof_signature
                     </span><span class="kw">let </span>client_identity_proof_signature : [u8; ED25519_SIGNATURE_SIZE] = <span class="kw">match </span>client_identity_proof_signature.try_into() {
                         <span class="prelude-val">Ok</span>(client_identity_proof_signature) =&gt; client_identity_proof_signature,
-                        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32)),
+                        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
+                            <span class="self">self</span>.state = EndpointServerState::HandshakeFailed;
+                            <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32));
+                        }
                     };
-
                     <span class="kw">let </span>client_identity_proof_signature = <span class="kw">match </span>Ed25519Signature::from_raw(<span class="kw-2">&amp;</span>client_identity_proof_signature) {
                         <span class="prelude-val">Ok</span>(client_identity_proof_signature) =&gt; client_identity_proof_signature,
-                        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32)),
+                        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
+                            <span class="self">self</span>.state = EndpointServerState::HandshakeFailed;
+                            <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32));
+                        }
                     };
 
-                    <span class="kw">match </span><span class="self">self</span>.handle_send_response(client_cookie, client_identity.clone(), client_identity_proof_signature) {
-                        <span class="prelude-val">Ok</span>(result) =&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(result)),
-                        <span class="prelude-val">Err</span>(err) =&gt; <span class="prelude-val">Err</span>(ErrorCode::Runtime(err <span class="kw">as </span>i32)),
+                    <span class="comment">// convert client_identity to client&#39;s public ed25519 key
+                    </span><span class="kw">let </span>client_identity_key = <span class="kw">match </span>Ed25519PublicKey::from_service_id(client_identity) {
+                        <span class="prelude-val">Ok</span>(client_identity_key) =&gt; client_identity_key,
+                        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
+                            <span class="self">self</span>.state = EndpointServerState::HandshakeFailed;
+                            <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32));
+                        }
+                    };
+
+                    <span class="comment">// construct + verify client proof
+                    </span><span class="kw">let </span>client_proof = build_client_proof(
+                        DomainSeparator::GoslingEndpoint,
+                        requested_channel,
+                        client_identity,
+                        <span class="kw-2">&amp;</span><span class="self">self</span>.server_identity,
+                        <span class="kw-2">&amp;</span>client_cookie,
+                        server_cookie,
+                    );
+                    <span class="self">self</span>.client_proof_signature_valid =
+                        client_identity_proof_signature.verify(<span class="kw-2">&amp;</span>client_proof, <span class="kw-2">&amp;</span>client_identity_key);
+
+                    <span class="kw">if </span><span class="self">self</span>.client_allowed
+                        &amp;&amp; <span class="self">self</span>.client_requested_channel_valid
+                        &amp;&amp; <span class="self">self</span>.client_proof_signature_valid
+                    {
+                        <span class="self">self</span>.handshake_succeeded = <span class="prelude-val">Some</span>(<span class="bool-val">true</span>);
+                        <span class="self">self</span>.state = EndpointServerState::HandledSendResponse;
+                        <span class="comment">// success, return empty doc
+                        </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(Bson::Document(<span class="macro">doc! </span>{})))
+                    } <span class="kw">else </span>{
+                        <span class="self">self</span>.handshake_succeeded = <span class="prelude-val">Some</span>(<span class="bool-val">false</span>);
+                        <span class="self">self</span>.state = EndpointServerState::HandledSendResponse;
+                        <span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::Failure <span class="kw">as </span>i32))
                     }
                 } <span class="kw">else </span>{
+                    <span class="self">self</span>.state = EndpointServerState::HandshakeFailed;
                     <span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32))
                 }
             },
-            <span class="kw">_ </span>=&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
+            <span class="kw">_ </span>=&gt; {
+                <span class="self">self</span>.state = EndpointServerState::HandshakeFailed;
+                <span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::Failure <span class="kw">as </span>i32))
+            }
         }
     }
 

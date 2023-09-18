@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["context"]};
+window.SIDEBAR_ITEMS = {"mod":["context","endpoint_client","endpoint_server","gosling","identity_client","identity_server"]};

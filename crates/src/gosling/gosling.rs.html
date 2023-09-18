@@ -558,6 +558,9 @@
 <a href="#558" id="558">558</a>
 <a href="#559" id="559">559</a>
 <a href="#560" id="560">560</a>
+<a href="#561" id="561">561</a>
+<a href="#562" id="562">562</a>
+<a href="#563" id="563">563</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="attr">#[cfg(test)]
 </span><span class="kw">use </span>std::net::{SocketAddr, TcpListener, TcpStream};
@@ -621,6 +624,9 @@
     </span>Io(<span class="attr">#[from] </span>std::io::Error),
 
     <span class="attr">#[error(transparent)]
+    </span>HonkRpc(<span class="attr">#[from] </span>honk_rpc::honk_rpc::Error),
+
+    <span class="attr">#[error(transparent)]
     </span>TorCrypto(<span class="attr">#[from] </span>tor_interface::tor_crypto::Error),
 
     <span class="attr">#[error(transparent)]
@@ -639,7 +645,7 @@
     </span>EndpointServerError(<span class="attr">#[from] </span>endpoint_server::Error),
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>GOSLING_VERSION: <span class="kw-2">&amp;</span>str = <span class="string">&quot;0.0.0.1&quot;</span>;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>GOSLING_VERSION: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str = <span class="macro">std::env!</span>(<span class="string">&quot;CARGO_PKG_VERSION&quot;</span>);
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>CLIENT_COOKIE_SIZE: usize = <span class="number">32usize</span>;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>SERVER_COOKIE_SIZE: usize = <span class="number">32usize</span>;

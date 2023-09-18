@@ -837,6 +837,12 @@
 <a href="#837" id="837">837</a>
 <a href="#838" id="838">838</a>
 <a href="#839" id="839">839</a>
+<a href="#840" id="840">840</a>
+<a href="#841" id="841">841</a>
+<a href="#842" id="842">842</a>
+<a href="#843" id="843">843</a>
+<a href="#844" id="844">844</a>
+<a href="#845" id="845">845</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::clone::Clone;
 <span class="kw">use </span>std::collections::{BTreeMap, HashMap, VecDeque};
@@ -870,6 +876,7 @@
     identity_port: u16,
     endpoint_port: u16,
     identity_timeout: Duration,
+    identity_max_message_size: usize,
     endpoint_timeout: Duration,
 
     <span class="comment">//
@@ -1063,6 +1070,7 @@
         identity_port: u16,
         endpoint_port: u16,
         identity_timeout: Duration,
+        identity_max_message_size: usize,
         endpoint_timeout: <span class="prelude-ty">Option</span>&lt;Duration&gt;,
         identity_private_key: Ed25519PrivateKey,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, Error&gt; {
@@ -1072,6 +1080,7 @@
             tor_provider,
             bootstrap_complete: <span class="bool-val">false</span>,
             identity_port,
+            identity_max_message_size,
             endpoint_port,
             identity_timeout,
             endpoint_timeout: <span class="kw">match </span>endpoint_timeout {
@@ -1125,6 +1134,7 @@
         stream.set_nonblocking(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>client_rpc = Session::new(stream);
         client_rpc.set_max_wait_time(<span class="self">self</span>.identity_timeout);
+        client_rpc.set_max_message_size(<span class="self">self</span>.identity_max_message_size)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>ident_client = IdentityClient::new(
             client_rpc,
@@ -1350,6 +1360,7 @@
     <span class="kw">fn </span>identity_server_handle_accept(
         identity_listener: <span class="kw-2">&amp;</span>OnionListener,
         identity_timeout: Duration,
+        identity_max_message_size: usize,
         identity_private_key: <span class="kw-2">&amp;</span>Ed25519PrivateKey,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;IdentityServer&gt;, Error&gt; {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(stream) = identity_listener.accept()<span class="question-mark">? </span>{
@@ -1360,6 +1371,7 @@
 
             <span class="kw">let </span><span class="kw-2">mut </span>server_rpc = Session::new(stream);
             server_rpc.set_max_wait_time(identity_timeout);
+            server_rpc.set_max_message_size(identity_max_message_size)<span class="question-mark">?</span>;
             <span class="kw">let </span>service_id = V3OnionServiceId::from_private_key(identity_private_key);
             <span class="kw">let </span>identity_server = IdentityServer::new(server_rpc, service_id);
 
@@ -1401,7 +1413,7 @@
 
         <span class="comment">// first handle new identity connections
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(identity_listener) = <span class="kw-2">&amp;</span><span class="self">self</span>.identity_listener {
-            <span class="kw">match </span><span class="self">Self</span>::identity_server_handle_accept(identity_listener, <span class="self">self</span>.identity_timeout, <span class="kw-2">&amp;</span><span class="self">self</span>.identity_private_key)
+            <span class="kw">match </span><span class="self">Self</span>::identity_server_handle_accept(identity_listener, <span class="self">self</span>.identity_timeout, <span class="self">self</span>.identity_max_message_size, <span class="kw-2">&amp;</span><span class="self">self</span>.identity_private_key)
             {
                 <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(identity_server)) =&gt; {
                     <span class="kw">let </span>handle = <span class="self">self</span>.next_handshake_handle;
