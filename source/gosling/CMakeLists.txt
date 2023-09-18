@@ -27,7 +27,7 @@ add_subdirectory(crates)
 #
 add_custom_command(
     OUTPUT ${CARGO_TARGET_DIR}/tarpaulin/tarpaulin-report.html
-    COMMAND CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo tarpaulin --out Html --output-dir ${CARGO_TARGET_DIR}/tarpaulin --timeout 600
+    COMMAND CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo tarpaulin --out html --output-dir ${CARGO_TARGET_DIR}/tarpaulin --timeout 600
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_custom_target(gosling_cargo_tarpaulin
@@ -44,7 +44,7 @@ install(FILES ${CARGO_TARGET_DIR}/tarpaulin/tarpaulin-report.html
 #
 add_custom_command(
     OUTPUT ${CARGO_TARGET_DIR}/tarpaulin-offline/tarpaulin-report.html
-    COMMAND CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo tarpaulin --out Html --output-dir ${CARGO_TARGET_DIR}/tarpaulin-offline --features tor-interface/offline-test gosling/offline-test
+    COMMAND CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo tarpaulin --out html --output-dir ${CARGO_TARGET_DIR}/tarpaulin-offline --features tor-interface/offline-test gosling/offline-test
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_custom_target(gosling_cargo_tarpaulin_offline
