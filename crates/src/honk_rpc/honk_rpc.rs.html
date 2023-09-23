@@ -1789,12 +1789,11 @@
 <span class="kw">where
     </span>RW: std::io::Read + std::io::Write + Send,
 {
-    <span class="kw">pub fn </span>set_max_message_size(<span class="kw-2">&amp;mut </span><span class="self">self</span>, max_message_size: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
-        <span class="kw">if </span>max_message_size &lt; std::mem::size_of::&lt;i32&gt;() + <span class="number">1 </span>|| <span class="comment">// size of an empty bson document
-           </span>max_message_size &gt; i32::MAX <span class="kw">as </span>usize {
-            <span class="prelude-val">Err</span>(Error::InvalidMaxMesageSize())
+    <span class="kw">pub fn </span>set_max_message_size(<span class="kw-2">&amp;mut </span><span class="self">self</span>, max_message_size: i32) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
+        <span class="kw">if </span>max_message_size &lt; std::mem::size_of::&lt;i32&gt;() <span class="kw">as </span>i32 + <span class="number">1i32 </span>{ <span class="comment">// size of an empty bson document
+            </span><span class="prelude-val">Err</span>(Error::InvalidMaxMesageSize())
         } <span class="kw">else </span>{
-            <span class="self">self</span>.max_message_size = max_message_size;
+            <span class="self">self</span>.max_message_size = max_message_size <span class="kw">as </span>usize;
             <span class="prelude-val">Ok</span>(())
         }
     }
@@ -1890,16 +1889,17 @@
                             </span><span class="kw">if </span>size &lt;= std::mem::size_of::&lt;i32&gt;() <span class="kw">as </span>i32 {
                                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::BsonDocumentSizeTooSmall(size));
                             }
-                            <span class="comment">// deduct size of i32 header and save
-                            </span><span class="kw">let </span>size = (size - std::mem::size_of::&lt;i32&gt;() <span class="kw">as </span>i32) <span class="kw">as </span>usize;
-
-                            <span class="comment">// ensure size is less than maximum allowed
-                            </span><span class="kw">if </span>size &gt; <span class="self">self</span>.max_message_size {
+                            <span class="comment">// convert to usize type now that we know it&#39;s not negative
+                            </span><span class="kw">if </span>size <span class="kw">as </span>usize &gt; <span class="self">self</span>.max_message_size {
                                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::BsonDocumentSizeTooLarge(
                                     size <span class="kw">as </span>i32,
                                     <span class="self">self</span>.max_message_size <span class="kw">as </span>i32,
                                 ));
                             }
+
+                            <span class="comment">// deduct size of i32 header and save
+                            </span><span class="kw">let </span>size = size <span class="kw">as </span>usize - std::mem::size_of::&lt;i32&gt;();
+
                             <span class="self">self</span>.remaining_byte_count = <span class="prelude-val">Some</span>(size);
                         }
                         <span class="prelude-val">Ok</span>(())
@@ -2039,7 +2039,7 @@
             .to_writer(<span class="kw-2">&amp;mut </span><span class="self">self</span>.message_serialization_buffer)
             .map_err(Error::MessageWriteFailed)<span class="question-mark">?</span>;
 
-        <span class="kw">if </span><span class="self">self</span>.message_serialization_buffer.len() &gt; DEFAULT_MAX_MESSAGE_SIZE {
+        <span class="kw">if </span><span class="self">self</span>.message_serialization_buffer.len() &gt; <span class="self">self</span>.max_message_size {
             <span class="comment">// if we can&#39;t split a message anymore then we have a problem
             </span><span class="kw">let </span>sections = message.get_array_mut(<span class="string">&quot;sections&quot;</span>).unwrap();
             <span class="macro">assert!</span>(sections.len() &gt; <span class="number">1</span>);

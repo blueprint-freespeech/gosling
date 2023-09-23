@@ -876,7 +876,7 @@
     identity_port: u16,
     endpoint_port: u16,
     identity_timeout: Duration,
-    identity_max_message_size: usize,
+    identity_max_message_size: i32,
     endpoint_timeout: Duration,
 
     <span class="comment">//
@@ -1070,7 +1070,7 @@
         identity_port: u16,
         endpoint_port: u16,
         identity_timeout: Duration,
-        identity_max_message_size: usize,
+        identity_max_message_size: i32,
         endpoint_timeout: <span class="prelude-ty">Option</span>&lt;Duration&gt;,
         identity_private_key: Ed25519PrivateKey,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, Error&gt; {
@@ -1360,7 +1360,7 @@
     <span class="kw">fn </span>identity_server_handle_accept(
         identity_listener: <span class="kw-2">&amp;</span>OnionListener,
         identity_timeout: Duration,
-        identity_max_message_size: usize,
+        identity_max_message_size: i32,
         identity_private_key: <span class="kw-2">&amp;</span>Ed25519PrivateKey,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;IdentityServer&gt;, Error&gt; {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(stream) = identity_listener.accept()<span class="question-mark">? </span>{
