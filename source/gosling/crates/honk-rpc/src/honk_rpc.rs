@@ -548,12 +548,11 @@ impl<RW> Session<RW>
 where
     RW: std::io::Read + std::io::Write + Send,
 {
-    pub fn set_max_message_size(&mut self, max_message_size: usize) -> Result<(), Error> {
-        if max_message_size < std::mem::size_of::<i32>() + 1 || // size of an empty bson document
-           max_message_size > i32::MAX as usize {
+    pub fn set_max_message_size(&mut self, max_message_size: i32) -> Result<(), Error> {
+        if max_message_size < std::mem::size_of::<i32>() as i32 + 1i32 { // size of an empty bson document
             Err(Error::InvalidMaxMesageSize())
         } else {
-            self.max_message_size = max_message_size;
+            self.max_message_size = max_message_size as usize;
             Ok(())
         }
     }
@@ -649,16 +648,17 @@ where
                             if size <= std::mem::size_of::<i32>() as i32 {
                                 return Err(Error::BsonDocumentSizeTooSmall(size));
                             }
-                            // deduct size of i32 header and save
-                            let size = (size - std::mem::size_of::<i32>() as i32) as usize;
-
-                            // ensure size is less than maximum allowed
-                            if size > self.max_message_size {
+                            // convert to usize type now that we know it's not negative
+                            if size as usize > self.max_message_size {
                                 return Err(Error::BsonDocumentSizeTooLarge(
                                     size as i32,
                                     self.max_message_size as i32,
                                 ));
                             }
+
+                            // deduct size of i32 header and save
+                            let size = size as usize - std::mem::size_of::<i32>();
+
                             self.remaining_byte_count = Some(size);
                         }
                         Ok(())
@@ -798,7 +798,7 @@ where
             .to_writer(&mut self.message_serialization_buffer)
             .map_err(Error::MessageWriteFailed)?;
 
-        if self.message_serialization_buffer.len() > DEFAULT_MAX_MESSAGE_SIZE {
+        if self.message_serialization_buffer.len() > self.max_message_size {
             // if we can't split a message anymore then we have a problem
             let sections = message.get_array_mut("sections").unwrap();
             assert!(sections.len() > 1);

@@ -31,7 +31,7 @@ pub struct Context {
     identity_port: u16,
     endpoint_port: u16,
     identity_timeout: Duration,
-    identity_max_message_size: usize,
+    identity_max_message_size: i32,
     endpoint_timeout: Duration,
 
     //
@@ -225,7 +225,7 @@ impl Context {
         identity_port: u16,
         endpoint_port: u16,
         identity_timeout: Duration,
-        identity_max_message_size: usize,
+        identity_max_message_size: i32,
         endpoint_timeout: Option<Duration>,
         identity_private_key: Ed25519PrivateKey,
     ) -> Result<Self, Error> {
@@ -515,7 +515,7 @@ impl Context {
     fn identity_server_handle_accept(
         identity_listener: &OnionListener,
         identity_timeout: Duration,
-        identity_max_message_size: usize,
+        identity_max_message_size: i32,
         identity_private_key: &Ed25519PrivateKey,
     ) -> Result<Option<IdentityServer>, Error> {
         if let Some(stream) = identity_listener.accept()? {
