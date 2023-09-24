@@ -149,56 +149,6 @@ document response_section {
 }
 ```
 
-## Built-in Functions
-
-Honk RPC defines its own `honk_rpc` namespace for the following built-in functions. The version for each function is `0` unless otherwise stated.
-
-```c++
-namespace honk_rpc {
-    // Gets the maximum size message the receiver will accept. This value is a
-    // signed integer because BSON document sizes are limited to 32-bit signed
-    // integer representation.
-    //
-    // returns: Largest message receiver will accept in bytes; a value
-    // of 0 indicates no maximum size
-    get_maximum_message_size() -> int32_t;
-
-    // Try and set the maximum message size
-    //
-    // params:
-    // - int32_t size: proposed maximum number of bytes a sent message can be;
-    //   a value of 0 indicates no maximum size; negative values are an error
-    //
-    // returns: largest message receiver will accept in bytes
-    try_set_maximum_message_size(int32_t size) -> int32_t;
-
-    // Gets the amount of time in milliseconds the receiver is willing
-    // to wait between function calls before closing the connection
-    //
-    // returns: timeout period in milliseconds; a value of 0 indicates no
-    // timeout
-    get_timeout_period() -> int32_t;
-
-    // Try and set the maximum amount of time the receiver is willing
-    // to wait between function calls  before closing the connection;
-    //
-    // params:
-    // - int32_t period: the number of milliseconds to wait before closing
-    //   the underlying a transport; a value of 0 indicates no timeout;
-    //   negative values are an error
-    //
-    // returns: timeout period in milliseconds; a value of 0 indicates no
-    // timeout
-    try_set_timeout_period(int32_t period) -> int32_t;
-
-    // A no-op function which solely resets the receivers wait timer
-    //
-    // returns: the number of milliseconds since the last time the
-    // the connection's wait timer was reset
-    keep_alive() -> int32_t;
-}
-```
-
 ## Acknowledgements
 
 Creation of innovative free software needs support. We thank the NGI Assure Fund, a fund established by NLnet with financial support from the European Commission's Next Generation Internet programme, under the aegis of DG Communications Networks, Content and Technology under grant agreement No 957073
