@@ -65,7 +65,7 @@ typedef enum class error_code : int32_t {
     section_parse_failed         = -6,
 
     // provided request cookie is already in use
-    request_cookie_invalid       = -7
+    request_cookie_invalid       = -7,
     // provided request namespace does not exist
     request_namespace_invalid    = -8,
     // provided request function does not exist within the provided namespace
