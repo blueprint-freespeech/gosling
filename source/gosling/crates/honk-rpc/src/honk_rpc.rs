@@ -10,6 +10,8 @@ use std::option::Option;
 use bson::doc;
 use bson::document::ValueAccessError;
 
+use crate::byte_counter::ByteCounter;
+
 #[derive(Debug, Eq, PartialEq)]
 pub enum ErrorCode {
     // Protocol Errors
@@ -65,6 +67,9 @@ pub enum Error {
 
     #[error("tried to set invalid max message size; must be >=5 bytes and <= i32::MAX (2147483647)")]
     InvalidMaxMesageSize(),
+
+    #[error("queued message section is too large to write; calculated size is {0} but must be less than {1}")]
+    SectionTooLarge(usize, usize),
 }
 
 impl From<i32> for ErrorCode {
@@ -505,6 +510,20 @@ pub enum Response {
 pub const DEFAULT_MAX_MESSAGE_SIZE: usize = 4 * 1024;
 pub const DEFAULT_MAX_WAIT_TIME: std::time::Duration = std::time::Duration::from_secs(60);
 
+
+// Base Message Bson Format
+// document size             4 (sizeof i32 )
+const HEADER_SIZE: usize = 4usize;
+// "honk_rpc" : i32          1 (0x10) + 8 (strlen "honk_rpc") + 1 (null) + 4 (sizeof i32)
+const HONK_RPC_SIZE: usize = 14usize;
+// "sections" : {"0": Null}  1 (0x04) + 8 (strlen "sections") + 1 (null) + 4 (sizeof i32) + 1 (0x0a) + 1 (strlen "0") + 1 (null) + 1 (0x00)
+const SECTIONS_SIZE: usize = 18usize;
+// footer                    1 (0x00)
+const FOOTER_SIZE: usize = 1usize;
+
+// The honk-rpc message overhead before the content of a single section is added
+const MIN_MESSAGE_SIZE: usize = HEADER_SIZE + HONK_RPC_SIZE + SECTIONS_SIZE + FOOTER_SIZE;
+
 pub struct Session<RW> {
     // read-write stream
     stream: RW,
@@ -532,7 +551,7 @@ pub struct Session<RW> {
     // the next request cookie to use when making a remote prodedure call
     next_cookie: RequestCookie,
     // sections to be sent to the remote server
-    outbound_sections: Vec<Section>,
+    outbound_sections: Vec<bson::Document>,
 
     // the maximum size of a message we've agreed to allow in the session
     max_message_size: usize,
@@ -549,7 +568,7 @@ where
     RW: std::io::Read + std::io::Write + Send,
 {
     pub fn set_max_message_size(&mut self, max_message_size: i32) -> Result<(), Error> {
-        if max_message_size < std::mem::size_of::<i32>() as i32 + 1i32 { // size of an empty bson document
+        if max_message_size < MIN_MESSAGE_SIZE as i32 { // base size of a honk-rpc mssage
             Err(Error::InvalidMaxMesageSize())
         } else {
             self.max_message_size = max_message_size as usize;
@@ -774,8 +793,19 @@ where
     }
 
     fn push_outbound_section(&mut self, section: Section) -> Result<(), Error> {
-        self.outbound_sections.push(section);
-        Ok(())
+        let max_section_size = self.max_message_size - MIN_MESSAGE_SIZE;
+
+        let mut counter: ByteCounter = Default::default();
+        let section: bson::Document = section.into();
+        section.to_writer(&mut counter).map_err(Error::MessageWriteFailed)?;
+        let section_size = counter.bytes();
+
+        if section_size <= max_section_size {
+            self.outbound_sections.push(section);
+            Ok(())
+        } else {
+            Err(Error::SectionTooLarge(section_size, max_section_size))
+        }
     }
 
     // package outbound sections into a message, and serialize message to the message_write_buffer
@@ -788,9 +818,10 @@ where
         // build message and convert to bson to send
         let message = Message {
             honk_rpc: HONK_RPC_VERSION,
-            sections: std::mem::take(&mut self.outbound_sections),
+            sections: Default::default(),
         };
-        let message = bson::document::Document::from(message);
+        let mut message = bson::document::Document::from(message);
+        message.insert("sections", std::mem::take(&mut self.outbound_sections));
         self.serialize_messages_impl(message)
     }
 
@@ -1060,12 +1091,12 @@ fn test_honk_client_read_write() -> anyhow::Result<()> {
 
     const CUSTOM_ERROR: &str = "Custom Error!";
 
-    pat.outbound_sections.push(Section::Error(ErrorSection {
+    pat.push_outbound_section(Section::Error(ErrorSection {
         cookie: Some(42069),
         code: ErrorCode::Runtime(1),
         message: Some(CUSTOM_ERROR.to_string()),
         data: None,
-    }));
+    }))?;
 
     pat.serialize_messages()?;
     pat.write_pending_data()?;
@@ -1099,26 +1130,25 @@ fn test_honk_client_read_write() -> anyhow::Result<()> {
 
     println!("--- alice sends multi-section message");
 
-    alice.outbound_sections.append(&mut vec![
-        Section::Error(ErrorSection {
+    alice.push_outbound_section(Section::Error(ErrorSection {
             cookie: Some(42069),
             code: ErrorCode::Runtime(2),
             message: Some(CUSTOM_ERROR.to_string()),
             data: None,
-        }),
-        Section::Request(RequestSection {
+        }))?;
+    alice.push_outbound_section(Section::Request(RequestSection {
             cookie: None,
             namespace: "std".to_string(),
             function: "print".to_string(),
             version: 0,
             arguments: doc! {"message": "hello!"},
-        }),
-        Section::Response(ResponseSection {
+        }))?;
+    alice.push_outbound_section(Section::Response(ResponseSection {
             cookie: 123456,
             state: RequestState::Pending,
             result: None,
-        }),
-    ]);
+        }))?;
+
     // send a multi-section mesage
     alice.serialize_messages()?;
     alice.write_pending_data()?;
