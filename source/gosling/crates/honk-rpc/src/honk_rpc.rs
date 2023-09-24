@@ -773,6 +773,11 @@ where
         Ok(())
     }
 
+    fn push_outbound_section(&mut self, section: Section) -> Result<(), Error> {
+        self.outbound_sections.push(section);
+        Ok(())
+    }
+
     // package outbound sections into a message, and serialize message to the message_write_buffer
     fn serialize_messages(&mut self) -> Result<(), Error> {
         // if no pending sections there is nothing to do
@@ -885,7 +890,8 @@ where
     // apisets : a slice of mutable ApiSet references sorted by their namespaces
     fn handle_requests(&mut self, apisets: &mut [&mut dyn ApiSet]) -> Result<(), Error> {
         // first handle all of our inbound requests
-        for mut request in self.inbound_requests.drain(..) {
+        let mut inbound_requests = std::mem::take(&mut self.inbound_requests);
+        for mut request in inbound_requests.drain(..) {
             if let Ok(idx) =
                 apisets.binary_search_by(|probe| probe.namespace().cmp(&request.namespace))
             {
@@ -902,43 +908,45 @@ where
                     // func found, called, and returned immediately
                     Ok(Some(result)) => {
                         if let Some(cookie) = request.cookie {
-                            self.outbound_sections
-                                .push(Section::Response(ResponseSection {
+                            self.push_outbound_section(
+                                Section::Response(ResponseSection {
                                     cookie,
                                     state: RequestState::Complete,
                                     result: Some(result),
-                                }));
+                                }))?;
                         }
                     }
                     // func found, called, and result is pending
                     Ok(None) => {
                         if let Some(cookie) = request.cookie {
-                            self.outbound_sections
-                                .push(Section::Response(ResponseSection {
+                            self.push_outbound_section(
+                                Section::Response(ResponseSection {
                                     cookie,
                                     state: RequestState::Pending,
                                     result: None,
-                                }));
+                                }))?;
                         }
                     }
                     // some error
                     Err(error_code) => {
-                        self.outbound_sections.push(Section::Error(ErrorSection {
-                            cookie: request.cookie,
-                            code: error_code,
-                            message: None,
-                            data: None,
-                        }));
+                        self.push_outbound_section(
+                            Section::Error(ErrorSection {
+                                cookie: request.cookie,
+                                code: error_code,
+                                message: None,
+                                data: None,
+                            }))?;
                     }
                 }
             } else {
                 // invalid namespace
-                self.outbound_sections.push(Section::Error(ErrorSection {
-                    cookie: request.cookie,
-                    code: ErrorCode::RequestNamespaceInvalid,
-                    message: None,
-                    data: None,
-                }));
+                self.push_outbound_section
+                    (Section::Error(ErrorSection {
+                        cookie: request.cookie,
+                        code: ErrorCode::RequestNamespaceInvalid,
+                        message: None,
+                        data: None,
+                    }))?;
             }
         }
 
@@ -950,23 +958,24 @@ where
             while let Some((cookie, result, error_code)) = apiset.next_result() {
                 match (cookie, result, error_code) {
                     (cookie, Some(result), ErrorCode::Success) => {
-                        self.outbound_sections
-                            .push(Section::Response(ResponseSection {
+                        self.push_outbound_section(
+                            Section::Response(ResponseSection {
                                 cookie,
                                 state: RequestState::Complete,
                                 result: Some(result),
-                            }));
+                            }))?;
                     }
                     (cookie, result, error_code) => {
                         if let Some(result) = result {
                             println!("Server::update(): ApiSet next_result() returned both result and an ErrorCode {{ result : '{}', error : {} }}", result, error_code);
                         }
-                        self.outbound_sections.push(Section::Error(ErrorSection {
-                            cookie: Some(cookie),
-                            code: error_code,
-                            message: None,
-                            data: None,
-                        }));
+                        self.push_outbound_section
+                            (Section::Error(ErrorSection {
+                                cookie: Some(cookie),
+                                code: error_code,
+                                message: None,
+                                data: None,
+                            }))?;
                     }
                 }
             }
@@ -987,14 +996,14 @@ where
         self.next_cookie += 1;
 
         // add request to outgoing buffer
-        self.outbound_sections
-            .push(Section::Request(RequestSection {
+        self.push_outbound_section(
+            Section::Request(RequestSection {
                 cookie: Some(cookie),
                 namespace: namespace.to_string(),
                 function: function.to_string(),
                 version,
                 arguments,
-            }));
+            }))?;
 
         Ok(cookie)
     }
