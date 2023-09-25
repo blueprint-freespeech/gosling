@@ -664,8 +664,16 @@ where
         }
     }
 
+    pub fn get_max_message_size(&self) -> usize {
+        self.max_message_size
+    }
+
     pub fn set_max_wait_time(&mut self, max_wait_time: std::time::Duration) -> () {
         self.max_wait_time = max_wait_time;
+    }
+
+    pub fn get_max_wait_time(&self) -> std::time::Duration {
+        self.max_wait_time
     }
 
     pub fn new(stream: RW) -> Self {
