@@ -674,6 +674,25 @@
 <a href="#674" id="674">674</a>
 <a href="#675" id="675">675</a>
 <a href="#676" id="676">676</a>
+<a href="#677" id="677">677</a>
+<a href="#678" id="678">678</a>
+<a href="#679" id="679">679</a>
+<a href="#680" id="680">680</a>
+<a href="#681" id="681">681</a>
+<a href="#682" id="682">682</a>
+<a href="#683" id="683">683</a>
+<a href="#684" id="684">684</a>
+<a href="#685" id="685">685</a>
+<a href="#686" id="686">686</a>
+<a href="#687" id="687">687</a>
+<a href="#688" id="688">688</a>
+<a href="#689" id="689">689</a>
+<a href="#690" id="690">690</a>
+<a href="#691" id="691">691</a>
+<a href="#692" id="692">692</a>
+<a href="#693" id="693">693</a>
+<a href="#694" id="694">694</a>
+<a href="#695" id="695">695</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::clone::Clone;
 <span class="kw">use </span>std::convert::TryInto;
@@ -683,7 +702,7 @@
 </span><span class="kw">use </span>bson::doc;
 <span class="kw">use </span>bson::spec::BinarySubtype;
 <span class="kw">use </span>bson::{Binary, Bson};
-<span class="kw">use </span>honk_rpc::honk_rpc::{ApiSet, ErrorCode, RequestCookie, Session};
+<span class="kw">use </span>honk_rpc::honk_rpc::{ApiSet, ErrorCode, RequestCookie, Session, get_message_overhead, get_response_section_size, };
 <span class="kw">use </span>rand::rngs::OsRng;
 <span class="kw">use </span>rand::RngCore;
 <span class="kw">use </span>tor_interface::tor_crypto::<span class="kw-2">*</span>;
@@ -709,6 +728,9 @@
 
     <span class="attr">#[error(<span class="string">&quot;client sent invalid request&quot;</span>)]
     </span>BadClient,
+
+    <span class="attr">#[error(<span class="string">&quot;provided endpoint challenge too large; encoded size would be {0} but session&#39;s maximum honk-rpc message size is {1}&quot;</span>)]
+    </span>EndpointChallengeTooLarge(usize, usize),
 }
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">enum </span>IdentityServerEvent {
@@ -960,6 +982,7 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
         <span class="kw">match </span>(
             <span class="kw-2">&amp;</span><span class="self">self</span>.state,
+            <span class="self">self</span>.rpc.as_ref(),
             <span class="self">self</span>.begin_handshake_request_cookie,
             <span class="self">self</span>.client_identity.as_ref(),
             <span class="self">self</span>.requested_endpoint.as_ref(),
@@ -971,6 +994,7 @@
         ) {
             (
                 <span class="kw-2">&amp;</span>IdentityServerState::GettingChallenge,
+                <span class="prelude-val">Some</span>(rpc),
                 <span class="prelude-val">Some</span>(_begin_handshake_request_cookie),
                 <span class="prelude-val">Some</span>(_client_identity),
                 <span class="prelude-val">Some</span>(_endpoint_name),
@@ -982,12 +1006,26 @@
             </span>) =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>server_cookie: ServerCookie = Default::default();
                 OsRng.fill_bytes(<span class="kw-2">&amp;mut </span>server_cookie);
-                <span class="self">self</span>.server_cookie = <span class="prelude-val">Some</span>(server_cookie);
-                <span class="self">self</span>.endpoint_challenge = <span class="prelude-val">Some</span>(endpoint_challenge);
-                <span class="self">self</span>.client_allowed = client_allowed;
-                <span class="self">self</span>.client_requested_endpoint_valid = endpoint_valid;
-                <span class="self">self</span>.state = IdentityServerState::ChallengeReady;
-                <span class="prelude-val">Ok</span>(())
+
+                <span class="comment">// calculate required size of response message and ensure if fits our
+                // specified message size budget
+                </span><span class="kw">let </span>result = <span class="macro">doc!</span>{
+                    <span class="string">&quot;server_cookie&quot; </span>: Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: server_cookie.to_vec()}),
+                    <span class="string">&quot;endpoint_challenge&quot; </span>: endpoint_challenge.clone(),
+                };
+                <span class="kw">let </span>response_section_size = get_response_section_size(<span class="prelude-val">Some</span>(Bson::Document(result)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>message_size = get_message_overhead()<span class="question-mark">? </span>+ response_section_size;
+                <span class="kw">let </span>max_message_size = rpc.get_max_message_size();
+                <span class="kw">if </span>message_size &gt; max_message_size {
+                    <span class="prelude-val">Err</span>(Error::EndpointChallengeTooLarge(message_size, max_message_size))
+                } <span class="kw">else </span>{
+                    <span class="self">self</span>.server_cookie = <span class="prelude-val">Some</span>(server_cookie);
+                    <span class="self">self</span>.endpoint_challenge = <span class="prelude-val">Some</span>(endpoint_challenge);
+                    <span class="self">self</span>.client_allowed = client_allowed;
+                    <span class="self">self</span>.client_requested_endpoint_valid = endpoint_valid;
+                    <span class="self">self</span>.state = IdentityServerState::ChallengeReady;
+                    <span class="prelude-val">Ok</span>(())
+                }
             }
             <span class="kw">_ </span>=&gt; {
                 <span class="prelude-val">Err</span>(Error::IncorrectUsage(<span class="string">&quot;handle_endpoint_request_received() may only be called after EndpointRequestReceived has been returned from update(), and it may only be called once&quot;</span>.to_string()))
