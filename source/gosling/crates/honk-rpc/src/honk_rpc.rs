@@ -524,6 +524,94 @@ const FOOTER_SIZE: usize = 1usize;
 // The honk-rpc message overhead before the content of a single section is added
 const MIN_MESSAGE_SIZE: usize = HEADER_SIZE + HONK_RPC_SIZE + SECTIONS_SIZE + FOOTER_SIZE;
 
+// returns the number of bytes needed to encode a message with one section, not
+// counting the size of that section
+pub fn get_message_overhead() -> Result<usize, Error> {
+    // construct an example empty message; the size of a real message with
+    // one section can be calculated as the sizeof(message) + sizeof(section)
+    let message = doc!{
+        "honk_rpc" : HONK_RPC_VERSION,
+        "sections" : [
+            bson::Bson::Null
+        ]
+    };
+
+    let mut counter: ByteCounter = Default::default();
+    message.to_writer(&mut counter).map_err(Error::MessageWriteFailed)?;
+
+    Ok(counter.bytes())
+}
+
+pub fn get_error_section_size(cookie: Option<RequestCookie>, message: Option<String>, data: Option<bson::Bson>) -> Result<usize, Error> {
+
+    let mut error_section = doc!{
+        "id": ERROR_SECTION_ID,
+        "code": Into::<i32>::into(ErrorCode::Success),
+    };
+
+    if let Some(cookie) = cookie {
+        error_section.insert("cookie", bson::Bson::Int64(cookie));
+    }
+
+    if let Some(message) = message {
+        error_section.insert("message", bson::Bson::String(message));
+    }
+
+    if let Some(data) = data {
+        error_section.insert("data", data);
+    }
+
+    let mut counter: ByteCounter = Default::default();
+    error_section.to_writer(&mut counter).map_err(Error::MessageWriteFailed)?;
+
+    Ok(counter.bytes())
+}
+
+pub fn get_request_section_size(cookie: Option<RequestCookie>, namespace: Option<String>, function: String, version: Option<i32>, arguments: Option<bson::Document>) -> Result<usize, Error> {
+    let mut request_section = doc!{
+        "id": REQUEST_SECTION_ID,
+        "function": bson::Bson::String(function),
+    };
+
+    if let Some(cookie) = cookie {
+        request_section.insert("cookie", bson::Bson::Int64(cookie));
+    }
+
+    if let Some(namespace) = namespace {
+        request_section.insert("namespace", bson::Bson::String(namespace));
+    }
+
+    if let Some(version) = version {
+        request_section.insert("version", bson::Bson::Int32(version));
+    }
+
+    if let Some(arguments) = arguments {
+        request_section.insert("arguments", arguments);
+    }
+
+    let mut counter: ByteCounter = Default::default();
+    request_section.to_writer(&mut counter).map_err(Error::MessageWriteFailed)?;
+
+    Ok(counter.bytes())
+}
+
+pub fn get_response_section_size(result: Option<bson::Bson>) -> Result<usize, Error> {
+    let mut response_section = doc!{
+        "id": RESPONSE_SECTION_ID,
+        "cookie": bson::Bson::Int64(0),
+        "state": bson::Bson::Int32(0),
+    };
+
+    if let Some(result) = result {
+        response_section.insert("result", result);
+    }
+
+    let mut counter: ByteCounter = Default::default();
+    response_section.to_writer(&mut counter).map_err(Error::MessageWriteFailed)?;
+
+    Ok(counter.bytes())
+}
+
 pub struct Session<RW> {
     // read-write stream
     stream: RW,
