@@ -1,0 +1,31 @@
+[package]
+name = "gosling-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+bson = "2.2.0"
+data-encoding = "2.3.2"
+libfuzzer-sys = { version = "0.4.0", features = ["arbitrary-derive"] }
+tor-interface = { path = "../../tor-interface" }
+honk-rpc = { path = "../../honk-rpc" }
+
+[dependencies.gosling]
+path = ".."
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "fuzz_identity_server"
+path = "fuzz_targets/fuzz_identity_server.rs"
+test = false
+doc = false

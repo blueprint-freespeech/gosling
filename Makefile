@@ -127,3 +127,6 @@ fuzz-honk-rpc-session: config-release
 
 fuzz-tor-interface-crypto: config-release
 	@$(call fuzz,"tor_interface_cargo_fuzz_crypto","release/gosling/crates/tor-interface")
+
+fuzz-gosling-identity-server: config-release
+	@$(call fuzz,"gosling_cargo_fuzz_identity_server","release/gosling/crates/gosling")
