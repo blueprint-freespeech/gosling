@@ -7,7 +7,7 @@ use std::net::TcpStream;
 use bson::doc;
 use bson::spec::BinarySubtype;
 use bson::{Binary, Bson};
-use honk_rpc::honk_rpc::{ApiSet, ErrorCode, RequestCookie, Session};
+use honk_rpc::honk_rpc::{ApiSet, ErrorCode, RequestCookie, Session, get_message_overhead, get_response_section_size, };
 use rand::rngs::OsRng;
 use rand::RngCore;
 use tor_interface::tor_crypto::*;
@@ -33,6 +33,9 @@ pub enum Error {
 
     #[error("client sent invalid request")]
     BadClient,
+
+    #[error("provided endpoint challenge too large; encoded size would be {0} but session's maximum honk-rpc message size is {1}")]
+    EndpointChallengeTooLarge(usize, usize),
 }
 
 pub(crate) enum IdentityServerEvent {
@@ -284,6 +287,7 @@ impl IdentityServer {
     ) -> Result<(), Error> {
         match (
             &self.state,
+            self.rpc.as_ref(),
             self.begin_handshake_request_cookie,
             self.client_identity.as_ref(),
             self.requested_endpoint.as_ref(),
@@ -295,6 +299,7 @@ impl IdentityServer {
         ) {
             (
                 &IdentityServerState::GettingChallenge,
+                Some(rpc),
                 Some(_begin_handshake_request_cookie),
                 Some(_client_identity),
                 Some(_endpoint_name),
@@ -306,12 +311,26 @@ impl IdentityServer {
             ) => {
                 let mut server_cookie: ServerCookie = Default::default();
                 OsRng.fill_bytes(&mut server_cookie);
-                self.server_cookie = Some(server_cookie);
-                self.endpoint_challenge = Some(endpoint_challenge);
-                self.client_allowed = client_allowed;
-                self.client_requested_endpoint_valid = endpoint_valid;
-                self.state = IdentityServerState::ChallengeReady;
-                Ok(())
+
+                // calculate required size of response message and ensure if fits our
+                // specified message size budget
+                let result = doc!{
+                    "server_cookie" : Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: server_cookie.to_vec()}),
+                    "endpoint_challenge" : endpoint_challenge.clone(),
+                };
+                let response_section_size = get_response_section_size(Some(Bson::Document(result)))?;
+                let message_size = get_message_overhead()? + response_section_size;
+                let max_message_size = rpc.get_max_message_size();
+                if message_size > max_message_size {
+                    Err(Error::EndpointChallengeTooLarge(message_size, max_message_size))
+                } else {
+                    self.server_cookie = Some(server_cookie);
+                    self.endpoint_challenge = Some(endpoint_challenge);
+                    self.client_allowed = client_allowed;
+                    self.client_requested_endpoint_valid = endpoint_valid;
+                    self.state = IdentityServerState::ChallengeReady;
+                    Ok(())
+                }
             }
             _ => {
                 Err(Error::IncorrectUsage("handle_endpoint_request_received() may only be called after EndpointRequestReceived has been returned from update(), and it may only be called once".to_string()))
@@ -402,20 +421,22 @@ impl ApiSet for IdentityServer {
                 None, // challenge_response
                 None, // endpoint_private_key
             ) => {
+                let valid_version = match args.remove("version") {
+                    Some(Bson::String(value)) => value == GOSLING_VERSION,
+                    _ => false,
+                };
+                if !valid_version {
+                    self.state = IdentityServerState::HandshakeFailed;
+                    return Err(ErrorCode::Runtime(RpcError::BadVersion as i32));
+                }
+
                 if let (
-                    Some(Bson::String(version)),
                     Some(Bson::String(client_identity)),
                     Some(Bson::String(endpoint_name)),
                 ) = (
-                    args.remove("version"),
                     args.remove("client_identity"),
                     args.remove("endpoint"),
                 ) {
-                    // gosling version
-                    if version != GOSLING_VERSION {
-                        self.state = IdentityServerState::HandshakeFailed;
-                        return Err(ErrorCode::Runtime(RpcError::BadVersion as i32));
-                    }
 
                     // client_identiity
                     let client_identity = match V3OnionServiceId::from_string(&client_identity) {

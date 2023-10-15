@@ -269,18 +269,22 @@ impl ApiSet for EndpointServer {
             None, // requested_channel
             None) // server_cookie
             => {
-                if let (Some(Bson::String(version)),
-                        Some(Bson::String(client_identity)),
-                        Some(Bson::String(channel_name))) =
-                       (args.remove("version"),
-                        args.remove("client_identity"),
-                        args.remove("channel")) {
-                    // gosling version
-                    if version != GOSLING_VERSION {
-                        self.state = EndpointServerState::HandshakeFailed;
-                        return Err(ErrorCode::Runtime(RpcError::BadVersion as i32));
-                    }
+                let valid_version = match args.remove("version") {
+                    Some(Bson::String(value)) => value == GOSLING_VERSION,
+                    _ => false,
+                };
+                if !valid_version {
+                    self.state = EndpointServerState::HandshakeFailed;
+                    return Err(ErrorCode::Runtime(RpcError::BadVersion as i32));
+                }
 
+                if let (
+                    Some(Bson::String(client_identity)),
+                    Some(Bson::String(channel_name))
+                ) = (
+                    args.remove("client_identity"),
+                    args.remove("channel")
+                ) {
                     // client_identiity
                     self.client_identity = match V3OnionServiceId::from_string(&client_identity) {
                         Ok(client_identity) => Some(client_identity),
