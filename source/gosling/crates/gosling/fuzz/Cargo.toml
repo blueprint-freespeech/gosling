@@ -29,3 +29,9 @@ name = "fuzz_identity_server"
 path = "fuzz_targets/fuzz_identity_server.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "fuzz_identity_client"
+path = "fuzz_targets/fuzz_identity_client.rs"
+test = false
+doc = false

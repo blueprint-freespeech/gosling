@@ -177,7 +177,7 @@ impl<'a> Arbitrary<'a> for ArbitraryBSONDocument {
     }
 }
 
-// argument for
+// argument for a bson doc
 #[derive(Arbitrary, Debug)]
 pub(crate) enum Argument<T> {
     // no value

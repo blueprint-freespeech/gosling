@@ -1,21 +1,29 @@
+// extern
+use data_encoding::HEXLOWER;
+use tor_interface::tor_crypto::*;
+
+
 // honk-rpc constants
-const HONK_RPC: i32 = 1;
-const ERROR_SECTION: i32 = 0;
-const ERROR_CODE_BAD_VERSION: i32 = 0;
-const ERROR_CODE_REQUEST_COOKIE_REQUIRED: i32 = 1;
-const ERROR_CODE_INVALID_ARG: i32 = 2;
-const ERROR_CODE_FAILURE: i32 = 3;
-const REQUEST_SECTION: i32 = 1;
-const RESPONSE_SECTION: i32 = 2;
-const PENDING_REQUEST_STATE: i32 = 0;
-const COMPLETE_REQUEST_STATE: i32 = 1;
+pub(crate) const HONK_RPC: i32 = 1;
+pub(crate) const ERROR_SECTION: i32 = 0;
+pub(crate) const ERROR_CODE_BAD_VERSION: i32 = 0;
+pub(crate) const ERROR_CODE_REQUEST_COOKIE_REQUIRED: i32 = 1;
+pub(crate) const ERROR_CODE_INVALID_ARG: i32 = 2;
+pub(crate) const ERROR_CODE_FAILURE: i32 = 3;
+pub(crate) const REQUEST_SECTION: i32 = 1;
+pub(crate) const RESPONSE_SECTION: i32 = 2;
+pub(crate) const PENDING_REQUEST_STATE: i32 = 0;
+pub(crate) const COMPLETE_REQUEST_STATE: i32 = 1;
 
 // gosling constants
-const GOSLING_VERSION: &str = "0.1.0";
-const VALID_ENDPOINT: &str = "valid_endpoint";
-const IDENTITY_MAX_MESSAGE_SIZE: i32 = 1024;
-const COOKIE_SIZE: usize = 32usize;
-type Cookie = [u8; COOKIE_SIZE];
+pub(crate) const GOSLING_VERSION: &str = "0.1.0";
+pub(crate) const GOSLING_IDENTITY_NAMESPACE: &str = "gosling_identity";
+pub(crate) const GOSLING_IDENTITY_BEGIN_HANDSHAKE_FUNCTION: &str = "begin_handshake";
+pub(crate) const GOSLING_IDENTITY_SEND_RESPONSE_FUNCTION: &str = "send_response";
+pub(crate) const VALID_ENDPOINT: &str = "valid_endpoint";
+pub(crate) const IDENTITY_MAX_MESSAGE_SIZE: i32 = 1024;
+pub(crate) const COOKIE_SIZE: usize = 32usize;
+pub(crate) type Cookie = [u8; COOKIE_SIZE];
 
 
 pub(crate) fn build_client_proof(

@@ -130,3 +130,6 @@ fuzz-tor-interface-crypto: config-release
 
 fuzz-gosling-identity-server: config-release
 	@$(call fuzz,"gosling_cargo_fuzz_identity_server","release/gosling/crates/gosling")
+
+fuzz-gosling-identity-client: config-release
+	@$(call fuzz,"gosling_cargo_fuzz_identity_client","release/gosling/crates/gosling")
