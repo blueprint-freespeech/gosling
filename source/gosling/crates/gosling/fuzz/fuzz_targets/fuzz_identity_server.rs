@@ -120,8 +120,8 @@ const GOSLING_VERSION: &str = "0.1.0";
 const VALID_ENDPOINT: &str = "valid_endpoint";
 const IDENTITY_MAX_MESSAGE_SIZE: i32 = 1024;
 
-// two gosling instance, Alice and Chad
-// Alice is a valid server, Chad connects and sends garbage at certain point in the form of bad data in correctly structured+ordered gosling bison messages or noise
+// two gosling instance, Alice and Bob
+// Alice is a valid server, Bob connects and sends garbage at certain point in the form of bad data in correctly structured+ordered gosling bison messages or noise
 fuzz_target!(|data: HandshakeData| {
 
     //
