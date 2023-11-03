@@ -188,10 +188,18 @@ impl TryFrom<bson::document::Document> for Message {
         };
 
         if let Ok(sections) = value.get_array_mut("sections") {
+            // messages must have at least one section
+            if sections.is_empty() {
+                return Err(ErrorCode::MessageParseFailed);
+            }
+
             let mut message = Message {
                 honk_rpc,
                 sections: Default::default(),
             };
+
+
+
             for section in sections.iter_mut() {
                 if let bson::Bson::Document(section) = std::mem::take(section) {
                     message.sections.push(Section::try_from(section)?);

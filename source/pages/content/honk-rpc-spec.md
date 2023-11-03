@@ -20,6 +20,7 @@ document message {
     [[required]] int32_t honk_rpc;
     // an array of BSON documents, each document containing a message section
     // multiple sections can therefore be sent in a single message
+    // a HonkRPC message must have at least one section to be valid or else it is an error
     [[required]] document sections[];
 }
 ```
