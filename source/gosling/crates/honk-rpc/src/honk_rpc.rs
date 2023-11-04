@@ -847,11 +847,18 @@ where
                 }
                 Ok(None) => return Ok(()),
                 Err(err) => {
-                    // ensure no pending items to handle
-                    if self.pending_sections.is_empty() && self.inbound_responses.is_empty() {
-                        return Err(err);
+                    match err {
+                        // in the event of timeouts and IO errors we finish any remaining work
+                        Error::MessageReadTimedOut(_) | Error::ReaderReadFailed(_) => {
+                            // ensure no pending items to handle
+                            if self.pending_sections.is_empty() && self.inbound_responses.is_empty() {
+                                return Err(err);
+                            }
+                            return Ok(());
+                        },
+                        // all other errors we terminate
+                        _ => return Err(err),
                     }
-                    return Ok(());
                 }
             }
         }
