@@ -7,7 +7,7 @@ use std::net::TcpStream;
 use bson::doc;
 use bson::spec::BinarySubtype;
 use bson::{Binary, Bson};
-use honk_rpc::honk_rpc::{RequestCookie, Response, Session};
+use honk_rpc::honk_rpc::{RequestCookie, Response, Session, get_message_overhead, get_request_section_size};
 use rand::rngs::OsRng;
 use rand::RngCore;
 use tor_interface::tor_crypto::*;
@@ -36,6 +36,9 @@ pub enum Error {
 
     #[error("incorrect usage: {0}")]
     IncorrectUsage(String),
+
+    #[error("provided endpoint challenge response too large; encoded size would be {0} but session's maximum honk-rpc message size is {1}")]
+    EndpointChallengeResponseTooLarge(usize, usize),
 }
 
 pub(crate) enum IdentityClientEvent {
@@ -397,8 +400,25 @@ impl IdentityClient {
              None, // endpoint_challenge_response
              None  // end_response_request_cookie
             ) => {
-                self.endpoint_challenge_response = Some(challenge_response);
-                Ok(())
+                // calculate required size of request message and ensure it fits our
+                // specified message size budget
+                let arguments = doc!{
+                    "client_cookie" : Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: [0u8; CLIENT_COOKIE_SIZE].to_vec()}),
+                    "client_identity_proof_signature" : Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: [0u8; ED25519_SIGNATURE_SIZE].to_vec()}),
+                    "client_authorization_key" : Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: [0u8; X25519_PUBLIC_KEY_SIZE].to_vec()}),
+                    "client_authorization_key_signbit" : Bson::Boolean(false),
+                    "client_authorization_signature" : Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: [0u8; ED25519_SIGNATURE_SIZE].to_vec()}),
+                    "challenge_response" : challenge_response.clone(),
+                };
+                let request_section_size = get_request_section_size(Some(0i64), Some("gosling_identity".to_string()), "send_response".to_string(), Some(0i32), Some(arguments))?;
+                let message_size = get_message_overhead()? + request_section_size;
+                let max_message_size = self.rpc.get_max_message_size();
+                if message_size > max_message_size {
+                    Err(Error::EndpointChallengeResponseTooLarge(message_size, max_message_size))
+                } else {
+                    self.endpoint_challenge_response = Some(challenge_response);
+                    Ok(())
+                }
             }
             _ => Err(Error::IncorrectUsage("send_response() may only be called after ChallengeReceived event has been returned from update(), and it may only be called once".to_string()))
         }

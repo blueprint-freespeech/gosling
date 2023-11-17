@@ -7,7 +7,7 @@ use std::net::TcpStream;
 use bson::doc;
 use bson::spec::BinarySubtype;
 use bson::{Binary, Bson};
-use honk_rpc::honk_rpc::{ApiSet, ErrorCode, RequestCookie, Session, get_message_overhead, get_response_section_size, };
+use honk_rpc::honk_rpc::{ApiSet, ErrorCode, RequestCookie, Session, get_message_overhead, get_response_section_size};
 use rand::rngs::OsRng;
 use rand::RngCore;
 use tor_interface::tor_crypto::*;
