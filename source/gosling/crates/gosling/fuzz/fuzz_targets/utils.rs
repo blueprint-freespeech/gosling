@@ -21,7 +21,9 @@ pub(crate) const GOSLING_IDENTITY_NAMESPACE: &str = "gosling_identity";
 pub(crate) const GOSLING_IDENTITY_BEGIN_HANDSHAKE_FUNCTION: &str = "begin_handshake";
 pub(crate) const GOSLING_IDENTITY_SEND_RESPONSE_FUNCTION: &str = "send_response";
 pub(crate) const VALID_ENDPOINT: &str = "valid_endpoint";
+pub(crate) const VALID_CHANNEL: &str = "valid_channel";
 pub(crate) const IDENTITY_MAX_MESSAGE_SIZE: i32 = 1024;
+pub(crate) const ENDPOINT_MAX_MESSAGE_SIZE: i32 = 384;
 pub(crate) const COOKIE_SIZE: usize = 32usize;
 pub(crate) type Cookie = [u8; COOKIE_SIZE];
 

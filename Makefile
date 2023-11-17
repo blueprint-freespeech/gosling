@@ -133,3 +133,6 @@ fuzz-gosling-identity-server: config-release
 
 fuzz-gosling-identity-client: config-release
 	@$(call fuzz,"gosling_cargo_fuzz_identity_client","release/gosling/crates/gosling")
+
+fuzz-gosling-endpoint-server: config-release
+	@$(call fuzz,"gosling_cargo_fuzz_endpoint_server","release/gosling/crates/gosling")
