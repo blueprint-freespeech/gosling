@@ -45,3 +45,8 @@ add_custom_target(gosling_cargo_fuzz_endpoint_server
     COMMAND RUSTFLAGS=${RUSTFLAGS} CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUST_BACKTRACE=full cargo fuzz run fuzz_endpoint_server ${CARGO_FLAGS}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+add_custom_target(gosling_cargo_fuzz_endpoint_client
+    COMMAND RUSTFLAGS=${RUSTFLAGS} CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUST_BACKTRACE=full cargo fuzz run fuzz_endpoint_client ${CARGO_FLAGS}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)

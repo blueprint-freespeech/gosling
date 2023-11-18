@@ -41,3 +41,9 @@ name = "fuzz_endpoint_server"
 path = "fuzz_targets/fuzz_endpoint_server.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "fuzz_endpoint_client"
+path = "fuzz_targets/fuzz_endpoint_client.rs"
+test = false
+doc = false
