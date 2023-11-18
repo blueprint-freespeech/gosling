@@ -124,8 +124,15 @@ impl EndpointServer {
 
     pub fn update(&mut self) -> Result<Option<EndpointServerEvent>, Error> {
         if let Some(mut rpc) = std::mem::take(&mut self.rpc) {
-            rpc.update(Some(&mut [self])).unwrap();
-            self.rpc = Some(rpc);
+            match rpc.update(Some(&mut [self])) {
+                Ok(()) => {
+                    self.rpc = Some(rpc);
+                }
+                Err(err) => {
+                    self.rpc = Some(rpc);
+                    return Err(err.into());
+                }
+            }
         }
 
         match(&self.state,
