@@ -493,7 +493,7 @@ pub trait ApiSet {
         args: bson::document::Document,
         request_cookie: Option<RequestCookie>,
     ) -> Result<Option<bson::Bson>, ErrorCode>;
-    fn update(&mut self) -> () { }
+    fn update(&mut self) { }
     // TODO: add support for more error data per spec (string, debug)?
     fn next_result(&mut self) -> Option<(RequestCookie, Option<bson::Bson>, ErrorCode)> {
         None
@@ -676,7 +676,7 @@ where
         self.max_message_size
     }
 
-    pub fn set_max_wait_time(&mut self, max_wait_time: std::time::Duration) -> () {
+    pub fn set_max_wait_time(&mut self, max_wait_time: std::time::Duration) {
         self.max_wait_time = max_wait_time;
     }
 
@@ -708,7 +708,7 @@ where
         }
     }
 
-    pub fn into_stream(self: Self) -> RW {
+    pub fn into_stream(self) -> RW {
         self.stream
     }
 
@@ -774,7 +774,7 @@ where
                             // convert to usize type now that we know it's not negative
                             if size as usize > self.max_message_size {
                                 return Err(Error::BsonDocumentSizeTooLarge(
-                                    size as i32,
+                                    size,
                                     self.max_message_size as i32,
                                 ));
                             }
