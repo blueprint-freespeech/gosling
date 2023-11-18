@@ -467,6 +467,22 @@ impl Context {
         if !self.bootstrap_complete {
             return Err(Error::TorNotConnected());
         }
+
+        let endpoint_public_key = Ed25519PublicKey::from_private_key(&endpoint_private_key);
+        let endpoint_service_id = V3OnionServiceId::from_public_key(&endpoint_public_key);
+
+        if endpoint_service_id == self.identity_service_id {
+            return Err(Error::InvalidArgument(
+                "endpoint server must be different from identity server".to_string()
+            ));
+        }
+
+        if self.endpoint_listeners.contains_key(&endpoint_service_id) {
+            return Err(Error::IncorrectUsage(
+                "endpoint server already started".to_string(),
+            ));
+        }
+
         let endpoint_listener = self.tor_provider.listener(
             &endpoint_private_key,
             self.endpoint_port,
@@ -474,8 +490,6 @@ impl Context {
         )?;
         endpoint_listener.set_nonblocking(true)?;
 
-        let endpoint_public_key = Ed25519PublicKey::from_private_key(&endpoint_private_key);
-        let endpoint_service_id = V3OnionServiceId::from_public_key(&endpoint_public_key);
 
         self.endpoint_listeners.insert(
             endpoint_service_id,
