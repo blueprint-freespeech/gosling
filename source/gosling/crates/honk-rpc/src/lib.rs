@@ -1,2 +1,2 @@
-pub mod honk_rpc;
 mod byte_counter;
+pub mod honk_rpc;
