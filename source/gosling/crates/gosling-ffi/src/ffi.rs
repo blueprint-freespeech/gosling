@@ -1780,7 +1780,7 @@ fn handle_context_event(
                     // cleanup
                     get_v3_onion_service_id_registry().remove(client_service_id);
                     channel_supported
-                },
+                }
                 None => bail!("missing required endpoint_server_channel_supported() callback"),
             };
 
