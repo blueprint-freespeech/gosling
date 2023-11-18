@@ -321,10 +321,6 @@ fuzz_target!(|data: HandshakeData| {
                         expected_result = ExpectedHandleEndpointRequestReceiveResult::ErrorSectionTooLarge;
                     }
 
-                    // serialise out
-                    let mut send_endpoint_challenge_bytes: Vec<u8> = Default::default();
-                    data.endpoint_challenge.value.to_writer(&mut send_endpoint_challenge_bytes).unwrap();
-
                     match alice.identity_server_handle_endpoint_request_received(
                         alice_handshake_handle,
                         data.client_allowed,
