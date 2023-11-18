@@ -36,9 +36,7 @@ pub enum Error {
 }
 
 pub(crate) enum EndpointClientEvent {
-    HandshakeCompleted {
-        stream: TcpStream,
-    }
+    HandshakeCompleted { stream: TcpStream },
 }
 
 #[derive(Debug, PartialEq)]
@@ -168,16 +166,16 @@ impl EndpointClient {
                                 OsRng.fill_bytes(&mut client_cookie);
 
                                 // client_identity_proof_signature
-                                let server_cookie: ServerCookie = match server_cookie.clone().try_into()
-                                {
-                                    Ok(server_cookie) => server_cookie,
-                                    Err(_) => {
-                                        return Err(Error::UnexpectedResponseReceived(format!(
-                                            "unable to convert '{:?}' to server cookie",
-                                            server_cookie
-                                        )))
-                                    }
-                                };
+                                let server_cookie: ServerCookie =
+                                    match server_cookie.clone().try_into() {
+                                        Ok(server_cookie) => server_cookie,
+                                        Err(_) => {
+                                            return Err(Error::UnexpectedResponseReceived(format!(
+                                                "unable to convert '{:?}' to server cookie",
+                                                server_cookie
+                                            )))
+                                        }
+                                    };
                                 let client_identity_proof = build_client_proof(
                                     DomainSeparator::GoslingEndpoint,
                                     &self.requested_channel,
@@ -198,8 +196,7 @@ impl EndpointClient {
 
                                 // make rpc call
                                 self.send_response_request_cookie = Some(
-                                    rpc
-                                        .client_call("gosling_endpoint", "send_response", 0, args)
+                                    rpc.client_call("gosling_endpoint", "send_response", 0, args)
                                         .unwrap(),
                                 );
 
@@ -257,7 +254,9 @@ impl EndpointClient {
                             if result.is_empty() {
                                 self.state = EndpointClientState::HandshakeComplete;
                                 let stream = std::mem::take(&mut self.rpc).unwrap().into_stream();
-                                return Ok(Some(EndpointClientEvent::HandshakeCompleted{stream}));
+                                return Ok(Some(EndpointClientEvent::HandshakeCompleted {
+                                    stream,
+                                }));
                             } else {
                                 return Err(Error::UnexpectedResponseReceived(format!(
                                     "received unexpected data from send_response(): {:?}",

@@ -464,7 +464,7 @@ fn endpoint_test(
             match endpoint_server.update() {
                 Ok(Some(EndpointServerEvent::ChannelRequestReceived {
                     client_service_id: ret_client_service_id,
-                    requested_channel
+                    requested_channel,
                 })) => {
                     assert_eq!(ret_client_service_id, client_service_id);
                     assert!(requested_channel == channel);

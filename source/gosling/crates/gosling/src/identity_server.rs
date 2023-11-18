@@ -7,7 +7,9 @@ use std::net::TcpStream;
 use bson::doc;
 use bson::spec::BinarySubtype;
 use bson::{Binary, Bson};
-use honk_rpc::honk_rpc::{ApiSet, ErrorCode, RequestCookie, Session, get_message_overhead, get_response_section_size};
+use honk_rpc::honk_rpc::{
+    get_message_overhead, get_response_section_size, ApiSet, ErrorCode, RequestCookie, Session,
+};
 use rand::rngs::OsRng;
 use rand::RngCore;
 use tor_interface::tor_crypto::*;
@@ -430,14 +432,9 @@ impl ApiSet for IdentityServer {
                     return Err(ErrorCode::Runtime(RpcError::BadVersion as i32));
                 }
 
-                if let (
-                    Some(Bson::String(client_identity)),
-                    Some(Bson::String(endpoint_name)),
-                ) = (
-                    args.remove("client_identity"),
-                    args.remove("endpoint"),
-                ) {
-
+                if let (Some(Bson::String(client_identity)), Some(Bson::String(endpoint_name))) =
+                    (args.remove("client_identity"), args.remove("endpoint"))
+                {
                     // client_identiity
                     let client_identity = match V3OnionServiceId::from_string(&client_identity) {
                         Ok(client_identity) => client_identity,
@@ -545,7 +542,6 @@ impl ApiSet for IdentityServer {
                                 self.state = IdentityServerState::HandshakeFailed;
                                 return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
                             }
-
                         };
                     let client_authorization_key =
                         X25519PublicKey::from_raw(&client_authorization_key);
@@ -562,7 +558,6 @@ impl ApiSet for IdentityServer {
                                 self.state = IdentityServerState::HandshakeFailed;
                                 return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
                             }
-
                         };
                     let client_authorization_signature =
                         match Ed25519Signature::from_raw(&client_authorization_signature) {
@@ -577,7 +572,9 @@ impl ApiSet for IdentityServer {
                     self.send_response_request_cookie = Some(request_cookie);
 
                     // convert client_identity to client's public ed25519 key
-                    if let Ok(client_identity_key) = Ed25519PublicKey::from_service_id(client_identity) {
+                    if let Ok(client_identity_key) =
+                        Ed25519PublicKey::from_service_id(client_identity)
+                    {
                         // construct + verify client proof
                         let client_proof = build_client_proof(
                             DomainSeparator::GoslingIdentity,
@@ -587,16 +584,17 @@ impl ApiSet for IdentityServer {
                             &client_cookie,
                             server_cookie,
                         );
-                        self.client_proof_signature_valid =
-                            client_identity_proof_signature.verify(&client_proof, &client_identity_key);
+                        self.client_proof_signature_valid = client_identity_proof_signature
+                            .verify(&client_proof, &client_identity_key);
                     }
 
                     // evaluate the client authorization signature
-                    self.client_auth_signature_valid = client_authorization_signature.verify_x25519(
-                        client_identity.as_bytes(),
-                        &client_authorization_key,
-                        client_authorization_key_signbit,
-                    );
+                    self.client_auth_signature_valid = client_authorization_signature
+                        .verify_x25519(
+                            client_identity.as_bytes(),
+                            &client_authorization_key,
+                            client_authorization_key_signbit,
+                        );
 
                     // save off client auth key for future endpoint generation
                     self.client_auth_key = Some(client_authorization_key);

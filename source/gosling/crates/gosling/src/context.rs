@@ -242,7 +242,7 @@ impl Context {
             identity_timeout,
             endpoint_timeout: match endpoint_timeout {
                 Some(timeout) => timeout,
-                None => DEFAULT_ENDPOINT_TIMEOUT
+                None => DEFAULT_ENDPOINT_TIMEOUT,
             },
 
             next_handshake_handle: Default::default(),
@@ -476,7 +476,7 @@ impl Context {
 
         if endpoint_service_id == self.identity_service_id {
             return Err(Error::InvalidArgument(
-                "endpoint server must be different from identity server".to_string()
+                "endpoint server must be different from identity server".to_string(),
             ));
         }
 
@@ -492,7 +492,6 @@ impl Context {
             Some(&[client_auth]),
         )?;
         endpoint_listener.set_nonblocking(true)?;
-
 
         self.endpoint_listeners.insert(
             endpoint_service_id,
@@ -587,8 +586,12 @@ impl Context {
 
         // first handle new identity connections
         if let Some(identity_listener) = &self.identity_listener {
-            match Self::identity_server_handle_accept(identity_listener, self.identity_timeout, self.identity_max_message_size, &self.identity_private_key)
-            {
+            match Self::identity_server_handle_accept(
+                identity_listener,
+                self.identity_timeout,
+                self.identity_max_message_size,
+                &self.identity_private_key,
+            ) {
                 Ok(Some(identity_server)) => {
                     let handle = self.next_handshake_handle;
                     self.next_handshake_handle += 1;
@@ -614,8 +617,7 @@ impl Context {
                     Ok(Some(endpoint_server)) => {
                         let handle = self.next_handshake_handle;
                         self.next_handshake_handle += 1;
-                        self.endpoint_servers
-                            .insert(handle, endpoint_server);
+                        self.endpoint_servers.insert(handle, endpoint_server);
                         events.push_back(ContextEvent::EndpointServerHandshakeStarted { handle });
                         true
                     }
@@ -789,7 +791,7 @@ impl Context {
             .retain(|handle, endpoint_client| -> bool {
                 let handle = *handle;
                 match endpoint_client.update() {
-                    Ok(Some(EndpointClientEvent::HandshakeCompleted { stream } )) => {
+                    Ok(Some(EndpointClientEvent::HandshakeCompleted { stream })) => {
                         events.push_back(ContextEvent::EndpointClientHandshakeCompleted {
                             handle,
                             endpoint_service_id: endpoint_client.server_service_id.clone(),
@@ -814,7 +816,10 @@ impl Context {
             .retain(|handle, endpoint_server| -> bool {
                 let handle = *handle;
                 match endpoint_server.update() {
-                    Ok(Some(EndpointServerEvent::ChannelRequestReceived { requested_channel, client_service_id })) => {
+                    Ok(Some(EndpointServerEvent::ChannelRequestReceived {
+                        requested_channel,
+                        client_service_id,
+                    })) => {
                         events.push_back(ContextEvent::EndpointServerChannelRequestReceived {
                             handle,
                             client_service_id,
