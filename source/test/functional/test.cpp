@@ -172,8 +172,9 @@ static void create_server_endpoint_handshake(unique_ptr<gosling_context> &ctx) {
     REQUIRE(context != nullptr);
     REQUIRE(client_service_id != nullptr);
     cout << "--- channel_supported_callback: { context: " << context
-         << ", handshake_handle: " << handshake_handle << ", client_service_id: "
-        << client_service_id << ", channel_name: '" << channel_name << "' }" << endl;
+         << ", handshake_handle: " << handshake_handle
+         << ", client_service_id: " << client_service_id << ", channel_name: '"
+         << channel_name << "' }" << endl;
 
     if (string(channel_name, channel_name_length) == channelName) {
       return true;
