@@ -561,6 +561,10 @@
 <a href="#561" id="561">561</a>
 <a href="#562" id="562">562</a>
 <a href="#563" id="563">563</a>
+<a href="#564" id="564">564</a>
+<a href="#565" id="565">565</a>
+<a href="#566" id="566">566</a>
+<a href="#567" id="567">567</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="attr">#[cfg(test)]
 </span><span class="kw">use </span>std::net::{SocketAddr, TcpListener, TcpStream};
@@ -1025,7 +1029,11 @@
     <span class="kw">while </span>!server_complete &amp;&amp; !client_complete {
         <span class="kw">if </span>!server_complete {
             <span class="kw">match </span>endpoint_server.update() {
-                <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(EndpointServerEvent::ChannelRequestReceived { requested_channel })) =&gt; {
+                <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(EndpointServerEvent::ChannelRequestReceived {
+                    client_service_id: ret_client_service_id,
+                    requested_channel
+                })) =&gt; {
+                    <span class="macro">assert_eq!</span>(ret_client_service_id, client_service_id);
                     <span class="macro">assert!</span>(requested_channel == channel);
                     endpoint_server.handle_channel_request_received(channel_allowed)<span class="question-mark">?</span>;
                 }

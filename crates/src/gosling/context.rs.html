@@ -843,6 +843,26 @@
 <a href="#843" id="843">843</a>
 <a href="#844" id="844">844</a>
 <a href="#845" id="845">845</a>
+<a href="#846" id="846">846</a>
+<a href="#847" id="847">847</a>
+<a href="#848" id="848">848</a>
+<a href="#849" id="849">849</a>
+<a href="#850" id="850">850</a>
+<a href="#851" id="851">851</a>
+<a href="#852" id="852">852</a>
+<a href="#853" id="853">853</a>
+<a href="#854" id="854">854</a>
+<a href="#855" id="855">855</a>
+<a href="#856" id="856">856</a>
+<a href="#857" id="857">857</a>
+<a href="#858" id="858">858</a>
+<a href="#859" id="859">859</a>
+<a href="#860" id="860">860</a>
+<a href="#861" id="861">861</a>
+<a href="#862" id="862">862</a>
+<a href="#863" id="863">863</a>
+<a href="#864" id="864">864</a>
+<a href="#865" id="865">865</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::clone::Clone;
 <span class="kw">use </span>std::collections::{BTreeMap, HashMap, VecDeque};
@@ -866,6 +886,7 @@
 </span><span class="kw">pub type </span>HandshakeHandle = usize;
 <span class="kw">pub const </span>INVALID_HANDSHAKE_HANDLE: HandshakeHandle = !<span class="number">0usize</span>;
 <span class="kw">const </span>DEFAULT_ENDPOINT_TIMEOUT: Duration = Duration::from_secs(<span class="number">60</span>);
+<span class="kw">const </span>DEFAULT_ENDPOINT_MAX_MESSAGE_SIZE: i32 = <span class="number">384</span>;
 <span class="comment">//
 // The root Gosling Context object
 //
@@ -1037,6 +1058,7 @@
     // to continue the handshake, call Context::endpoint_server_handle_channel_request_received()
     </span>EndpointServerChannelRequestReceived {
         handle: HandshakeHandle,
+        client_service_id: V3OnionServiceId,
         requested_channel: String,
     },
 
@@ -1276,6 +1298,7 @@
 
         <span class="kw">let </span><span class="kw-2">mut </span>session = Session::new(stream);
         session.set_max_wait_time(<span class="self">self</span>.endpoint_timeout);
+        session.set_max_message_size(DEFAULT_ENDPOINT_MAX_MESSAGE_SIZE)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>endpoint_client = EndpointClient::new(
             session,
@@ -1312,6 +1335,22 @@
         <span class="kw">if </span>!<span class="self">self</span>.bootstrap_complete {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::TorNotConnected());
         }
+
+        <span class="kw">let </span>endpoint_public_key = Ed25519PublicKey::from_private_key(<span class="kw-2">&amp;</span>endpoint_private_key);
+        <span class="kw">let </span>endpoint_service_id = V3OnionServiceId::from_public_key(<span class="kw-2">&amp;</span>endpoint_public_key);
+
+        <span class="kw">if </span>endpoint_service_id == <span class="self">self</span>.identity_service_id {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidArgument(
+                <span class="string">&quot;endpoint server must be different from identity server&quot;</span>.to_string()
+            ));
+        }
+
+        <span class="kw">if </span><span class="self">self</span>.endpoint_listeners.contains_key(<span class="kw-2">&amp;</span>endpoint_service_id) {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::IncorrectUsage(
+                <span class="string">&quot;endpoint server already started&quot;</span>.to_string(),
+            ));
+        }
+
         <span class="kw">let </span>endpoint_listener = <span class="self">self</span>.tor_provider.listener(
             <span class="kw-2">&amp;</span>endpoint_private_key,
             <span class="self">self</span>.endpoint_port,
@@ -1319,8 +1358,6 @@
         )<span class="question-mark">?</span>;
         endpoint_listener.set_nonblocking(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>endpoint_public_key = Ed25519PublicKey::from_private_key(<span class="kw-2">&amp;</span>endpoint_private_key);
-        <span class="kw">let </span>endpoint_service_id = V3OnionServiceId::from_public_key(<span class="kw-2">&amp;</span>endpoint_public_key);
 
         <span class="self">self</span>.endpoint_listeners.insert(
             endpoint_service_id,
@@ -1395,6 +1432,8 @@
 
             <span class="kw">let </span><span class="kw-2">mut </span>server_rpc = Session::new(stream);
             server_rpc.set_max_wait_time(endpoint_timeout);
+            server_rpc.set_max_message_size(DEFAULT_ENDPOINT_MAX_MESSAGE_SIZE)<span class="question-mark">?</span>;
+
             <span class="kw">let </span>endpoint_server = EndpointServer::new(
                 server_rpc,
                 client_service_id.clone(),
@@ -1640,9 +1679,10 @@
             .retain(|handle, endpoint_server| -&gt; bool {
                 <span class="kw">let </span>handle = <span class="kw-2">*</span>handle;
                 <span class="kw">match </span>endpoint_server.update() {
-                    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(EndpointServerEvent::ChannelRequestReceived { requested_channel })) =&gt; {
+                    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(EndpointServerEvent::ChannelRequestReceived { requested_channel, client_service_id })) =&gt; {
                         events.push_back(ContextEvent::EndpointServerChannelRequestReceived {
                             handle,
+                            client_service_id,
                             requested_channel: requested_channel.to_string(),
                         });
                         <span class="bool-val">true

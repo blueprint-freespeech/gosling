@@ -419,6 +419,15 @@
 <a href="#419" id="419">419</a>
 <a href="#420" id="420">420</a>
 <a href="#421" id="421">421</a>
+<a href="#422" id="422">422</a>
+<a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a>
+<a href="#425" id="425">425</a>
+<a href="#426" id="426">426</a>
+<a href="#427" id="427">427</a>
+<a href="#428" id="428">428</a>
+<a href="#429" id="429">429</a>
+<a href="#430" id="430">430</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::clone::Clone;
 <span class="kw">use </span>std::convert::TryInto;
@@ -458,6 +467,7 @@
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">enum </span>EndpointServerEvent {
     ChannelRequestReceived {
+        client_service_id: V3OnionServiceId,
         requested_channel: AsciiString,
     },
     <span class="comment">// endpoint server has acepted incoming channel request from identity client
@@ -544,8 +554,15 @@
 
     <span class="kw">pub fn </span>update(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;EndpointServerEvent&gt;, Error&gt; {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>rpc) = std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.rpc) {
-            rpc.update(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut </span>[<span class="self">self</span>])).unwrap();
-            <span class="self">self</span>.rpc = <span class="prelude-val">Some</span>(rpc);
+            <span class="kw">match </span>rpc.update(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut </span>[<span class="self">self</span>])) {
+                <span class="prelude-val">Ok</span>(()) =&gt; {
+                    <span class="self">self</span>.rpc = <span class="prelude-val">Some</span>(rpc);
+                }
+                <span class="prelude-val">Err</span>(err) =&gt; {
+                    <span class="self">self</span>.rpc = <span class="prelude-val">Some</span>(rpc);
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(err.into());
+                }
+            }
         }
 
         <span class="kw">match</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.state,
@@ -563,7 +580,7 @@
             </span>=&gt; {},
             (<span class="kw-2">&amp;</span>EndpointServerState::WaitingForBeginHandshake,
              <span class="prelude-val">Some</span>(_begin_handshake_request_cookie),
-             <span class="prelude-val">Some</span>(_client_identity),
+             <span class="prelude-val">Some</span>(client_identity),
              <span class="prelude-val">Some</span>(requested_channel),
              <span class="prelude-val">None</span>, <span class="comment">// server_cookie
              </span><span class="prelude-val">None</span>) <span class="comment">// handshake_succeeded
@@ -573,6 +590,7 @@
                         <span class="prelude-val">Some</span>(
                             EndpointServerEvent::ChannelRequestReceived
                             {
+                                client_service_id: client_identity.clone(),
                                 requested_channel: requested_channel.clone()
                             }));
             },

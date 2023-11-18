@@ -46,7 +46,7 @@ var searchData=
   ['gosling_5fed25519_5fprivate_5fkey_5fgenerate_53',['gosling_ed25519_private_key_generate',['../libgosling_8h.html#a0a8df1b9e3240209d839ede800214a10',1,'libgosling.h']]],
   ['gosling_5fed25519_5fprivate_5fkey_5fto_5fkeyblob_54',['gosling_ed25519_private_key_to_keyblob',['../libgosling_8h.html#af6fd3ec67cb36a756f6a1d5affb2e328',1,'libgosling.h']]],
   ['gosling_5fendpoint_5fclient_5fhandshake_5ffailed_5fcallback_5ft_55',['gosling_endpoint_client_handshake_failed_callback_t',['../libgosling_8h.html#a861f503fcef69bf992b313d729138500',1,'libgosling.h']]],
-  ['gosling_5fendpoint_5fserver_5fchannel_5fsupported_5fcallback_5ft_56',['gosling_endpoint_server_channel_supported_callback_t',['../libgosling_8h.html#a93c5205610380bae86d8783b2553f0a2',1,'libgosling.h']]],
+  ['gosling_5fendpoint_5fserver_5fchannel_5fsupported_5fcallback_5ft_56',['gosling_endpoint_server_channel_supported_callback_t',['../libgosling_8h.html#a3701321cf465fe2d85e682a8e9c7806a',1,'libgosling.h']]],
   ['gosling_5fendpoint_5fserver_5fhandshake_5ffailed_5fcallback_5ft_57',['gosling_endpoint_server_handshake_failed_callback_t',['../libgosling_8h.html#ad4004cfa2bc45a8c7c9432bbea5836f9',1,'libgosling.h']]],
   ['gosling_5fendpoint_5fserver_5fhandshake_5frejected_5fcallback_5ft_58',['gosling_endpoint_server_handshake_rejected_callback_t',['../libgosling_8h.html#a7c6ece922397a3c016de78a37110beba',1,'libgosling.h']]],
   ['gosling_5fendpoint_5fserver_5fhandshake_5fstarted_5fcallback_5ft_59',['gosling_endpoint_server_handshake_started_callback_t',['../libgosling_8h.html#a480743f39e0ab4f6e1cb0d199a01bf8c',1,'libgosling.h']]],
