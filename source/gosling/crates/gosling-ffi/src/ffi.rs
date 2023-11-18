@@ -1757,20 +1757,30 @@ fn handle_context_event(
         }
         ContextEvent::EndpointServerChannelRequestReceived {
             handle,
+            client_service_id,
             requested_channel,
         } => {
             let channel_supported: bool = match callbacks.endpoint_server_channel_supported_callback
             {
                 Some(callback) => {
+                    let client_service_id = {
+                        let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
+                        v3_onion_service_id_registry.insert(client_service_id)
+                    };
                     let requested_channel0 = CString::new(requested_channel.as_str()).expect("requested_channel should be a valid ASCII string and not have an intermediate null byte",
                     );
-                    callback(
+                    let channel_supported = callback(
                         context,
                         handle,
+                        client_service_id as *const GoslingV3OnionServiceId,
                         requested_channel0.as_ptr(),
                         requested_channel.len(),
-                    )
-                }
+                    );
+
+                    // cleanup
+                    get_v3_onion_service_id_registry().remove(client_service_id);
+                    channel_supported
+                },
                 None => bail!("missing required endpoint_server_channel_supported() callback"),
             };
 
@@ -2323,6 +2333,7 @@ pub type GoslingEndpointServerHandshakeStartedCallback = Option<
 ///
 /// @param context: the context associated with this event
 /// @param handshake_handle: the handshake handle this callback is associated with
+/// @param client_service_id: the onion service id of the connected endpoint client
 /// @param channel_name: a null-terminated ASCII string containing the name of the
 ///  endpoint being requested
 /// @param channel_name_length: the number of chars in endpoint_name, not
@@ -2333,6 +2344,7 @@ pub type GoslingEndpointServerChannelSupportedCallback = Option<
     extern "C" fn(
         context: *mut GoslingContext,
         handshake_handle: GoslingHandshakeHandle,
+        client_service_id: *const GoslingV3OnionServiceId,
         channel_name: *const c_char,
         channel_name_length: usize,
     ) -> bool,

@@ -209,11 +209,13 @@ fn create_server_endpoint_handshake(context: *mut GoslingContext) -> anyhow::Res
     extern "C" fn channel_supported_callback(
         context: *mut GoslingContext,
         _handshake_handle: usize,
+        client_service_id: *const GoslingV3OnionServiceId,
         channel_name: *const c_char,
         channel_name_length: usize,
     ) -> bool {
         assert!(!context.is_null());
         assert!(!channel_name.is_null());
+        assert!(!client_service_id.is_null());
         let channel_name = unsafe { CStr::from_ptr(channel_name) };
         assert_eq!(channel_name.to_bytes().len(), channel_name_length);
         if channel_name == CHANNEL_NAME {

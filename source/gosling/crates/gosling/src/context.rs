@@ -193,6 +193,7 @@ pub enum ContextEvent {
     // to continue the handshake, call Context::endpoint_server_handle_channel_request_received()
     EndpointServerChannelRequestReceived {
         handle: HandshakeHandle,
+        client_service_id: V3OnionServiceId,
         requested_channel: String,
     },
 
@@ -813,9 +814,10 @@ impl Context {
             .retain(|handle, endpoint_server| -> bool {
                 let handle = *handle;
                 match endpoint_server.update() {
-                    Ok(Some(EndpointServerEvent::ChannelRequestReceived { requested_channel })) => {
+                    Ok(Some(EndpointServerEvent::ChannelRequestReceived { requested_channel, client_service_id })) => {
                         events.push_back(ContextEvent::EndpointServerChannelRequestReceived {
                             handle,
+                            client_service_id,
                             requested_channel: requested_channel.to_string(),
                         });
                         true

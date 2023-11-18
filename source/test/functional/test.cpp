@@ -167,11 +167,13 @@ static void create_server_identity_handshake(unique_ptr<gosling_context> &ctx) {
 static void create_server_endpoint_handshake(unique_ptr<gosling_context> &ctx) {
   const auto channel_supported_callback =
       [](gosling_context *context, size_t handshake_handle,
+         const gosling_v3_onion_service_id *client_service_id,
          const char *channel_name, size_t channel_name_length) -> bool {
     REQUIRE(context != nullptr);
+    REQUIRE(client_service_id != nullptr);
     cout << "--- channel_supported_callback: { context: " << context
-         << ", handshake_handle: " << handshake_handle << ", channel_name: '"
-         << channel_name << "' }" << endl;
+         << ", handshake_handle: " << handshake_handle << ", client_service_id: "
+        << client_service_id << ", channel_name: '" << channel_name << "' }" << endl;
 
     if (string(channel_name, channel_name_length) == channelName) {
       return true;

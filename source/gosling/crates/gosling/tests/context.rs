@@ -429,9 +429,11 @@ fn gosling_context_test(
                     }
                     ContextEvent::EndpointServerChannelRequestReceived {
                         handle,
+                        client_service_id,
                         requested_channel,
                     } => {
                         assert_eq!(handle, alice_endpoint_server_handshake_handle);
+                        assert_eq!(client_service_id, pat_service_id);
                         assert_eq!(requested_channel, "test_channel");
                         alice_endpoint_server_request_recieved = true;
                         println!("Pat requesting '{0}' endpoint channel", requested_channel);

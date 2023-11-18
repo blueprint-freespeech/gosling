@@ -37,6 +37,7 @@ pub enum Error {
 
 pub(crate) enum EndpointServerEvent {
     ChannelRequestReceived {
+        client_service_id: V3OnionServiceId,
         requested_channel: AsciiString,
     },
     // endpoint server has acepted incoming channel request from identity client
@@ -142,7 +143,7 @@ impl EndpointServer {
             => {},
             (&EndpointServerState::WaitingForBeginHandshake,
              Some(_begin_handshake_request_cookie),
-             Some(_client_identity),
+             Some(client_identity),
              Some(requested_channel),
              None, // server_cookie
              None) // handshake_succeeded
@@ -152,6 +153,7 @@ impl EndpointServer {
                         Some(
                             EndpointServerEvent::ChannelRequestReceived
                             {
+                                client_service_id: client_identity.clone(),
                                 requested_channel: requested_channel.clone()
                             }));
             },
