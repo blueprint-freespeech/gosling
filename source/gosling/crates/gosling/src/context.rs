@@ -21,6 +21,7 @@ use crate::identity_server::*;
 pub type HandshakeHandle = usize;
 pub const INVALID_HANDSHAKE_HANDLE: HandshakeHandle = !0usize;
 const DEFAULT_ENDPOINT_TIMEOUT: Duration = Duration::from_secs(60);
+const DEFAULT_ENDPOINT_MAX_MESSAGE_SIZE: i32 = 384;
 //
 // The root Gosling Context object
 //
@@ -431,6 +432,7 @@ impl Context {
 
         let mut session = Session::new(stream);
         session.set_max_wait_time(self.endpoint_timeout);
+        session.set_max_message_size(DEFAULT_ENDPOINT_MAX_MESSAGE_SIZE)?;
 
         let endpoint_client = EndpointClient::new(
             session,
@@ -564,6 +566,8 @@ impl Context {
 
             let mut server_rpc = Session::new(stream);
             server_rpc.set_max_wait_time(endpoint_timeout);
+            server_rpc.set_max_message_size(DEFAULT_ENDPOINT_MAX_MESSAGE_SIZE)?;
+
             let endpoint_server = EndpointServer::new(
                 server_rpc,
                 client_service_id.clone(),
