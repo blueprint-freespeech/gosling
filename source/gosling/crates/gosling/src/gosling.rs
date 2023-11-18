@@ -82,7 +82,7 @@ pub enum Error {
     EndpointServerError(#[from] endpoint_server::Error),
 }
 
-pub(crate) const GOSLING_VERSION: &'static str = std::env!("CARGO_PKG_VERSION");
+pub(crate) const GOSLING_VERSION: &str = std::env!("CARGO_PKG_VERSION");
 
 pub(crate) const CLIENT_COOKIE_SIZE: usize = 32usize;
 pub(crate) const SERVER_COOKIE_SIZE: usize = 32usize;

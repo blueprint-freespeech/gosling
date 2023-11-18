@@ -577,12 +577,12 @@ impl ApiSet for IdentityServer {
                     self.send_response_request_cookie = Some(request_cookie);
 
                     // convert client_identity to client's public ed25519 key
-                    if let Ok(client_identity_key) = Ed25519PublicKey::from_service_id(&client_identity) {
+                    if let Ok(client_identity_key) = Ed25519PublicKey::from_service_id(client_identity) {
                         // construct + verify client proof
                         let client_proof = build_client_proof(
                             DomainSeparator::GoslingIdentity,
                             requested_endpoint,
-                            &client_identity,
+                            client_identity,
                             &self.server_identity,
                             &client_cookie,
                             server_cookie,
