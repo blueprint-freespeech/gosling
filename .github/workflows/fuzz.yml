@@ -1,0 +1,44 @@
+name: fuzz
+
+on: [push, pull_request]
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Gosling
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Intall rust nightly
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: nightly
+            override: true
+      - name: Install fuzzer
+        run: |
+          cargo install cargo-fuzz
+      - name: Fuzz HonkRPC
+        run: |
+          cd source/gosling/crates/honk-rpc
+          cargo fuzz run fuzz_session -- -max_total_time=600
+      - name: Fuzz Tor Crypto
+        run: |
+          cd source/gosling/crates/tor-interface
+          cargo fuzz run fuzz_crypto -- -max_total_time=600
+      - name: Fuzz Identity Server
+        run: |
+          cd source/gosling/crates/gosling
+          cargo fuzz run fuzz_identity_server -- -max_total_time=600
+      - name: Fuzz Identity Client
+        run: |
+          cd source/gosling/crates/gosling
+          cargo fuzz run fuzz_identity_client -- -max_total_time=600
+      - name: Fuzz Endpoint Server
+        run: |
+          cd source/gosling/crates/gosling
+          cargo fuzz run fuzz_endpoint_server -- -max_total_time=600
+      - name: Fuzz Endpoint Client
+        run: |
+          cd source/gosling/crates/gosling
+          cargo fuzz run fuzz_endpoint_client -- -max_total_time=600
