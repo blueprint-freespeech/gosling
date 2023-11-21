@@ -201,6 +201,11 @@ impl EndpointClient {
                                 );
 
                                 self.state = EndpointClientState::WaitingForProofVerification;
+                            } else {
+                                return Err(Error::UnexpectedResponseReceived(format!(
+                                    "begin_handshake() returned unexpected value: {}",
+                                    result
+                                )));
                             }
                         } else {
                             return Err(Error::UnexpectedResponseReceived(format!(
@@ -263,6 +268,11 @@ impl EndpointClient {
                                     result
                                 )));
                             }
+                        } else {
+                            return Err(Error::UnexpectedResponseReceived(format!(
+                                "received unexpected data from send_response(): {:?}",
+                                result
+                            )));
                         }
                     }
                     Ok(None)
