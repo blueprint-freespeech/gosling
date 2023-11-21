@@ -863,6 +863,11 @@
 <a href="#863" id="863">863</a>
 <a href="#864" id="864">864</a>
 <a href="#865" id="865">865</a>
+<a href="#866" id="866">866</a>
+<a href="#867" id="867">867</a>
+<a href="#868" id="868">868</a>
+<a href="#869" id="869">869</a>
+<a href="#870" id="870">870</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::clone::Clone;
 <span class="kw">use </span>std::collections::{BTreeMap, HashMap, VecDeque};
@@ -1107,7 +1112,7 @@
             identity_timeout,
             endpoint_timeout: <span class="kw">match </span>endpoint_timeout {
                 <span class="prelude-val">Some</span>(timeout) =&gt; timeout,
-                <span class="prelude-val">None </span>=&gt; DEFAULT_ENDPOINT_TIMEOUT
+                <span class="prelude-val">None </span>=&gt; DEFAULT_ENDPOINT_TIMEOUT,
             },
 
             next_handshake_handle: Default::default(),
@@ -1341,7 +1346,7 @@
 
         <span class="kw">if </span>endpoint_service_id == <span class="self">self</span>.identity_service_id {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidArgument(
-                <span class="string">&quot;endpoint server must be different from identity server&quot;</span>.to_string()
+                <span class="string">&quot;endpoint server must be different from identity server&quot;</span>.to_string(),
             ));
         }
 
@@ -1357,7 +1362,6 @@
             <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>[client_auth]),
         )<span class="question-mark">?</span>;
         endpoint_listener.set_nonblocking(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
-
 
         <span class="self">self</span>.endpoint_listeners.insert(
             endpoint_service_id,
@@ -1452,8 +1456,12 @@
 
         <span class="comment">// first handle new identity connections
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(identity_listener) = <span class="kw-2">&amp;</span><span class="self">self</span>.identity_listener {
-            <span class="kw">match </span><span class="self">Self</span>::identity_server_handle_accept(identity_listener, <span class="self">self</span>.identity_timeout, <span class="self">self</span>.identity_max_message_size, <span class="kw-2">&amp;</span><span class="self">self</span>.identity_private_key)
-            {
+            <span class="kw">match </span><span class="self">Self</span>::identity_server_handle_accept(
+                identity_listener,
+                <span class="self">self</span>.identity_timeout,
+                <span class="self">self</span>.identity_max_message_size,
+                <span class="kw-2">&amp;</span><span class="self">self</span>.identity_private_key,
+            ) {
                 <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(identity_server)) =&gt; {
                     <span class="kw">let </span>handle = <span class="self">self</span>.next_handshake_handle;
                     <span class="self">self</span>.next_handshake_handle += <span class="number">1</span>;
@@ -1479,8 +1487,7 @@
                     <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(endpoint_server)) =&gt; {
                         <span class="kw">let </span>handle = <span class="self">self</span>.next_handshake_handle;
                         <span class="self">self</span>.next_handshake_handle += <span class="number">1</span>;
-                        <span class="self">self</span>.endpoint_servers
-                            .insert(handle, endpoint_server);
+                        <span class="self">self</span>.endpoint_servers.insert(handle, endpoint_server);
                         events.push_back(ContextEvent::EndpointServerHandshakeStarted { handle });
                         <span class="bool-val">true
                     </span>}
@@ -1654,7 +1661,7 @@
             .retain(|handle, endpoint_client| -&gt; bool {
                 <span class="kw">let </span>handle = <span class="kw-2">*</span>handle;
                 <span class="kw">match </span>endpoint_client.update() {
-                    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(EndpointClientEvent::HandshakeCompleted { stream } )) =&gt; {
+                    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(EndpointClientEvent::HandshakeCompleted { stream })) =&gt; {
                         events.push_back(ContextEvent::EndpointClientHandshakeCompleted {
                             handle,
                             endpoint_service_id: endpoint_client.server_service_id.clone(),
@@ -1679,7 +1686,10 @@
             .retain(|handle, endpoint_server| -&gt; bool {
                 <span class="kw">let </span>handle = <span class="kw-2">*</span>handle;
                 <span class="kw">match </span>endpoint_server.update() {
-                    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(EndpointServerEvent::ChannelRequestReceived { requested_channel, client_service_id })) =&gt; {
+                    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(EndpointServerEvent::ChannelRequestReceived {
+                        requested_channel,
+                        client_service_id,
+                    })) =&gt; {
                         events.push_back(ContextEvent::EndpointServerChannelRequestReceived {
                             handle,
                             client_service_id,

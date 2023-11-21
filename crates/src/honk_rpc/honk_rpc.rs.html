@@ -1389,6 +1389,44 @@
 <a href="#1389" id="1389">1389</a>
 <a href="#1390" id="1390">1390</a>
 <a href="#1391" id="1391">1391</a>
+<a href="#1392" id="1392">1392</a>
+<a href="#1393" id="1393">1393</a>
+<a href="#1394" id="1394">1394</a>
+<a href="#1395" id="1395">1395</a>
+<a href="#1396" id="1396">1396</a>
+<a href="#1397" id="1397">1397</a>
+<a href="#1398" id="1398">1398</a>
+<a href="#1399" id="1399">1399</a>
+<a href="#1400" id="1400">1400</a>
+<a href="#1401" id="1401">1401</a>
+<a href="#1402" id="1402">1402</a>
+<a href="#1403" id="1403">1403</a>
+<a href="#1404" id="1404">1404</a>
+<a href="#1405" id="1405">1405</a>
+<a href="#1406" id="1406">1406</a>
+<a href="#1407" id="1407">1407</a>
+<a href="#1408" id="1408">1408</a>
+<a href="#1409" id="1409">1409</a>
+<a href="#1410" id="1410">1410</a>
+<a href="#1411" id="1411">1411</a>
+<a href="#1412" id="1412">1412</a>
+<a href="#1413" id="1413">1413</a>
+<a href="#1414" id="1414">1414</a>
+<a href="#1415" id="1415">1415</a>
+<a href="#1416" id="1416">1416</a>
+<a href="#1417" id="1417">1417</a>
+<a href="#1418" id="1418">1418</a>
+<a href="#1419" id="1419">1419</a>
+<a href="#1420" id="1420">1420</a>
+<a href="#1421" id="1421">1421</a>
+<a href="#1422" id="1422">1422</a>
+<a href="#1423" id="1423">1423</a>
+<a href="#1424" id="1424">1424</a>
+<a href="#1425" id="1425">1425</a>
+<a href="#1426" id="1426">1426</a>
+<a href="#1427" id="1427">1427</a>
+<a href="#1428" id="1428">1428</a>
+<a href="#1429" id="1429">1429</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::collections::VecDeque;
 <span class="kw">use </span>std::fmt::Debug;
@@ -1456,7 +1494,9 @@
     <span class="attr">#[error(<span class="string">&quot;recieved error section without cookie&quot;</span>)]
     </span>UnknownErrorSectionReceived(<span class="attr">#[source] </span><span class="kw">crate</span>::honk_rpc::ErrorCode),
 
-    <span class="attr">#[error(<span class="string">&quot;tried to set invalid max message size; must be &gt;=5 bytes and &lt;= i32::MAX (2147483647)&quot;</span>)]
+    <span class="attr">#[error(
+        <span class="string">&quot;tried to set invalid max message size; must be &gt;=5 bytes and &lt;= i32::MAX (2147483647)&quot;
+    </span>)]
     </span>InvalidMaxMesageSize(),
 
     <span class="attr">#[error(<span class="string">&quot;queued message section is too large to write; calculated size is {0} but must be less than {1}&quot;</span>)]
@@ -1588,8 +1628,6 @@
                 honk_rpc,
                 sections: Default::default(),
             };
-
-
 
             <span class="kw">for </span>section <span class="kw">in </span>sections.iter_mut() {
                 <span class="kw">if let </span>bson::Bson::Document(section) = std::mem::take(section) {
@@ -1884,7 +1922,7 @@
         args: bson::document::Document,
         request_cookie: <span class="prelude-ty">Option</span>&lt;RequestCookie&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;bson::Bson&gt;, ErrorCode&gt;;
-    <span class="kw">fn </span>update(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; () { }
+    <span class="kw">fn </span>update(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {}
     <span class="comment">// TODO: add support for more error data per spec (string, debug)?
     </span><span class="kw">fn </span>next_result(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;(RequestCookie, <span class="prelude-ty">Option</span>&lt;bson::Bson&gt;, ErrorCode)&gt; {
         <span class="prelude-val">None
@@ -1909,7 +1947,6 @@
 </span><span class="kw">pub const </span>DEFAULT_MAX_MESSAGE_SIZE: usize = <span class="number">4 </span>* <span class="number">1024</span>;
 <span class="kw">pub const </span>DEFAULT_MAX_WAIT_TIME: std::time::Duration = std::time::Duration::from_secs(<span class="number">60</span>);
 
-
 <span class="comment">// Base Message Bson Format
 // document size             4 (sizeof i32 )
 </span><span class="kw">const </span>HEADER_SIZE: usize = <span class="number">4usize</span>;
@@ -1928,7 +1965,7 @@
 </span><span class="kw">pub fn </span>get_message_overhead() -&gt; <span class="prelude-ty">Result</span>&lt;usize, Error&gt; {
     <span class="comment">// construct an example empty message; the size of a real message with
     // one section can be calculated as the sizeof(message) + sizeof(section)
-    </span><span class="kw">let </span>message = <span class="macro">doc!</span>{
+    </span><span class="kw">let </span>message = <span class="macro">doc! </span>{
         <span class="string">&quot;honk_rpc&quot; </span>: HONK_RPC_VERSION,
         <span class="string">&quot;sections&quot; </span>: [
             bson::Bson::Null
@@ -1936,14 +1973,19 @@
     };
 
     <span class="kw">let </span><span class="kw-2">mut </span>counter: ByteCounter = Default::default();
-    message.to_writer(<span class="kw-2">&amp;mut </span>counter).map_err(Error::MessageWriteFailed)<span class="question-mark">?</span>;
+    message
+        .to_writer(<span class="kw-2">&amp;mut </span>counter)
+        .map_err(Error::MessageWriteFailed)<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(counter.bytes())
 }
 
-<span class="kw">pub fn </span>get_error_section_size(cookie: <span class="prelude-ty">Option</span>&lt;RequestCookie&gt;, message: <span class="prelude-ty">Option</span>&lt;String&gt;, data: <span class="prelude-ty">Option</span>&lt;bson::Bson&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;usize, Error&gt; {
-
-    <span class="kw">let </span><span class="kw-2">mut </span>error_section = <span class="macro">doc!</span>{
+<span class="kw">pub fn </span>get_error_section_size(
+    cookie: <span class="prelude-ty">Option</span>&lt;RequestCookie&gt;,
+    message: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    data: <span class="prelude-ty">Option</span>&lt;bson::Bson&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;usize, Error&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>error_section = <span class="macro">doc! </span>{
         <span class="string">&quot;id&quot;</span>: ERROR_SECTION_ID,
         <span class="string">&quot;code&quot;</span>: Into::&lt;i32&gt;::into(ErrorCode::Success),
     };
@@ -1961,13 +2003,21 @@
     }
 
     <span class="kw">let </span><span class="kw-2">mut </span>counter: ByteCounter = Default::default();
-    error_section.to_writer(<span class="kw-2">&amp;mut </span>counter).map_err(Error::MessageWriteFailed)<span class="question-mark">?</span>;
+    error_section
+        .to_writer(<span class="kw-2">&amp;mut </span>counter)
+        .map_err(Error::MessageWriteFailed)<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(counter.bytes())
 }
 
-<span class="kw">pub fn </span>get_request_section_size(cookie: <span class="prelude-ty">Option</span>&lt;RequestCookie&gt;, namespace: <span class="prelude-ty">Option</span>&lt;String&gt;, function: String, version: <span class="prelude-ty">Option</span>&lt;i32&gt;, arguments: <span class="prelude-ty">Option</span>&lt;bson::Document&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;usize, Error&gt; {
-    <span class="kw">let </span><span class="kw-2">mut </span>request_section = <span class="macro">doc!</span>{
+<span class="kw">pub fn </span>get_request_section_size(
+    cookie: <span class="prelude-ty">Option</span>&lt;RequestCookie&gt;,
+    namespace: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    function: String,
+    version: <span class="prelude-ty">Option</span>&lt;i32&gt;,
+    arguments: <span class="prelude-ty">Option</span>&lt;bson::Document&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;usize, Error&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>request_section = <span class="macro">doc! </span>{
         <span class="string">&quot;id&quot;</span>: REQUEST_SECTION_ID,
         <span class="string">&quot;function&quot;</span>: bson::Bson::String(function),
     };
@@ -1989,13 +2039,15 @@
     }
 
     <span class="kw">let </span><span class="kw-2">mut </span>counter: ByteCounter = Default::default();
-    request_section.to_writer(<span class="kw-2">&amp;mut </span>counter).map_err(Error::MessageWriteFailed)<span class="question-mark">?</span>;
+    request_section
+        .to_writer(<span class="kw-2">&amp;mut </span>counter)
+        .map_err(Error::MessageWriteFailed)<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(counter.bytes())
 }
 
 <span class="kw">pub fn </span>get_response_section_size(result: <span class="prelude-ty">Option</span>&lt;bson::Bson&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;usize, Error&gt; {
-    <span class="kw">let </span><span class="kw-2">mut </span>response_section = <span class="macro">doc!</span>{
+    <span class="kw">let </span><span class="kw-2">mut </span>response_section = <span class="macro">doc! </span>{
         <span class="string">&quot;id&quot;</span>: RESPONSE_SECTION_ID,
         <span class="string">&quot;cookie&quot;</span>: bson::Bson::Int64(<span class="number">0</span>),
         <span class="string">&quot;state&quot;</span>: bson::Bson::Int32(<span class="number">0</span>),
@@ -2006,7 +2058,9 @@
     }
 
     <span class="kw">let </span><span class="kw-2">mut </span>counter: ByteCounter = Default::default();
-    response_section.to_writer(<span class="kw-2">&amp;mut </span>counter).map_err(Error::MessageWriteFailed)<span class="question-mark">?</span>;
+    response_section
+        .to_writer(<span class="kw-2">&amp;mut </span>counter)
+        .map_err(Error::MessageWriteFailed)<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(counter.bytes())
 }
@@ -2055,7 +2109,8 @@
     </span>RW: std::io::Read + std::io::Write + Send,
 {
     <span class="kw">pub fn </span>set_max_message_size(<span class="kw-2">&amp;mut </span><span class="self">self</span>, max_message_size: i32) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
-        <span class="kw">if </span>max_message_size &lt; MIN_MESSAGE_SIZE <span class="kw">as </span>i32 { <span class="comment">// base size of a honk-rpc mssage
+        <span class="kw">if </span>max_message_size &lt; MIN_MESSAGE_SIZE <span class="kw">as </span>i32 {
+            <span class="comment">// base size of a honk-rpc mssage
             </span><span class="prelude-val">Err</span>(Error::InvalidMaxMesageSize())
         } <span class="kw">else </span>{
             <span class="self">self</span>.max_message_size = max_message_size <span class="kw">as </span>usize;
@@ -2067,7 +2122,7 @@
         <span class="self">self</span>.max_message_size
     }
 
-    <span class="kw">pub fn </span>set_max_wait_time(<span class="kw-2">&amp;mut </span><span class="self">self</span>, max_wait_time: std::time::Duration) -&gt; () {
+    <span class="kw">pub fn </span>set_max_wait_time(<span class="kw-2">&amp;mut </span><span class="self">self</span>, max_wait_time: std::time::Duration) {
         <span class="self">self</span>.max_wait_time = max_wait_time;
     }
 
@@ -2099,17 +2154,18 @@
         }
     }
 
-    <span class="kw">pub fn </span>into_stream(<span class="self">self</span>: <span class="self">Self</span>) -&gt; RW {
+    <span class="kw">pub fn </span>into_stream(<span class="self">self</span>) -&gt; RW {
         <span class="self">self</span>.stream
     }
 
     <span class="kw">fn </span>stream_read(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buffer: <span class="kw-2">&amp;mut </span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;usize, Error&gt; {
         <span class="kw">match </span><span class="self">self</span>.stream.read(buffer) {
             <span class="prelude-val">Err</span>(err) =&gt; {
-                <span class="kw">if </span>err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut
-                {
+                <span class="kw">if </span>err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut {
                     <span class="comment">// abort if we&#39;ve gone too long without a new message
-                    </span><span class="kw">if </span>std::time::Instant::now().duration_since(<span class="self">self</span>.read_timestamp) &gt; <span class="self">self</span>.max_wait_time {
+                    </span><span class="kw">if </span>std::time::Instant::now().duration_since(<span class="self">self</span>.read_timestamp)
+                        &gt; <span class="self">self</span>.max_wait_time
+                    {
                         <span class="prelude-val">Err</span>(Error::MessageReadTimedOut(<span class="self">self</span>.max_wait_time))
                     } <span class="kw">else </span>{
                         <span class="prelude-val">Ok</span>(<span class="number">0</span>)
@@ -2165,7 +2221,7 @@
                             <span class="comment">// convert to usize type now that we know it&#39;s not negative
                             </span><span class="kw">if </span>size <span class="kw">as </span>usize &gt; <span class="self">self</span>.max_message_size {
                                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::BsonDocumentSizeTooLarge(
-                                    size <span class="kw">as </span>i32,
+                                    size,
                                     <span class="self">self</span>.max_message_size <span class="kw">as </span>i32,
                                 ));
                             }
@@ -2242,11 +2298,12 @@
                         <span class="comment">// in the event of timeouts and IO errors we finish any remaining work
                         </span>Error::MessageReadTimedOut(<span class="kw">_</span>) | Error::ReaderReadFailed(<span class="kw">_</span>) =&gt; {
                             <span class="comment">// ensure no pending items to handle
-                            </span><span class="kw">if </span><span class="self">self</span>.pending_sections.is_empty() &amp;&amp; <span class="self">self</span>.inbound_responses.is_empty() {
+                            </span><span class="kw">if </span><span class="self">self</span>.pending_sections.is_empty() &amp;&amp; <span class="self">self</span>.inbound_responses.is_empty()
+                            {
                                 <span class="kw">return </span><span class="prelude-val">Err</span>(err);
                             }
                             <span class="kw">return </span><span class="prelude-val">Ok</span>(());
-                        },
+                        }
                         <span class="comment">// all other errors we terminate
                         </span><span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(err),
                     }
@@ -2299,7 +2356,9 @@
 
         <span class="kw">let </span><span class="kw-2">mut </span>counter: ByteCounter = Default::default();
         <span class="kw">let </span>section: bson::Document = section.into();
-        section.to_writer(<span class="kw-2">&amp;mut </span>counter).map_err(Error::MessageWriteFailed)<span class="question-mark">?</span>;
+        section
+            .to_writer(<span class="kw-2">&amp;mut </span>counter)
+            .map_err(Error::MessageWriteFailed)<span class="question-mark">?</span>;
         <span class="kw">let </span>section_size = counter.bytes();
 
         <span class="kw">if </span>section_size &lt;= max_section_size {
@@ -2441,45 +2500,41 @@
                     <span class="comment">// func found, called, and returned immediately
                     </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(result)) =&gt; {
                         <span class="kw">if let </span><span class="prelude-val">Some</span>(cookie) = request.cookie {
-                            <span class="self">self</span>.push_outbound_section(
-                                Section::Response(ResponseSection {
-                                    cookie,
-                                    state: RequestState::Complete,
-                                    result: <span class="prelude-val">Some</span>(result),
-                                }))<span class="question-mark">?</span>;
+                            <span class="self">self</span>.push_outbound_section(Section::Response(ResponseSection {
+                                cookie,
+                                state: RequestState::Complete,
+                                result: <span class="prelude-val">Some</span>(result),
+                            }))<span class="question-mark">?</span>;
                         }
                     }
                     <span class="comment">// func found, called, and result is pending
                     </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; {
                         <span class="kw">if let </span><span class="prelude-val">Some</span>(cookie) = request.cookie {
-                            <span class="self">self</span>.push_outbound_section(
-                                Section::Response(ResponseSection {
-                                    cookie,
-                                    state: RequestState::Pending,
-                                    result: <span class="prelude-val">None</span>,
-                                }))<span class="question-mark">?</span>;
+                            <span class="self">self</span>.push_outbound_section(Section::Response(ResponseSection {
+                                cookie,
+                                state: RequestState::Pending,
+                                result: <span class="prelude-val">None</span>,
+                            }))<span class="question-mark">?</span>;
                         }
                     }
                     <span class="comment">// some error
                     </span><span class="prelude-val">Err</span>(error_code) =&gt; {
-                        <span class="self">self</span>.push_outbound_section(
-                            Section::Error(ErrorSection {
-                                cookie: request.cookie,
-                                code: error_code,
-                                message: <span class="prelude-val">None</span>,
-                                data: <span class="prelude-val">None</span>,
-                            }))<span class="question-mark">?</span>;
+                        <span class="self">self</span>.push_outbound_section(Section::Error(ErrorSection {
+                            cookie: request.cookie,
+                            code: error_code,
+                            message: <span class="prelude-val">None</span>,
+                            data: <span class="prelude-val">None</span>,
+                        }))<span class="question-mark">?</span>;
                     }
                 }
             } <span class="kw">else </span>{
                 <span class="comment">// invalid namespace
-                </span><span class="self">self</span>.push_outbound_section
-                    (Section::Error(ErrorSection {
-                        cookie: request.cookie,
-                        code: ErrorCode::RequestNamespaceInvalid,
-                        message: <span class="prelude-val">None</span>,
-                        data: <span class="prelude-val">None</span>,
-                    }))<span class="question-mark">?</span>;
+                </span><span class="self">self</span>.push_outbound_section(Section::Error(ErrorSection {
+                    cookie: request.cookie,
+                    code: ErrorCode::RequestNamespaceInvalid,
+                    message: <span class="prelude-val">None</span>,
+                    data: <span class="prelude-val">None</span>,
+                }))<span class="question-mark">?</span>;
             }
         }
 
@@ -2491,24 +2546,22 @@
             </span><span class="kw">while let </span><span class="prelude-val">Some</span>((cookie, result, error_code)) = apiset.next_result() {
                 <span class="kw">match </span>(cookie, result, error_code) {
                     (cookie, <span class="prelude-val">Some</span>(result), ErrorCode::Success) =&gt; {
-                        <span class="self">self</span>.push_outbound_section(
-                            Section::Response(ResponseSection {
-                                cookie,
-                                state: RequestState::Complete,
-                                result: <span class="prelude-val">Some</span>(result),
-                            }))<span class="question-mark">?</span>;
+                        <span class="self">self</span>.push_outbound_section(Section::Response(ResponseSection {
+                            cookie,
+                            state: RequestState::Complete,
+                            result: <span class="prelude-val">Some</span>(result),
+                        }))<span class="question-mark">?</span>;
                     }
                     (cookie, result, error_code) =&gt; {
                         <span class="kw">if let </span><span class="prelude-val">Some</span>(result) = result {
                             <span class="macro">println!</span>(<span class="string">&quot;Server::update(): ApiSet next_result() returned both result and an ErrorCode {{ result : &#39;{}&#39;, error : {} }}&quot;</span>, result, error_code);
                         }
-                        <span class="self">self</span>.push_outbound_section
-                            (Section::Error(ErrorSection {
-                                cookie: <span class="prelude-val">Some</span>(cookie),
-                                code: error_code,
-                                message: <span class="prelude-val">None</span>,
-                                data: <span class="prelude-val">None</span>,
-                            }))<span class="question-mark">?</span>;
+                        <span class="self">self</span>.push_outbound_section(Section::Error(ErrorSection {
+                            cookie: <span class="prelude-val">Some</span>(cookie),
+                            code: error_code,
+                            message: <span class="prelude-val">None</span>,
+                            data: <span class="prelude-val">None</span>,
+                        }))<span class="question-mark">?</span>;
                     }
                 }
             }
@@ -2529,14 +2582,13 @@
         <span class="self">self</span>.next_cookie += <span class="number">1</span>;
 
         <span class="comment">// add request to outgoing buffer
-        </span><span class="self">self</span>.push_outbound_section(
-            Section::Request(RequestSection {
-                cookie: <span class="prelude-val">Some</span>(cookie),
-                namespace: namespace.to_string(),
-                function: function.to_string(),
-                version,
-                arguments,
-            }))<span class="question-mark">?</span>;
+        </span><span class="self">self</span>.push_outbound_section(Section::Request(RequestSection {
+            cookie: <span class="prelude-val">Some</span>(cookie),
+            namespace: namespace.to_string(),
+            function: function.to_string(),
+            version,
+            arguments,
+        }))<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(cookie)
     }
@@ -2633,23 +2685,23 @@
     <span class="macro">println!</span>(<span class="string">&quot;--- alice sends multi-section message&quot;</span>);
 
     alice.push_outbound_section(Section::Error(ErrorSection {
-            cookie: <span class="prelude-val">Some</span>(<span class="number">42069</span>),
-            code: ErrorCode::Runtime(<span class="number">2</span>),
-            message: <span class="prelude-val">Some</span>(CUSTOM_ERROR.to_string()),
-            data: <span class="prelude-val">None</span>,
-        }))<span class="question-mark">?</span>;
+        cookie: <span class="prelude-val">Some</span>(<span class="number">42069</span>),
+        code: ErrorCode::Runtime(<span class="number">2</span>),
+        message: <span class="prelude-val">Some</span>(CUSTOM_ERROR.to_string()),
+        data: <span class="prelude-val">None</span>,
+    }))<span class="question-mark">?</span>;
     alice.push_outbound_section(Section::Request(RequestSection {
-            cookie: <span class="prelude-val">None</span>,
-            namespace: <span class="string">&quot;std&quot;</span>.to_string(),
-            function: <span class="string">&quot;print&quot;</span>.to_string(),
-            version: <span class="number">0</span>,
-            arguments: <span class="macro">doc! </span>{<span class="string">&quot;message&quot;</span>: <span class="string">&quot;hello!&quot;</span>},
-        }))<span class="question-mark">?</span>;
+        cookie: <span class="prelude-val">None</span>,
+        namespace: <span class="string">&quot;std&quot;</span>.to_string(),
+        function: <span class="string">&quot;print&quot;</span>.to_string(),
+        version: <span class="number">0</span>,
+        arguments: <span class="macro">doc! </span>{<span class="string">&quot;message&quot;</span>: <span class="string">&quot;hello!&quot;</span>},
+    }))<span class="question-mark">?</span>;
     alice.push_outbound_section(Section::Response(ResponseSection {
-            cookie: <span class="number">123456</span>,
-            state: RequestState::Pending,
-            result: <span class="prelude-val">None</span>,
-        }))<span class="question-mark">?</span>;
+        cookie: <span class="number">123456</span>,
+        state: RequestState::Pending,
+        result: <span class="prelude-val">None</span>,
+    }))<span class="question-mark">?</span>;
 
     <span class="comment">// send a multi-section mesage
     </span>alice.serialize_messages()<span class="question-mark">?</span>;
@@ -2706,7 +2758,8 @@
         name: <span class="kw-2">&amp;</span>str,
         version: i32,
         _args: bson::document::Document,
-        _request_section: <span class="prelude-ty">Option</span>&lt;RequestCookie&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;bson::Bson&gt;, ErrorCode&gt; {
+        _request_section: <span class="prelude-ty">Option</span>&lt;RequestCookie&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;bson::Bson&gt;, ErrorCode&gt; {
         <span class="kw">match </span>(name, version) {
             (<span class="string">&quot;function&quot;</span>, <span class="number">0</span>) =&gt; {
                 <span class="macro">println!</span>(<span class="string">&quot;--- namespace::function_0() called&quot;</span>);
@@ -2733,21 +2786,30 @@
     pat_stream.set_nodelay(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
 
     <span class="kw">let </span><span class="kw-2">mut </span>alice = Session::new(alice_stream);
-    <span class="kw">let </span><span class="kw-2">mut </span>alice_apiset = TestApiSet{call_count: <span class="number">0usize</span>};
+    <span class="kw">let </span><span class="kw-2">mut </span>alice_apiset = TestApiSet { call_count: <span class="number">0usize </span>};
     <span class="kw">let </span><span class="kw-2">mut </span>pat = Session::new(pat_stream);
 
     <span class="kw">let </span>start = std::time::Instant::now();
 
-    <span class="macro">println!</span>(<span class="string">&quot;--- {:?} alice set max_wait_time to 3 seconds&quot;</span>, std::time::Instant::now().duration_since(start));
+    <span class="macro">println!</span>(
+        <span class="string">&quot;--- {:?} alice set max_wait_time to 3 seconds&quot;</span>,
+        std::time::Instant::now().duration_since(start)
+    );
     alice.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
     alice.set_max_wait_time(std::time::Duration::from_secs(<span class="number">3</span>));
     alice.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
 
     <span class="comment">// a read will happen so time should reset
-    </span><span class="macro">println!</span>(<span class="string">&quot;--- {:?} sleep 2 seconds&quot;</span>, std::time::Instant::now().duration_since(start));
+    </span><span class="macro">println!</span>(
+        <span class="string">&quot;--- {:?} sleep 2 seconds&quot;</span>,
+        std::time::Instant::now().duration_since(start)
+    );
     std::thread::sleep(std::time::Duration::from_secs(<span class="number">2</span>));
 
-    <span class="macro">println!</span>(<span class="string">&quot;--- {:?} pat calls namespace::function_0()&quot;</span>, std::time::Instant::now().duration_since(start));
+    <span class="macro">println!</span>(
+        <span class="string">&quot;--- {:?} pat calls namespace::function_0()&quot;</span>,
+        std::time::Instant::now().duration_since(start)
+    );
     pat.client_call(<span class="string">&quot;namespace&quot;</span>, <span class="string">&quot;function&quot;</span>, <span class="number">0</span>, <span class="macro">doc! </span>{})<span class="question-mark">?</span>;
     <span class="kw">while </span>alice_apiset.call_count != <span class="number">1 </span>{
         pat.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
@@ -2755,12 +2817,18 @@
     }
 
     <span class="comment">// a read will happen so time should reset
-    </span><span class="macro">println!</span>(<span class="string">&quot;--- {:?} sleep 2 seconds&quot;</span>, std::time::Instant::now().duration_since(start));
+    </span><span class="macro">println!</span>(
+        <span class="string">&quot;--- {:?} sleep 2 seconds&quot;</span>,
+        std::time::Instant::now().duration_since(start)
+    );
     std::thread::sleep(std::time::Duration::from_secs(<span class="number">2</span>));
     pat.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
     alice.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
 
-    <span class="macro">println!</span>(<span class="string">&quot;--- {:?} pat calls namespace::function_0()&quot;</span>, std::time::Instant::now().duration_since(start));
+    <span class="macro">println!</span>(
+        <span class="string">&quot;--- {:?} pat calls namespace::function_0()&quot;</span>,
+        std::time::Instant::now().duration_since(start)
+    );
     pat.client_call(<span class="string">&quot;namespace&quot;</span>, <span class="string">&quot;function&quot;</span>, <span class="number">0</span>, <span class="macro">doc! </span>{})<span class="question-mark">?</span>;
     <span class="kw">while </span>alice_apiset.call_count != <span class="number">2 </span>{
         pat.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
@@ -2768,14 +2836,22 @@
     }
 
     <span class="comment">// on reads occur so alice should timeout
-    </span><span class="macro">println!</span>(<span class="string">&quot;--- {:?} sleep 4 seconds&quot;</span>, std::time::Instant::now().duration_since(start));
+    </span><span class="macro">println!</span>(
+        <span class="string">&quot;--- {:?} sleep 4 seconds&quot;</span>,
+        std::time::Instant::now().duration_since(start)
+    );
     std::thread::sleep(std::time::Duration::from_secs(<span class="number">4</span>));
 
-    <span class="macro">println!</span>(<span class="string">&quot;--- {:?} pat+alice update&quot;</span>, std::time::Instant::now().duration_since(start));
+    <span class="macro">println!</span>(
+        <span class="string">&quot;--- {:?} pat+alice update&quot;</span>,
+        std::time::Instant::now().duration_since(start)
+    );
     pat.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
     <span class="kw">match </span>alice.update(<span class="prelude-val">None</span>) {
         <span class="prelude-val">Ok</span>(()) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;should have timed out&quot;</span>),
-        <span class="prelude-val">Err</span>(Error::MessageReadTimedOut(duration)) =&gt; <span class="macro">println!</span>(<span class="string">&quot;--- expected time out after {:?}&quot;</span>, duration),
+        <span class="prelude-val">Err</span>(Error::MessageReadTimedOut(duration)) =&gt; {
+            <span class="macro">println!</span>(<span class="string">&quot;--- expected time out after {:?}&quot;</span>, duration)
+        }
         <span class="prelude-val">Err</span>(err) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;unexpected error: {:?}&quot;</span>, err),
     }
     <span class="prelude-val">Ok</span>(())

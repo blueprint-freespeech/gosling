@@ -424,6 +424,8 @@
 <a href="#424" id="424">424</a>
 <a href="#425" id="425">425</a>
 <a href="#426" id="426">426</a>
+<a href="#427" id="427">427</a>
+<a href="#428" id="428">428</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::clone::Clone;
 <span class="kw">use </span>std::convert::TryInto;
@@ -433,7 +435,9 @@
 </span><span class="kw">use </span>bson::doc;
 <span class="kw">use </span>bson::spec::BinarySubtype;
 <span class="kw">use </span>bson::{Binary, Bson};
-<span class="kw">use </span>honk_rpc::honk_rpc::{RequestCookie, Response, Session, get_message_overhead, get_request_section_size};
+<span class="kw">use </span>honk_rpc::honk_rpc::{
+    get_message_overhead, get_request_section_size, RequestCookie, Response, Session,
+};
 <span class="kw">use </span>rand::rngs::OsRng;
 <span class="kw">use </span>rand::RngCore;
 <span class="kw">use </span>tor_interface::tor_crypto::<span class="kw-2">*</span>;

@@ -275,6 +275,15 @@
 <a href="#275" id="275">275</a>
 <a href="#276" id="276">276</a>
 <a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::clone::Clone;
 <span class="kw">use </span>std::convert::TryInto;
@@ -313,9 +322,7 @@
 }
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">enum </span>EndpointClientEvent {
-    HandshakeCompleted {
-        stream: TcpStream,
-    }
+    HandshakeCompleted { stream: TcpStream },
 }
 
 <span class="attr">#[derive(Debug, PartialEq)]
@@ -445,16 +452,16 @@
                                 OsRng.fill_bytes(<span class="kw-2">&amp;mut </span>client_cookie);
 
                                 <span class="comment">// client_identity_proof_signature
-                                </span><span class="kw">let </span>server_cookie: ServerCookie = <span class="kw">match </span>server_cookie.clone().try_into()
-                                {
-                                    <span class="prelude-val">Ok</span>(server_cookie) =&gt; server_cookie,
-                                    <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
-                                        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(<span class="macro">format!</span>(
-                                            <span class="string">&quot;unable to convert &#39;{:?}&#39; to server cookie&quot;</span>,
-                                            server_cookie
-                                        )))
-                                    }
-                                };
+                                </span><span class="kw">let </span>server_cookie: ServerCookie =
+                                    <span class="kw">match </span>server_cookie.clone().try_into() {
+                                        <span class="prelude-val">Ok</span>(server_cookie) =&gt; server_cookie,
+                                        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
+                                            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(<span class="macro">format!</span>(
+                                                <span class="string">&quot;unable to convert &#39;{:?}&#39; to server cookie&quot;</span>,
+                                                server_cookie
+                                            )))
+                                        }
+                                    };
                                 <span class="kw">let </span>client_identity_proof = build_client_proof(
                                     DomainSeparator::GoslingEndpoint,
                                     <span class="kw-2">&amp;</span><span class="self">self</span>.requested_channel,
@@ -475,12 +482,16 @@
 
                                 <span class="comment">// make rpc call
                                 </span><span class="self">self</span>.send_response_request_cookie = <span class="prelude-val">Some</span>(
-                                    rpc
-                                        .client_call(<span class="string">&quot;gosling_endpoint&quot;</span>, <span class="string">&quot;send_response&quot;</span>, <span class="number">0</span>, args)
+                                    rpc.client_call(<span class="string">&quot;gosling_endpoint&quot;</span>, <span class="string">&quot;send_response&quot;</span>, <span class="number">0</span>, args)
                                         .unwrap(),
                                 );
 
                                 <span class="self">self</span>.state = EndpointClientState::WaitingForProofVerification;
+                            } <span class="kw">else </span>{
+                                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(<span class="macro">format!</span>(
+                                    <span class="string">&quot;begin_handshake() returned unexpected value: {}&quot;</span>,
+                                    result
+                                )));
                             }
                         } <span class="kw">else </span>{
                             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(<span class="macro">format!</span>(
@@ -534,13 +545,20 @@
                             <span class="kw">if </span>result.is_empty() {
                                 <span class="self">self</span>.state = EndpointClientState::HandshakeComplete;
                                 <span class="kw">let </span>stream = std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.rpc).unwrap().into_stream();
-                                <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(EndpointClientEvent::HandshakeCompleted{stream}));
+                                <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(EndpointClientEvent::HandshakeCompleted {
+                                    stream,
+                                }));
                             } <span class="kw">else </span>{
                                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(<span class="macro">format!</span>(
                                     <span class="string">&quot;received unexpected data from send_response(): {:?}&quot;</span>,
                                     result
                                 )));
                             }
+                        } <span class="kw">else </span>{
+                            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(<span class="macro">format!</span>(
+                                <span class="string">&quot;received unexpected data from send_response(): {:?}&quot;</span>,
+                                result
+                            )));
                         }
                     }
                     <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)

@@ -685,6 +685,8 @@
 <a href="#685" id="685">685</a>
 <a href="#686" id="686">686</a>
 <a href="#687" id="687">687</a>
+<a href="#688" id="688">688</a>
+<a href="#689" id="689">689</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::convert::TryInto;
 <span class="kw">use </span>std::iter;
@@ -857,10 +859,11 @@
     <span class="kw">pub fn </span>from_raw(raw: <span class="kw-2">&amp;</span>[u8; ED25519_PRIVATE_KEY_SIZE]) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519PrivateKey, Error&gt; {
         <span class="comment">// Verify the provided bytes have bits set correctly
         // see: https://gitlab.torproject.org/tpo/core/arti/-/issues/1021
-        </span><span class="kw">if </span>raw[<span class="number">0</span>] == raw[<span class="number">0</span>] &amp; <span class="number">248 </span>&amp;&amp;
-           raw[<span class="number">31</span>] == (raw[<span class="number">31</span>] &amp; <span class="number">63</span>) | <span class="number">64 </span>{
+        </span><span class="kw">if </span>raw[<span class="number">0</span>] == raw[<span class="number">0</span>] &amp; <span class="number">248 </span>&amp;&amp; raw[<span class="number">31</span>] == (raw[<span class="number">31</span>] &amp; <span class="number">63</span>) | <span class="number">64 </span>{
             <span class="kw">match </span>pk::ed25519::ExpandedSecretKey::from_bytes(raw) {
-                <span class="prelude-val">Ok</span>(expanded_secret_key) =&gt; <span class="prelude-val">Ok</span>(Ed25519PrivateKey{ expanded_secret_key }),
+                <span class="prelude-val">Ok</span>(expanded_secret_key) =&gt; <span class="prelude-val">Ok</span>(Ed25519PrivateKey {
+                    expanded_secret_key,
+                }),
                 <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(Error::KeyInvalid),
             }
         } <span class="kw">else </span>{
@@ -1134,9 +1137,10 @@
 
     <span class="kw">pub fn </span>from_raw(raw: <span class="kw-2">&amp;</span>[u8; X25519_PRIVATE_KEY_SIZE]) -&gt; <span class="prelude-ty">Result</span>&lt;X25519PrivateKey, Error&gt; {
         <span class="comment">// see: https://docs.rs/x25519-dalek/2.0.0-pre.1/src/x25519_dalek/x25519.rs.html#197
-        </span><span class="kw">if </span>raw[<span class="number">0</span>] == raw[<span class="number">0</span>] &amp; <span class="number">240 </span>&amp;&amp;
-           raw[<span class="number">31</span>] == (raw[<span class="number">31</span>] &amp; <span class="number">127</span>) | <span class="number">64 </span>{
-            <span class="prelude-val">Ok</span>(X25519PrivateKey { secret_key: pk::curve25519::StaticSecret::from(<span class="kw-2">*</span>raw) })
+        </span><span class="kw">if </span>raw[<span class="number">0</span>] == raw[<span class="number">0</span>] &amp; <span class="number">240 </span>&amp;&amp; raw[<span class="number">31</span>] == (raw[<span class="number">31</span>] &amp; <span class="number">127</span>) | <span class="number">64 </span>{
+            <span class="prelude-val">Ok</span>(X25519PrivateKey {
+                secret_key: pk::curve25519::StaticSecret::from(<span class="kw-2">*</span>raw),
+            })
         } <span class="kw">else </span>{
             <span class="prelude-val">Err</span>(Error::KeyInvalid)
         }

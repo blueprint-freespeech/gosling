@@ -693,8 +693,6 @@
 <a href="#693" id="693">693</a>
 <a href="#694" id="694">694</a>
 <a href="#695" id="695">695</a>
-<a href="#696" id="696">696</a>
-<a href="#697" id="697">697</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::clone::Clone;
 <span class="kw">use </span>std::convert::TryInto;
@@ -704,7 +702,9 @@
 </span><span class="kw">use </span>bson::doc;
 <span class="kw">use </span>bson::spec::BinarySubtype;
 <span class="kw">use </span>bson::{Binary, Bson};
-<span class="kw">use </span>honk_rpc::honk_rpc::{ApiSet, ErrorCode, RequestCookie, Session, get_message_overhead, get_response_section_size};
+<span class="kw">use </span>honk_rpc::honk_rpc::{
+    get_message_overhead, get_response_section_size, ApiSet, ErrorCode, RequestCookie, Session,
+};
 <span class="kw">use </span>rand::rngs::OsRng;
 <span class="kw">use </span>rand::RngCore;
 <span class="kw">use </span>tor_interface::tor_crypto::<span class="kw-2">*</span>;
@@ -1127,14 +1127,9 @@
                     <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::BadVersion <span class="kw">as </span>i32));
                 }
 
-                <span class="kw">if let </span>(
-                    <span class="prelude-val">Some</span>(Bson::String(client_identity)),
-                    <span class="prelude-val">Some</span>(Bson::String(endpoint_name)),
-                ) = (
-                    args.remove(<span class="string">&quot;client_identity&quot;</span>),
-                    args.remove(<span class="string">&quot;endpoint&quot;</span>),
-                ) {
-
+                <span class="kw">if let </span>(<span class="prelude-val">Some</span>(Bson::String(client_identity)), <span class="prelude-val">Some</span>(Bson::String(endpoint_name))) =
+                    (args.remove(<span class="string">&quot;client_identity&quot;</span>), args.remove(<span class="string">&quot;endpoint&quot;</span>))
+                {
                     <span class="comment">// client_identiity
                     </span><span class="kw">let </span>client_identity = <span class="kw">match </span>V3OnionServiceId::from_string(<span class="kw-2">&amp;</span>client_identity) {
                         <span class="prelude-val">Ok</span>(client_identity) =&gt; client_identity,
@@ -1242,7 +1237,6 @@
                                 <span class="self">self</span>.state = IdentityServerState::HandshakeFailed;
                                 <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32));
                             }
-
                         };
                     <span class="kw">let </span>client_authorization_key =
                         X25519PublicKey::from_raw(<span class="kw-2">&amp;</span>client_authorization_key);
@@ -1259,7 +1253,6 @@
                                 <span class="self">self</span>.state = IdentityServerState::HandshakeFailed;
                                 <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32));
                             }
-
                         };
                     <span class="kw">let </span>client_authorization_signature =
                         <span class="kw">match </span>Ed25519Signature::from_raw(<span class="kw-2">&amp;</span>client_authorization_signature) {
@@ -1274,26 +1267,29 @@
                     </span><span class="self">self</span>.send_response_request_cookie = <span class="prelude-val">Some</span>(request_cookie);
 
                     <span class="comment">// convert client_identity to client&#39;s public ed25519 key
-                    </span><span class="kw">if let </span><span class="prelude-val">Ok</span>(client_identity_key) = Ed25519PublicKey::from_service_id(<span class="kw-2">&amp;</span>client_identity) {
+                    </span><span class="kw">if let </span><span class="prelude-val">Ok</span>(client_identity_key) =
+                        Ed25519PublicKey::from_service_id(client_identity)
+                    {
                         <span class="comment">// construct + verify client proof
                         </span><span class="kw">let </span>client_proof = build_client_proof(
                             DomainSeparator::GoslingIdentity,
                             requested_endpoint,
-                            <span class="kw-2">&amp;</span>client_identity,
+                            client_identity,
                             <span class="kw-2">&amp;</span><span class="self">self</span>.server_identity,
                             <span class="kw-2">&amp;</span>client_cookie,
                             server_cookie,
                         );
-                        <span class="self">self</span>.client_proof_signature_valid =
-                            client_identity_proof_signature.verify(<span class="kw-2">&amp;</span>client_proof, <span class="kw-2">&amp;</span>client_identity_key);
+                        <span class="self">self</span>.client_proof_signature_valid = client_identity_proof_signature
+                            .verify(<span class="kw-2">&amp;</span>client_proof, <span class="kw-2">&amp;</span>client_identity_key);
                     }
 
                     <span class="comment">// evaluate the client authorization signature
-                    </span><span class="self">self</span>.client_auth_signature_valid = client_authorization_signature.verify_x25519(
-                        client_identity.as_bytes(),
-                        <span class="kw-2">&amp;</span>client_authorization_key,
-                        client_authorization_key_signbit,
-                    );
+                    </span><span class="self">self</span>.client_auth_signature_valid = client_authorization_signature
+                        .verify_x25519(
+                            client_identity.as_bytes(),
+                            <span class="kw-2">&amp;</span>client_authorization_key,
+                            client_authorization_key_signbit,
+                        );
 
                     <span class="comment">// save off client auth key for future endpoint generation
                     </span><span class="self">self</span>.client_auth_key = <span class="prelude-val">Some</span>(client_authorization_key);
