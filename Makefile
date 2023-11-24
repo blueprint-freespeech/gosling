@@ -90,10 +90,10 @@ lint: config-debug
 		--enable=all\
 		--inline-suppr\
 		--suppress=missingIncludeSystem\
+		--suppress=*:source/Catch2/src/catch2/*\
 		--include=out/debug/gosling/include/libgosling.h\
 		--include=out/debug/gosling/include/libgosling.hpp\
-		--project=out/debug/compile_commands.sans-catch2.json\
-		-isource/sans-catch2
+		--project=out/debug/compile_commands.sans-catch2.json
 
 define pages
 	@$(MAKE) gosling_cargo_doc -C out/$(1)
