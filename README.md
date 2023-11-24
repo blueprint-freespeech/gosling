@@ -41,10 +41,12 @@ The **fuzz-** make targets have the following additional dependencies:
 
 The **pages-** make target has the following additional dependencies:
 
-- [pandoc](https://pandoc.org)
-- [mustache](http://mustache.github.io/)
 - [doxygen](https://www.doxygen.nl/)
-- [graphviz](https://www.graphviz.org/)
+- [graphviz](https://www.graphviz.org/)s
+- [mustache](http://mustache.github.io/)
+- [pandoc](https://pandoc.org)
+- [plantuml](https://github.com/plantuml/plantuml)
+- [tidy](https://github.com/htacg/tidy-html5)
 
 The **format** make target has the following additional dependencies:
 
@@ -54,12 +56,6 @@ The **lint** make target has the following additional dependencies:
 
 - [cppcheck](https://cppcheck.sourceforge.io/)
 - [jq](https://jqlang.github.io/jq/)
-
-
-The documentation has the following build dependencies:
-
-- [plantuml](https://github.com/plantuml/plantuml)
-- [tidy](https://github.com/htacg/tidy-html5)
 
 ## Building
 
