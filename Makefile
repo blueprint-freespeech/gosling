@@ -139,3 +139,6 @@ fuzz-gosling-endpoint-server: config-release
 
 fuzz-gosling-endpoint-client: config-release
 	@$(call fuzz,"gosling_cargo_fuzz_endpoint_client","release/gosling/crates/gosling")
+
+fuzz-gosling-ffi: config-release
+	@$(call fuzz,"gosling_cargo_fuzz_gosling_ffi","release/gosling/crates/gosling-ffi")
