@@ -4,6 +4,9 @@ authors = ["Richard Pospesel <richard@blueprintforfreespeech.net>"]
 version = "0.1.0"
 rust-version = "1.66"
 edition = "2021"
+license = "BSD-3-Clause"
+description = "A library implementing an asynchrynous, bi-directional, dynamic, and BSON-based remote procedure call system"
+repository = "https://github.com/blueprint-freespeech/gosling"
 
 [dependencies]
 bson = "2.2.0"
