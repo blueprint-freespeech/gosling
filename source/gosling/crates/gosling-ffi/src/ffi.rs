@@ -2116,10 +2116,6 @@ pub type GoslingIdentityServerEndpointSupportedCallback = Option<
 ///
 /// @param context: the context associated with this event
 /// @param handshake_handle: the handshake handle this callback is associated with
-/// @param endpoint_name: a null-terminated ASCII string containing the name of the
-///  endpoint being requested
-/// @param endpoint_name_length: the number of chars in endpoint_name, not
-///  including the null-terminator
 /// @return the number of bytes required to store the challenge object
 pub type GoslingIdentityServerHandshakeChallengeSizeCallback = Option<
     extern "C" fn(context: *mut GoslingContext, handshake_handle: GoslingHandshakeHandle) -> usize,
@@ -2130,10 +2126,6 @@ pub type GoslingIdentityServerHandshakeChallengeSizeCallback = Option<
 ///
 /// @param context: the context associated with this event
 /// @param handshake_handle: the handshake handle this callback is associated with
-/// @param endpoint_name: a null-terminated ASCII string containing the name of the
-///  endpoint being requested
-/// @param endpoint_name_length: the number of chars in endpoint_name, not
-///  including the null-terminator
 /// @param out_challenge_buffer: the destination buffer for the callback
 ///  to write a BSON document representing the endpoint request challenge object
 /// @param challenge_buffer_size: the number of bytes allocated in
