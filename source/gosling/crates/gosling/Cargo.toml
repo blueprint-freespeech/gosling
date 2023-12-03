@@ -4,6 +4,10 @@ authors = ["Richard Pospesel <richard@blueprintforfreespeech.net>"]
 version = "0.1.0"
 rust-version = "1.66"
 edition = "2021"
+license = "BSD-3-Clause"
+description = "A library implementing for implementing fully anonymous, peer-to-peer applications using tor onion services"
+homepage = "https://blueprint-freespeech.github.io/gosling/index.xhtml"
+repository = "https://github.com/blueprint-freespeech/gosling"
 
 [dependencies]
 bson = "2.2.0"
