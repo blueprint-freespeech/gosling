@@ -47,4 +47,5 @@ var menudata={children:[
 {text:"g",url:"globals_func.html#index_g"}]},
 {text:"Typedefs",url:"globals_type.html",children:[
 {text:"g",url:"globals_type.html#index_g"}]},
+{text:"Enumerator",url:"globals_eval.html"},
 {text:"Macros",url:"globals_defs.html"}]}]}]}

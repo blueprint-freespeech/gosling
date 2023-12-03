@@ -64,6 +64,7 @@ $(function() {
   <div class="summary">
 <a href="#define-members">Macros</a> &#124;
 <a href="#typedef-members">Typedefs</a> &#124;
+<a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">libgosling.h File Reference</div>  </div>
@@ -74,10 +75,11 @@ $(function() {
 <code>#include &lt;stddef.h&gt;</code><br />
 <code>#include &lt;stdint.h&gt;</code><br />
 <code>#include &lt;stdlib.h&gt;</code><br />
+<code>#include &lt;assert.h&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for libgosling.h:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="libgosling_8h__incl.svg" width="482" height="112"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="libgosling_8h__incl.svg" width="580" height="112"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 </div><div class="textblock"><div class="dynheader">
@@ -176,6 +178,25 @@ Typedefs</h2></td></tr>
 <tr class="separator:a7c6ece922397a3c016de78a37110beba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad4004cfa2bc45a8c7c9432bbea5836f9"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="libgosling_8h.html#ad4004cfa2bc45a8c7c9432bbea5836f9">gosling_endpoint_server_handshake_failed_callback_t</a>) (struct <a class="el" href="libgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="libgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const struct <a class="el" href="libgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> *error)</td></tr>
 <tr class="separator:ad4004cfa2bc45a8c7c9432bbea5836f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
+Enumerations</h2></td></tr>
+<tr class="memitem:a06fc87d81c62e9abb8790b6e5713c55b"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom">{ <br />
+&#160;&#160;<a class="el" href="libgosling_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba635758e080ef971df78b6c58e70dd3f3">gosling_v3_onion_service_id_length</a> = 56
+, <a class="el" href="libgosling_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba0b90bf50d18348ca13e902e99ba7c377">gosling_v3_onion_service_id_size</a> = 57
+, <a class="el" href="libgosling_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba3d461ec7fbb5d01043a438c3e32fd8c3">gosling_ed25519_private_keyblob_base64_length</a> = 88
+, <a class="el" href="libgosling_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba373dd91250e8e4f3b8a9de7efd6ad5d1">gosling_ed25519_private_keyblob_header_length</a> = 11
+, <br />
+&#160;&#160;<a class="el" href="libgosling_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba180d12863e1c78b792a14a4b40f3553b">gosling_ed25519_private_keyblob_length</a> = 99
+, <a class="el" href="libgosling_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba20eb8fe75377b3df22f34566c35417f0">gosling_ed25519_private_keyblob_size</a> = 100
+, <a class="el" href="libgosling_8h.html#a06fc87d81c62e9abb8790b6e5713c55baf77a7a4cfd52bbeaf84767441a05e1d7">gosling_x25519_private_keyblob_base64_length</a> = 44
+, <a class="el" href="libgosling_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba6f8b4953ead91da53412f5a58cab3bb7">gosling_x25519_private_keyblob_base64_size</a> = 45
+, <br />
+&#160;&#160;<a class="el" href="libgosling_8h.html#a06fc87d81c62e9abb8790b6e5713c55baa43564c9e43641328e1f473822c72fb4">gosling_x25519_public_keyblob_base32_length</a> = 52
+, <a class="el" href="libgosling_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba9913637b91d74547658cd977df1b743e">gosling_x25519_public_keyblob_base32_size</a> = 53
+<br />
+ }</td></tr>
+<tr class="separator:a06fc87d81c62e9abb8790b6e5713c55b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
@@ -799,8 +820,6 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
-    <tr><td class="paramname">endpoint_name</td><td>a null-terminated ASCII string containing the name of the endpoint being requested </td></tr>
-    <tr><td class="paramname">endpoint_name_length</td><td>the number of chars in endpoint_name, not including the null-terminator </td></tr>
     <tr><td class="paramname">out_challenge_buffer</td><td>the destination buffer for the callback to write a BSON document representing the endpoint request challenge object </td></tr>
     <tr><td class="paramname">challenge_buffer_size</td><td>the number of bytes allocated in out_challenge_buffer </td></tr>
   </table>
@@ -825,8 +844,6 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
-    <tr><td class="paramname">endpoint_name</td><td>a null-terminated ASCII string containing the name of the endpoint being requested </td></tr>
-    <tr><td class="paramname">endpoint_name_length</td><td>the number of chars in endpoint_name, not including the null-terminator </td></tr>
   </table>
   </dd>
 </dl>
@@ -1130,6 +1147,33 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <p>An x25519 public key used to encrypt v3 onoin service descriptors </p>
+
+</div>
+</div>
+<h2 class="groupheader">Enumeration Type Documentation</h2>
+<a id="a06fc87d81c62e9abb8790b6e5713c55b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a06fc87d81c62e9abb8790b6e5713c55b">&#9670;&nbsp;</a></span>anonymous enum</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">anonymous enum</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55ba635758e080ef971df78b6c58e70dd3f3"></a>gosling_v3_onion_service_id_length&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55ba0b90bf50d18348ca13e902e99ba7c377"></a>gosling_v3_onion_service_id_size&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55ba3d461ec7fbb5d01043a438c3e32fd8c3"></a>gosling_ed25519_private_keyblob_base64_length&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55ba373dd91250e8e4f3b8a9de7efd6ad5d1"></a>gosling_ed25519_private_keyblob_header_length&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55ba180d12863e1c78b792a14a4b40f3553b"></a>gosling_ed25519_private_keyblob_length&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55ba20eb8fe75377b3df22f34566c35417f0"></a>gosling_ed25519_private_keyblob_size&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55baf77a7a4cfd52bbeaf84767441a05e1d7"></a>gosling_x25519_private_keyblob_base64_length&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55ba6f8b4953ead91da53412f5a58cab3bb7"></a>gosling_x25519_private_keyblob_base64_size&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55baa43564c9e43641328e1f473822c72fb4"></a>gosling_x25519_public_keyblob_base32_length&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55ba9913637b91d74547658cd977df1b743e"></a>gosling_x25519_public_keyblob_base32_size&#160;</td><td class="fielddoc"></td></tr>
+</table>
 
 </div>
 </div>
