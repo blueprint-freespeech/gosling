@@ -8,6 +8,10 @@ edition = "2021"
 
 [build-dependencies]
 cbindgen = "0.20.0"
+regex = "1.10.2"
+serde = "1.0.193"
+serde_json = "1.0"
+
 
 [dependencies]
 anyhow = "1.0"

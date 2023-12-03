@@ -76,7 +76,7 @@ extra_bindings = ["tor-interface"]
 "target_os = macos" = "GOSLING_PLATFORM_MACOS"
 
 [fn]
-args = "vertical"
+args = "horizontal"
 
 [enum]
 rename_variants = "SnakeCase"

@@ -10,6 +10,7 @@ set(gosling_ffi_sources
 set(gosling_ffi_outputs
     ${CARGO_TARGET_DIR}/include/libgosling.h
     ${CARGO_TARGET_DIR}/include/libgosling.hpp
+    ${CARGO_TARGET_DIR}/libgosling.json
     ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/libgoslingffi.a)
 #
 # gosling_ffi build target
