@@ -151,6 +151,10 @@ public:
     gosling_v3_onion_service_id_free(val);
   }
 };
+template <> class default_delete<gosling_tor_provider> {
+public:
+  void operator()(gosling_tor_provider *val) { gosling_tor_provider_free(val); }
+};
 template <> class default_delete<gosling_context> {
 public:
   void operator()(gosling_context *val) { gosling_context_free(val); }

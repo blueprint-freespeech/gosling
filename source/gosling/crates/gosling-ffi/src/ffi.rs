@@ -20,6 +20,7 @@ use std::time::Duration;
 use anyhow::anyhow;
 use anyhow::bail;
 use gosling::context::*;
+use tor_interface::*;
 use tor_interface::legacy_tor_client::*;
 use tor_interface::tor_crypto::*;
 
@@ -32,7 +33,8 @@ const ED25519_PRIVATE_KEY_TAG: usize = 0x2;
 const X25519_PRIVATE_KEY_TAG: usize = 0x3;
 const X25519_PUBLIC_KEY_TAG: usize = 0x4;
 const V3_ONION_SERVICE_ID_TAG: usize = 0x5;
-const CONTEXT_TUPLE_TAG: usize = 0x6;
+const TOR_PROVIDER_TAG: usize = 0x6;
+const CONTEXT_TUPLE_TAG: usize = 0x7;
 
 macro_rules! define_registry {
     ($type:ty) => {
@@ -131,6 +133,8 @@ pub struct GoslingX25519PrivateKey;
 pub struct GoslingX25519PublicKey;
 /// A v3 onion service id
 pub struct GoslingV3OnionServiceId;
+/// A tor provider object used by a context to connect to the tor network
+pub struct GoslingTorProvider;
 /// A context object associated with a single peer identity
 pub struct GoslingContext;
 /// A handle for an in-progress identity handhskae
@@ -140,6 +144,9 @@ define_registry! {Ed25519PrivateKey}
 define_registry! {X25519PrivateKey}
 define_registry! {X25519PublicKey}
 define_registry! {V3OnionServiceId}
+/// cbindgen:ignore
+type TorProvider = Box<dyn tor_provider::TorProvider>;
+define_registry! {TorProvider}
 
 /// cbindgen:ignore
 type ContextTuple = (Context, EventCallbacks, Option<VecDeque<ContextEvent>>);
@@ -174,6 +181,13 @@ pub extern "C" fn gosling_x25519_public_key_free(public_key: *mut GoslingX25519P
 #[no_mangle]
 pub extern "C" fn gosling_v3_onion_service_id_free(service_id: *mut GoslingV3OnionServiceId) {
     impl_registry_free!(service_id, V3OnionServiceId);
+}
+/// Frees a gosling_tor_provider object
+///
+/// @param tor_provider: the tor provider object to free
+#[no_mangle]
+pub extern "C" fn gosling_tor_provider_free(tor_provider: *mut GoslingTorProvider) {
+    impl_registry_free!(tor_provider, ContextTuple);
 }
 /// Frees a gosling_context object
 ///
@@ -867,35 +881,28 @@ pub extern "C" fn gosling_string_is_valid_v3_onion_service_id(
     })
 }
 
-/// Initialize a gosling context.
+/// Create a new tor provider which uses the legacy tor daemon client.
 ///
-/// @param out_context: returned initialied gosling context
+/// @param out_tor_provider: returned tor provider
 /// @param tor_bin_path: the file system path to the tor binary; if this is null the tor executable
 ///  found in the system PATH variable is used
 /// @param tor_bin_path_length: the number of chars in tor_bin_path not including any null terminator
 /// @param tor_working_directory: the file system path to store tor's data
 /// @param tor_working_directory_length: the number of chars in tor_working_directory not including any
 ///  null-terminator
-/// @param identity_port: the tor virtual port the identity server listens on
-/// @param endpoint_port: the tor virtual port endpoint servers listen on
-/// @param identity_private_key: the e25519 private key used to start th identity server's onion service
 /// @param error: filled on error
 #[no_mangle]
-pub unsafe extern "C" fn gosling_context_init(
-    // out context
-    out_context: *mut *mut GoslingContext,
+pub unsafe extern "C" fn gosling_tor_provider_new_legacy_client(
+    out_tor_provider: *mut *mut GoslingTorProvider,
     tor_bin_path: *const c_char,
     tor_bin_path_length: usize,
     tor_working_directory: *const c_char,
     tor_working_directory_length: usize,
-    identity_port: u16,
-    endpoint_port: u16,
-    identity_private_key: *const GoslingEd25519PrivateKey,
     error: *mut *mut GoslingFFIError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_context.is_null() {
-            bail!("out_context must not be null");
+        if out_tor_provider.is_null() {
+            bail!("out_tor_provider must not be null");
         }
         if tor_bin_path.is_null() && tor_bin_path_length != 0 {
             bail!("tor_bin_path is null so tor_bin_path_length must be 0");
@@ -908,15 +915,6 @@ pub unsafe extern "C" fn gosling_context_init(
         }
         if tor_working_directory_length == 0usize {
             bail!("tor_working_directory_length must not be 0");
-        }
-        if identity_port == 0u16 {
-            bail!("identity_port must not be 0");
-        }
-        if endpoint_port == 0u16 {
-            bail!("endpoint_port must not be 0");
-        }
-        if identity_private_key.is_null() {
-            bail!("identity_private_key must not be null");
         }
 
         let tor_bin_path = if tor_bin_path.is_null() {
@@ -937,6 +935,64 @@ pub unsafe extern "C" fn gosling_context_init(
         let tor_working_directory = std::str::from_utf8(tor_working_directory)?;
         let tor_working_directory = Path::new(tor_working_directory);
 
+        let tor_client = LegacyTorClient::new(&tor_bin_path, tor_working_directory)?;
+        let tor_provider = Box::new(tor_client);
+
+        let handle = get_tor_provider_registry().insert(tor_provider);
+        *out_tor_provider = handle as *mut GoslingTorProvider;
+
+        Ok(())
+    });
+}
+
+/// Initialize a gosling context.
+///
+/// @param out_context: returned initialied gosling context
+/// @param tor_bin_path: the file system path to the tor binary; if this is null the tor executable
+///  found in the system PATH variable is used
+/// @param tor_bin_path_length: the number of chars in tor_bin_path not including any null terminator
+/// @param tor_working_directory: the file system path to store tor's data
+/// @param tor_working_directory_length: the number of chars in tor_working_directory not including any
+///  null-terminator
+/// @param identity_port: the tor virtual port the identity server listens on
+/// @param endpoint_port: the tor virtual port endpoint servers listen on
+/// @param identity_private_key: the e25519 private key used to start th identity server's onion service
+/// @param error: filled on error
+#[no_mangle]
+pub unsafe extern "C" fn gosling_context_init(
+    // out context
+    out_context: *mut *mut GoslingContext,
+    tor_provider: *mut GoslingTorProvider,
+    identity_port: u16,
+    endpoint_port: u16,
+    identity_private_key: *const GoslingEd25519PrivateKey,
+    error: *mut *mut GoslingFFIError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        if out_context.is_null() {
+            bail!("out_context must not be null");
+        }
+        if tor_provider.is_null() {
+            bail!("tor_provider must not be null");
+        }
+        if identity_port == 0u16 {
+            bail!("identity_port must not be 0");
+        }
+        if endpoint_port == 0u16 {
+            bail!("endpoint_port must not be 0");
+        }
+        if identity_private_key.is_null() {
+            bail!("identity_private_key must not be null");
+        }
+
+        // get our tor provider
+        let mut tor_provider_registry = get_tor_provider_registry();
+        let tor_provider =
+            match tor_provider_registry.remove(tor_provider as usize) {
+                Some(tor_provider) => tor_provider,
+                None => bail!("tor_provider is invalid"),
+            };
+
         // get our identity key
         let ed25519_private_key_registry = get_ed25519_private_key_registry();
         let identity_private_key =
@@ -946,9 +1002,8 @@ pub unsafe extern "C" fn gosling_context_init(
             };
 
         // construct context
-        let tor_client = LegacyTorClient::new(&tor_bin_path, tor_working_directory)?;
         let context = Context::new(
-            Box::new(tor_client),
+            tor_provider,
             identity_port,
             endpoint_port,
             Duration::from_secs(60),

@@ -260,13 +260,19 @@ fn test_gosling_ffi_handshake() -> anyhow::Result<()> {
     alice_working_dir.push("gosling_context_test_alice");
     let alice_working_dir: CString = CString::new(alice_working_dir.to_str().unwrap())?;
 
-    let mut alice_context: *mut GoslingContext = ptr::null_mut();
-    require_noerror!(gosling_context_init(
-        &mut alice_context,
+    let mut alice_tor_provider: *mut GoslingTorProvider = ptr::null_mut();
+    require_noerror!(gosling_tor_provider_new_legacy_client(
+        &mut alice_tor_provider,
         ptr::null(),
         0usize,
         alice_working_dir.as_ptr(),
-        alice_working_dir.as_bytes().len(),
+        alice_working_dir.as_bytes().len()
+    ));
+
+    let mut alice_context: *mut GoslingContext = ptr::null_mut();
+    require_noerror!(gosling_context_init(
+        &mut alice_context,
+        alice_tor_provider,
         420,
         420,
         alice_private_key
@@ -290,13 +296,19 @@ fn test_gosling_ffi_handshake() -> anyhow::Result<()> {
     pat_working_dir.push("gosling_context_test_pat");
     let pat_working_dir: CString = CString::new(pat_working_dir.to_str().unwrap())?;
 
-    let mut pat_context: *mut GoslingContext = ptr::null_mut();
-    require_noerror!(gosling_context_init(
-        &mut pat_context,
+    let mut pat_tor_provider: *mut GoslingTorProvider = ptr::null_mut();
+    require_noerror!(gosling_tor_provider_new_legacy_client(
+        &mut pat_tor_provider,
         ptr::null(),
         0usize,
         pat_working_dir.as_ptr(),
-        pat_working_dir.as_bytes().len(),
+        pat_working_dir.as_bytes().len()
+    ));
+
+    let mut pat_context: *mut GoslingContext = ptr::null_mut();
+    require_noerror!(gosling_context_init(
+        &mut pat_context,
+        pat_tor_provider,
         420,
         420,
         pat_private_key

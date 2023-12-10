@@ -229,15 +229,21 @@ TEST_CASE("gosling_cpp_demo") {
   const auto alice_working_dir = (tmp / "gosling_context_test_alice").string();
   cout << "alice working dir: " << alice_working_dir << endl;
 
-  REQUIRE_NOTHROW(::gosling_context_init(
-      out(alice_context),       // out_context
+  unique_ptr<gosling_tor_provider> alice_tor_provider;
+  REQUIRE_NOTHROW(::gosling_tor_provider_new_legacy_client(
+      out(alice_tor_provider),  // out tor_provider
       nullptr,                  // tor bin path
       0,                        // tor bin path len
       alice_working_dir.data(), // tor working dirctory
       alice_working_dir.size(), // tor working directory len
-      420,                      // identity port
-      420,                      // endpoint port
-      alice_private_key.get(),  // identity private key
+      throw_on_error()));
+
+  REQUIRE_NOTHROW(::gosling_context_init(
+      out(alice_context),           // out_context
+      alice_tor_provider.release(), // tor_provider
+      420,                          // identity port
+      420,                          // endpoint port
+      alice_private_key.get(),      // identity private key
       throw_on_error()));
 
   // server callbacks
@@ -248,15 +254,21 @@ TEST_CASE("gosling_cpp_demo") {
   const auto pat_working_dir = (tmp / "gosling_context_test_pat").string();
   cout << "pat working dir: " << pat_working_dir << endl;
 
+  unique_ptr<gosling_tor_provider> pat_tor_provider;
+  REQUIRE_NOTHROW(::gosling_tor_provider_new_legacy_client(
+      out(pat_tor_provider),  // out tor_provider
+      nullptr,                // tor bin path
+      0,                      // tor bin path len
+      pat_working_dir.data(), // tor working dirctory
+      pat_working_dir.size(), // tor working directory len
+      throw_on_error()));
+
   REQUIRE_NOTHROW(::gosling_context_init(
-      out(pat_context),        // out_context
-      nullptr,                 // tor bin path
-      0,                       // tor bin path len
-      pat_working_dir.data(),  // tor working dirctory
-      pat_working_dir.size(),  // tor working directory len
-      420,                     // identity port
-      420,                     // endpoint port
-      alice_private_key.get(), // identity private key
+      out(pat_context),           // out_context
+      pat_tor_provider.release(), // tor_provider
+      420,                        // identity port
+      420,                        // endpoint port
+      alice_private_key.get(),    // identity private key
       throw_on_error()));
 
   // client callbacks
