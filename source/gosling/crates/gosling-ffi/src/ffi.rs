@@ -973,12 +973,8 @@ pub unsafe extern "C" fn gosling_tor_provider_new_mock_client(
 /// Initialize a gosling context.
 ///
 /// @param out_context: returned initialied gosling context
-/// @param tor_bin_path: the file system path to the tor binary; if this is null the tor executable
-///  found in the system PATH variable is used
-/// @param tor_bin_path_length: the number of chars in tor_bin_path not including any null terminator
-/// @param tor_working_directory: the file system path to store tor's data
-/// @param tor_working_directory_length: the number of chars in tor_working_directory not including any
-///  null-terminator
+/// @param tor_provider: the tor client implementation to use; this function consumes the tor_provider
+///  and it may not be re-used in subsequent gosling_* calls, and it does not need to be freed
 /// @param identity_port: the tor virtual port the identity server listens on
 /// @param endpoint_port: the tor virtual port endpoint servers listen on
 /// @param identity_private_key: the e25519 private key used to start th identity server's onion service
