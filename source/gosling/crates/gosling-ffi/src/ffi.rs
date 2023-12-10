@@ -22,6 +22,7 @@ use anyhow::bail;
 use gosling::context::*;
 use tor_interface::*;
 use tor_interface::legacy_tor_client::*;
+use tor_interface::mock_tor_client::*;
 use tor_interface::tor_crypto::*;
 
 // internal crates
@@ -936,6 +937,30 @@ pub unsafe extern "C" fn gosling_tor_provider_new_legacy_client(
         let tor_working_directory = Path::new(tor_working_directory);
 
         let tor_client = LegacyTorClient::new(&tor_bin_path, tor_working_directory)?;
+        let tor_provider = Box::new(tor_client);
+
+        let handle = get_tor_provider_registry().insert(tor_provider);
+        *out_tor_provider = handle as *mut GoslingTorProvider;
+
+        Ok(())
+    });
+}
+
+/// Create a mock tor provider for no-internet required in-process testing.
+///
+/// @param out_tor_provider: returned tor provider
+/// @param error: filled on error
+#[no_mangle]
+pub unsafe extern "C" fn gosling_tor_provider_new_mock_client(
+    out_tor_provider: *mut *mut GoslingTorProvider,
+    error: *mut *mut GoslingFFIError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        if out_tor_provider.is_null() {
+            bail!("out_tor_provider must not be null");
+        }
+
+        let tor_client: MockTorClient = Default::default();
         let tor_provider = Box::new(tor_client);
 
         let handle = get_tor_provider_registry().insert(tor_provider);
