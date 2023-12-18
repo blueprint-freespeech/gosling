@@ -4,8 +4,8 @@ use std::net::{SocketAddr, TcpListener, TcpStream};
 
 // extern crates
 use bson::doc;
-use crypto::digest::Digest;
-use crypto::sha3::Sha3;
+use data_encoding::HEXLOWER;
+use sha3::{Digest, Sha3_256};
 
 // internal crates
 use honk_rpc::honk_rpc::*;
@@ -66,10 +66,12 @@ impl TestApiSet {
         mut args: bson::document::Document,
     ) -> Result<Option<bson::Bson>, ErrorCode> {
         if let Some(bson::Bson::Binary(val)) = args.get_mut("data") {
-            let mut sha256 = Sha3::sha3_256();
-            sha256.input(&val.bytes);
+            let mut sha256 = Sha3_256::new();
+            sha256.update(&val.bytes);
 
-            Ok(Some(bson::Bson::String(sha256.result_str())))
+            let hash = sha256.finalize();
+
+            Ok(Some(bson::Bson::String(HEXLOWER.encode(&hash))))
         } else {
             Err(RUNTIME_ERROR_INVALID_ARG)
         }
