@@ -516,7 +516,9 @@ impl Context {
         &mut self,
         endpoint_identity: V3OnionServiceId,
     ) -> Result<(), Error> {
-        assert!(self.bootstrap_complete);
+        if !self.bootstrap_complete {
+            return Err(Error::TorNotConnected());
+        }
 
         if let Some(_listener) = self.endpoint_listeners.remove(&endpoint_identity) {
             Ok(())
