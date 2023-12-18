@@ -1016,7 +1016,7 @@ where
                         // no *additional* bytes written so return bytes written so far
                         return Ok(bytes_written);
                     } else {
-                        return Err(err).map_err(Error::WriterWriteFailed);
+                        return Err(Error::WriterWriteFailed(err));
                     }
                 }
                 Ok(count) => {
