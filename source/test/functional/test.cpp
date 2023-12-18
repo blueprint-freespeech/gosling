@@ -238,13 +238,13 @@ TEST_CASE("gosling_cpp_demo") {
       alice_working_dir.size(), // tor working directory len
       throw_on_error()));
 
-  REQUIRE_NOTHROW(::gosling_context_init(
-      out(alice_context),           // out_context
-      alice_tor_provider.release(), // tor_provider
-      420,                          // identity port
-      420,                          // endpoint port
-      alice_private_key.get(),      // identity private key
-      throw_on_error()));
+  REQUIRE_NOTHROW(
+      ::gosling_context_init(out(alice_context),           // out_context
+                             alice_tor_provider.release(), // tor_provider
+                             420,                          // identity port
+                             420,                          // endpoint port
+                             alice_private_key.get(), // identity private key
+                             throw_on_error()));
 
   // server callbacks
   create_server_identity_handshake(alice_context);
@@ -263,13 +263,13 @@ TEST_CASE("gosling_cpp_demo") {
       pat_working_dir.size(), // tor working directory len
       throw_on_error()));
 
-  REQUIRE_NOTHROW(::gosling_context_init(
-      out(pat_context),           // out_context
-      pat_tor_provider.release(), // tor_provider
-      420,                        // identity port
-      420,                        // endpoint port
-      alice_private_key.get(),    // identity private key
-      throw_on_error()));
+  REQUIRE_NOTHROW(
+      ::gosling_context_init(out(pat_context),           // out_context
+                             pat_tor_provider.release(), // tor_provider
+                             420,                        // identity port
+                             420,                        // endpoint port
+                             alice_private_key.get(),    // identity private key
+                             throw_on_error()));
 
   // client callbacks
   create_client_identity_handshake(pat_context);

@@ -20,10 +20,10 @@ use std::time::Duration;
 use anyhow::anyhow;
 use anyhow::bail;
 use gosling::context::*;
-use tor_interface::*;
 use tor_interface::legacy_tor_client::*;
 use tor_interface::mock_tor_client::*;
 use tor_interface::tor_crypto::*;
+use tor_interface::*;
 
 // internal crates
 use crate::object_registry::*;
@@ -1008,11 +1008,10 @@ pub unsafe extern "C" fn gosling_context_init(
 
         // get our tor provider
         let mut tor_provider_registry = get_tor_provider_registry();
-        let tor_provider =
-            match tor_provider_registry.remove(tor_provider as usize) {
-                Some(tor_provider) => tor_provider,
-                None => bail!("tor_provider is invalid"),
-            };
+        let tor_provider = match tor_provider_registry.remove(tor_provider as usize) {
+            Some(tor_provider) => tor_provider,
+            None => bail!("tor_provider is invalid"),
+        };
 
         // get our identity key
         let ed25519_private_key_registry = get_ed25519_private_key_registry();
