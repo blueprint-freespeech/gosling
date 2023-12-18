@@ -1521,10 +1521,7 @@ Functions</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">out_context</td><td>returned initialied gosling context </td></tr>
-    <tr><td class="paramname">tor_bin_path</td><td>the file system path to the tor binary; if this is null the tor executable found in the system PATH variable is used </td></tr>
-    <tr><td class="paramname">tor_bin_path_length</td><td>the number of chars in tor_bin_path not including any null terminator </td></tr>
-    <tr><td class="paramname">tor_working_directory</td><td>the file system path to store tor's data </td></tr>
-    <tr><td class="paramname">tor_working_directory_length</td><td>the number of chars in tor_working_directory not including any null-terminator </td></tr>
+    <tr><td class="paramname">tor_provider</td><td>the tor client implementation to use; this function consumes the tor_provider and it may not be re-used in subsequent gosling_* calls, and it does not need to be freed </td></tr>
     <tr><td class="paramname">identity_port</td><td>the tor virtual port the identity server listens on </td></tr>
     <tr><td class="paramname">endpoint_port</td><td>the tor virtual port endpoint servers listen on </td></tr>
     <tr><td class="paramname">identity_private_key</td><td>the e25519 private key used to start th identity server's onion service </td></tr>
