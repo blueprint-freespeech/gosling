@@ -56,6 +56,7 @@ fn parse_param(params_raw: &str) -> Vec<Param> {
             Some(cap) => struct_gosling_pattern.replace(t, &cap["name"]).to_string(),
             None => t.to_string(),
         };
+        let t = t.replace(" *", "*");
         let n = &param["name"];
 
         params.push(Param {
