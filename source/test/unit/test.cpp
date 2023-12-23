@@ -28,13 +28,13 @@ TEST_CASE("gosling_ed25519_private_key_generate") {
   REQUIRE(privateKeyAlice.get() != privateKeyPat.get());
 
   // generated keys should have a different key blob representation
-  char aliceKeyBlobRaw[ED25519_PRIVATE_KEYBLOB_SIZE] = {0};
-  char patKeyBlobRaw[ED25519_PRIVATE_KEYBLOB_SIZE] = {0};
+  char aliceKeyBlobRaw[ED25519_PRIVATE_KEY_KEYBLOB_SIZE] = {0};
+  char patKeyBlobRaw[ED25519_PRIVATE_KEY_KEYBLOB_SIZE] = {0};
   REQUIRE_NOTHROW(::gosling_ed25519_private_key_to_keyblob(
-      privateKeyAlice.get(), aliceKeyBlobRaw, ED25519_PRIVATE_KEYBLOB_SIZE,
+      privateKeyAlice.get(), aliceKeyBlobRaw, ED25519_PRIVATE_KEY_KEYBLOB_SIZE,
       throw_on_error()));
   REQUIRE_NOTHROW(::gosling_ed25519_private_key_to_keyblob(
-      privateKeyPat.get(), patKeyBlobRaw, ED25519_PRIVATE_KEYBLOB_SIZE,
+      privateKeyPat.get(), patKeyBlobRaw, ED25519_PRIVATE_KEY_KEYBLOB_SIZE,
       throw_on_error()));
 
   REQUIRE(strcmp(aliceKeyBlobRaw, patKeyBlobRaw) != 0);
@@ -51,8 +51,8 @@ TEST_CASE("gosling_ed25519_private_key_from_keyblob") {
   const std::string invalidKeyBlob =
       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-  REQUIRE(keyBlob.size() == ED25519_PRIVATE_KEYBLOB_LENGTH);
-  REQUIRE(invalidKeyBlob.size() == ED25519_PRIVATE_KEYBLOB_LENGTH);
+  REQUIRE(keyBlob.size() == ED25519_PRIVATE_KEY_KEYBLOB_LENGTH);
+  REQUIRE(invalidKeyBlob.size() == ED25519_PRIVATE_KEY_KEYBLOB_LENGTH);
 
   // no valid inputs
   REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(nullptr, nullptr, 0,
@@ -60,7 +60,7 @@ TEST_CASE("gosling_ed25519_private_key_from_keyblob") {
   REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(nullptr, nullptr, 1,
                                                             throw_on_error()));
   REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(
-      nullptr, nullptr, ED25519_PRIVATE_KEYBLOB_SIZE, throw_on_error()));
+      nullptr, nullptr, ED25519_PRIVATE_KEY_KEYBLOB_SIZE, throw_on_error()));
 
   // valid dest, invalid key blob, invaild key blob len
   REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(
@@ -68,7 +68,7 @@ TEST_CASE("gosling_ed25519_private_key_from_keyblob") {
   REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(
       out(privateKey), nullptr, 1, throw_on_error()));
   REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(
-      out(privateKey), nullptr, ED25519_PRIVATE_KEYBLOB_SIZE,
+      out(privateKey), nullptr, ED25519_PRIVATE_KEY_KEYBLOB_SIZE,
       throw_on_error()));
 
   // valid dest, valid key blob, invaild key blob len
@@ -77,7 +77,7 @@ TEST_CASE("gosling_ed25519_private_key_from_keyblob") {
   REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(
       out(privateKey), keyBlob.c_str(), 1, throw_on_error()));
   REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(
-      out(privateKey), keyBlob.c_str(), ED25519_PRIVATE_KEYBLOB_SIZE,
+      out(privateKey), keyBlob.c_str(), ED25519_PRIVATE_KEY_KEYBLOB_SIZE,
       throw_on_error()));
 
   // invalid dest, valid key blob, invalid key blob len
@@ -86,7 +86,7 @@ TEST_CASE("gosling_ed25519_private_key_from_keyblob") {
   REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(
       nullptr, keyBlob.c_str(), 1, throw_on_error()));
   REQUIRE_THROWS(::gosling_ed25519_private_key_from_keyblob(
-      nullptr, keyBlob.c_str(), ED25519_PRIVATE_KEYBLOB_SIZE,
+      nullptr, keyBlob.c_str(), ED25519_PRIVATE_KEY_KEYBLOB_SIZE,
       throw_on_error()));
 
   // invalid dest, valid key blob, valid key blob len
@@ -112,7 +112,7 @@ TEST_CASE("gosling_ed25519_private_key_to_keyblob") {
   const std::string keyBlob =
       "ED25519-V3:YE3GZtDmc+izGijWKgeVRabbXqK456JKKGONDBh"
       "V+kPBVKa2mHVQqnRTVuFXe3inU3YW6qvc7glYEwe9rK0LhQ==";
-  char keyBlobRaw[ED25519_PRIVATE_KEYBLOB_SIZE] = {0};
+  char keyBlobRaw[ED25519_PRIVATE_KEY_KEYBLOB_SIZE] = {0};
   REQUIRE_NOTHROW(::gosling_ed25519_private_key_from_keyblob(
       out(privateKey), keyBlob.c_str(), keyBlob.size(), throw_on_error()));
   REQUIRE(privateKey.get() != nullptr);
@@ -123,7 +123,7 @@ TEST_CASE("gosling_ed25519_private_key_to_keyblob") {
   REQUIRE_THROWS(::gosling_ed25519_private_key_to_keyblob(nullptr, nullptr, 1,
                                                           throw_on_error()));
   REQUIRE_THROWS(::gosling_ed25519_private_key_to_keyblob(
-      nullptr, nullptr, ED25519_PRIVATE_KEYBLOB_LENGTH, throw_on_error()));
+      nullptr, nullptr, ED25519_PRIVATE_KEY_KEYBLOB_LENGTH, throw_on_error()));
 
   // valid key, invalid out key blob, invalid key blob size
   REQUIRE_THROWS(::gosling_ed25519_private_key_to_keyblob(
@@ -131,7 +131,7 @@ TEST_CASE("gosling_ed25519_private_key_to_keyblob") {
   REQUIRE_THROWS(::gosling_ed25519_private_key_to_keyblob(
       privateKey.get(), nullptr, 1, throw_on_error()));
   REQUIRE_THROWS(::gosling_ed25519_private_key_to_keyblob(
-      privateKey.get(), nullptr, ED25519_PRIVATE_KEYBLOB_LENGTH,
+      privateKey.get(), nullptr, ED25519_PRIVATE_KEY_KEYBLOB_LENGTH,
       throw_on_error()));
 
   // valid key, valid out key blob, invalid key blob size
@@ -140,7 +140,7 @@ TEST_CASE("gosling_ed25519_private_key_to_keyblob") {
   REQUIRE_THROWS(::gosling_ed25519_private_key_to_keyblob(
       privateKey.get(), keyBlobRaw, 1, throw_on_error()));
   REQUIRE_THROWS(::gosling_ed25519_private_key_to_keyblob(
-      privateKey.get(), keyBlobRaw, ED25519_PRIVATE_KEYBLOB_LENGTH,
+      privateKey.get(), keyBlobRaw, ED25519_PRIVATE_KEY_KEYBLOB_LENGTH,
       throw_on_error()));
 
   // valid key, valid out key blob, valid key size
@@ -159,8 +159,8 @@ TEST_CASE("gosling_x25519_private_key_from_base64") {
   const std::string base64 = "0GeSReJXdNcgvWRQdnDXhJGdu5UiwP2fefgT93/oqn0=";
   const std::string invalidBase64 =
       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-  REQUIRE(base64.size() == X25519_PRIVATE_KEYBLOB_BASE64_LENGTH);
-  REQUIRE(invalidBase64.size() == X25519_PRIVATE_KEYBLOB_BASE64_LENGTH);
+  REQUIRE(base64.size() == X25519_PRIVATE_KEY_BASE64_LENGTH);
+  REQUIRE(invalidBase64.size() == X25519_PRIVATE_KEY_BASE64_LENGTH);
 
   // no valid inputs
   REQUIRE_THROWS(::gosling_x25519_private_key_from_base64(nullptr, nullptr, 0,
@@ -168,7 +168,7 @@ TEST_CASE("gosling_x25519_private_key_from_base64") {
   REQUIRE_THROWS(::gosling_x25519_private_key_from_base64(nullptr, nullptr, 1,
                                                           throw_on_error()));
   REQUIRE_THROWS(::gosling_x25519_private_key_from_base64(
-      nullptr, nullptr, X25519_PRIVATE_KEYBLOB_BASE64_SIZE, throw_on_error()));
+      nullptr, nullptr, X25519_PRIVATE_KEY_BASE64_SIZE, throw_on_error()));
 
   // valid dest, invalid base64, invaild base64 len
   REQUIRE_THROWS(::gosling_x25519_private_key_from_base64(
@@ -176,7 +176,7 @@ TEST_CASE("gosling_x25519_private_key_from_base64") {
   REQUIRE_THROWS(::gosling_x25519_private_key_from_base64(
       out(privateKey), nullptr, 1, throw_on_error()));
   REQUIRE_THROWS(::gosling_x25519_private_key_from_base64(
-      out(privateKey), nullptr, X25519_PRIVATE_KEYBLOB_BASE64_SIZE,
+      out(privateKey), nullptr, X25519_PRIVATE_KEY_BASE64_SIZE,
       throw_on_error()));
 
   // valid dest, valid base64, invaild base64 len
@@ -185,7 +185,7 @@ TEST_CASE("gosling_x25519_private_key_from_base64") {
   REQUIRE_THROWS(::gosling_x25519_private_key_from_base64(
       out(privateKey), base64.c_str(), 1, throw_on_error()));
   REQUIRE_THROWS(::gosling_x25519_private_key_from_base64(
-      out(privateKey), base64.c_str(), X25519_PRIVATE_KEYBLOB_BASE64_SIZE,
+      out(privateKey), base64.c_str(), X25519_PRIVATE_KEY_BASE64_SIZE,
       throw_on_error()));
 
   // invalid dest, valid base64, invalid base64 len
@@ -194,7 +194,7 @@ TEST_CASE("gosling_x25519_private_key_from_base64") {
   REQUIRE_THROWS(::gosling_x25519_private_key_from_base64(
       nullptr, base64.c_str(), 1, throw_on_error()));
   REQUIRE_THROWS(::gosling_x25519_private_key_from_base64(
-      nullptr, base64.c_str(), X25519_PRIVATE_KEYBLOB_BASE64_SIZE,
+      nullptr, base64.c_str(), X25519_PRIVATE_KEY_BASE64_SIZE,
       throw_on_error()));
 
   // invalid dest, valid base64, valid base64 len
@@ -218,7 +218,7 @@ TEST_CASE("gosling_x25519_private_key_to_base64") {
 
   unique_ptr<gosling_x25519_private_key> privateKey;
   const std::string base64 = "0GeSReJXdNcgvWRQdnDXhJGdu5UiwP2fefgT93/oqn0=";
-  char base64Raw[X25519_PRIVATE_KEYBLOB_BASE64_SIZE] = {0};
+  char base64Raw[X25519_PRIVATE_KEY_BASE64_SIZE] = {0};
   REQUIRE_NOTHROW(::gosling_x25519_private_key_from_base64(
       out(privateKey), base64.c_str(), base64.size(), throw_on_error()));
   REQUIRE(privateKey.get() != nullptr);
@@ -229,7 +229,7 @@ TEST_CASE("gosling_x25519_private_key_to_base64") {
   REQUIRE_THROWS(::gosling_x25519_private_key_to_base64(nullptr, nullptr, 1,
                                                         throw_on_error()));
   REQUIRE_THROWS(::gosling_x25519_private_key_to_base64(
-      nullptr, nullptr, X25519_PRIVATE_KEYBLOB_BASE64_LENGTH,
+      nullptr, nullptr, X25519_PRIVATE_KEY_BASE64_LENGTH,
       throw_on_error()));
 
   // valid key, invalid out base64, invalid base64 size
@@ -238,7 +238,7 @@ TEST_CASE("gosling_x25519_private_key_to_base64") {
   REQUIRE_THROWS(::gosling_x25519_private_key_to_base64(
       privateKey.get(), nullptr, 1, throw_on_error()));
   REQUIRE_THROWS(::gosling_x25519_private_key_to_base64(
-      privateKey.get(), nullptr, X25519_PRIVATE_KEYBLOB_BASE64_LENGTH,
+      privateKey.get(), nullptr, X25519_PRIVATE_KEY_BASE64_LENGTH,
       throw_on_error()));
 
   // valid key, valid out base64, invalid base64 size
@@ -247,7 +247,7 @@ TEST_CASE("gosling_x25519_private_key_to_base64") {
   REQUIRE_THROWS(::gosling_x25519_private_key_to_base64(
       privateKey.get(), base64Raw, 1, throw_on_error()));
   REQUIRE_THROWS(::gosling_x25519_private_key_to_base64(
-      privateKey.get(), base64Raw, X25519_PRIVATE_KEYBLOB_BASE64_LENGTH,
+      privateKey.get(), base64Raw, X25519_PRIVATE_KEY_BASE64_LENGTH,
       throw_on_error()));
 
   // valid key, valid out base64, valid base64 size
@@ -267,8 +267,8 @@ TEST_CASE("gosling_x25519_public_key_from_base32") {
       "AEXCBCEDJ5KU34YGGMZ7PVHVDEA7D7YB7VQAPJTMTZGRJLN3JASA";
   const std::string invalidBase32 =
       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-  REQUIRE(base32.size() == X25519_PUBLIC_KEYBLOB_BASE32_LENGTH);
-  REQUIRE(invalidBase32.size() == X25519_PUBLIC_KEYBLOB_BASE32_LENGTH);
+  REQUIRE(base32.size() == X25519_PUBLIC_KEY_BASE32_LENGTH);
+  REQUIRE(invalidBase32.size() == X25519_PUBLIC_KEY_BASE32_LENGTH);
 
   // no valid inputs
   REQUIRE_THROWS(::gosling_x25519_public_key_from_base32(nullptr, nullptr, 0,
@@ -276,7 +276,7 @@ TEST_CASE("gosling_x25519_public_key_from_base32") {
   REQUIRE_THROWS(::gosling_x25519_public_key_from_base32(nullptr, nullptr, 1,
                                                          throw_on_error()));
   REQUIRE_THROWS(::gosling_x25519_public_key_from_base32(
-      nullptr, nullptr, X25519_PUBLIC_KEYBLOB_BASE32_SIZE, throw_on_error()));
+      nullptr, nullptr, X25519_PUBLIC_KEY_BASE32_SIZE, throw_on_error()));
 
   // valid dest, invalid base32, invaild base32 len
   REQUIRE_THROWS(::gosling_x25519_public_key_from_base32(
@@ -284,7 +284,7 @@ TEST_CASE("gosling_x25519_public_key_from_base32") {
   REQUIRE_THROWS(::gosling_x25519_public_key_from_base32(
       out(publicKey), nullptr, 1, throw_on_error()));
   REQUIRE_THROWS(::gosling_x25519_public_key_from_base32(
-      out(publicKey), nullptr, X25519_PUBLIC_KEYBLOB_BASE32_SIZE,
+      out(publicKey), nullptr, X25519_PUBLIC_KEY_BASE32_SIZE,
       throw_on_error()));
 
   // valid dest, valid base32, invaild base32 len
@@ -293,7 +293,7 @@ TEST_CASE("gosling_x25519_public_key_from_base32") {
   REQUIRE_THROWS(::gosling_x25519_public_key_from_base32(
       out(publicKey), base32.c_str(), 1, throw_on_error()));
   REQUIRE_THROWS(::gosling_x25519_public_key_from_base32(
-      out(publicKey), base32.c_str(), X25519_PUBLIC_KEYBLOB_BASE32_SIZE,
+      out(publicKey), base32.c_str(), X25519_PUBLIC_KEY_BASE32_SIZE,
       throw_on_error()));
 
   // invalid dest, valid base32, invalid base32 len
@@ -302,7 +302,7 @@ TEST_CASE("gosling_x25519_public_key_from_base32") {
   REQUIRE_THROWS(::gosling_x25519_public_key_from_base32(
       nullptr, base32.c_str(), 1, throw_on_error()));
   REQUIRE_THROWS(::gosling_x25519_public_key_from_base32(
-      nullptr, base32.c_str(), X25519_PUBLIC_KEYBLOB_BASE32_SIZE,
+      nullptr, base32.c_str(), X25519_PUBLIC_KEY_BASE32_SIZE,
       throw_on_error()));
 
   // invalid dest, valid base32, valid base32 len
@@ -327,7 +327,7 @@ TEST_CASE("gosling_x25519_public_key_to_base32") {
   unique_ptr<gosling_x25519_public_key> publicKey;
   const std::string base32 =
       "AEXCBCEDJ5KU34YGGMZ7PVHVDEA7D7YB7VQAPJTMTZGRJLN3JASA";
-  char base32Raw[X25519_PUBLIC_KEYBLOB_BASE32_SIZE] = {0};
+  char base32Raw[X25519_PUBLIC_KEY_BASE32_SIZE] = {0};
   REQUIRE_NOTHROW(::gosling_x25519_public_key_from_base32(
       out(publicKey), base32.c_str(), base32.size(), throw_on_error()));
   REQUIRE(publicKey.get() != nullptr);
@@ -338,7 +338,7 @@ TEST_CASE("gosling_x25519_public_key_to_base32") {
   REQUIRE_THROWS(::gosling_x25519_public_key_to_base32(nullptr, nullptr, 1,
                                                        throw_on_error()));
   REQUIRE_THROWS(::gosling_x25519_public_key_to_base32(
-      nullptr, nullptr, X25519_PUBLIC_KEYBLOB_BASE32_LENGTH, throw_on_error()));
+      nullptr, nullptr, X25519_PUBLIC_KEY_BASE32_LENGTH, throw_on_error()));
 
   // valid key, invalid out base32, invalid base32 size
   REQUIRE_THROWS(::gosling_x25519_public_key_to_base32(publicKey.get(), nullptr,
@@ -346,7 +346,7 @@ TEST_CASE("gosling_x25519_public_key_to_base32") {
   REQUIRE_THROWS(::gosling_x25519_public_key_to_base32(publicKey.get(), nullptr,
                                                        1, throw_on_error()));
   REQUIRE_THROWS(::gosling_x25519_public_key_to_base32(
-      publicKey.get(), nullptr, X25519_PUBLIC_KEYBLOB_BASE32_LENGTH,
+      publicKey.get(), nullptr, X25519_PUBLIC_KEY_BASE32_LENGTH,
       throw_on_error()));
 
   // valid key, valid out base32, invalid base32 size
@@ -355,7 +355,7 @@ TEST_CASE("gosling_x25519_public_key_to_base32") {
   REQUIRE_THROWS(::gosling_x25519_public_key_to_base32(
       publicKey.get(), base32Raw, 1, throw_on_error()));
   REQUIRE_THROWS(::gosling_x25519_public_key_to_base32(
-      publicKey.get(), base32Raw, X25519_PUBLIC_KEYBLOB_BASE32_LENGTH,
+      publicKey.get(), base32Raw, X25519_PUBLIC_KEY_BASE32_LENGTH,
       throw_on_error()));
 
   // valid key, valid out base32, valid base32 size
@@ -375,8 +375,8 @@ TEST_CASE("gosling_v3_onion_service_id_from_string") {
       "6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd";
   const std::string invalidServiceIdString =
       "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-  REQUIRE(serviceIdString.size() == V3_ONION_SERVICE_ID_LENGTH);
-  REQUIRE(invalidServiceIdString.size() == V3_ONION_SERVICE_ID_LENGTH);
+  REQUIRE(serviceIdString.size() == V3_ONION_SERVICE_ID_STRING_LENGTH);
+  REQUIRE(invalidServiceIdString.size() == V3_ONION_SERVICE_ID_STRING_LENGTH);
 
   // no valid inputs
   REQUIRE_THROWS(::gosling_v3_onion_service_id_from_string(nullptr, nullptr, 0,
@@ -384,7 +384,7 @@ TEST_CASE("gosling_v3_onion_service_id_from_string") {
   REQUIRE_THROWS(::gosling_v3_onion_service_id_from_string(nullptr, nullptr, 1,
                                                            throw_on_error()));
   REQUIRE_THROWS(::gosling_v3_onion_service_id_from_string(
-      nullptr, nullptr, V3_ONION_SERVICE_ID_SIZE, throw_on_error()));
+      nullptr, nullptr, V3_ONION_SERVICE_ID_STRING_SIZE, throw_on_error()));
 
   // valid dest, invalid serviceIdString, invalid serviceIdString len
   REQUIRE_THROWS(::gosling_v3_onion_service_id_from_string(
@@ -392,7 +392,7 @@ TEST_CASE("gosling_v3_onion_service_id_from_string") {
   REQUIRE_THROWS(::gosling_v3_onion_service_id_from_string(
       out(serviceId), nullptr, 1, throw_on_error()));
   REQUIRE_THROWS(::gosling_v3_onion_service_id_from_string(
-      out(serviceId), nullptr, V3_ONION_SERVICE_ID_SIZE, throw_on_error()));
+      out(serviceId), nullptr, V3_ONION_SERVICE_ID_STRING_SIZE, throw_on_error()));
 
   // valid dest, valid serviceIdString, invalid serviceIdString len
   REQUIRE_THROWS(::gosling_v3_onion_service_id_from_string(
@@ -400,7 +400,7 @@ TEST_CASE("gosling_v3_onion_service_id_from_string") {
   REQUIRE_THROWS(::gosling_v3_onion_service_id_from_string(
       out(serviceId), serviceIdString.c_str(), 1, throw_on_error()));
   REQUIRE_THROWS(::gosling_v3_onion_service_id_from_string(
-      out(serviceId), serviceIdString.c_str(), V3_ONION_SERVICE_ID_SIZE,
+      out(serviceId), serviceIdString.c_str(), V3_ONION_SERVICE_ID_STRING_SIZE,
       throw_on_error()));
 
   // invalid dest, valid serviceIdString, invalid serviceIdString len
@@ -409,7 +409,7 @@ TEST_CASE("gosling_v3_onion_service_id_from_string") {
   REQUIRE_THROWS(::gosling_v3_onion_service_id_from_string(
       nullptr, serviceIdString.c_str(), 1, throw_on_error()));
   REQUIRE_THROWS(::gosling_v3_onion_service_id_from_string(
-      nullptr, serviceIdString.c_str(), V3_ONION_SERVICE_ID_SIZE,
+      nullptr, serviceIdString.c_str(), V3_ONION_SERVICE_ID_STRING_SIZE,
       throw_on_error()));
 
   // invalid dest, valid serviceIdString, valid serviceIdString len
@@ -449,7 +449,7 @@ TEST_CASE("gosling_v3_onion_service_id_from_ed25519_private_key") {
   REQUIRE_NOTHROW(::gosling_v3_onion_service_id_from_ed25519_private_key(
       out(serviceId), privateKey.get(), throw_on_error()));
 
-  char serviceIdStringRaw[V3_ONION_SERVICE_ID_SIZE] = {0};
+  char serviceIdStringRaw[V3_ONION_SERVICE_ID_STRING_SIZE] = {0};
   REQUIRE_NOTHROW(::gosling_v3_onion_service_id_to_string(
       serviceId.get(), serviceIdStringRaw, sizeof(serviceIdStringRaw),
       throw_on_error()));
@@ -472,7 +472,7 @@ TEST_CASE("gosling_v3_onion_service_id_to_string") {
   unique_ptr<gosling_v3_onion_service_id> serviceId;
   const std::string serviceIdString =
       "6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd";
-  char serviceIdStringRaw[V3_ONION_SERVICE_ID_SIZE] = {0};
+  char serviceIdStringRaw[V3_ONION_SERVICE_ID_STRING_SIZE] = {0};
   REQUIRE_NOTHROW(::gosling_v3_onion_service_id_from_string(
       out(serviceId), serviceIdString.c_str(), serviceIdString.size(),
       throw_on_error()));
@@ -484,7 +484,7 @@ TEST_CASE("gosling_v3_onion_service_id_to_string") {
   REQUIRE_THROWS(::gosling_v3_onion_service_id_to_string(nullptr, nullptr, 1,
                                                          throw_on_error()));
   REQUIRE_THROWS(::gosling_v3_onion_service_id_to_string(
-      nullptr, nullptr, V3_ONION_SERVICE_ID_LENGTH, throw_on_error()));
+      nullptr, nullptr, V3_ONION_SERVICE_ID_STRING_LENGTH, throw_on_error()));
 
   // valid serviceId, invalid out serviceIdStringRaw, invalid serviceIdStringRaw
   // size
@@ -493,7 +493,7 @@ TEST_CASE("gosling_v3_onion_service_id_to_string") {
   REQUIRE_THROWS(::gosling_v3_onion_service_id_to_string(
       serviceId.get(), nullptr, 1, throw_on_error()));
   REQUIRE_THROWS(::gosling_v3_onion_service_id_to_string(
-      serviceId.get(), nullptr, V3_ONION_SERVICE_ID_LENGTH, throw_on_error()));
+      serviceId.get(), nullptr, V3_ONION_SERVICE_ID_STRING_LENGTH, throw_on_error()));
 
   // valid serviceId, valid out serviceIdStringRaw, invalid serviceIdStringRaw
   // size
@@ -502,7 +502,7 @@ TEST_CASE("gosling_v3_onion_service_id_to_string") {
   REQUIRE_THROWS(::gosling_v3_onion_service_id_to_string(
       serviceId.get(), serviceIdStringRaw, 1, throw_on_error()));
   REQUIRE_THROWS(::gosling_v3_onion_service_id_to_string(
-      serviceId.get(), serviceIdStringRaw, V3_ONION_SERVICE_ID_LENGTH,
+      serviceId.get(), serviceIdStringRaw, V3_ONION_SERVICE_ID_STRING_LENGTH,
       throw_on_error()));
 
   // valid serviceId, valid out serviceIdStringRaw, valid serviceIdStringRaw

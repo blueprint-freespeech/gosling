@@ -362,8 +362,8 @@ pub unsafe extern "C" fn gosling_ed25519_private_key_from_keyblob(
             bail!("key_blob must not be null");
         }
 
-        if key_blob_length != ED25519_PRIVATE_KEYBLOB_LENGTH {
-            bail!("key_blob_length must be exactly ED25519_PRIVATE_KEYBLOB_LENGTH ({}); received '{}'", ED25519_PRIVATE_KEYBLOB_LENGTH, key_blob_length);
+        if key_blob_length != ED25519_PRIVATE_KEY_KEYBLOB_LENGTH {
+            bail!("key_blob_length must be exactly ED25519_PRIVATE_KEY_KEYBLOB_LENGTH ({}); received '{}'", ED25519_PRIVATE_KEY_KEYBLOB_LENGTH, key_blob_length);
         }
 
         let key_blob_view = std::slice::from_raw_parts(key_blob as *const u8, key_blob_length);
@@ -401,10 +401,10 @@ pub extern "C" fn gosling_ed25519_private_key_to_keyblob(
             bail!("out_key_blob must not be null");
         }
 
-        if key_blob_size < ED25519_PRIVATE_KEYBLOB_SIZE {
+        if key_blob_size < ED25519_PRIVATE_KEY_KEYBLOB_SIZE {
             bail!(
-                "key_blob_size must be at least ED25519_PRIVATE_KEYBLOB_SIZE ('{}'), received '{}'",
-                ED25519_PRIVATE_KEYBLOB_SIZE,
+                "key_blob_size must be at least ED25519_PRIVATE_KEY_KEYBLOB_SIZE ('{}'), received '{}'",
+                ED25519_PRIVATE_KEY_KEYBLOB_SIZE,
                 key_blob_size
             );
         }
@@ -420,10 +420,10 @@ pub extern "C" fn gosling_ed25519_private_key_to_keyblob(
                     std::ptr::copy(
                         private_key_blob.as_ptr(),
                         key_blob_view.as_mut_ptr(),
-                        ED25519_PRIVATE_KEYBLOB_LENGTH,
+                        ED25519_PRIVATE_KEY_KEYBLOB_LENGTH,
                     );
                     // add final null-terminator
-                    key_blob_view[ED25519_PRIVATE_KEYBLOB_LENGTH] = 0u8;
+                    key_blob_view[ED25519_PRIVATE_KEY_KEYBLOB_LENGTH] = 0u8;
                 };
             }
             None => {
@@ -487,8 +487,8 @@ pub unsafe extern "C" fn gosling_x25519_private_key_from_base64(
             bail!("base64 must not be null");
         }
 
-        if base64_length != X25519_PRIVATE_KEYBLOB_BASE64_LENGTH {
-            bail!("base64_length must be exactly X25519_PRIVATE_KEYBLOB_BASE64_LENGTH ({}); received '{}'", X25519_PRIVATE_KEYBLOB_BASE64_LENGTH, base64_length);
+        if base64_length != X25519_PRIVATE_KEY_BASE64_LENGTH {
+            bail!("base64_length must be exactly X25519_PRIVATE_KEY_BASE64_LENGTH ({}); received '{}'", X25519_PRIVATE_KEY_BASE64_LENGTH, base64_length);
         }
 
         let base64_view = std::slice::from_raw_parts(base64 as *const u8, base64_length);
@@ -525,10 +525,10 @@ pub extern "C" fn gosling_x25519_private_key_to_base64(
             bail!("out_base64 must not be null");
         }
 
-        if base64_size < X25519_PRIVATE_KEYBLOB_BASE64_SIZE {
+        if base64_size < X25519_PRIVATE_KEY_BASE64_SIZE {
             bail!(
                 "base64_size must be at least '{}', received '{}'",
-                X25519_PRIVATE_KEYBLOB_BASE64_SIZE,
+                X25519_PRIVATE_KEY_BASE64_SIZE,
                 base64_size
             );
         }
@@ -544,10 +544,10 @@ pub extern "C" fn gosling_x25519_private_key_to_base64(
                     std::ptr::copy(
                         private_key_blob.as_ptr(),
                         base64_view.as_mut_ptr(),
-                        X25519_PRIVATE_KEYBLOB_BASE64_LENGTH,
+                        X25519_PRIVATE_KEY_BASE64_LENGTH,
                     );
                     // add final null-terminator
-                    base64_view[X25519_PRIVATE_KEYBLOB_BASE64_LENGTH] = 0u8;
+                    base64_view[X25519_PRIVATE_KEY_BASE64_LENGTH] = 0u8;
                 };
             }
             None => {
@@ -611,8 +611,8 @@ pub unsafe extern "C" fn gosling_x25519_public_key_from_base32(
             bail!("bas32 must not be null");
         }
 
-        if base32_length != X25519_PUBLIC_KEYBLOB_BASE32_LENGTH {
-            bail!("base32_length must be exactly X25519_PUBLIC_KEYBLOB_BASE32_LENGTH ({}); received '{}'", X25519_PUBLIC_KEYBLOB_BASE32_LENGTH, base32_length);
+        if base32_length != X25519_PUBLIC_KEY_BASE32_LENGTH {
+            bail!("base32_length must be exactly X25519_PUBLIC_KEY_BASE32_LENGTH ({}); received '{}'", X25519_PUBLIC_KEY_BASE32_LENGTH, base32_length);
         }
 
         let base32_view = std::slice::from_raw_parts(base32 as *const u8, base32_length);
@@ -649,10 +649,10 @@ pub extern "C" fn gosling_x25519_public_key_to_base32(
             bail!("out_base32 must not be null");
         }
 
-        if base32_size < X25519_PUBLIC_KEYBLOB_BASE32_SIZE {
+        if base32_size < X25519_PUBLIC_KEY_BASE32_SIZE {
             bail!(
                 "base32_size must be at least '{}', received '{}'",
-                X25519_PUBLIC_KEYBLOB_BASE32_SIZE,
+                X25519_PUBLIC_KEY_BASE32_SIZE,
                 base32_size
             );
         }
@@ -668,10 +668,10 @@ pub extern "C" fn gosling_x25519_public_key_to_base32(
                     std::ptr::copy(
                         public_base32.as_ptr(),
                         base32_view.as_mut_ptr(),
-                        X25519_PUBLIC_KEYBLOB_BASE32_LENGTH,
+                        X25519_PUBLIC_KEY_BASE32_LENGTH,
                     );
                     // add final null-terminator
-                    base32_view[X25519_PUBLIC_KEYBLOB_BASE32_LENGTH] = 0u8;
+                    base32_view[X25519_PUBLIC_KEY_BASE32_LENGTH] = 0u8;
                 };
             }
             None => {
@@ -736,8 +736,8 @@ pub unsafe extern "C" fn gosling_v3_onion_service_id_from_string(
             bail!("service_id_string must not be null");
         }
 
-        if service_id_string_length != V3_ONION_SERVICE_ID_LENGTH {
-            bail!("service_id_string_length must be exactly V3_ONION_SERVICE_ID_LENGTH ({}); received '{}'", V3_ONION_SERVICE_ID_LENGTH, service_id_string_length);
+        if service_id_string_length != V3_ONION_SERVICE_ID_STRING_LENGTH {
+            bail!("service_id_string_length must be exactly V3_ONION_SERVICE_ID_STRING_LENGTH ({}); received '{}'", V3_ONION_SERVICE_ID_STRING_LENGTH, service_id_string_length);
         }
 
         let service_id_view =
@@ -812,10 +812,10 @@ pub extern "C" fn gosling_v3_onion_service_id_to_string(
             bail!("out_service_id_string must not be null");
         }
 
-        if service_id_string_size < V3_ONION_SERVICE_ID_SIZE {
+        if service_id_string_size < V3_ONION_SERVICE_ID_STRING_SIZE {
             bail!(
                 "service_id_string_size must be at least '{}', received '{}'",
-                V3_ONION_SERVICE_ID_SIZE,
+                V3_ONION_SERVICE_ID_STRING_SIZE,
                 service_id_string_size
             );
         }
@@ -833,10 +833,10 @@ pub extern "C" fn gosling_v3_onion_service_id_to_string(
                     std::ptr::copy(
                         service_id_string.as_ptr(),
                         service_id_string_view.as_mut_ptr(),
-                        V3_ONION_SERVICE_ID_LENGTH,
+                        V3_ONION_SERVICE_ID_STRING_LENGTH,
                     );
                     // add final null-terminator
-                    service_id_string_view[V3_ONION_SERVICE_ID_LENGTH] = 0u8;
+                    service_id_string_view[V3_ONION_SERVICE_ID_STRING_LENGTH] = 0u8;
                 };
             }
             None => {
@@ -853,7 +853,7 @@ pub extern "C" fn gosling_v3_onion_service_id_to_string(
 ///
 /// @param service_id_string: string containing the v3 service id to be validated
 /// @param service_id_string_length: the number of chars in service_id_string not including any
-///  null-terminator; must be V3_ONION_SERVICE_ID_LENGTH (56)
+///  null-terminator; must be V3_ONION_SERVICE_ID_STRING_LENGTH (56)
 /// @param error: filled on error
 #[no_mangle]
 pub extern "C" fn gosling_string_is_valid_v3_onion_service_id(
@@ -866,9 +866,9 @@ pub extern "C" fn gosling_string_is_valid_v3_onion_service_id(
             bail!("service_id_string must not be null");
         }
 
-        if service_id_string_length != V3_ONION_SERVICE_ID_LENGTH {
+        if service_id_string_length != V3_ONION_SERVICE_ID_STRING_LENGTH {
             bail!(
-                "service_id_string_length must be V3_ONION_SERVICE_ID_LENGTH (56); received '{}'",
+                "service_id_string_length must be V3_ONION_SERVICE_ID_STRING_LENGTH (56); received '{}'",
                 service_id_string_length
             );
         }

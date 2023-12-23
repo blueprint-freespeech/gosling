@@ -83,7 +83,7 @@ constexpr auto out(std::unique_ptr<T> &ptr) -> out_unique_ptr<T> {
 
 inline std::ostream &operator<<(std::ostream &stream,
                                 const gosling_v3_onion_service_id *serviceId) {
-  char serviceIdStringRaw[V3_ONION_SERVICE_ID_SIZE];
+  char serviceIdStringRaw[V3_ONION_SERVICE_ID_STRING_SIZE];
   ::gosling_v3_onion_service_id_to_string(serviceId, serviceIdStringRaw,
                                           sizeof(serviceIdStringRaw),
                                           gosling::throw_on_error());
@@ -93,7 +93,7 @@ inline std::ostream &operator<<(std::ostream &stream,
 
 inline std::ostream &operator<<(std::ostream &stream,
                                 const gosling_ed25519_private_key *privateKey) {
-  char keyBlobRaw[ED25519_PRIVATE_KEYBLOB_SIZE];
+  char keyBlobRaw[ED25519_PRIVATE_KEY_KEYBLOB_SIZE];
   ::gosling_ed25519_private_key_to_keyblob(
       privateKey, keyBlobRaw, sizeof(keyBlobRaw), gosling::throw_on_error());
 
@@ -102,7 +102,7 @@ inline std::ostream &operator<<(std::ostream &stream,
 
 inline std::ostream &operator<<(std::ostream &stream,
                                 const gosling_x25519_private_key *privateKey) {
-  char keyBlobRaw[X25519_PRIVATE_KEYBLOB_BASE64_SIZE];
+  char keyBlobRaw[X25519_PRIVATE_KEY_BASE64_SIZE];
   ::gosling_x25519_private_key_to_base64(
       privateKey, keyBlobRaw, sizeof(keyBlobRaw), gosling::throw_on_error());
 
@@ -111,7 +111,7 @@ inline std::ostream &operator<<(std::ostream &stream,
 
 inline std::ostream &operator<<(std::ostream &stream,
                                 const gosling_x25519_public_key *publicKey) {
-  char keyBlobRaw[X25519_PUBLIC_KEYBLOB_BASE32_SIZE];
+  char keyBlobRaw[X25519_PUBLIC_KEY_BASE32_SIZE];
   ::gosling_x25519_public_key_to_base32(
       publicKey, keyBlobRaw, sizeof(keyBlobRaw), gosling::throw_on_error());
 

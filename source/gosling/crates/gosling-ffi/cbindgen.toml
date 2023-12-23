@@ -28,29 +28,29 @@ after_includes = """
 trailer="""
 // gosling constants
 enum {
-    gosling_v3_onion_service_id_length = 56,
-    gosling_v3_onion_service_id_size = 57,
-    gosling_ed25519_private_keyblob_base64_length = 88,
-    gosling_ed25519_private_keyblob_header_length = 11,
-    gosling_ed25519_private_keyblob_length = 99,
-    gosling_ed25519_private_keyblob_size = 100,
-    gosling_x25519_private_keyblob_base64_length = 44,
-    gosling_x25519_private_keyblob_base64_size = 45,
-    gosling_x25519_public_keyblob_base32_length = 52,
-    gosling_x25519_public_keyblob_base32_size = 53,
+    gosling_v3_onion_service_id_string_length = 56,
+    gosling_v3_onion_service_id_string_size = 57,
+    gosling_ed25519_private_key_keyblob_base64_length = 88,
+    gosling_ed25519_private_key_keyblob_header_length = 11,
+    gosling_ed25519_private_key_keyblob_length = 99,
+    gosling_ed25519_private_key_keyblob_size = 100,
+    gosling_x25519_private_key_base64_length = 44,
+    gosling_x25519_private_key_base64_size = 45,
+    gosling_x25519_public_key_base32_length = 52,
+    gosling_x25519_public_key_base32_size = 53,
 };
 
 // ensure enum constants match our acro definitions
-static_assert(gosling_v3_onion_service_id_length == V3_ONION_SERVICE_ID_LENGTH, "");
-static_assert(gosling_v3_onion_service_id_size == V3_ONION_SERVICE_ID_SIZE, "");
-static_assert(gosling_ed25519_private_keyblob_base64_length == ED25519_PRIVATE_KEYBLOB_BASE64_LENGTH, "");
-static_assert(gosling_ed25519_private_keyblob_header_length == ED25519_PRIVATE_KEYBLOB_HEADER_LENGTH, "");
-static_assert(gosling_ed25519_private_keyblob_length == ED25519_PRIVATE_KEYBLOB_LENGTH, "");
-static_assert(gosling_ed25519_private_keyblob_size == ED25519_PRIVATE_KEYBLOB_SIZE, "");
-static_assert(gosling_x25519_private_keyblob_base64_length == X25519_PRIVATE_KEYBLOB_BASE64_LENGTH, "");
-static_assert(gosling_x25519_private_keyblob_base64_size == X25519_PRIVATE_KEYBLOB_BASE64_SIZE, "");
-static_assert(gosling_x25519_public_keyblob_base32_length == X25519_PUBLIC_KEYBLOB_BASE32_LENGTH, "");
-static_assert(gosling_x25519_public_keyblob_base32_size == X25519_PUBLIC_KEYBLOB_BASE32_SIZE, "");
+static_assert(gosling_v3_onion_service_id_string_length == V3_ONION_SERVICE_ID_STRING_LENGTH, "");
+static_assert(gosling_v3_onion_service_id_string_size == V3_ONION_SERVICE_ID_STRING_SIZE, "");
+static_assert(gosling_ed25519_private_key_keyblob_base64_length == ED25519_PRIVATE_KEYBLOB_BASE64_LENGTH, "");
+static_assert(gosling_ed25519_private_key_keyblob_header_length == ED25519_PRIVATE_KEY_KEYBLOB_HEADER_LENGTH, "");
+static_assert(gosling_ed25519_private_key_keyblob_length == ED25519_PRIVATE_KEY_KEYBLOB_LENGTH, "");
+static_assert(gosling_ed25519_private_key_keyblob_size == ED25519_PRIVATE_KEY_KEYBLOB_SIZE, "");
+static_assert(gosling_x25519_private_key_base64_length == X25519_PRIVATE_KEY_BASE64_LENGTH, "");
+static_assert(gosling_x25519_private_key_base64_size == X25519_PRIVATE_KEY_BASE64_SIZE, "");
+static_assert(gosling_x25519_public_key_base32_length == X25519_PUBLIC_KEY_BASE32_LENGTH, "");
+static_assert(gosling_x25519_public_key_base32_size == X25519_PUBLIC_KEY_BASE32_SIZE, "");
 
 #endif /* LIBGOSLING_H */
 """
