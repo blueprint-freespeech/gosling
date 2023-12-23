@@ -97,7 +97,7 @@ lint: config-debug
 
 define pages
 	@$(MAKE) gosling_cargo_doc -C out/$(1)
-	@$(MAKE) gosling_ffi_doxygen -C out/$(1)
+	@$(MAKE) gosling_cpp_doxygen -C out/$(1)
 	@$(MAKE) gosling_pages -C out/$(1)
 endef
 

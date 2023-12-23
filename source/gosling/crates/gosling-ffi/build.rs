@@ -197,15 +197,4 @@ fn main() {
     let source = std::fs::read_to_string(header_file_path).unwrap();
 
     parse_header(json_file, source.as_str());
-
-    // copy C++ header to destination
-    let src_cpp_header_file_path = Path::new(&crate_dir).join("libgosling.hpp");
-    let dest_cpp_header_file_path = Path::new(&target_dir)
-        .join("include")
-        .join("libgosling.hpp");
-
-    match std::fs::copy(src_cpp_header_file_path, dest_cpp_header_file_path) {
-        Ok(_) => (),
-        Err(err) => panic!("{:?}", err),
-    }
 }

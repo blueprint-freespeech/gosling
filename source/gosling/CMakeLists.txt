@@ -1,25 +1,3 @@
-# translate our cmake build type to a cargo profile
-if((DEFINED CMAKE_BUILD_TYPE))
-    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        set(CARGO_PROFILE debug)
-    elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-        set(CARGO_PROFILE release)
-        set(CARGO_FLAGS --release)
-    elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-        set(CARGO_PROFILE release)
-        set(CARGO_FLAGS --release)
-        set(RUSTFLAGS "-g")
-    elseif(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
-        set(CARGO_PROFILE release)
-        set(CARGO_FLAGS --release)
-        set(RUSTFLAGS "-C opt-level=z")
-    endif()
-else()
-    set(CARGO_PROFILE debug)
-endif()
-
-set(CARGO_TARGET_DIR ${CMAKE_CURRENT_BINARY_DIR})
-
 add_subdirectory(crates)
 
 #
