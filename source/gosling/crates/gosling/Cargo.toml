@@ -22,7 +22,7 @@ regex = "1.5.5"
 signature = "1.5.0"
 socks = "0.3.4"
 static_assertions = "1.1.0"
-tor-interface = { version = "0.1.0", path = "../tor-interface" }
+tor-interface = { version = "0.2.0", path = "../tor-interface" }
 tor-llcrypto = { version = "0.2.0", features = ["relay"] }
 url = "2.2.2"
 zeroize = "^1"
