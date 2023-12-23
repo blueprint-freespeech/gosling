@@ -2445,7 +2445,7 @@
                         <span class="comment">// no *additional* bytes written so return bytes written so far
                         </span><span class="kw">return </span><span class="prelude-val">Ok</span>(bytes_written);
                     } <span class="kw">else </span>{
-                        <span class="kw">return </span><span class="prelude-val">Err</span>(err).map_err(Error::WriterWriteFailed);
+                        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::WriterWriteFailed(err));
                     }
                 }
                 <span class="prelude-val">Ok</span>(count) =&gt; {

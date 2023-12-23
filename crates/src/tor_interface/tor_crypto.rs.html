@@ -681,7 +681,6 @@
 <a href="#681" id="681">681</a>
 <a href="#682" id="682">682</a>
 <a href="#683" id="683">683</a>
-<a href="#684" id="684">684</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::convert::TryInto;
 <span class="kw">use </span>std::iter;
@@ -1273,13 +1272,12 @@
     </span><span class="kw">fn </span>calc_truncated_checksum(
         public_key: <span class="kw-2">&amp;</span>[u8; ED25519_PUBLIC_KEY_SIZE],
     ) -&gt; [u8; TRUNCATED_CHECKSUM_SIZE] {
-
         <span class="kw">let </span><span class="kw-2">mut </span>hasher = Sha3_256::new();
 
         <span class="comment">// calculate checksum
         </span>hasher.update(<span class="string">b&quot;.onion checksum&quot;</span>);
         hasher.update(public_key);
-        hasher.update(<span class="kw-2">&amp;</span>[<span class="number">0x03u8</span>]);
+        hasher.update([<span class="number">0x03u8</span>]);
         <span class="kw">let </span>hash_bytes = hasher.finalize();
 
         [hash_bytes[<span class="number">0</span>], hash_bytes[<span class="number">1</span>]]
