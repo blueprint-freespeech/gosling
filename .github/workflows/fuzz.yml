@@ -42,3 +42,7 @@ jobs:
         run: |
           cd source/gosling/crates/gosling
           cargo fuzz run fuzz_endpoint_client -- -max_total_time=600
+      - name: Fuzz Gosling-FFI
+        run: |
+          cd source/gosling/crates/gosling-ffi
+          cargo fuzz run fuzz_gosling_ffi -- -max_total_time=600
