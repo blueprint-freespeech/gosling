@@ -718,20 +718,20 @@
 /// cbindgen:ignore
 </span><span class="kw">pub const </span>ED25519_SIGNATURE_SIZE: usize = <span class="number">64</span>;
 <span class="doccomment">/// The number of bytes needed to store onion service id as an ASCII c-string (not including null-terminator)
-</span><span class="kw">pub const </span>V3_ONION_SERVICE_ID_LENGTH: usize = <span class="number">56</span>;
+</span><span class="kw">pub const </span>V3_ONION_SERVICE_ID_STRING_LENGTH: usize = <span class="number">56</span>;
 <span class="doccomment">/// The number of bytes needed to store onion service id as an ASCII c-string (including null-terminator)
-</span><span class="kw">pub const </span>V3_ONION_SERVICE_ID_SIZE: usize = V3_ONION_SERVICE_ID_LENGTH + <span class="number">1</span>;
+</span><span class="kw">pub const </span>V3_ONION_SERVICE_ID_STRING_SIZE: usize = V3_ONION_SERVICE_ID_STRING_LENGTH + <span class="number">1</span>;
 <span class="doccomment">/// The number of bytes needed to store base64 encoded ed25519 private key as an ASCII c-string (not including null-terminator)
 </span><span class="kw">pub const </span>ED25519_PRIVATE_KEYBLOB_BASE64_LENGTH: usize = <span class="number">88</span>;
 <span class="doccomment">/// key klob header string
-</span><span class="kw">const </span>ED25519_PRIVATE_KEYBLOB_HEADER: <span class="kw-2">&amp;</span>str = <span class="string">&quot;ED25519-V3:&quot;</span>;
+</span><span class="kw">const </span>ED25519_PRIVATE_KEY_KEYBLOB_HEADER: <span class="kw-2">&amp;</span>str = <span class="string">&quot;ED25519-V3:&quot;</span>;
 <span class="doccomment">/// The number of bytes needed to store the keyblob header
-</span><span class="kw">pub const </span>ED25519_PRIVATE_KEYBLOB_HEADER_LENGTH: usize = <span class="number">11</span>;
+</span><span class="kw">pub const </span>ED25519_PRIVATE_KEY_KEYBLOB_HEADER_LENGTH: usize = <span class="number">11</span>;
 <span class="doccomment">/// The number of bytes needed to store ed25519 private keyblob as an ASCII c-string (not including a null terminator)
-</span><span class="kw">pub const </span>ED25519_PRIVATE_KEYBLOB_LENGTH: usize =
-    ED25519_PRIVATE_KEYBLOB_HEADER_LENGTH + ED25519_PRIVATE_KEYBLOB_BASE64_LENGTH;
+</span><span class="kw">pub const </span>ED25519_PRIVATE_KEY_KEYBLOB_LENGTH: usize =
+    ED25519_PRIVATE_KEY_KEYBLOB_HEADER_LENGTH + ED25519_PRIVATE_KEYBLOB_BASE64_LENGTH;
 <span class="doccomment">/// The number of bytes needed to store ed25519 private keyblob as an ASCII c-string (including a null terminator)
-</span><span class="kw">pub const </span>ED25519_PRIVATE_KEYBLOB_SIZE: usize = ED25519_PRIVATE_KEYBLOB_LENGTH + <span class="number">1</span>;
+</span><span class="kw">pub const </span>ED25519_PRIVATE_KEY_KEYBLOB_SIZE: usize = ED25519_PRIVATE_KEY_KEYBLOB_LENGTH + <span class="number">1</span>;
 <span class="comment">// number of bytes in an onion service id after base32 decode
 </span><span class="kw">const </span>V3_ONION_SERVICE_ID_RAW_SIZE: usize = <span class="number">35</span>;
 <span class="comment">// byte index of the start of the public key checksum
@@ -747,13 +747,13 @@
 /// cbindgen:ignore
 </span><span class="kw">pub const </span>X25519_PUBLIC_KEY_SIZE: usize = <span class="number">32</span>;
 <span class="doccomment">/// The number of bytes needed to store base64 encoded x25519 private key as an ASCII c-string (not including null-terminator)
-</span><span class="kw">pub const </span>X25519_PRIVATE_KEYBLOB_BASE64_LENGTH: usize = <span class="number">44</span>;
+</span><span class="kw">pub const </span>X25519_PRIVATE_KEY_BASE64_LENGTH: usize = <span class="number">44</span>;
 <span class="doccomment">/// The number of bytes needed to store base64 encoded x25519 private key as an ASCII c-string (including a null terminator)
-</span><span class="kw">pub const </span>X25519_PRIVATE_KEYBLOB_BASE64_SIZE: usize = X25519_PRIVATE_KEYBLOB_BASE64_LENGTH + <span class="number">1</span>;
+</span><span class="kw">pub const </span>X25519_PRIVATE_KEY_BASE64_SIZE: usize = X25519_PRIVATE_KEY_BASE64_LENGTH + <span class="number">1</span>;
 <span class="doccomment">/// The number of bytes needed to store base32 encoded x25519 public key as an ASCII c-string (not including null-terminator)
-</span><span class="kw">pub const </span>X25519_PUBLIC_KEYBLOB_BASE32_LENGTH: usize = <span class="number">52</span>;
+</span><span class="kw">pub const </span>X25519_PUBLIC_KEY_BASE32_LENGTH: usize = <span class="number">52</span>;
 <span class="doccomment">/// The number of bytes needed to store bsae32 encoded x25519 public key as an ASCII c-string (including a null terminator)
-</span><span class="kw">pub const </span>X25519_PUBLIC_KEYBLOB_BASE32_SIZE: usize = X25519_PUBLIC_KEYBLOB_BASE32_LENGTH + <span class="number">1</span>;
+</span><span class="kw">pub const </span>X25519_PUBLIC_KEY_BASE32_SIZE: usize = X25519_PUBLIC_KEY_BASE32_LENGTH + <span class="number">1</span>;
 
 <span class="kw">const </span>ONION_BASE32: data_encoding::Encoding = <span class="macro">new_encoding! </span>{
     symbols: <span class="string">&quot;abcdefghijklmnopqrstuvwxyz234567&quot;</span>,
@@ -801,7 +801,7 @@
 
 <span class="attr">#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 </span><span class="kw">pub struct </span>V3OnionServiceId {
-    data: [u8; V3_ONION_SERVICE_ID_LENGTH],
+    data: [u8; V3_ONION_SERVICE_ID_STRING_LENGTH],
 }
 
 <span class="attr">#[derive(Clone, Copy)]
@@ -865,22 +865,22 @@
     }
 
     <span class="kw">pub fn </span>from_key_blob(key_blob: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519PrivateKey, Error&gt; {
-        <span class="kw">if </span>key_blob.len() != ED25519_PRIVATE_KEYBLOB_LENGTH {
+        <span class="kw">if </span>key_blob.len() != ED25519_PRIVATE_KEY_KEYBLOB_LENGTH {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ParseError(<span class="macro">format!</span>(
                 <span class="string">&quot;expects string of length &#39;{}&#39;; received string with length &#39;{}&#39;&quot;</span>,
-                ED25519_PRIVATE_KEYBLOB_LENGTH,
+                ED25519_PRIVATE_KEY_KEYBLOB_LENGTH,
                 key_blob.len()
             )));
         }
 
-        <span class="kw">if </span>!key_blob.starts_with(ED25519_PRIVATE_KEYBLOB_HEADER) {
+        <span class="kw">if </span>!key_blob.starts_with(ED25519_PRIVATE_KEY_KEYBLOB_HEADER) {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ParseError(<span class="macro">format!</span>(
                 <span class="string">&quot;expects string that begins with &#39;{}&#39;; received &#39;{}&#39;&quot;</span>,
-                <span class="kw-2">&amp;</span>ED25519_PRIVATE_KEYBLOB_HEADER, <span class="kw-2">&amp;</span>key_blob
+                <span class="kw-2">&amp;</span>ED25519_PRIVATE_KEY_KEYBLOB_HEADER, <span class="kw-2">&amp;</span>key_blob
             )));
         }
 
-        <span class="kw">let </span>base64_key: <span class="kw-2">&amp;</span>str = <span class="kw-2">&amp;</span>key_blob[ED25519_PRIVATE_KEYBLOB_HEADER.len()..];
+        <span class="kw">let </span>base64_key: <span class="kw-2">&amp;</span>str = <span class="kw-2">&amp;</span>key_blob[ED25519_PRIVATE_KEY_KEYBLOB_HEADER.len()..];
         <span class="kw">let </span>private_key_data = <span class="kw">match </span>BASE64.decode(base64_key.as_bytes()) {
             <span class="prelude-val">Ok</span>(private_key_data) =&gt; private_key_data,
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
@@ -934,7 +934,7 @@
     }
 
     <span class="kw">pub fn </span>to_key_blob(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
-        <span class="kw">let </span><span class="kw-2">mut </span>key_blob = ED25519_PRIVATE_KEYBLOB_HEADER.to_string();
+        <span class="kw">let </span><span class="kw-2">mut </span>key_blob = ED25519_PRIVATE_KEY_KEYBLOB_HEADER.to_string();
         key_blob.push_str(<span class="kw-2">&amp;</span>BASE64.encode(<span class="kw-2">&amp;</span><span class="self">self</span>.expanded_secret_key.to_bytes()));
 
         key_blob
@@ -1141,10 +1141,10 @@
 
     <span class="comment">// a base64 encoded keyblob
     </span><span class="kw">pub fn </span>from_base64(base64: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;X25519PrivateKey, Error&gt; {
-        <span class="kw">if </span>base64.len() != X25519_PRIVATE_KEYBLOB_BASE64_LENGTH {
+        <span class="kw">if </span>base64.len() != X25519_PRIVATE_KEY_BASE64_LENGTH {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ParseError(<span class="macro">format!</span>(
                 <span class="string">&quot;expects string of length &#39;{}&#39;; received string with length &#39;{}&#39;&quot;</span>,
-                X25519_PRIVATE_KEYBLOB_BASE64_LENGTH,
+                X25519_PRIVATE_KEY_BASE64_LENGTH,
                 base64.len()
             )));
         }
@@ -1218,10 +1218,10 @@
     }
 
     <span class="kw">pub fn </span>from_base32(base32: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;X25519PublicKey, Error&gt; {
-        <span class="kw">if </span>base32.len() != X25519_PUBLIC_KEYBLOB_BASE32_LENGTH {
+        <span class="kw">if </span>base32.len() != X25519_PUBLIC_KEY_BASE32_LENGTH {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ParseError(<span class="macro">format!</span>(
                 <span class="string">&quot;expects string of length &#39;{}&#39;; received &#39;{}&#39; with length &#39;{}&#39;&quot;</span>,
-                X25519_PUBLIC_KEYBLOB_BASE32_LENGTH,
+                X25519_PUBLIC_KEY_BASE32_LENGTH,
                 base32,
                 base32.len()
             )));
@@ -1304,7 +1304,7 @@
         raw_service_id[V3_ONION_SERVICE_ID_CHECKSUM_OFFSET + <span class="number">1</span>] = truncated_checksum[<span class="number">1</span>];
         raw_service_id[V3_ONION_SERVICE_ID_VERSION_OFFSET] = <span class="number">0x03u8</span>;
 
-        <span class="kw">let </span><span class="kw-2">mut </span>service_id = [<span class="number">0u8</span>; V3_ONION_SERVICE_ID_LENGTH];
+        <span class="kw">let </span><span class="kw-2">mut </span>service_id = [<span class="number">0u8</span>; V3_ONION_SERVICE_ID_STRING_LENGTH];
         <span class="comment">// panics on wrong buffer size, but given our constant buffer sizes should be fine
         </span>ONION_BASE32.encode_mut(<span class="kw-2">&amp;</span>raw_service_id, <span class="kw-2">&amp;mut </span>service_id);
 
@@ -1316,7 +1316,7 @@
     }
 
     <span class="kw">pub fn </span>is_valid(service_id: <span class="kw-2">&amp;</span>str) -&gt; bool {
-        <span class="kw">if </span>service_id.len() != V3_ONION_SERVICE_ID_LENGTH {
+        <span class="kw">if </span>service_id.len() != V3_ONION_SERVICE_ID_STRING_LENGTH {
             <span class="kw">return </span><span class="bool-val">false</span>;
         }
 
@@ -1348,7 +1348,7 @@
         }
     }
 
-    <span class="kw">pub fn </span>as_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8; V3_ONION_SERVICE_ID_LENGTH] {
+    <span class="kw">pub fn </span>as_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8; V3_ONION_SERVICE_ID_STRING_LENGTH] {
         <span class="kw-2">&amp;</span><span class="self">self</span>.data
     }
 }

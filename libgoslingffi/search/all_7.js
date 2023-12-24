@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['v3_5fonion_5fservice_5fid_5flength_128',['V3_ONION_SERVICE_ID_LENGTH',['../libgosling_8h.html#a09df40c7d935d6398f5452679b56af60',1,'libgosling.h']]],
-  ['v3_5fonion_5fservice_5fid_5fsize_129',['V3_ONION_SERVICE_ID_SIZE',['../libgosling_8h.html#a79c3ba9438aa728f2b2d61376f5d0bc7',1,'libgosling.h']]]
+  ['v3_5fonion_5fservice_5fid_5fstring_5flength_129',['V3_ONION_SERVICE_ID_STRING_LENGTH',['../libgosling_8h.html#a0aaa1394f5ee32c3fbafe214aa8c8bac',1,'libgosling.h']]],
+  ['v3_5fonion_5fservice_5fid_5fstring_5fsize_130',['V3_ONION_SERVICE_ID_STRING_SIZE',['../libgosling_8h.html#a6abedca208342a4db35779303bfcd519',1,'libgosling.h']]]
 ];
