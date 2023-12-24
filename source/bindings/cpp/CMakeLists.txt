@@ -21,13 +21,31 @@ add_custom_command(
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 add_custom_target(gosling_cpp_bindings_target
-    DEPENDS ${gosling_cpp_bindings_outputs} gosling_c_bindings)
+    DEPENDS ${gosling_cpp_bindings_outputs} gosling_c_bindings_target)
 
-add_library(gosling_cpp_bindings INTERFACE)
-add_dependencies(gosling_cpp_bindings gosling_cpp_bindings_target)
+#
+# Static Library
+#
 
-target_include_directories(gosling_cpp_bindings INTERFACE ${GOSLING_INCLUDE_DIR})
-target_link_libraries(gosling_cpp_bindings INTERFACE gosling_c_bindings)
+add_library(gosling_cpp_static_bindings INTERFACE)
+add_dependencies(gosling_cpp_static_bindings gosling_cpp_bindings_target)
+
+target_include_directories(gosling_cpp_static_bindings INTERFACE ${GOSLING_INCLUDE_DIR})
+target_link_libraries(gosling_cpp_static_bindings INTERFACE gosling_c_static_bindings)
+
+#
+# Shared Library
+#
+
+add_library(gosling_cpp_shared_bindings INTERFACE)
+add_dependencies(gosling_cpp_shared_bindings gosling_cpp_bindings_target)
+
+target_include_directories(gosling_cpp_shared_bindings INTERFACE ${GOSLING_INCLUDE_DIR})
+target_link_libraries(gosling_cpp_shared_bindings INTERFACE gosling_c_shared_bindings)
+
+#
+# Install
+#
 
 install(FILES ${GOSLING_INCLUDE_DIR}/libgosling.hpp
     DESTINATION include)

@@ -39,7 +39,7 @@ else()
     set(CARGO_PROFILE debug)
 endif()
 
-set(CARGO_TARGET_DIR ${CMAKE_CURRENT_BINARY_DIR})
+set(CARGO_TARGET_DIR ${CMAKE_CURRENT_BINARY_DIR}/gosling)
 
 add_subdirectory(gosling)
 add_subdirectory(Catch2)

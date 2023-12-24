@@ -3,7 +3,7 @@ add_executable(gosling_unit
     test.cpp)
 target_precompile_headers(gosling_unit PRIVATE precomp.hpp)
 
-target_link_libraries(gosling_unit PRIVATE gosling_cpp_bindings)
+target_link_libraries(gosling_unit PRIVATE gosling_cpp_static_bindings)
 target_link_libraries(gosling_unit PRIVATE Catch2::Catch2WithMain)
 
 add_custom_target(gosling_unit_test
