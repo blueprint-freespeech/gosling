@@ -5,12 +5,12 @@ file(MAKE_DIRECTORY ${GOSLING_INCLUDE_DIR})
 file(MAKE_DIRECTORY ${GOSLING_LIBRARY_DIR})
 
 set(gosling_c_bindings_sources
-    ${CARGO_TARGET_DIR}/include/libgosling.h
+    ${CARGO_TARGET_DIR}/include/cgosling.h
     ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CMAKE_STATIC_LIBRARY_PREFIX}cgosling${CMAKE_STATIC_LIBRARY_SUFFIX}
 )
 
 set(gosling_c_bindings_outputs
-    ${CMAKE_CURRENT_BINARY_DIR}/include/libgosling.h
+    ${CMAKE_CURRENT_BINARY_DIR}/include/cgosling.h
     ${CMAKE_CURRENT_BINARY_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}cgosling${CMAKE_STATIC_LIBRARY_SUFFIX}
 )
 
@@ -97,7 +97,7 @@ endif()
 # Install
 #
 
-install(FILES ${GOSLING_INCLUDE_DIR}/libgosling.h
+install(FILES ${GOSLING_INCLUDE_DIR}/cgosling.h
     DESTINATION include)
 install(FILES ${GOSLING_LIBRARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}cgosling${CMAKE_STATIC_LIBRARY_SUFFIX}
     DESTINATION lib)

@@ -5,19 +5,19 @@ file(MAKE_DIRECTORY ${GOSLING_INCLUDE_DIR})
 set(gosling_cpp_bindings_sources
     build_cpp_bindings.rs
     Cargo.toml
-    libgosling.hpp.handlebars
-    ${CARGO_TARGET_DIR}/libgosling.json)
+    cgosling.hpp.handlebars
+    ${CARGO_TARGET_DIR}/cgosling.json)
 
 set(gosling_cpp_bindings_outputs
-    ${GOSLING_INCLUDE_DIR}/libgosling.hpp)
+    ${GOSLING_INCLUDE_DIR}/cgosling.hpp)
 
 #
-# generate libgosling.hpp using handlebars
+# generate cgosling.hpp using handlebars
 #
 add_custom_command(
     DEPENDS ${gosling_cpp_bindings_sources}
     OUTPUT ${gosling_cpp_bindings_outputs}
-    COMMAND RUSTFLAGS=${RUSTFLAGS} cargo run --bin build_cpp_bindings ${CARGO_TARGET_DIR}/libgosling.json libgosling.hpp.handlebars ${GOSLING_INCLUDE_DIR}/libgosling.hpp
+    COMMAND RUSTFLAGS=${RUSTFLAGS} cargo run --bin build_cpp_bindings ${CARGO_TARGET_DIR}/cgosling.json cgosling.hpp.handlebars ${GOSLING_INCLUDE_DIR}/cgosling.hpp
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 add_custom_target(gosling_cpp_bindings_target
@@ -47,19 +47,19 @@ target_link_libraries(gosling_cpp_shared_bindings INTERFACE gosling_c_shared_bin
 # Install
 #
 
-install(FILES ${GOSLING_INCLUDE_DIR}/libgosling.hpp
+install(FILES ${GOSLING_INCLUDE_DIR}/cgosling.hpp
     DESTINATION include)
 
 #
-# libgoslingffi documentation
+# cgosling documentation
 #
 set(DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
 set(DOXYFILE ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 configure_file(${DOXYFILE_IN} ${DOXYFILE} @ONLY)
 set(doxygen_depends
     ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
-    ${CMAKE_CURRENT_BINARY_DIR}/../c/include/libgosling.h
-    ${GOSLING_INCLUDE_DIR}/libgosling.hpp)
+    ${CMAKE_CURRENT_BINARY_DIR}/../c/include/cgosling.h
+    ${GOSLING_INCLUDE_DIR}/cgosling.hpp)
 set(doxygen_output
     ${CMAKE_CURRENT_BINARY_DIR}/html)
 

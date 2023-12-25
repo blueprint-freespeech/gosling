@@ -7,8 +7,8 @@ set(cgosling_sources
     cbindgen.toml)
 
 set(cgosling_outputs
-    ${CARGO_TARGET_DIR}/include/libgosling.h
-    ${CARGO_TARGET_DIR}/libgosling.json
+    ${CARGO_TARGET_DIR}/include/cgosling.h
+    ${CARGO_TARGET_DIR}/cgosling.json
     ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CMAKE_STATIC_LIBRARY_PREFIX}cgosling${CMAKE_STATIC_LIBRARY_SUFFIX}
 )
 

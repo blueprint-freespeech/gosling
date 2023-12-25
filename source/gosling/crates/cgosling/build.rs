@@ -179,7 +179,7 @@ fn main() {
         Err(_) => Path::new(&crate_dir).join("target"),
     };
 
-    let header_file_path = target_dir.join("include").join("libgosling.h");
+    let header_file_path = target_dir.join("include").join("cgosling.h");
 
     // generate libgosling.h C header
     match cbindgen::generate(&crate_dir) {
@@ -189,7 +189,7 @@ fn main() {
     };
 
     // convert generated header to json IDL
-    let json_file_path = target_dir.join("libgosling.json");
+    let json_file_path = target_dir.join("cgosling.json");
     let json_file = match File::create(json_file_path) {
         Ok(file) => file,
         Err(err) => panic!("{:?}", err),

@@ -84,14 +84,18 @@ format:
 # line Rust code with cargo clippy and C++ code with clang-tidy
 lint: config-debug
 	@$(MAKE) gosling_cargo_clippy -C out/debug
+	# generate our c and cpp headers
+	@$(MAKE) gosling_c_bindings_target -C out/debug
+	@$(MAKE) gosling_cpp_bindings_target -C out/debug
+	# remove Catch2 files from lint set
 	jq 'del(.[]|select(.directory|test("Catch2/src$$")))' out/debug/compile_commands.json > out/debug/compile_commands.sans-catch2.json
 	cppcheck\
 		--enable=all\
 		--inline-suppr\
 		--suppress=missingIncludeSystem\
 		--suppress=*:source/Catch2/src/catch2/*\
-		--include=out/debug/gosling/include/libgosling.h\
-		--include=out/debug/gosling/include/libgosling.hpp\
+		--include=out/debug/bindings/c/include/cgosling.h\
+		--include=out/debug/bindings/cpp/include/cgosling.hpp\
 		--project=out/debug/compile_commands.sans-catch2.json
 
 define pages
