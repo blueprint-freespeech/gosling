@@ -74,15 +74,9 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     assert_eq!(args.len(), 4);
 
-    println!("args: {:?}", args);
-
     let source = &args[1];
     let template = &args[2];
     let dest = &args[3];
-
-    println!("source: {}", source);
-    println!("template: {}", template);
-    println!("dest: {}", dest);
 
     let source = std::fs::read_to_string(source).unwrap();
     let source: Value = serde_json::from_str(source.as_str()).unwrap();
