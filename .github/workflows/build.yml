@@ -22,8 +22,10 @@ jobs:
         with:
           name: linux-debug
           path: |
-            out/debug/gosling/debug/libgoslingffi.a
-            out/debug/gosling/include/libgosling.h
+            out/debug/bindings/c/include/cgosling.h
+            out/debug/bindings/cpp/include/cgosling.hpp
+            out/debug/gosling/debug/libcgosling.a
+            out/debug/gosling/debug/libcgosling.so
       - name: Build Release
         run: |
           make release
@@ -32,8 +34,10 @@ jobs:
         with:
           name: linux-release
           path: |
-            out/release/gosling/release/libgoslingffi.a
-            out/release/gosling/include/libgosling.h
+            out/release/bindings/c/include/cgosling.h
+            out/release/bindings/cpp/include/cgosling.hpp
+            out/release/gosling/release/libcgosling.a
+            out/release/gosling/release/libcgosling.so
 
   windows:
     runs-on: windows-latest
@@ -64,8 +68,11 @@ jobs:
         with:
           name: windows-debug
           path: |
-            out/debug/gosling/debug/libgoslingffi.a
-            out/debug/gosling/include/libgosling.h
+            out/debug/bindings/c/include/cgosling.h
+            out/debug/bindings/cpp/include/cgosling.hpp
+            out/debug/gosling/debug/libcgosling.a
+            out/debug/gosling/debug/cgosling.dll
+            out/debug/gosling/debug/libcgosling.dll.a
       - name: Build Release
         run: |
           make release
@@ -74,8 +81,11 @@ jobs:
         with:
           name: windows-release
           path: |
-            out/release/gosling/release/libgoslingffi.a
-            out/release/gosling/include/libgosling.h
+            out/release/bindings/c/include/cgosling.h
+            out/release/bindings/cpp/include/cgosling.hpp
+            out/release/gosling/release/libcgosling.a
+            out/release/gosling/release/cgosling.dll
+            out/release/gosling/release/libcgosling.dll.a
 
   macos:
     runs-on: macos-latest
@@ -95,8 +105,10 @@ jobs:
         with:
           name: macos-debug
           path: |
-            out/debug/gosling/debug/libgoslingffi.a
-            out/debug/gosling/include/libgosling.h
+            out/debug/bindings/c/include/cgosling.h
+            out/debug/bindings/cpp/include/cgosling.hpp
+            out/debug/gosling/debug/libcgosling.a
+            out/debug/gosling/debug/libcgosling.dylib
       - name: Build Release
         run: |
           make release
@@ -105,5 +117,7 @@ jobs:
         with:
           name: macos-release
           path: |
-            out/release/gosling/release/libgoslingffi.a
-            out/release/gosling/include/libgosling.h
+            out/release/bindings/c/include/cgosling.h
+            out/release/bindings/cpp/include/cgosling.hpp
+            out/release/gosling/release/libcgosling.a
+            out/release/gosling/release/libcgosling.dylib
