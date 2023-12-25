@@ -30,7 +30,7 @@ define test
 	@$(MAKE) honk_rpc_cargo_test -C out/$(1)
 	@$(MAKE) tor_interface_cargo_test -C out/$(1)
 	@$(MAKE) gosling_cargo_test -C out/$(1)
-	@$(MAKE) gosling_ffi_cargo_test -C out/$(1)
+	@$(MAKE) cgosling_cargo_test -C out/$(1)
 	@$(MAKE) gosling_functional_test -C out/$(1)
 	@$(MAKE) gosling_unit_test -C out/$(1)
 endef
@@ -47,7 +47,7 @@ define test-offline
 	@$(MAKE) honk_rpc_cargo_test -C out/$(1)
 	@$(MAKE) tor_interface_cargo_test_offline -C out/$(1)
 	@$(MAKE) gosling_cargo_test_offline -C out/$(1)
-	@$(MAKE) gosling_ffi_cargo_test_offline -C out/$(1)
+	@$(MAKE) cgosling_cargo_test_offline -C out/$(1)
 	@$(MAKE) gosling_unit_test -C out/$(1)
 endef
 
@@ -78,7 +78,6 @@ coverage-offline-release: config-release
 # format Rust code with cargo fmt and C++ code with clang-format
 format:
 	cd source/gosling && cargo fmt
-	cd source/gosling/crates/gosling-ffi && clang-format -i libgosling.hpp
 	cd source/test/functional && clang-format -i *.cpp *.hpp
 	cd source/test/unit && clang-format -i *.cpp *.hpp
 
@@ -140,5 +139,5 @@ fuzz-gosling-endpoint-server: config-release
 fuzz-gosling-endpoint-client: config-release
 	@$(call fuzz,"gosling_cargo_fuzz_endpoint_client","release/gosling/crates/gosling")
 
-fuzz-gosling-ffi: config-release
-	@$(call fuzz,"gosling_cargo_fuzz_gosling_ffi","release/gosling/crates/gosling-ffi")
+fuzz-cgosling: config-release
+	@$(call fuzz,"gosling_cargo_fuzz_cgosling","release/gosling/crates/cgosling")

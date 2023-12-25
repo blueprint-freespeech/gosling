@@ -42,7 +42,7 @@ add_custom_target(gosling_cargo_clippy
 #
 add_custom_command(
     OUTPUT ${CARGO_TARGET_DIR}/doc
-    COMMAND CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo doc --no-deps --workspace --exclude gosling-ffi
+    COMMAND CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo doc --no-deps --workspace --exclude cgosling
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/crates)
 
 add_custom_target(gosling_cargo_doc

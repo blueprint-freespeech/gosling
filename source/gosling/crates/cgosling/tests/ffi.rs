@@ -14,7 +14,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use anyhow::bail;
 
 // internal crates
-use goslingffi::ffi::*;
+use cgosling::ffi::*;
 
 macro_rules! require_noerror {
     ($func:ident($($arg:tt)*)) => {

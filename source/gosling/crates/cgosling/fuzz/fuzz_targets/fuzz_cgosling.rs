@@ -7,7 +7,7 @@ use libfuzzer_sys::fuzz_target;
 use libfuzzer_sys::arbitrary;
 use libfuzzer_sys::arbitrary::Arbitrary;
 
-use goslingffi::ffi::*;
+use cgosling::ffi::*;
 
 #[derive(Arbitrary, Debug)]
 enum Handle {
