@@ -8,14 +8,24 @@ add_custom_command(
     COMMAND CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo tarpaulin --out html --output-dir ${CARGO_TARGET_DIR}/tarpaulin --timeout 600
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_custom_target(gosling_cargo_tarpaulin
+add_custom_target(gosling_cargo_tarpaulin_target
     DEPENDS ${CARGO_TARGET_DIR}/tarpaulin/tarpaulin-report.html
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-install(FILES ${CARGO_TARGET_DIR}/tarpaulin/tarpaulin-report.html
-    DESTINATION pages
-    RENAME coverage.html)
+#
+# Install Rust test code-coverage report
+#
+add_custom_command(
+    OUTPUT ${CMAKE_INSTALL_PREFIX}/website/coverage.html
+    DEPENDS ${CARGO_TARGET_DIR}/tarpaulin/tarpaulin-report.html
+    COMMAND mkdir -p ${CMAKE_INSTALL_PREFIX}/website
+    COMMAND cp ${CARGO_TARGET_DIR}/tarpaulin/tarpaulin-report.html ${CMAKE_INSTALL_PREFIX}/website/coverage.html
+)
+
+add_custom_target(install_gosling_code_coverage
+    DEPENDS ${CMAKE_INSTALL_PREFIX}/website/coverage.html gosling_cargo_tarpaulin_target
+)
 
 #
 # offline code coverage
@@ -48,5 +58,15 @@ add_custom_command(
 add_custom_target(gosling_cargo_doc
     DEPENDS ${CARGO_TARGET_DIR}/doc)
 
-install(DIRECTORY ${CARGO_TARGET_DIR}/doc/
-    DESTINATION pages/crates)
+#
+# Install Rust crate documenation
+#
+add_custom_command(
+    DEPENDS gosling_cargo_doc
+    OUTPUT ${CMAKE_INSTALL_PREFIX}/website/crates
+    COMMAND mkdir -p ${CMAKE_INSTALL_PREFIX}/website/crates
+    COMMAND cp -r ${CARGO_TARGET_DIR}/doc/* ${CMAKE_INSTALL_PREFIX}/website/crates/.
+)
+add_custom_target(install_crate_docs
+    DEPENDS ${CMAKE_INSTALL_PREFIX}/website/crates
+)

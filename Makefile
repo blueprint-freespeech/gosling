@@ -99,25 +99,26 @@ lint: config-debug
 		--project=out/debug/compile_commands.sans-catch2.json
 
 define pages
-	@$(MAKE) gosling_cargo_doc -C out/$(1)
-	@$(MAKE) gosling_cpp_doxygen -C out/$(1)
-	@$(MAKE) gosling_pages -C out/$(1)
+	@$(MAKE) install_pages -C out/$(1)
+	@$(MAKE) install_crate_docs -C out/$(1)
+	@$(MAKE) install_gosling_code_coverage -C out/$(1)
+	@$(MAKE) install_doxygen_output -C out/$(1)
 endef
 
 # debug build the website, code coverage, c/c++ apis, and rust docs
-pages-debug: config-debug coverage-debug
+pages-debug: config-debug
 	@$(call pages,"debug")
 
 # release build the website, code coverage, c/c++ apis, and rust docs
-pages-release: config-release coverage-release
+pages-release: config-release
 	@$(call pages,"release")
 
 # debug build everything and deploy to dist
-install-debug: debug pages-debug
+install-debug: config-debug
 	@$(MAKE) install -C out/debug
 
 # release build everything and deploy to dist
-install-release: release pages-release
+install-release: config-release
 	@$(MAKE) install -C out/release
 
 # fuzzing targets

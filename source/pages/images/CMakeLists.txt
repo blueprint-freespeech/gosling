@@ -1,19 +1,20 @@
-# list of files to install
-set(install_output)
+# list of build output filenames
+set(build_outputs)
+# list of final installed files
+set(install_outputs)
 
 # files which we will just copy directly
 set(copy_sources
     favicon.png
     gosling-square-small-opt.svg)
 
-set(copy_output)
 foreach(file ${copy_sources})
     add_custom_command(
         OUTPUT ${file}
         DEPENDS ${file}
         COMMAND cp -r ${CMAKE_CURRENT_SOURCE_DIR}/${file} ${file})
-    list(APPEND copy_output ${file})
-    list(APPEND install_output ${CMAKE_CURRENT_BINARY_DIR}/${file})
+    list(APPEND build_outputs ${file})
+    list(APPEND install_outputs ${CMAKE_CURRENT_BINARY_DIR}/${file})
 endforeach()
 
 # files which we need to generate via plantuml
@@ -22,7 +23,6 @@ set(plantuml_sources
     endpoint_handshake.uml
     identity_handshake.uml)
 
-set(plantuml_output)
 foreach(file_uml ${plantuml_sources})
     get_filename_component(file ${file_uml} NAME_WE)
     set(file_svg "${file}.svg")
@@ -31,13 +31,31 @@ foreach(file_uml ${plantuml_sources})
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${file_uml}
         COMMAND plantuml -tsvg ${CMAKE_CURRENT_SOURCE_DIR}/${file_uml} -output ${CMAKE_CURRENT_BINARY_DIR}
         COMMAND tidy -xml -indent --hide-comments 1 --write-back 1 ${file_svg})
-    list(APPEND plantuml_output ${file_svg})
-    list(APPEND install_output ${CMAKE_CURRENT_BINARY_DIR}/${file_svg})
+    list(APPEND build_outputs ${file_svg})
+    list(APPEND install_outputs ${CMAKE_CURRENT_BINARY_DIR}/${file_svg})
 endforeach()
 
-add_custom_target(gosling_pages_images
-    DEPENDS ${copy_output} ${plantuml_output}
+add_custom_target(gosling_pages_images_target
+    DEPENDS ${build_outputs}
 )
 
-install(FILES ${install_output}
-    DESTINATION pages/images)
+#
+# Install website images
+#
+
+add_custom_command(
+    OUTPUT ${CMAKE_INSTALL_PREFIX}/website/images
+    COMMAND mkdir -p ${CMAKE_INSTALL_PREFIX}/website/images
+)
+foreach(file ${build_outputs})
+    add_custom_command(
+        OUTPUT ${CMAKE_INSTALL_PREFIX}/website/images/${file}
+        DEPENDS ${CMAKE_INSTALL_PREFIX}/website/images ${CMAKE_CURRENT_BINARY_DIR}/${file}
+        COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/${file} ${CMAKE_INSTALL_PREFIX}/website/images/${file}
+    )
+    list(APPEND install_outputs ${CMAKE_INSTALL_PREFIX}/website/images/${file})
+endforeach()
+
+add_custom_target(install_gosling_pages_images
+    DEPENDS ${install_outputs} gosling_pages_images_target
+)

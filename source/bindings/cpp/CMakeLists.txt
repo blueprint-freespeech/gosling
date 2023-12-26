@@ -44,7 +44,7 @@ target_include_directories(gosling_cpp_shared_bindings INTERFACE ${GOSLING_INCLU
 target_link_libraries(gosling_cpp_shared_bindings INTERFACE gosling_c_shared_bindings)
 
 #
-# Install
+# Install C++ Header
 #
 
 install(FILES ${GOSLING_INCLUDE_DIR}/cgosling.hpp
@@ -69,9 +69,19 @@ add_custom_command(
     OUTPUT ${doxygen_output}
     COMMAND doxygen ${DOXYFILE})
 # make target
-add_custom_target(gosling_cpp_doxygen
+add_custom_target(gosling_cpp_doxygen_target
     DEPENDS ${doxygen_output})
-add_dependencies(gosling_cpp_doxygen gosling_cpp_bindings_target)
-# install
-install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/
-    DESTINATION pages/cgosling)
+add_dependencies(gosling_cpp_doxygen_target gosling_cpp_bindings_target)
+
+#
+# Install C/C++ Doxygen documentation
+#
+add_custom_command(
+    DEPENDS gosling_cpp_doxygen_target
+    OUTPUT ${CMAKE_INSTALL_PREFIX}/website/cgosling
+    COMMAND mkdir -p ${CMAKE_INSTALL_PREFIX}/website/cgosling
+    COMMAND cp -r ${CMAKE_CURRENT_BINARY_DIR}/html/* ${CMAKE_INSTALL_PREFIX}/website/cgosling/.
+)
+add_custom_target(install_doxygen_output
+    DEPENDS ${CMAKE_INSTALL_PREFIX}/website/cgosling
+)
