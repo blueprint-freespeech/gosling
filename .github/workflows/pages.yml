@@ -19,17 +19,11 @@ jobs:
           sudo apt-get install -y libboost-all-dev tor
           cargo install cargo-tarpaulin
           sudo apt-get install -y doxygen pandoc plantuml tidy ruby-mustache graphviz
-      - name: Calculate Code Coverage
-        run: |
-          make coverage-release
       - name: Build Pages
         run: |
           make pages-release
-      - name: Move Outputs
-        run: |
-          make install-release
       - name: Deploy to Github Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: dist/release/pages
+          publish_dir: dist/release/website

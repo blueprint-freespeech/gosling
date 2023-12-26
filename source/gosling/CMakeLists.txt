@@ -8,7 +8,7 @@ add_custom_command(
     COMMAND CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo tarpaulin --out html --output-dir ${CARGO_TARGET_DIR}/tarpaulin --timeout 600
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_custom_target(gosling_cargo_tarpaulin_target
+add_custom_target(gosling_cargo_tarpaulin
     DEPENDS ${CARGO_TARGET_DIR}/tarpaulin/tarpaulin-report.html
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
@@ -24,7 +24,7 @@ add_custom_command(
 )
 
 add_custom_target(install_gosling_code_coverage
-    DEPENDS ${CMAKE_INSTALL_PREFIX}/website/coverage.html gosling_cargo_tarpaulin_target
+    DEPENDS ${CMAKE_INSTALL_PREFIX}/website/coverage.html gosling_cargo_tarpaulin
 )
 
 #
