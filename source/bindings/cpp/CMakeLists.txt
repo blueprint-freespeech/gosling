@@ -74,4 +74,4 @@ add_custom_target(gosling_cpp_doxygen
 add_dependencies(gosling_cpp_doxygen gosling_cpp_bindings_target)
 # install
 install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/
-    DESTINATION pages/libgoslingffi)
+    DESTINATION pages/cgosling)
