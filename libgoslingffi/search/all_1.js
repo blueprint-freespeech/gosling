@@ -1,7 +1,11 @@
 var searchData=
 [
-  ['ed25519_5fprivate_5fkey_5fkeyblob_5fheader_5flength_8',['ED25519_PRIVATE_KEY_KEYBLOB_HEADER_LENGTH',['../libgosling_8h.html#a9e0fae1b8685ce93835ed143fc7e1d2a',1,'libgosling.h']]],
-  ['ed25519_5fprivate_5fkey_5fkeyblob_5flength_9',['ED25519_PRIVATE_KEY_KEYBLOB_LENGTH',['../libgosling_8h.html#ae9007b1198f173b4f06149b496f0f20b',1,'libgosling.h']]],
-  ['ed25519_5fprivate_5fkey_5fkeyblob_5fsize_10',['ED25519_PRIVATE_KEY_KEYBLOB_SIZE',['../libgosling_8h.html#aa53f12e84ddf6828e874198cc62542f5',1,'libgosling.h']]],
-  ['ed25519_5fprivate_5fkeyblob_5fbase64_5flength_11',['ED25519_PRIVATE_KEYBLOB_BASE64_LENGTH',['../libgosling_8h.html#a44123fee821f5cfd09010243368f38e0',1,'libgosling.h']]]
+  ['default_5fdelete_3c_20gosling_5fcontext_20_3e_2',['default_delete&lt; gosling_context &gt;',['../classstd_1_1default__delete_3_01gosling__context_01_4.html',1,'std']]],
+  ['default_5fdelete_3c_20gosling_5fed25519_5fprivate_5fkey_20_3e_3',['default_delete&lt; gosling_ed25519_private_key &gt;',['../classstd_1_1default__delete_3_01gosling__ed25519__private__key_01_4.html',1,'std']]],
+  ['default_5fdelete_3c_20gosling_5ferror_20_3e_4',['default_delete&lt; gosling_error &gt;',['../classstd_1_1default__delete_3_01gosling__error_01_4.html',1,'std']]],
+  ['default_5fdelete_3c_20gosling_5flibrary_20_3e_5',['default_delete&lt; gosling_library &gt;',['../classstd_1_1default__delete_3_01gosling__library_01_4.html',1,'std']]],
+  ['default_5fdelete_3c_20gosling_5ftor_5fprovider_20_3e_6',['default_delete&lt; gosling_tor_provider &gt;',['../classstd_1_1default__delete_3_01gosling__tor__provider_01_4.html',1,'std']]],
+  ['default_5fdelete_3c_20gosling_5fv3_5fonion_5fservice_5fid_20_3e_7',['default_delete&lt; gosling_v3_onion_service_id &gt;',['../classstd_1_1default__delete_3_01gosling__v3__onion__service__id_01_4.html',1,'std']]],
+  ['default_5fdelete_3c_20gosling_5fx25519_5fprivate_5fkey_20_3e_8',['default_delete&lt; gosling_x25519_private_key &gt;',['../classstd_1_1default__delete_3_01gosling__x25519__private__key_01_4.html',1,'std']]],
+  ['default_5fdelete_3c_20gosling_5fx25519_5fpublic_5fkey_20_3e_9',['default_delete&lt; gosling_x25519_public_key &gt;',['../classstd_1_1default__delete_3_01gosling__x25519__public__key_01_4.html',1,'std']]]
 ];
