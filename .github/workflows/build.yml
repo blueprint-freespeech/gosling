@@ -16,28 +16,22 @@ jobs:
           sudo apt-get install -y libboost-all-dev
       - name: Build Debug
         run: |
-          make debug
+          make install-debug
       - name: Archive Debug
         uses: actions/upload-artifact@v3
         with:
           name: linux-debug
           path: |
-            out/debug/bindings/c/include/cgosling.h
-            out/debug/bindings/cpp/include/cgosling.hpp
-            out/debug/gosling/debug/libcgosling.a
-            out/debug/gosling/debug/libcgosling.so
+            dist/debug
       - name: Build Release
         run: |
-          make release
+          make install-release
       - name: Archive Release
         uses: actions/upload-artifact@v3
         with:
           name: linux-release
           path: |
-            out/release/bindings/c/include/cgosling.h
-            out/release/bindings/cpp/include/cgosling.hpp
-            out/release/gosling/release/libcgosling.a
-            out/release/gosling/release/libcgosling.so
+            dist/release
 
   windows:
     runs-on: windows-latest
@@ -62,30 +56,22 @@ jobs:
             mingw-w64-clang-x86_64-boost
       - name: Build Debug
         run: |
-          make debug
+          make install-debug
       - name: Archive Debug
         uses: actions/upload-artifact@v3
         with:
           name: windows-debug
           path: |
-            out/debug/bindings/c/include/cgosling.h
-            out/debug/bindings/cpp/include/cgosling.hpp
-            out/debug/gosling/debug/libcgosling.a
-            out/debug/gosling/debug/cgosling.dll
-            out/debug/gosling/debug/libcgosling.dll.a
+            dist/debug
       - name: Build Release
         run: |
-          make release
+          make install-release
       - name: Archive Release
         uses: actions/upload-artifact@v3
         with:
           name: windows-release
           path: |
-            out/release/bindings/c/include/cgosling.h
-            out/release/bindings/cpp/include/cgosling.hpp
-            out/release/gosling/release/libcgosling.a
-            out/release/gosling/release/cgosling.dll
-            out/release/gosling/release/libcgosling.dll.a
+            dist/release
 
   macos:
     runs-on: macos-latest
@@ -99,25 +85,19 @@ jobs:
           brew install boost
       - name: Build Debug
         run: |
-          make debug
+          make install-debug
       - name: Archive Debug
         uses: actions/upload-artifact@v3
         with:
           name: macos-debug
           path: |
-            out/debug/bindings/c/include/cgosling.h
-            out/debug/bindings/cpp/include/cgosling.hpp
-            out/debug/gosling/debug/libcgosling.a
-            out/debug/gosling/debug/libcgosling.dylib
+            dist/debug
       - name: Build Release
         run: |
-          make release
+          make install-release
       - name: Archive Release
         uses: actions/upload-artifact@v3
         with:
           name: macos-release
           path: |
-            out/release/bindings/c/include/cgosling.h
-            out/release/bindings/cpp/include/cgosling.hpp
-            out/release/gosling/release/libcgosling.a
-            out/release/gosling/release/libcgosling.dylib
+            dist/release
