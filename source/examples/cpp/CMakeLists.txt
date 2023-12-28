@@ -34,4 +34,8 @@ target_link_libraries(hello_world_cpp PRIVATE nlohmann_json::nlohmann_json)
 
 target_compile_features(hello_world_cpp PRIVATE cxx_std_17)
 
-
+add_custom_target(install_hello_world_cpp
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/hello_world_cpp${CMAKE_EXECUTABLE_SUFFIX}
+    COMMAND mkdir -p ${CMAKE_INSTALL_PREFIX}/examples
+    COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/hello_world_cpp${CMAKE_EXECUTABLE_SUFFIX} ${CMAKE_INSTALL_PREFIX}/examples/
+)

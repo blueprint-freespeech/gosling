@@ -150,7 +150,7 @@ lint: config-debug
 		--include=out/debug/bindings/cpp/include/cgosling.hpp\
 		--project=out/debug/compile_commands.sans-catch2.json
 
-define pages
+define install_pages
 	@$(MAKE) install_pages -C out/$(1)
 	@$(MAKE) install_crate_docs -C out/$(1)
 	@$(MAKE) install_gosling_code_coverage -C out/$(1)
@@ -163,14 +163,14 @@ endef
 
 # debug build the website, code coverage, c/c++ apis, and rust docs
 install-pages-debug: config-debug
-	@$(call pages,"debug")
+	@$(call install_pages,"debug")
 
 # release build the website, code coverage, c/c++ apis, and rust docs
 install-pages-rel-with-deb-info: config-rel-with-deb-info
-	@$(call pages,"rel-with-deb-info")
+	@$(call install_pages,"rel-with-deb-info")
 
 #
-# Install Targets
+# Library Install Targets
 #
 
 # debug build everything and deploy to dist
@@ -188,6 +188,30 @@ install-rel-with-deb-info: config-rel-with-deb-info
 # min-size-rel build everything and deploy to dist
 install-min-size-rel: config-min-size-rel
 	@$(MAKE) install -C out/min-size-rel
+
+#
+# Example Programs Install Targets
+#
+
+define install_examples
+	@$(MAKE) install_hello_world_cpp -C out/$(1)
+endef
+
+# debug build examples and deploy to dist
+install-examples-debug: config-debug
+	@$(call install_examples,"debug")
+
+# release build everything and deploy to dist
+install-examples-release: config-release
+	@$(call install_examples,"release")
+
+# rel-with-deb-info build everything and deploy to dist
+install-examples-rel-with-deb-info: config-rel-with-deb-info
+	@$(call install_examples,"rel-with-deb-info")
+
+# min-size-rel build everything and deploy to dist
+install-examples-min-size-rel: config-min-size-rel
+	@$(call install_examples,"min-size-rel")
 
 #
 # Fuzzing targets

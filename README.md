@@ -90,16 +90,21 @@ The following make targets are supported:
 
     Further information about CMake build types can be found in the CMake documentation:
     - https://cmake.org/cmake/help/v3.16/variable/CMAKE_BUILD_TYPE.html
-- **Build Targets:** build gosling crates, language bindings, tests, and examples
+- **Build Targets:** build gosling crates, language bindings, and tests, and examples
     - **debug**
     - **release**
     - **rel-with-deb-info**
     - **min-size-rel**
-- **Install Targets:** build and deploy `cgosling` headers and static+shared libraries to `dist*`
+- **Install Targets:** build and deploy `cgosling` headers and static+shared libraries to `dist/*`
     - **install-debug**
     - **install-release**
     - **install-rel-with-deb-info**
     - **install-min-size-rel**
+- **Install Examples Targets::** build and deploy the example projects to `dist/*`
+    - **install-examples-debug**
+    - **install-examples-release**
+    - **install-examples-rel-with-deb-info**
+    - **install-examples-min-size-rel**
 - **Test Targets:** build and run all tests using real tor daemon
     - **test-debug**
     - **test-release**
