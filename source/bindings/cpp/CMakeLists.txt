@@ -17,7 +17,7 @@ set(gosling_cpp_bindings_outputs
 add_custom_command(
     DEPENDS ${gosling_cpp_bindings_sources}
     OUTPUT ${gosling_cpp_bindings_outputs}
-    COMMAND RUSTFLAGS=${RUSTFLAGS} cargo run --bin build_cpp_bindings ${CARGO_TARGET_DIR}/cgosling.json cgosling.hpp.handlebars ${GOSLING_INCLUDE_DIR}/cgosling.hpp
+    COMMAND  env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo run --bin build_cpp_bindings ${CARGO_TARGET_DIR}/cgosling.json cgosling.hpp.handlebars ${GOSLING_INCLUDE_DIR}/cgosling.hpp
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 add_custom_target(gosling_cpp_bindings_target

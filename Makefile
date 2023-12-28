@@ -1,22 +1,38 @@
 .DEFAULT_GOAL := debug
 
-# delete all build artifacts
+# Delete all build artifacts
 clean:
 	rm -rf out
 	rm -rf dist
+
+#
+# Config Targets
+#
 
 define config
 	mkdir -p out/$(1)
 	cd out/$(1) && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=$(2) -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ../../source/ -DCMAKE_INSTALL_PREFIX=../../dist/$(1)
 endef
 
-# cmake debug config
+# cmake Debug config
 config-debug:
 	@$(call config,"debug","Debug")
 
-# cmake release config
+# cmake Release config
 config-release:
-	@$(call config,"release","RelWithDebInfo")
+	@$(call config,"release","Release")
+
+# cmake RelWithDebInfo
+config-rel-with-deb-info:
+	@$(call config,"rel-with-deb-info","RelWithDebInfo")
+
+# cmake RelWithDebInfo
+config-min-size-rel:
+	@$(call config,"min-size-rel","MinSizeRel")
+
+#
+# Build Targets
+#
 
 # build debug target
 debug: config-debug
@@ -25,6 +41,18 @@ debug: config-debug
 # build release target
 release: config-release
 	@$(MAKE) -C out/release
+
+# build release target
+rel-with-deb-info: config-rel-with-deb-info
+	@$(MAKE) -C out/rel-with-deb-info
+
+# build release target
+min-size-rel: config-min-size-rel
+	@$(MAKE) -C out/min-size-rel
+
+#
+# Online Test Targets (invokes real tor)
+#
 
 define test
 	@$(MAKE) honk_rpc_cargo_test -C out/$(1)
@@ -43,6 +71,18 @@ test-debug: config-debug
 test-release: config-release
 	@$(call test,"release")
 
+# build and run rel-with-deb-info target tests
+test-rel-with-deb-info: config-rel-with-deb-info
+	@$(call test,"rel-with-deb-info")
+
+# build and run min-size-rel target tests
+test-min-size-rel: config-min-size-rel
+	@$(call test,"min-size-rel")
+
+#
+# Offline Test targets (mock tor)
+#
+
 define test-offline
 	@$(MAKE) honk_rpc_cargo_test -C out/$(1)
 	@$(MAKE) tor_interface_cargo_test_offline -C out/$(1)
@@ -59,21 +99,33 @@ test-offline-debug: config-debug
 test-offline-release: config-release
 	@$(call test-offline,"release")
 
+# release tests which do not require access to the tor network
+test-offline-rel-with-deb-info: config-rel-with-deb-info
+	@$(call test-offline,"rel-with-deb-info")
+
+# release tests which do not require access to the tor network
+test-offline-min-size-rel: config-min-size-rel
+	@$(call test-offline,"min-size-rel")
+
+#
+# Rust Code Coverage Targets
+#
+
 # build release test code coverage report
 coverage-debug: config-debug
 	@$(MAKE) gosling_cargo_tarpaulin -C out/debug
 
 # build debug test code coverage report
-coverage-release: config-release
-	@$(MAKE) gosling_cargo_tarpaulin -C out/release
+coverage-rel-with-deb-info: config-rel-with-deb-info
+	@$(MAKE) gosling_cargo_tarpaulin -C out/rel-with-deb-info
 
 # build debug test code coverge report using only the mock tor backend
 coverage-offline-debug: config-debug
 	@$(MAKE) gosling_cargo_tarpaulin_offline -C out/debug
 
 # build release test code coverge report using only the mock tor backend
-coverage-offline-release: config-release
-	@$(MAKE) gosling_cargo_tarpaulin_offline -C out/release
+coverage-offline-rel-with-deb-info: config-rel-with-deb-info
+	@$(MAKE) gosling_cargo_tarpaulin_offline -C out/rel-with-deb-info
 
 # format Rust code with cargo fmt and C++ code with clang-format
 format:
@@ -105,13 +157,21 @@ define pages
 	@$(MAKE) install_doxygen_output -C out/$(1)
 endef
 
+#
+# Website Install Targets
+#
+
 # debug build the website, code coverage, c/c++ apis, and rust docs
-pages-debug: config-debug
+install-pages-debug: config-debug
 	@$(call pages,"debug")
 
 # release build the website, code coverage, c/c++ apis, and rust docs
-pages-release: config-release
-	@$(call pages,"release")
+install-pages-rel-with-deb-info: config-rel-with-deb-info
+	@$(call pages,"rel-with-deb-info")
+
+#
+# Install Targets
+#
 
 # debug build everything and deploy to dist
 install-debug: config-debug
@@ -121,28 +181,39 @@ install-debug: config-debug
 install-release: config-release
 	@$(MAKE) install -C out/release
 
-# fuzzing targets
+# rel-with-deb-info build everything and deploy to dist
+install-rel-with-deb-info: config-rel-with-deb-info
+	@$(MAKE) install -C out/rel-with-deb-info
+
+# min-size-rel build everything and deploy to dist
+install-min-size-rel: config-min-size-rel
+	@$(MAKE) install -C out/min-size-rel
+
+#
+# Fuzzing targets
+#
+
 define fuzz
 	@$(MAKE) $(1) -C out/$(2)
 endef
 
-fuzz-honk-rpc-session: config-release
-	@$(call fuzz,"honk_rpc_cargo_fuzz_session","release/gosling/crates/honk-rpc")
+fuzz-honk-rpc-session: config-rel-with-deb-info
+	@$(call fuzz,"honk_rpc_cargo_fuzz_session","rel-with-deb-info/gosling/crates/honk-rpc")
 
-fuzz-tor-interface-crypto: config-release
-	@$(call fuzz,"tor_interface_cargo_fuzz_crypto","release/gosling/crates/tor-interface")
+fuzz-tor-interface-crypto: config-rel-with-deb-info
+	@$(call fuzz,"tor_interface_cargo_fuzz_crypto","rel-with-deb-info/gosling/crates/tor-interface")
 
-fuzz-gosling-identity-server: config-release
-	@$(call fuzz,"gosling_cargo_fuzz_identity_server","release/gosling/crates/gosling")
+fuzz-gosling-identity-server: config-rel-with-deb-info
+	@$(call fuzz,"gosling_cargo_fuzz_identity_server","rel-with-deb-info/gosling/crates/gosling")
 
-fuzz-gosling-identity-client: config-release
-	@$(call fuzz,"gosling_cargo_fuzz_identity_client","release/gosling/crates/gosling")
+fuzz-gosling-identity-client: config-rel-with-deb-info
+	@$(call fuzz,"gosling_cargo_fuzz_identity_client","rel-with-deb-info/gosling/crates/gosling")
 
-fuzz-gosling-endpoint-server: config-release
-	@$(call fuzz,"gosling_cargo_fuzz_endpoint_server","release/gosling/crates/gosling")
+fuzz-gosling-endpoint-server: config-rel-with-deb-info
+	@$(call fuzz,"gosling_cargo_fuzz_endpoint_server","rel-with-deb-info/gosling/crates/gosling")
 
-fuzz-gosling-endpoint-client: config-release
-	@$(call fuzz,"gosling_cargo_fuzz_endpoint_client","release/gosling/crates/gosling")
+fuzz-gosling-endpoint-client: config-rel-with-deb-info
+	@$(call fuzz,"gosling_cargo_fuzz_endpoint_client","rel-with-deb-info/gosling/crates/gosling")
 
-fuzz-cgosling: config-release
-	@$(call fuzz,"gosling_cargo_fuzz_cgosling","release/gosling/crates/cgosling")
+fuzz-cgosling: config-rel-with-deb-info
+	@$(call fuzz,"gosling_cargo_fuzz_cgosling","rel-with-deb-info/gosling/crates/cgosling")
