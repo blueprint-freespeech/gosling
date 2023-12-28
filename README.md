@@ -18,7 +18,7 @@ Gosling currently has the following external build dependencies:
 - rust >= [1.66.0](https://github.com/blueprint-freespeech/gosling/blob/main/source/gosling/Cargo.toml#L6)
 - cargo
 - cmake >= [3.17](https://github.com/blueprint-freespeech/gosling/blob/main/source/CMakeLists.txt#L1)
-- boost >= [1.66](https://github.com/blueprint-freespeech/gosling/blob/main/source/test/functional/CMakeLists.txt#L1) (for C++ tests)
+- boost >= [1.66](https://github.com/blueprint-freespeech/gosling/blob/main/source/test/functional/CMakeLists.txt#L1) (for C++ example and tests)
 
 Gosling additionally has the following dependencies consumed as git submodules:
 
@@ -32,7 +32,7 @@ Cargo will automatically download and build the required Rust crates. The list o
 - [gosling](./source/gosling/crates/gosling/Cargo.toml)
 - [gosling-ffi](./source/gosling/crates/gosling-ffi/Cargo.toml)
 
-## Optional Dependencis
+## Optional Dependencies
 
 The **coverage-** make targets have the following additional dependencies:
 
@@ -61,6 +61,10 @@ The **lint** make target has the following additional dependencies:
 
 - [cppcheck](https://cppcheck.sourceforge.io/)
 - [jq](https://jqlang.github.io/jq/)
+
+The **examples** make targets have the following additional dependencies:
+
+- [ ncurses](https://invisible-mirror.net/ncurses/ncurses.html)
 
 ## Building
 
