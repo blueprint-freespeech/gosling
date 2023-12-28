@@ -6,9 +6,9 @@ Gosling is a protocol and reference library implementation of said protocol. The
 - **secure:** all network traffic is end-to-end encrypted by virtue of using tor and tor onion services
 - **private+meta-data resistant:** nodes have fine control over their visibility/online-status to other nodes
 
-It is meant to generalize (and improve upon) the authentication scheme [Ricochet-Refresh](https://github.com/blueprint-freespeech/ricochet-refresh) clients use to verify to each other. Details can be found in the protocol specification here:
+It is meant to generalize (and improve upon) the authentication scheme [Ricochet-Refresh](https://github.com/blueprint-freespeech/ricochet-refresh) clients use to verify to each other's identity. Details can be found in the protocol specification here:
 
-- [Gosling Protocol](./docs/gosling_protocol/protocol.md)
+- [Gosling Protocol](https://blueprint-freespeech.github.io/gosling/gosling-spec.xhtml)
 
 
 ## Dependencies
@@ -42,7 +42,7 @@ The **fuzz-** make targets have the following additional dependencies:
 The **pages-** make target has the following additional dependencies:
 
 - [doxygen](https://www.doxygen.nl/)
-- [graphviz](https://www.graphviz.org/)s
+- [graphviz](https://www.graphviz.org/)
 - [mustache](http://mustache.github.io/)
 - [pandoc](https://pandoc.org)
 - [plantuml](https://github.com/plantuml/plantuml)
@@ -69,28 +69,55 @@ $ git submodule update --init
 
 The following make targets are supported:
 
-- **clean** - deletes all build artifacts in `out` directory
-- **config-debug** - builds Makefiles for the **Debug** CMake build type: no optimization, asserts enabled, debug symbols generated; bulid artifacts placed in `out/debug`
-- **config-release** - builds Makefile for the **RelWithDebInfo** CMake build type: optimize for speed, asserts disabled, debug symbols generated; build artifacts placed in `out/release`
-- **debug** - builds debug version of the gosling library
-- **release** - builds release version of the gosling library
-- **test-debug** - builds and runs all tests (debug target)
-- **test-release** - builds and runs all tests (release target)
-- **test-offline-debug** - builds and runs only tests which do not need access to the internet (debug target)
-- **test-offline-release** - builds and runs only tests which do not need access to the internet (release target)
-- **coverage-debug** - generates test code coverage of all crates using `cargo-tarpaulin` crate (debug target)
-- **coverage-release** - generates test code coverage of all crates using `cargo-tarpaulin` crate (release target)
-- **coverage-offline-debug** - generates offline test code coverage of all crates using `cargo-tarpulin` crate (debug target)
-- **coverage-offline-debug** - generates offline test code coverage of all crates using `cargo-tarpulin` crate (release target)
-- **pages-debug** - builds the static website (debug target)
-- **pages-release** - builds the static website (release target)
-- **install-debug** - builds code and docs and installs to `dist/debug`
-- **install-release** - builds code and docs and installs to `dist/release`
-- **format** - runs `cargo fmt` on Rust source and `clang-format` on the C++ source
-- **lint** - runs `cargo clippy` on the Rust source and `cppcheck` on the C++ source
+- **Misc**
+    - **clean** - deletes **all** build artifacts in `out` and `dist` directories
+    - **format** - runs `cargo fmt` on Rust source and `clang-format` on the C++ source
+    - **lint** - runs `cargo clippy` on the Rust source and `cppcheck` on the C++ source
+- **Config Targets:** creates Makefiles for different build types
+    - **config-debug** - **Debug** CMake build type: no optimization, asserts enabled, debug symbols generated; build artifacts placed in `out/debug`
+    - **config-release** - **Release** Cmake build type: optimize for speed, asserts disabled, debug symbols stripped; build artifacts placed in `out/release`
+    - **config-rel-with-deb-info** - **RelWithDebInfo** CMake build type: optimize for speed, asserts disabled, debug symbols generated; build artifacts placed in `out/rel-with-deb-info`
+    - **config-min-size-rel** - **MinSizeRel** CMake build type: optimize for size, asserts disabled, debug symbols stripped; build artifacts placed in `out/min-size-rel`
 
-Further information about CMake build types can be found in the CMake documentation:
-- https://cmake.org/cmake/help/v3.16/variable/CMAKE_BUILD_TYPE.html
+    Further information about CMake build types can be found in the CMake documentation:
+    - https://cmake.org/cmake/help/v3.16/variable/CMAKE_BUILD_TYPE.html
+- **Build Targets:** build gosling crates, language bindings, tests, and examples
+    - **debug**
+    - **release**
+    - **rel-with-deb-info**
+    - **min-size-rel**
+- **Install Targets:** build and deploy `cgosling` headers and static+shared libraries to `dist*`
+    - **install-debug**
+    - **install-release**
+    - **install-rel-with-deb-info**
+    - **install-min-size-rel**
+- **Test Targets:** build and run all tests using real tor daemon
+    - **test-debug**
+    - **test-release**
+    - **test-rel-with-deb-info**
+    - **test-min-size-rel**
+- **Offline Test Targets:** build and run all tests using mock offline tor daemon
+    - **test-offline-debug**
+    - **test-offline-release**
+    - **test-offline-rel-with-deb-info**
+    - **test-offline-min-size-rel**
+- **Rust Test Coverage:** build and run Rust tests and calculate code coverage using real tor daemon
+    - **coverage-debug**
+    - **coverage-rel-with-deb-info**
+- **Rust Offline Test Coverage:** build and run Rust tets and calculate code coverage using mock offline tor daemon
+    - **coverage-offline-debug**
+    - **coverage-offline-rel-with-deb-info**
+- **Fuzz Targets:** run `cargo-fuzz` tests
+    - **fuzz-honk-rpc-session** - honk-rpc session
+    - **fuzz-tor-interface-crypto** - tor-interface cryptography
+    - **fuzz-gosling-identity-server** - gosling identity server protocol
+    - **fuzz-gosling-identity-client** - gosling identity client protocol
+    - **fuzz-gosling-endpoint-server** - gosling endpoint server protocol
+    - **fuzz-gosling-endpoint-client** - gosling endpoint client protocol
+    - **fuzz cgosling** - cgosling C FFI
+- **Website Targets:** build pages, Rust crate documentation, C/C++ doxygen documentation, and Rust test coverage; websites deployed to `dist/*`
+    - **install-pages-debug**
+    - **install-pages-rel-with-deb-info**
 
 ## Acknowledgements
 
