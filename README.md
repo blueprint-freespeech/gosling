@@ -13,12 +13,17 @@ It is meant to generalize (and improve upon) the authentication scheme [Ricochet
 
 ## Dependencies
 
-Libgosling currently has the following build dependencies:
+Gosling currently has the following external build dependencies:
 
 - rust >= [1.66.0](https://github.com/blueprint-freespeech/gosling/blob/main/source/gosling/Cargo.toml#L6)
 - cargo
 - cmake >= [3.17](https://github.com/blueprint-freespeech/gosling/blob/main/source/CMakeLists.txt#L1)
 - boost >= [1.66](https://github.com/blueprint-freespeech/gosling/blob/main/source/test/functional/CMakeLists.txt#L1) (for C++ tests)
+
+Gosling additionally has the following dependencies consumed as git submodules:
+
+- [Catch2](https://github.com/catchorg/Catch2) (for C++ tests)
+- [nlforohmann::json](https://github.com/nlohmann/json/releases/tag/v3.11.3) (for C++ example)
 
 Cargo will automatically download and build the required Rust crates. The list of current dependencies can be found in each crate's Cargo.toml file:
 

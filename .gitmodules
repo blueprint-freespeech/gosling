@@ -1,3 +1,6 @@
-[submodule "source/Catch2"]
-	path = source/Catch2
+[submodule "source/extern/Catch2"]
+	path = source/extern/Catch2
 	url = https://github.com/catchorg/Catch2.git
+[submodule "source/extern/json"]
+	path = source/extern/json
+	url = https://github.com/nlohmann/json.git

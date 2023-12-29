@@ -43,7 +43,7 @@ endif()
 set(CARGO_TARGET_DIR ${CMAKE_CURRENT_BINARY_DIR}/gosling)
 
 add_subdirectory(gosling)
-add_subdirectory(Catch2)
+add_subdirectory(extern)
 add_subdirectory(test)
 add_subdirectory(pages)
 add_subdirectory(bindings)
