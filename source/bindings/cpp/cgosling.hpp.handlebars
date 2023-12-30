@@ -83,11 +83,18 @@ constexpr auto out(std::unique_ptr<T> &ptr) -> out_unique_ptr<T> {
 {{#each functions}}
     {{#if (functionIsToString this)}}
 
+// wrappers for {{this.name}}
 inline std::ostream &operator<<(std::ostream &stream, {{functionToObjectParam this}}) {
     char buffer[{{toStringFunctionToSizeConstant this}}];
     ::{{this.name}}(obj, buffer, sizeof(buffer), gosling::throw_on_error());
 
     return stream.write(buffer, sizeof(buffer) - 1);
+}
+inline std::string to_string({{functionToObjectParam this}}) {
+    char buffer[{{toStringFunctionToSizeConstant this}}];
+    ::{{this.name}}(obj, buffer, sizeof(buffer), gosling::throw_on_error());
+
+    return std::string(buffer, sizeof(buffer) - 1);
 }
     {{/if}}
 {{/each}}
