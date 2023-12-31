@@ -37,6 +37,17 @@ const V3_ONION_SERVICE_ID_TAG: usize = 0x5;
 const TOR_PROVIDER_TAG: usize = 0x6;
 const CONTEXT_TUPLE_TAG: usize = 0x7;
 
+
+// empty bson document layout:
+// {
+//     // document length 5 == 0x00000005
+//     0x05, 0x00, 0x00, 0x00,
+//     // document null-terminator
+//     0x00
+// };
+const SMALLEST_BSON_DOC_SIZE: usize = 5;
+
+
 macro_rules! define_registry {
     ($type:ty) => {
         paste::paste! {
@@ -1487,6 +1498,11 @@ fn handle_context_event(
                     endpoint_challenge_buffer.len(),
                 );
 
+
+                if challenge_response_size < SMALLEST_BSON_DOC_SIZE {
+                    bail!("identity_client_challenge_response_size_callback returned an impossibly small size '{}', smallest possible is {}", challenge_response_size, SMALLEST_BSON_DOC_SIZE);
+                }
+
                 // get the challenge response bson blob
                 let mut challenge_response_buffer: Vec<u8> = vec![0u8; challenge_response_size];
                 build_challenge_response_callback(
@@ -1502,7 +1518,7 @@ fn handle_context_event(
                 match bson::document::Document::from_reader(Cursor::new(challenge_response_buffer))
                 {
                     Ok(challenge_response) => challenge_response,
-                    Err(_) => panic!(),
+                    Err(_) => bail!("failed to parse binary provided by identity_client_build_challenge_response_callback as BSON document")
                 }
             } else {
                 bail!("missing required identity_client_challenge_response_size() and identity_client_build_challenge_response() callbacks");
@@ -1621,6 +1637,11 @@ fn handle_context_event(
             ) {
                 // get the challenge size in bytes
                 let challenge_size = challenge_size_callback(context, handle);
+
+                if challenge_size < SMALLEST_BSON_DOC_SIZE {
+                    bail!("identity_server_challenge_size_callback returned an impossibly small size '{}', smallest possible is {}", challenge_size, SMALLEST_BSON_DOC_SIZE);
+                }
+
                 // construct challenge object into buffer
                 let mut challenge_buffer = vec![0u8; challenge_size];
                 build_challenge_callback(
@@ -1633,7 +1654,7 @@ fn handle_context_event(
                 // convert bson blob to bson object
                 match bson::document::Document::from_reader(Cursor::new(challenge_buffer)) {
                     Ok(challenge) => challenge,
-                    Err(_) => panic!(),
+                    Err(_) => bail!("failed to parse binary provided by identity_server_build_challenge_callback as BSON document")
                 }
             } else {
                 bail!("missing required identity_server_challenge_size() and identity_server_build_challenge() callbacks");
