@@ -2324,7 +2324,7 @@ pub type GoslingIdentityServerHandshakeFailedCallback = Option<
 >;
 
 /// The function pointer type for the endpoint client handshake completed callback.
-/// This callack is called when the client successfully connects to an endpoint server.
+/// This callback is called when the client successfully connects to an endpoint server.
 ///
 /// @param context: the context associated with this event
 /// @param handshake_handle: the handshake handle this callback is associated with
@@ -2349,7 +2349,7 @@ pub type GoslingEndpointClientHandshakeCompletedCallback = Option<
 >;
 
 /// The function pointer type for the endpoint client channel request complete callback.
-/// This callack is called when the client successfully connects to an endpoint server.
+/// This callback is called when the client successfully connects to an endpoint server.
 ///
 /// @param context: the context associated with this event
 /// @param handshake_handle: the handshake handle this callback is associated with
@@ -2787,7 +2787,7 @@ pub extern "C" fn gosling_context_set_identity_server_endpoint_supported_callbac
 /// @param callback: the callback to register
 /// @param  error: filled on erro
 #[no_mangle]
-pub extern "C" fn gosling_context_set_identity_server_challenge_size_callack(
+pub extern "C" fn gosling_context_set_identity_server_challenge_size_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeChallengeSizeCallback,
     error: *mut *mut GoslingFFIError,
@@ -2959,7 +2959,7 @@ pub extern "C" fn gosling_context_set_endpoint_server_handshake_started_callback
     error: *mut *mut GoslingFFIError,
 ) {
     impl_callback_setter!(
-        identity_server_handshake_started_callback,
+        endpoint_server_handshake_started_callback,
         context,
         callback,
         error

@@ -115,7 +115,7 @@ static void create_server_identity_handshake(unique_ptr<gosling_context> &ctx) {
     return sizeof(challenge_bson);
   };
 
-  REQUIRE_NOTHROW(::gosling_context_set_identity_server_challenge_size_callack(
+  REQUIRE_NOTHROW(::gosling_context_set_identity_server_challenge_size_callback(
       ctx.get(), challenge_size_callback, throw_on_error()));
 
   const auto build_challenge_callback =

@@ -148,7 +148,7 @@ fn create_server_identity_handshake(context: *mut GoslingContext) -> anyhow::Res
         assert!(!context.is_null());
         CHALLENGE_BSON.len()
     }
-    require_noerror!(gosling_context_set_identity_server_challenge_size_callack(
+    require_noerror!(gosling_context_set_identity_server_challenge_size_callback(
         context,
         Some(challenge_size_callback)
     ));

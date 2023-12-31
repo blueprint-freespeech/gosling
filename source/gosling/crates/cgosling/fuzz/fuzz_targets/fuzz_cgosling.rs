@@ -1020,7 +1020,7 @@ fuzz_target!(|data: Data| {
                 impl_set_callback!(context, callback, out_error, contexts, errors, gosling_context_set_identity_server_endpoint_supported_callback, identity_server_endpoint_supported);
             },
             Function::ContextSetIdentityServerChallengeSizeCallack{context, callback, out_error} => {
-                impl_set_callback!(context, callback, out_error, contexts, errors, gosling_context_set_identity_server_challenge_size_callack, identity_server_handshake_challenge_size);
+                impl_set_callback!(context, callback, out_error, contexts, errors, gosling_context_set_identity_server_challenge_size_callback, identity_server_handshake_challenge_size);
             },
             Function::ContextSetIdentityServerBuildChallengeCallback{context, callback, out_error} => {
                 impl_set_callback!(context, callback, out_error, contexts, errors, gosling_context_set_identity_server_build_challenge_callback, identity_server_handshake_build_challenge);
