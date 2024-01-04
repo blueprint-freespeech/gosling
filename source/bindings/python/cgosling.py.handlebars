@@ -1,0 +1,54 @@
+import platform
+from ctypes import *
+
+#
+# Load the library
+#
+
+libcgosling = None
+os = platform.system()
+if os == 'Windows':  # Windows
+    libcgosling = CDLL('cgosling.dll')
+elif os == 'Linux' or os == 'Darwin':  # Linux or macOS
+    libcgosling = CDLL('./libcgosling.so')
+
+#
+# Constants
+#
+
+{{#each constants}}
+{{toUppercase name}} = {{value}}
+{{/each}}
+
+#
+# Structs
+#
+
+{{#each aliases}}
+{{#if (eq typename "uintptr_t")}}
+class {{snakeCaseToCamelCase name}}(Structure):
+    _fields_ = []
+{{snakeCaseToCamelCase name}}Ptr = POINTER({{snakeCaseToCamelCase name}})
+{{else}}
+class {{nativeTypeToPythonType name}}({{nativeTypeToPythonType typename}}):
+    pass
+{{/if}}
+
+{{/each}}
+#
+# Callbacks
+#
+
+{{#each callbacks}}
+{{nativeTypeToPythonType name}} = CFUNCTYPE({{nativeTypeToPythonType return_param}}{{#each input_params}}, {{nativeTypeToPythonType typename}}{{/each}})
+{{/each}}
+
+#
+# Functions
+#
+{{#each functions}}
+
+{{name}} = libcgosling.{{name}}
+{{name}}.argtypes = [{{#each input_params}}{{#unless (eq @index 0)}}, {{/unless}}{{nativeTypeToPythonType typename}}{{/each}}]
+{{name}}.restype = {{nativeTypeToPythonType return_param}}
+{{/each}}
