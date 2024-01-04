@@ -13,10 +13,11 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libboost-all-dev
+          sudo apt-get install -y libboost-all-dev libncurses-dev
       - name: Build Debug
         run: |
           make install-debug
+          make install-examples-debug
       - name: Archive Debug
         uses: actions/upload-artifact@v3
         with:
@@ -26,6 +27,7 @@ jobs:
       - name: Build Release
         run: |
           make install-release
+          make install-examples-release
       - name: Archive Release
         uses: actions/upload-artifact@v3
         with:
@@ -54,9 +56,11 @@ jobs:
             mingw-w64-clang-x86_64-clang
             mingw-w64-clang-x86_64-rust
             mingw-w64-clang-x86_64-boost
+            mingw-w64-clang-x86_64-ncurses
       - name: Build Debug
         run: |
           make install-debug
+          make install-examples-debug
       - name: Archive Debug
         uses: actions/upload-artifact@v3
         with:
@@ -66,6 +70,7 @@ jobs:
       - name: Build Release
         run: |
           make install-release
+          make install-examples-release
       - name: Archive Release
         uses: actions/upload-artifact@v3
         with:
@@ -82,10 +87,11 @@ jobs:
           submodules: true
       - name: Install Dependencies
         run: |
-          brew install boost
+          brew install boost ncurses
       - name: Build Debug
         run: |
           make install-debug
+          make install-examples-debug
       - name: Archive Debug
         uses: actions/upload-artifact@v3
         with:
@@ -95,6 +101,7 @@ jobs:
       - name: Build Release
         run: |
           make install-release
+          make install-examples-release
       - name: Archive Release
         uses: actions/upload-artifact@v3
         with:

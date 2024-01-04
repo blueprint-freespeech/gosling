@@ -13,7 +13,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libboost-all-dev tor
+          sudo apt-get install -y libboost-all-dev tor libncurses-dev
       - name: Test Debug
         run: |
           make test-debug
@@ -43,6 +43,7 @@ jobs:
             mingw-w64-clang-x86_64-rust
             mingw-w64-clang-x86_64-boost
             mingw-w64-clang-x86_64-tor
+            mingw-w64-clang-x86_64-ncurses
       - name: Test Debug
         run: |
           make test-debug
@@ -59,7 +60,7 @@ jobs:
           submodules: true
       - name: Install Dependencies
         run: |
-          brew install boost tor
+          brew install boost tor ncurses
       - name: Test Debug
         run: |
           make test-debug
