@@ -47,7 +47,7 @@ fn parse_param(params_raw: &str) -> Vec<Param> {
     // function param
     let param_pattern = Regex::new(r"(?m)(?P<type>(\w+ \**)+)(?P<name>\w+)").unwrap();
     // pattern for our gosling structs
-    let struct_gosling_pattern = Regex::new(r"(?m)struct (?P<name>gosling_[\w]+) \*").unwrap();
+    let struct_gosling_pattern = Regex::new(r"(?m)struct (?P<name>gosling_[\w]+) ").unwrap();
 
     let mut params: Vec<Param> = Default::default();
     for param in param_pattern.captures_iter(params_raw) {
@@ -139,10 +139,13 @@ fn parse_header(mut file: File, source: &str) {
         let n = &callback["name"];
         let p = &callback["params"];
 
+        // move the pointer char next to the type
+        let r = r.trim().replace(" *", "*");
+
         let params = parse_param(p);
         callbacks.push(Function {
             name: n.to_string(),
-            return_param: r.trim().to_string(),
+            return_param: r,
             input_params: params,
         });
     }
@@ -153,10 +156,13 @@ fn parse_header(mut file: File, source: &str) {
         let n = &function["name"];
         let p = &function["params"];
 
+        // move the pointer char next to the type
+        let r = r.trim().replace(" *", "*");
+
         let params = parse_param(p);
         functions.push(Function {
             name: n.to_string(),
-            return_param: r.trim().to_string(),
+            return_param: r,
             input_params: params,
         });
     }

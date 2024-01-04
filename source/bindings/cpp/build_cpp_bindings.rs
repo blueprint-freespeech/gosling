@@ -31,7 +31,7 @@ handlebars_helper!(functionIsToString: |function: Function| {
     if input_params.len() != 4 {
         return Ok(FALSE);
     }
-    let handle_pattern = Regex::new(r"^const gosling_\w+$").unwrap();
+    let handle_pattern = Regex::new(r"^const gosling_\w+\*$").unwrap();
     if !handle_pattern.is_match(&input_params[0].typename) {
         return Ok(FALSE);
     }
@@ -41,7 +41,7 @@ handlebars_helper!(functionIsToString: |function: Function| {
     if input_params[2].typename != "size_t" {
         return Ok(FALSE);
     }
-    if input_params[3].typename != "gosling_error*" {
+    if input_params[3].typename != "gosling_error**" {
         return Ok(FALSE);
     }
     return Ok(TRUE);
@@ -58,7 +58,7 @@ handlebars_helper!(functionIsFree: |function: Function| {
 });
 handlebars_helper!(functionToObjectParam: |function: Function| {
     let from_param = &function.input_params[0];
-    format!("{}* obj", from_param.typename)
+    format!("{} obj", from_param.typename)
 });
 handlebars_helper!(toStringFunctionToSizeConstant: |function: Function| {
     let name = &function.name;
@@ -67,7 +67,10 @@ handlebars_helper!(toStringFunctionToSizeConstant: |function: Function| {
     let (from, to) = (caps.name("from").unwrap().as_str(), caps.name("to").unwrap().as_str());
     format!("{}_{}_SIZE", from.to_uppercase(), to.to_uppercase())
 });
-handlebars_helper!(freeFunctionToType: |function: Function| function.input_params[0].typename.clone());
+handlebars_helper!(freeFunctionToType: |function: Function| {
+    let typename = function.input_params[0].typename.clone();
+    typename[0..typename.len() - 1].to_string()
+});
 
 fn main() {
 
