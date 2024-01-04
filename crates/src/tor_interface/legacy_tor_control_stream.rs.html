@@ -261,8 +261,6 @@
 <a href="#261" id="261">261</a>
 <a href="#262" id="262">262</a>
 <a href="#263" id="263">263</a>
-<a href="#264" id="264">264</a>
-<a href="#265" id="265">265</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::collections::VecDeque;
 <span class="kw">use </span>std::default::Default;
@@ -507,7 +505,6 @@
 
         <span class="comment">// strip the redundant status code from start of lines
         </span><span class="kw">for </span>line <span class="kw">in </span>reply_lines.iter_mut() {
-            <span class="macro">println!</span>(<span class="string">&quot;&gt;&gt;&gt; {}&quot;</span>, line);
             <span class="kw">if </span>line.starts_with(<span class="kw-2">&amp;</span>status_code_string) {
                 <span class="kw-2">*</span>line = line[<span class="number">4</span>..].to_string();
             }
@@ -520,7 +517,6 @@
     }
 
     <span class="kw">pub fn </span>write(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cmd: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
-        <span class="macro">println!</span>(<span class="string">&quot;&lt;&lt;&lt; {}&quot;</span>, cmd);
         <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = <span class="macro">write!</span>(<span class="self">self</span>.stream, <span class="string">&quot;{}\r\n&quot;</span>, cmd) {
             <span class="self">self</span>.closed_by_remote = <span class="bool-val">true</span>;
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::WriteFailed(err));

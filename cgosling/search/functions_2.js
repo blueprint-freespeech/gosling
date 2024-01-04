@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['_7eout_5funique_5fptr_221',['~out_unique_ptr',['../classgosling_1_1out__unique__ptr.html#a7fb1c4487f4bb6f9e1b9234c2f8ef78e',1,'gosling::out_unique_ptr']]],
-  ['_7ethrow_5fon_5ferror_222',['~throw_on_error',['../classgosling_1_1throw__on__error.html#a424ede9b7a57c6cd52ff78b71404b10b',1,'gosling::throw_on_error']]]
+  ['to_5fstring_222',['to_string',['../namespacegosling.html#a819d5fc41dfcdee8d2276c3f48a95cc4',1,'gosling::to_string(const gosling_ed25519_private_key *obj)'],['../namespacegosling.html#a5dae0ea201be229a16fd93c406b15e30',1,'gosling::to_string(const gosling_x25519_private_key *obj)'],['../namespacegosling.html#afb1fe3ea6ea33acd312d5c2c5e534ab5',1,'gosling::to_string(const gosling_x25519_public_key *obj)'],['../namespacegosling.html#aaebd052a85c3a290ed63bb2250fc1a2e',1,'gosling::to_string(const gosling_v3_onion_service_id *obj)']]]
 ];
