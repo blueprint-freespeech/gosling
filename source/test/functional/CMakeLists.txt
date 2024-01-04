@@ -1,6 +1,6 @@
 find_package(Boost 1.66.0 REQUIRED)
 
-add_executable(gosling_functional
+add_executable(gosling_functional EXCLUDE_FROM_ALL
     precomp.cpp
     test.cpp)
 target_precompile_headers(gosling_functional PRIVATE precomp.hpp)

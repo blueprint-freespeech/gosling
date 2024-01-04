@@ -90,7 +90,7 @@ The following make targets are supported:
 
     Further information about CMake build types can be found in the CMake documentation:
     - https://cmake.org/cmake/help/v3.16/variable/CMAKE_BUILD_TYPE.html
-- **Build Targets:** build gosling crates, language bindings, and tests, and examples
+- **Build Targets:** build gosling crates, cgosling, and language bindings
     - **debug**
     - **release**
     - **rel-with-deb-info**

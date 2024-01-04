@@ -1,4 +1,4 @@
-add_executable(gosling_unit
+add_executable(gosling_unit EXCLUDE_FROM_ALL
     precomp.cpp
     test.cpp)
 target_precompile_headers(gosling_unit PRIVATE precomp.hpp)

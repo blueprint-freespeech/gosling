@@ -2,7 +2,7 @@ set(CURSES_NEED_NCURSES TRUE)
 find_package(Curses REQUIRED)
 find_package(Boost 1.66.0 REQUIRED)
 
-add_executable(hello_world_cpp
+add_executable(hello_world_cpp EXCLUDE_FROM_ALL
     precomp.cpp
     terminal.cpp
     identity_server_callbacks.cpp

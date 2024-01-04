@@ -40,7 +40,7 @@ foreach(src dest IN ZIP_LISTS gosling_c_bindings_sources gosling_c_bindings_outp
         COMMAND cp ${src} ${dest})
 endforeach()
 
-add_custom_target(gosling_c_bindings_target
+add_custom_target(gosling_c_bindings_target ALL
     DEPENDS ${gosling_c_bindings_outputs} cgosling_target)
 
 #
