@@ -1,8 +1,3 @@
-// extern crate handlebars;
-// extern crate heck;
-// extern crate serde;
-// extern crate serde_json;
-
 use handlebars::{handlebars_helper, Handlebars, ScopedJson};
 use heck::*;
 use regex::Regex;
@@ -28,9 +23,6 @@ struct Function {
     return_param: String,
     input_params: Vec<Param>,
 }
-
-// const TRUE: ScopedJson = ScopedJson::Constant(&Value::Bool(true));
-// const FALSE: ScopedJson = ScopedJson::Constant(&Value::Bool(false));
 
 handlebars_helper!(toUppercase: |string: String| {
     string.to_uppercase()
@@ -107,19 +99,6 @@ handlebars_helper!(nativeTypeToPythonType: |native_type: String| {
         count => panic!("impossible pointer count: {}", count),
     }
 });
-
-/*
-handlebars_helper!(functionIsFree: |function: Function| {
-    if function.return_param != "void" {
-        return Ok(FALSE);
-    }
-    let free_pattern = Regex::new(r"^gosling_[\w]+_free$").unwrap();
-    if !free_pattern.is_match(&function.name) {
-        return Ok(FALSE);
-    }
-    return Ok(TRUE);
-});
-*/
 
 fn main() {
 
