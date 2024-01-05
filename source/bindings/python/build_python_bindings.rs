@@ -66,6 +66,7 @@ handlebars_helper!(nativeTypeToPythonType: |native_type: String| {
         "bool" => "c_bool".to_string(),
         "char" => "c_char".to_string(),
         "int" => "c_int".to_string(),
+        "SOCKET" => "c_size_t".to_string(),
         "size_t" => "c_size_t".to_string(),
         "uint8_t" => "c_uint8".to_string(),
         "uint16_t" => "c_uint16".to_string(),
