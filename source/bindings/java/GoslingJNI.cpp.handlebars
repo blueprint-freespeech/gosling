@@ -1,0 +1,295 @@
+// c++ std
+#include <atomic>
+#include <cstdint>
+#include <iostream>
+#include <map>
+#include <mutex>
+#include <thread>
+
+// boost
+#include <boost/asio.hpp>
+
+// gosling
+#include <cgosling.h>
+
+// jni
+#include "GoslingJNI.h"
+
+class jni_glue;
+static jni_glue* g_jni_glue = nullptr;
+class jni_glue {
+public:
+
+    // ideally this function is called on Java exit, but in practice JNI_OnUnload
+    // is not guaranteed to be called
+    ~jni_glue() {
+        this->unloading.store(true);
+        this->tcp_pump.join();
+        assert(false);
+    }
+
+    // gosling_* pointers are stored as jlong (int64_t) in Java GoslingHandle
+    // type. This method converts the int64_t to a native pointer type
+    uintptr_t jlong_handle_to_uintptr(jlong handle) {
+        if constexpr (sizeof(uintptr_t) == sizeof(jlong)) {
+            return static_cast<uintptr_t>(handle);
+        } else if (sizeof(uintptr_t) < sizeof(jlong)) {
+            // mask off the high bits
+            constexpr jlong MASK = static_cast<jlong>(~uintptr_t(0));
+            return static_cast<uintptr_t>(handle & MASK);
+        }
+    }
+
+    // extract the gosling_* pointer stored in Java GoslingHandle.handle
+    void* jobject_handle_to_void_pointer(JNIEnv* env, jobject obj) {
+        if (obj == nullptr) {
+            return nullptr;
+        }
+        jclass jc = env->GetObjectClass(obj);
+        jfieldID handle_field = env->GetFieldID(jc, "handle", "J");
+        const jlong obj_handle = env->GetLongField(obj, handle_field);
+        const uintptr_t handle_uintptr = jlong_handle_to_uintptr(obj_handle);
+        return reinterpret_cast<void*>(handle_uintptr);
+    }
+
+    // Given a gosling_* pointer, create a new derived Java GoslingHandle type
+    jobject void_pointer_to_jobject_handle(JNIEnv* env, const char* classname, void* handle, bool weak_reference) {
+        jobject value = nullptr;
+        if (handle) {
+            jclass jc = env->FindClass(classname);
+            jmethodID constructor = env->GetMethodID(jc, "<init>", "(JZ)V");
+            value = env->NewObject(jc, constructor, static_cast<jlong>(reinterpret_cast<uintptr_t>(handle)), weak_reference ? JNI_TRUE : JNI_FALSE);
+        }
+        return value;
+    }
+
+    // Native funciton params ownership is taken when they have an in_ prefix. Such
+    // parameters need to be invalidated so that the GoslingHandle type does not
+    // free them on finalization
+    void invalidate_jobject_handle(JNIEnv* env, jobject obj) {
+        if (obj) {
+            jclass jc = env->GetObjectClass(obj);
+            jmethodID invalidate = env->GetMethodID(jc, "invalidate", "()V");
+            env->CallVoidMethod(obj, invalidate);
+        }
+    }
+
+    // Given an out_ param, call Out<T>.set(obj) with the provided T
+    void set_out_jobject(JNIEnv* env, jobject out, jobject value) {
+        jclass jc = env->GetObjectClass(out);
+        jmethodID set = env->GetMethodID(jc, "set", "(Ljava/lang/Object;)V");
+        env->CallVoidMethod(out, set, value);
+    }
+
+    // Given an out_ char*  buffer, call Out<String>.set(obj) with provided const char*
+    void set_out_jstring(JNIEnv* env, jobject out, const char* utf8str) {
+        if (out) {
+            jstring value = env->NewStringUTF(utf8str);
+            set_out_jobject(env, out, value);
+            env->DeleteLocalRef(value);
+        }
+    }
+
+    // Given an out_ gosling_* handle, call Out<T>.set(obj) with provided native gosling handle type
+    void set_out_jobject_handle(JNIEnv* env, jobject out, const char* classname, void* handle) {
+        if (out && handle) {
+            jobject value = void_pointer_to_jobject_handle(env, classname, handle, false);
+            set_out_jobject(env, out, value);
+            env->DeleteLocalRef(value);
+        }
+    }
+
+    // so gosling gives us a native socket (SOCKET on windows and int file descriptor everywher else)
+    // Java has no (supported) way of creating a managed java.net.Sokcket from a native handle type, so
+    // we run a tcp proxy (defined below) to forward the traffic from cgosling to Java:
+    // gosling socket <-> boost server socket <-> java.net.Socket
+    jobject tcp_stream_to_java_socket(JNIEnv* env, boost::asio::ip::tcp::socket::native_handle_type native_stream) {
+        std::lock_guard<std::mutex> lock(g_jni_glue->tcp_proxy_mutex);
+
+        boost::asio::ip::tcp::socket from_socket(io_service);
+        from_socket.assign(boost::asio::ip::tcp::v4(), native_stream);
+        from_socket.non_blocking(true);
+
+        boost::asio::ip::tcp::acceptor acceptor(io_service, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 0));
+        boost::asio::ip::tcp::socket to_socket(io_service);
+
+        const auto& local_endpoint = acceptor.local_endpoint();
+        boost::asio::ip::address ip = local_endpoint.address();
+        const unsigned short port = local_endpoint.port();
+
+        // spawn ephemeral thread to create socket endpoint
+        std::thread acceptor_thread([&acceptor, &to_socket]() {
+            acceptor.accept(to_socket);
+            to_socket.non_blocking(true);
+        });
+
+        // Create a new java.net.InetAddress object from the given IP address
+        jclass inet_address_class = env->FindClass("java/net/InetAddress");
+        jmethodID get_by_name = env->GetStaticMethodID(inet_address_class, "getByName", "(Ljava/lang/String;)Ljava/net/InetAddress;");
+        std::string ip_address = ip.to_string();
+        jstring ip_address_java = env->NewStringUTF(ip_address.c_str());
+        jobject inet_address_java = env->CallStaticObjectMethod(inet_address_class, get_by_name, ip_address_java);
+        env->DeleteLocalRef(ip_address_java);
+
+        // Create a new java.net.Socket object using the java.net.InetAddress and port
+        jclass socket_class = env->FindClass("java/net/Socket");
+        jmethodID constructor = env->GetMethodID(socket_class, "<init>", "(Ljava/net/InetAddress;I)V");
+        jobject socket_java = env->NewObject(socket_class, constructor, inet_address_java, static_cast<jint>(port));
+
+        // wait for thread to complete
+        acceptor_thread.join();
+
+        // save off our tcp proxy
+        tcp_proxies.emplace_back(tcp_proxy{std::move(from_socket),{},std::move(to_socket),{}});
+
+        // return the java.net.Socket to caller
+        return socket_java;
+    }
+
+   // All of our Java event listenrs
+    struct java_listeners {
+{{#each callbacks}}
+        jobject {{callbackNameToMapName name}} = nullptr;
+{{/each}}
+    };
+
+    // Global mutex for accessing/modifying our listener map
+    std::mutex listener_map_mutex;
+    // Listeners are associated with a context, used native callback provided gosling_context*
+    // to find our listeners
+    std::map<gosling_context*, java_listeners> listener_map;
+    // cache the JNIEnv for invoking listeners; each calling thread has its own JNIENv so we
+    // set a thread_local copy when gosling_context_poll_events is called so Java listeners can
+    // be called
+    static thread_local JNIEnv* env;
+    // Global mutex for accessing/modifying our tcp and io_service
+    std::mutex tcp_proxy_mutex;
+    // boost io_service for creating sockets
+    boost::asio::io_service io_service{};
+
+    struct tcp_proxy {
+        boost::asio::ip::tcp::socket a;
+        std::vector<uint8_t> a_buffer;
+        boost::asio::ip::tcp::socket b;
+        std::vector<uint8_t> b_buffer;
+    };
+    std::vector<tcp_proxy> tcp_proxies{};
+
+    std::thread tcp_pump{[]() -> void {
+        while (g_jni_glue && !g_jni_glue->unloading.load(std::memory_order_relaxed)) {
+            // TODO: be smarter about this and sleep/signal the thread
+            // based on existence of tcp proxies (no need to busy-spin when there
+            // are no tcp proxies to pump)
+
+            // mutex on the tcp proxies and io_service
+            std::lock_guard<std::mutex> lock(g_jni_glue->tcp_proxy_mutex);
+            auto it = g_jni_glue->tcp_proxies.begin();
+            while(it != g_jni_glue->tcp_proxies.end()) {
+                // forward reads from reader as writes to writer
+                auto forward_traffic = [](
+                    boost::asio::ip::tcp::socket& reader,
+                    std::vector<uint8_t>& buffer,
+                    boost::asio::ip::tcp::socket& writer) ->  boost::system::error_code {
+                    boost::system::error_code ec{};
+                    // read bytes from reader
+                    boost::asio::read(reader, boost::asio::dynamic_buffer(buffer), ec);
+                    // would_block is only acceptable error
+                    if (ec && ec != boost::asio::error::would_block) {
+                        return ec;
+                    }
+                    // forward data to writer
+                    const size_t bytes_written = boost::asio::write(writer, boost::asio::buffer(buffer.data(), buffer.size()), ec);
+                    // would_block is only acceptable error
+                    if (ec && ec != boost::asio::error::would_block) {
+                        return ec;
+                    }
+                    // erase written bytes
+                    if (bytes_written) {
+                        std::cout << "write " << bytes_written << " bytes" << std::endl;
+                        buffer.erase(buffer.begin(), buffer.begin() + bytes_written);
+                    }
+
+                    return {};
+                };
+                if (forward_traffic(it->a, it->a_buffer, it->b)) {
+                    it = g_jni_glue->tcp_proxies.erase(it);
+                } else if (forward_traffic(it->b, it->b_buffer, it->a)) {
+                    it = g_jni_glue->tcp_proxies.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+        }
+    }};
+
+    std::atomic<bool> unloading{false};
+};
+thread_local JNIEnv* jni_glue::env = nullptr;
+
+extern "C" {
+
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
+    JNIEnv *env;
+
+    if (vm->GetEnv((void**)&env, JNI_VERSION_1_6) != JNI_OK) {
+        // Something went wrong
+        return JNI_ERR;
+    }
+
+    g_jni_glue = new jni_glue();
+
+    return JNI_VERSION_1_6; // Return the JNI version
+}
+
+JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved) {
+    // the unfortunate reality seems to be that this function is never called
+    // or is unreliably called, good job Sun really nailed it
+
+    delete g_jni_glue;
+    g_jni_glue = nullptr;
+}
+
+//
+// Native Callbacks which route to per-gosling_context* Java Listeners
+//
+
+{{#each callbacks}}
+{{return_param}} {{callbackNameToMapName name}}_impl({{inputParamsToNativeParams input_params}}) {
+    // pull out env from thread-local storage
+    auto env = jni_glue::env;
+    assert(env != nullptr);
+
+    // marshall native types to jni types
+{{marshallNativeParams input_params}}
+
+    // invoke callback
+{{callJavaCallback name return_param input_params}}
+
+    // marshall jni return types to native types and do any cleanup
+{{marshallJNIResults return_param input_params}}
+}
+
+{{/each}}
+//
+// JNI Native Functions exposed to Java
+//
+
+{{#each functions}}
+JNIEXPORT {{returnTypeToJNIType return_param}} JNICALL Java_net_blueprintforfreespeech_gosling_Gosling_{{functionToNativeMethodName name}}({{inputParamsToJNIParams input_params}}) {
+{{#if (eq name "gosling_context_poll_events")}}
+    // save off current JNIEnv to thread-local storage for gosling_context_poll_events() java_callbacks
+    jni_glue::env = env;
+
+{{/if}}
+    // marshall jni types to native types
+{{marshallJNIParams name input_params}}
+
+    // call native function
+{{callNativeFunction name return_param input_params}}
+
+    // marshall native return types to jni types and do any cleanup
+{{marshallNativeResults return_param input_params}}
+}
+
+{{/each}}
+} // extern "C"

@@ -1,0 +1,95 @@
+package net.blueprintforfreespeech.gosling;
+
+public class Gosling {
+    static {
+        System.loadLibrary("goslingjni");
+    }
+
+    /*
+     * Gosling Utility Classes
+     */
+    public static final class Out<T> {
+        private T value = null;
+        public boolean isEmpty() {
+            return this.value == null;
+        }
+
+        public T get() {
+            return this.value;
+        }
+
+        public void set(T value) {
+            assert this.value == null;
+            this.value = value;
+        }
+    }
+
+    /*
+     * Base Gosling Handle Class
+     */
+    private static abstract class GoslingHandle {
+        private long handle;
+        private boolean isWeakReference;
+
+        protected GoslingHandle(long handle, boolean isWeakReference) {
+            this.handle = handle;
+            this.isWeakReference = isWeakReference;
+        }
+
+        private void invalidate() {
+            this.handle = 0;
+            this.isWeakReference = true;
+        }
+
+        abstract void nativeFree();
+
+        @Override
+        protected void finalize() throws Throwable {
+            try {
+                if (!this.isWeakReference) {
+                    this.nativeFree();
+                }
+            } finally {
+                super.finalize();
+            }
+        }
+    }
+
+
+    /*
+     * Gosling Wrapper Classes
+     */
+
+{{#each aliases}}
+{{#if (eq typename "uintptr_t")}}
+    public static final class {{aliasToClassName name}} extends GoslingHandle {
+        private {{aliasToClassName name}}(long handle, boolean isWeakReference) {
+            super(handle, isWeakReference);
+        }
+        @Override
+        void nativeFree() {
+            Gosling.{{aliasToNativeFreeMethodName name}}(this);
+        }
+    }
+
+{{/if}}
+{{/each}}
+    /*
+     * Gosling Listener Interfaces
+     */
+
+{{#each callbacks}}
+    public interface {{callbackToInterfaceName name}} {
+        {{returnTypeToJavaType return_param}} {{callbackToInterfaceMethodName name}}({{inputParamsToJavaParams input_params}});
+    }
+
+{{/each}}
+    /*
+    * Gosling Native Methods
+    */
+
+{{#each functions}}
+    public static native {{returnTypeToJavaType return_param}} {{functionToNativeMethodName name}}({{inputParamsToJavaParams input_params}});
+{{/each}}
+
+}
