@@ -2095,7 +2095,7 @@ pub type GoslingIdentityClientHandshakeChallengeResponseSizeCallback = Option<
 /// @param out_challenge_response_buffer: the destination buffer for the callback
 ///  to write a BSON document representing the endpoint request challenge response
 ///  object
-/// @param challenge_response_buffer_size: the number of bytes allocated in
+/// @param out_challenge_response_buffer_size: the number of bytes allocated in
 ///  out_challenge_response_buffer
 pub type GoslingIdentityClientHandshakeBuildChallengeResponseCallback = Option<
     extern "C" fn(
@@ -2104,7 +2104,7 @@ pub type GoslingIdentityClientHandshakeBuildChallengeResponseCallback = Option<
         challenge_buffer: *const u8,
         challenge_buffer_size: usize,
         out_challenge_response_buffer: *mut u8,
-        challenge_response_buffer_size: usize,
+        out_challenge_response_buffer_size: usize,
     ) -> (),
 >;
 
@@ -2224,14 +2224,14 @@ pub type GoslingIdentityServerHandshakeChallengeSizeCallback = Option<
 /// @param handshake_handle: the handshake handle this callback is associated with
 /// @param out_challenge_buffer: the destination buffer for the callback
 ///  to write a BSON document representing the endpoint request challenge object
-/// @param challenge_buffer_size: the number of bytes allocated in
+/// @param out_challenge_buffer_size: the number of bytes allocated in
 ///  out_challenge_buffer
 pub type GoslingIdentityServerHandshakeBuildChallengeCallback = Option<
     extern "C" fn(
         context: *mut GoslingContext,
         handshake_handle: GoslingHandshakeHandle,
         out_challenge_buffer: *mut u8,
-        challenge_buffer_size: usize,
+        out_challenge_buffer_size: usize,
     ) -> (),
 >;
 
