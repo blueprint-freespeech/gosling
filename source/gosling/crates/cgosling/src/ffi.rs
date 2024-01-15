@@ -2209,7 +2209,7 @@ pub type GoslingIdentityServerHandshakeStartedCallback = Option<
 /// @return true if the server wants to allow the requesting client to connect client may complete the handshake, false otherwise
 pub type GoslingIdentityServerHandshakeClientAllowedCallback = Option<
     extern "C" fn(
-        contex: *mut GoslingContext,
+        context: *mut GoslingContext,
         handshake_handle: GoslingHandshakeHandle,
         client_service_id: *const GoslingV3OnionServiceId,
     ) -> bool,
