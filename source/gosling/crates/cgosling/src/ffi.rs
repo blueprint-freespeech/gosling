@@ -74,6 +74,7 @@ macro_rules! define_registry {
 }
 
 /// Error Handling
+#[derive(Clone)]
 pub struct Error {
     message: CString,
 }
@@ -110,6 +111,36 @@ pub extern "C" fn gosling_error_get_message(error: *const GoslingFFIError) -> *c
     }
 
     ptr::null()
+}
+
+/// Copy method for gosling_error
+///
+/// @param out_error: returned copy
+/// @param orig_error: original to copy
+/// @param error: fliled on error
+#[no_mangle]
+pub unsafe extern "C" fn gosling_error_clone(
+    out_error: *mut *mut GoslingFFIError,
+    orig_error: *const GoslingFFIError,
+    error: *mut *mut GoslingFFIError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        if out_error.is_null() {
+            bail!("out_error must not be null");
+        }
+        if orig_error.is_null() {
+            bail!("orig_error must not be null");
+        }
+
+        let orig_error = match get_error_registry().get(orig_error as usize) {
+            Some(orig_error) => orig_error.clone(),
+            None => bail!("error is invalid"),
+        };
+        let handle = get_error_registry().insert(orig_error);
+        *out_error = handle as *mut GoslingFFIError;
+
+        Ok(())
+    })
 }
 
 // macro for defining the implementation of freeing objects

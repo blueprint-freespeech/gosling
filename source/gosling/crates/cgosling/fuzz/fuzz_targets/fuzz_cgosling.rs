@@ -45,6 +45,11 @@ enum Function {
     ErrorGetMessage{
         error: Handle,
     },
+    ErrorClone{
+        error_copy: PHandle,
+        orig_error: Handle,
+        out_error: PHandle,
+    },
     ErrorFree{
         error: Handle,
     },
@@ -567,6 +572,20 @@ fuzz_target!(|data: Data| {
             Function::ErrorGetMessage{error} => {
                 let error = handle_as_pointer(error, &errors);
                 gosling_error_get_message(error);
+            },
+            Function::ErrorClone{error_copy, orig_error, out_error} => {
+                let mut dest: *mut GoslingFFIError = ptr::null_mut();
+                let error_copy = phandle_to_out_pointer(error_copy, &mut dest);
+                let orig_error = handle_as_pointer(orig_error, &errors);
+                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let out_error = phandle_to_out_pointer(out_error, &mut error);
+                unsafe { gosling_error_clone(error_copy, orig_error, out_error) };
+                if !dest.is_null() {
+                    errors.push(dest);
+                }
+                if !error.is_null() {
+                    errors.push(error);
+                }
             },
             Function::ErrorFree{error} => {
                 let error = handle_to_pointer(error, &mut errors);
