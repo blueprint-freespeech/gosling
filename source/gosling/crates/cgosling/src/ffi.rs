@@ -198,46 +198,46 @@ define_registry! {ContextTuple}
 
 /// Frees a gosling_ed25519_private_key object
 ///
-/// @param private_key: the private key to free
+/// @param in_private_key: the private key to free
 #[no_mangle]
-pub extern "C" fn gosling_ed25519_private_key_free(private_key: *mut GoslingEd25519PrivateKey) {
-    impl_registry_free!(private_key, Ed25519PrivateKey);
+pub extern "C" fn gosling_ed25519_private_key_free(in_private_key: *mut GoslingEd25519PrivateKey) {
+    impl_registry_free!(in_private_key, Ed25519PrivateKey);
 }
 
 /// Frees a gosling_x25519_private_key object
 ///
-/// @param private_key: the private key to free
+/// @param in_private_key: the private key to free
 #[no_mangle]
-pub extern "C" fn gosling_x25519_private_key_free(private_key: *mut GoslingX25519PrivateKey) {
-    impl_registry_free!(private_key, X25519PrivateKey);
+pub extern "C" fn gosling_x25519_private_key_free(in_private_key: *mut GoslingX25519PrivateKey) {
+    impl_registry_free!(in_private_key, X25519PrivateKey);
 }
 /// Frees a gosling_x25519_public_key object
 ///
 /// @param public_key: the public key to free
 #[no_mangle]
-pub extern "C" fn gosling_x25519_public_key_free(public_key: *mut GoslingX25519PublicKey) {
-    impl_registry_free!(public_key, X25519PublicKey);
+pub extern "C" fn gosling_x25519_public_key_free(in_public_key: *mut GoslingX25519PublicKey) {
+    impl_registry_free!(in_public_key, X25519PublicKey);
 }
 /// Frees a gosling_v3_onion_service_id object
 ///
-/// @param service_id: the service id object to free
+/// @param in_service_id: the service id object to free
 #[no_mangle]
-pub extern "C" fn gosling_v3_onion_service_id_free(service_id: *mut GoslingV3OnionServiceId) {
-    impl_registry_free!(service_id, V3OnionServiceId);
+pub extern "C" fn gosling_v3_onion_service_id_free(in_service_id: *mut GoslingV3OnionServiceId) {
+    impl_registry_free!(in_service_id, V3OnionServiceId);
 }
 /// Frees a gosling_tor_provider object
 ///
-/// @param tor_provider: the tor provider object to free
+/// @param in_tor_provider: the tor provider object to free
 #[no_mangle]
-pub extern "C" fn gosling_tor_provider_free(tor_provider: *mut GoslingTorProvider) {
-    impl_registry_free!(tor_provider, ContextTuple);
+pub extern "C" fn gosling_tor_provider_free(in_tor_provider: *mut GoslingTorProvider) {
+    impl_registry_free!(in_tor_provider, ContextTuple);
 }
 /// Frees a gosling_context object
 ///
-/// @param context: the context object to free
+/// @param in_context: the context object to free
 #[no_mangle]
-pub extern "C" fn gosling_context_free(context: *mut GoslingContext) {
-    impl_registry_free!(context, ContextTuple);
+pub extern "C" fn gosling_context_free(in_context: *mut GoslingContext) {
+    impl_registry_free!(in_context, ContextTuple);
 }
 
 /// Wrapper around rust code which may panic or return a failing Result to be used at FFI boundaries.
@@ -314,7 +314,8 @@ pub unsafe extern "C" fn gosling_library_init(
 /// Frees all resources associated with the Gosling library. No-op if the library
 /// is not initialized or if it has already been freed
 #[no_mangle]
-pub extern "C" fn gosling_library_free(_library: *mut GoslingLibrary) {
+#[allow(unused_variables)]
+pub extern "C" fn gosling_library_free(in_library: *mut GoslingLibrary) {
     if GOSLING_LIBRARY_INITED.load(Ordering::Relaxed) {
         clear_error_registry();
 
@@ -1015,7 +1016,7 @@ pub unsafe extern "C" fn gosling_tor_provider_new_mock_client(
 /// Initialize a gosling context.
 ///
 /// @param out_context: returned initialied gosling context
-/// @param tor_provider: the tor client implementation to use; this function consumes the tor_provider
+/// @param in_tor_provider: the tor client implementation to use; this function consumes the tor_provider
 ///  and it may not be re-used in subsequent gosling_* calls, and it does not need to be freed
 /// @param identity_port: the tor virtual port the identity server listens on
 /// @param endpoint_port: the tor virtual port endpoint servers listen on
@@ -1025,7 +1026,7 @@ pub unsafe extern "C" fn gosling_tor_provider_new_mock_client(
 pub unsafe extern "C" fn gosling_context_init(
     // out context
     out_context: *mut *mut GoslingContext,
-    tor_provider: *mut GoslingTorProvider,
+    in_tor_provider: *mut GoslingTorProvider,
     identity_port: u16,
     endpoint_port: u16,
     identity_private_key: *const GoslingEd25519PrivateKey,
@@ -1035,8 +1036,8 @@ pub unsafe extern "C" fn gosling_context_init(
         if out_context.is_null() {
             bail!("out_context must not be null");
         }
-        if tor_provider.is_null() {
-            bail!("tor_provider must not be null");
+        if in_tor_provider.is_null() {
+            bail!("in_tor_provider must not be null");
         }
         if identity_port == 0u16 {
             bail!("identity_port must not be 0");
@@ -1049,8 +1050,7 @@ pub unsafe extern "C" fn gosling_context_init(
         }
 
         // get our tor provider
-        let mut tor_provider_registry = get_tor_provider_registry();
-        let tor_provider = match tor_provider_registry.remove(tor_provider as usize) {
+        let tor_provider = match get_tor_provider_registry().remove(in_tor_provider as usize) {
             Some(tor_provider) => tor_provider,
             None => bail!("tor_provider is invalid"),
         };
@@ -1595,13 +1595,12 @@ fn handle_context_event(
                     client_auth_private_key as *const GoslingX25519PrivateKey,
                 );
 
+                // cleanup
                 {
                     let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
                     v3_onion_service_id_registry.remove(identity_service_id);
                     v3_onion_service_id_registry.remove(endpoint_service_id);
                 }
-
-                // cleanup
                 get_x25519_private_key_registry().remove(client_auth_private_key);
             } else {
                 bail!("missing required identity_client_handshake_completed() callback");
