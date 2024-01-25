@@ -142,8 +142,8 @@ Typedefs</h2></td></tr>
 <tr class="separator:abee7ec709176813151abaddb82b4d173"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abc9c9d9c23470056f3697545bad1b2ea"><td class="memItemLeft" align="right" valign="top">typedef size_t(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#abc9c9d9c23470056f3697545bad1b2ea">gosling_identity_client_handshake_challenge_response_size_callback_t</a>) (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const uint8_t *challenge_buffer, size_t challenge_buffer_size)</td></tr>
 <tr class="separator:abc9c9d9c23470056f3697545bad1b2ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9516161ddcca78bf3f66a24ee8e61020"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a9516161ddcca78bf3f66a24ee8e61020">gosling_identity_client_handshake_build_challenge_response_callback_t</a>) (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const uint8_t *challenge_buffer, size_t challenge_buffer_size, uint8_t *out_challenge_response_buffer, size_t challenge_response_buffer_size)</td></tr>
-<tr class="separator:a9516161ddcca78bf3f66a24ee8e61020"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04f2d7b6581e842b6e75be40def36602"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a04f2d7b6581e842b6e75be40def36602">gosling_identity_client_handshake_build_challenge_response_callback_t</a>) (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const uint8_t *challenge_buffer, size_t challenge_buffer_size, uint8_t *out_challenge_response_buffer, size_t out_challenge_response_buffer_size)</td></tr>
+<tr class="separator:a04f2d7b6581e842b6e75be40def36602"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a650e7ce1b9b6155ebc8464278e517454"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a650e7ce1b9b6155ebc8464278e517454">gosling_identity_client_handshake_completed_callback_t</a>) (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const struct <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *identity_service_id, const struct <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *endpoint_service_id, const char *endpoint_name, size_t endpoint_name_length, const struct <a class="el" href="cgosling_8h.html#ae2aaf774700e7b99f052b9d747da20ab">gosling_x25519_private_key</a> *client_auth_private_key)</td></tr>
 <tr class="separator:a650e7ce1b9b6155ebc8464278e517454"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aea75f1440ad2c678bc93577e02874ab5"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#aea75f1440ad2c678bc93577e02874ab5">gosling_identity_client_handshake_failed_callback_t</a>) (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> *error)</td></tr>
@@ -152,14 +152,14 @@ Typedefs</h2></td></tr>
 <tr class="separator:aa3188b6faaec4f89a38a5e0bf1441285"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acc530ee8339115075e8ceb86c5c2a3e4"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#acc530ee8339115075e8ceb86c5c2a3e4">gosling_identity_server_handshake_started_callback_t</a>) (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle)</td></tr>
 <tr class="separator:acc530ee8339115075e8ceb86c5c2a3e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af6988af91ea3f87db753bb4600e1d08f"><td class="memItemLeft" align="right" valign="top">typedef bool(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#af6988af91ea3f87db753bb4600e1d08f">gosling_identity_server_handshake_client_allowed_callback_t</a>) (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *contex, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const struct <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *client_service_id)</td></tr>
-<tr class="separator:af6988af91ea3f87db753bb4600e1d08f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2090bad14e49c7342a0f6bda3179e702"><td class="memItemLeft" align="right" valign="top">typedef bool(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a2090bad14e49c7342a0f6bda3179e702">gosling_identity_server_handshake_client_allowed_callback_t</a>) (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const struct <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *client_service_id)</td></tr>
+<tr class="separator:a2090bad14e49c7342a0f6bda3179e702"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0a0c3d78fdfdddc5158c2f166719df8f"><td class="memItemLeft" align="right" valign="top">typedef bool(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a0a0c3d78fdfdddc5158c2f166719df8f">gosling_identity_server_endpoint_supported_callback_t</a>) (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const char *endpoint_name, size_t endpoint_name_length)</td></tr>
 <tr class="separator:a0a0c3d78fdfdddc5158c2f166719df8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aec055f287eecf531060f267e5e625a75"><td class="memItemLeft" align="right" valign="top">typedef size_t(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#aec055f287eecf531060f267e5e625a75">gosling_identity_server_handshake_challenge_size_callback_t</a>) (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle)</td></tr>
 <tr class="separator:aec055f287eecf531060f267e5e625a75"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5e0d43707c8ef22c3954543ac26b18eb"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a5e0d43707c8ef22c3954543ac26b18eb">gosling_identity_server_handshake_build_challenge_callback_t</a>) (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, uint8_t *out_challenge_buffer, size_t challenge_buffer_size)</td></tr>
-<tr class="separator:a5e0d43707c8ef22c3954543ac26b18eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad117e872332ca86a4d3bd6ba42bb4b78"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ad117e872332ca86a4d3bd6ba42bb4b78">gosling_identity_server_handshake_build_challenge_callback_t</a>) (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, uint8_t *out_challenge_buffer, size_t out_challenge_buffer_size)</td></tr>
+<tr class="separator:ad117e872332ca86a4d3bd6ba42bb4b78"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa6ca4ee4f92441ac8acb1aabeefeb3db"><td class="memItemLeft" align="right" valign="top">typedef bool(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#aa6ca4ee4f92441ac8acb1aabeefeb3db">gosling_identity_server_handshake_verify_challenge_response_callback_t</a>) (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const uint8_t *challenge_response_buffer, size_t challenge_response_buffer_size)</td></tr>
 <tr class="separator:aa6ca4ee4f92441ac8acb1aabeefeb3db"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a44213a38492408e3f8b61aebc80e59ac"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a44213a38492408e3f8b61aebc80e59ac">gosling_identity_server_handshake_completed_callback_t</a>) (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const struct <a class="el" href="cgosling_8h.html#a1ce74ce2296552d7587de725370b773c">gosling_ed25519_private_key</a> *endpoint_private_key, const char *endpoint_name, size_t endpoint_name_length, const struct <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *client_service_id, const struct <a class="el" href="cgosling_8h.html#a07b38f7f7cae749babd88245465026c3">gosling_x25519_public_key</a> *client_auth_public_key)</td></tr>
@@ -204,24 +204,26 @@ Enumerations</h2></td></tr>
 Functions</h2></td></tr>
 <tr class="memitem:ab0d0ce9279a34b66b487a9472ab736e8"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ab0d0ce9279a34b66b487a9472ab736e8">gosling_error_get_message</a> (const struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> *error)</td></tr>
 <tr class="separator:ab0d0ce9279a34b66b487a9472ab736e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab2c27419a379968f1a6a8f3ef8d28b24"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ab2c27419a379968f1a6a8f3ef8d28b24">gosling_error_clone</a> (struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **out_error, const struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> *orig_error, struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:ab2c27419a379968f1a6a8f3ef8d28b24"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a46013e10531a1445dccb3de29c95860c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a46013e10531a1445dccb3de29c95860c">gosling_error_free</a> (struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> *error)</td></tr>
 <tr class="separator:a46013e10531a1445dccb3de29c95860c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af79b736f0d32d5458840ccdcebd5ada4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#af79b736f0d32d5458840ccdcebd5ada4">gosling_ed25519_private_key_free</a> (struct <a class="el" href="cgosling_8h.html#a1ce74ce2296552d7587de725370b773c">gosling_ed25519_private_key</a> *private_key)</td></tr>
-<tr class="separator:af79b736f0d32d5458840ccdcebd5ada4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aafbf2fc83e75ec456d6077997dfa5c17"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#aafbf2fc83e75ec456d6077997dfa5c17">gosling_x25519_private_key_free</a> (struct <a class="el" href="cgosling_8h.html#ae2aaf774700e7b99f052b9d747da20ab">gosling_x25519_private_key</a> *private_key)</td></tr>
-<tr class="separator:aafbf2fc83e75ec456d6077997dfa5c17"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6a34cda1a13eb349e26a1e16c32ab82c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a6a34cda1a13eb349e26a1e16c32ab82c">gosling_x25519_public_key_free</a> (struct <a class="el" href="cgosling_8h.html#a07b38f7f7cae749babd88245465026c3">gosling_x25519_public_key</a> *public_key)</td></tr>
-<tr class="separator:a6a34cda1a13eb349e26a1e16c32ab82c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8e8ed8fe0bb68a70b235caa8ac27ce11"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a8e8ed8fe0bb68a70b235caa8ac27ce11">gosling_v3_onion_service_id_free</a> (struct <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *service_id)</td></tr>
-<tr class="separator:a8e8ed8fe0bb68a70b235caa8ac27ce11"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9ffa09a4cb7f2f7b0c182cfa4e2aed9c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a9ffa09a4cb7f2f7b0c182cfa4e2aed9c">gosling_tor_provider_free</a> (struct <a class="el" href="cgosling_8h.html#aa9175b153fa7c5ba3eeddf5860da1a64">gosling_tor_provider</a> *tor_provider)</td></tr>
-<tr class="separator:a9ffa09a4cb7f2f7b0c182cfa4e2aed9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1c6529b0abc40766e6cafaf6093dd873"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a1c6529b0abc40766e6cafaf6093dd873">gosling_context_free</a> (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context)</td></tr>
-<tr class="separator:a1c6529b0abc40766e6cafaf6093dd873"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae09cc2eff056ed89d3763dcaf40b8fd4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ae09cc2eff056ed89d3763dcaf40b8fd4">gosling_ed25519_private_key_free</a> (struct <a class="el" href="cgosling_8h.html#a1ce74ce2296552d7587de725370b773c">gosling_ed25519_private_key</a> *in_private_key)</td></tr>
+<tr class="separator:ae09cc2eff056ed89d3763dcaf40b8fd4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2651acd107f2492e7d642c6d56201483"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a2651acd107f2492e7d642c6d56201483">gosling_x25519_private_key_free</a> (struct <a class="el" href="cgosling_8h.html#ae2aaf774700e7b99f052b9d747da20ab">gosling_x25519_private_key</a> *in_private_key)</td></tr>
+<tr class="separator:a2651acd107f2492e7d642c6d56201483"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaced361195e95bee0806dafa4de46325"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#aaced361195e95bee0806dafa4de46325">gosling_x25519_public_key_free</a> (struct <a class="el" href="cgosling_8h.html#a07b38f7f7cae749babd88245465026c3">gosling_x25519_public_key</a> *in_public_key)</td></tr>
+<tr class="separator:aaced361195e95bee0806dafa4de46325"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a729d7b900e3b60d43876506b4f89ae49"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a729d7b900e3b60d43876506b4f89ae49">gosling_v3_onion_service_id_free</a> (struct <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *in_service_id)</td></tr>
+<tr class="separator:a729d7b900e3b60d43876506b4f89ae49"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7ee724466de93278b1508930e63d7c58"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a7ee724466de93278b1508930e63d7c58">gosling_tor_provider_free</a> (struct <a class="el" href="cgosling_8h.html#aa9175b153fa7c5ba3eeddf5860da1a64">gosling_tor_provider</a> *in_tor_provider)</td></tr>
+<tr class="separator:a7ee724466de93278b1508930e63d7c58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afc92f208e73b78e94d274f4e95d94898"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#afc92f208e73b78e94d274f4e95d94898">gosling_context_free</a> (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *in_context)</td></tr>
+<tr class="separator:afc92f208e73b78e94d274f4e95d94898"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5e2e4e69c460d92338d9a8ce222e547b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a5e2e4e69c460d92338d9a8ce222e547b">gosling_library_init</a> (struct <a class="el" href="cgosling_8h.html#ad92d9c48fd5abaac182982f94cc13f8b">gosling_library</a> **out_library, struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
 <tr class="separator:a5e2e4e69c460d92338d9a8ce222e547b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad432c5e93fb50a508bff942a7462383c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ad432c5e93fb50a508bff942a7462383c">gosling_library_free</a> (struct <a class="el" href="cgosling_8h.html#ad92d9c48fd5abaac182982f94cc13f8b">gosling_library</a> *_library)</td></tr>
-<tr class="separator:ad432c5e93fb50a508bff942a7462383c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a83ddc44ac389fd71f5978f88ec7454f4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a83ddc44ac389fd71f5978f88ec7454f4">gosling_library_free</a> (struct <a class="el" href="cgosling_8h.html#ad92d9c48fd5abaac182982f94cc13f8b">gosling_library</a> *in_library)</td></tr>
+<tr class="separator:a83ddc44ac389fd71f5978f88ec7454f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0a8df1b9e3240209d839ede800214a10"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a0a8df1b9e3240209d839ede800214a10">gosling_ed25519_private_key_generate</a> (struct <a class="el" href="cgosling_8h.html#a1ce74ce2296552d7587de725370b773c">gosling_ed25519_private_key</a> **out_private_key, struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
 <tr class="separator:a0a8df1b9e3240209d839ede800214a10"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a155841b044bfb3ce51d9e91a4172a5dd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a155841b044bfb3ce51d9e91a4172a5dd">gosling_ed25519_private_key_clone</a> (struct <a class="el" href="cgosling_8h.html#a1ce74ce2296552d7587de725370b773c">gosling_ed25519_private_key</a> **out_private_key, const struct <a class="el" href="cgosling_8h.html#a1ce74ce2296552d7587de725370b773c">gosling_ed25519_private_key</a> *private_key, struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
@@ -256,8 +258,8 @@ Functions</h2></td></tr>
 <tr class="separator:aae0946ad9cc93a3f1c1096cd9ad8c986"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a151a4a877811fb035034adacc9ac568f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a151a4a877811fb035034adacc9ac568f">gosling_tor_provider_new_mock_client</a> (struct <a class="el" href="cgosling_8h.html#aa9175b153fa7c5ba3eeddf5860da1a64">gosling_tor_provider</a> **out_tor_provider, struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
 <tr class="separator:a151a4a877811fb035034adacc9ac568f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a90f3dac90a6ca71159467758b6343515"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a90f3dac90a6ca71159467758b6343515">gosling_context_init</a> (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> **out_context, struct <a class="el" href="cgosling_8h.html#aa9175b153fa7c5ba3eeddf5860da1a64">gosling_tor_provider</a> *tor_provider, uint16_t identity_port, uint16_t endpoint_port, const struct <a class="el" href="cgosling_8h.html#a1ce74ce2296552d7587de725370b773c">gosling_ed25519_private_key</a> *identity_private_key, struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:a90f3dac90a6ca71159467758b6343515"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab611c71ca78a1db25250a4d98b528229"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ab611c71ca78a1db25250a4d98b528229">gosling_context_init</a> (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> **out_context, struct <a class="el" href="cgosling_8h.html#aa9175b153fa7c5ba3eeddf5860da1a64">gosling_tor_provider</a> *in_tor_provider, uint16_t identity_port, uint16_t endpoint_port, const struct <a class="el" href="cgosling_8h.html#a1ce74ce2296552d7587de725370b773c">gosling_ed25519_private_key</a> *identity_private_key, struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:ab611c71ca78a1db25250a4d98b528229"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6f01d0d235824875adc92fc16deb2527"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a6f01d0d235824875adc92fc16deb2527">gosling_context_bootstrap_tor</a> (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
 <tr class="separator:a6f01d0d235824875adc92fc16deb2527"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aafaa457c2848a985e400c03c0e357649"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#aafaa457c2848a985e400c03c0e357649">gosling_context_start_identity_server</a> (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
@@ -286,7 +288,7 @@ Functions</h2></td></tr>
 <tr class="separator:a542f251c3de5689ef2bbf1875cfce3e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af2423e6fee466b0d4f517be9e3dfcca5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#af2423e6fee466b0d4f517be9e3dfcca5">gosling_context_set_identity_client_challenge_response_size_callback</a> (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#abc9c9d9c23470056f3697545bad1b2ea">gosling_identity_client_handshake_challenge_response_size_callback_t</a> callback, struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
 <tr class="separator:af2423e6fee466b0d4f517be9e3dfcca5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a113a72276ea2a9c3088c1b80d51fae61"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a113a72276ea2a9c3088c1b80d51fae61">gosling_context_set_identity_client_build_challenge_response_callback</a> (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a9516161ddcca78bf3f66a24ee8e61020">gosling_identity_client_handshake_build_challenge_response_callback_t</a> callback, struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="memitem:a113a72276ea2a9c3088c1b80d51fae61"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a113a72276ea2a9c3088c1b80d51fae61">gosling_context_set_identity_client_build_challenge_response_callback</a> (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a04f2d7b6581e842b6e75be40def36602">gosling_identity_client_handshake_build_challenge_response_callback_t</a> callback, struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
 <tr class="separator:a113a72276ea2a9c3088c1b80d51fae61"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a458956b9ec8ce7962aad3ddcc09c633c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a458956b9ec8ce7962aad3ddcc09c633c">gosling_context_set_identity_client_handshake_completed_callback</a> (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a650e7ce1b9b6155ebc8464278e517454">gosling_identity_client_handshake_completed_callback_t</a> callback, struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
 <tr class="separator:a458956b9ec8ce7962aad3ddcc09c633c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -296,13 +298,13 @@ Functions</h2></td></tr>
 <tr class="separator:af7ab14becf7b53299a5a836c6d2f2ff2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0437dc0eae14e9ecea6544ab00e0c789"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a0437dc0eae14e9ecea6544ab00e0c789">gosling_context_set_identity_server_handshake_started_callback</a> (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#acc530ee8339115075e8ceb86c5c2a3e4">gosling_identity_server_handshake_started_callback_t</a> callback, struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
 <tr class="separator:a0437dc0eae14e9ecea6544ab00e0c789"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1f09a4aae785481bcc941f663f88b6fe"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a1f09a4aae785481bcc941f663f88b6fe">gosling_context_set_identity_server_client_allowed_callback</a> (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#af6988af91ea3f87db753bb4600e1d08f">gosling_identity_server_handshake_client_allowed_callback_t</a> callback, struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="memitem:a1f09a4aae785481bcc941f663f88b6fe"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a1f09a4aae785481bcc941f663f88b6fe">gosling_context_set_identity_server_client_allowed_callback</a> (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a2090bad14e49c7342a0f6bda3179e702">gosling_identity_server_handshake_client_allowed_callback_t</a> callback, struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
 <tr class="separator:a1f09a4aae785481bcc941f663f88b6fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afb799583a3e201ea9c782d9bf4a44eab"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#afb799583a3e201ea9c782d9bf4a44eab">gosling_context_set_identity_server_endpoint_supported_callback</a> (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a0a0c3d78fdfdddc5158c2f166719df8f">gosling_identity_server_endpoint_supported_callback_t</a> callback, struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
 <tr class="separator:afb799583a3e201ea9c782d9bf4a44eab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab78352751d47a484f899eb8725ecf77c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ab78352751d47a484f899eb8725ecf77c">gosling_context_set_identity_server_challenge_size_callback</a> (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#aec055f287eecf531060f267e5e625a75">gosling_identity_server_handshake_challenge_size_callback_t</a> callback, struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
 <tr class="separator:ab78352751d47a484f899eb8725ecf77c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a679dbea50a447e710e38756461972844"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a679dbea50a447e710e38756461972844">gosling_context_set_identity_server_build_challenge_callback</a> (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a5e0d43707c8ef22c3954543ac26b18eb">gosling_identity_server_handshake_build_challenge_callback_t</a> callback, struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="memitem:a679dbea50a447e710e38756461972844"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a679dbea50a447e710e38756461972844">gosling_context_set_identity_server_build_challenge_callback</a> (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#ad117e872332ca86a4d3bd6ba42bb4b78">gosling_identity_server_handshake_build_challenge_callback_t</a> callback, struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
 <tr class="separator:a679dbea50a447e710e38756461972844"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a593ca6d17243661159ff0635921b84f7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a593ca6d17243661159ff0635921b84f7">gosling_context_set_identity_server_verify_challenge_response_callback</a> (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#aa6ca4ee4f92441ac8acb1aabeefeb3db">gosling_identity_server_handshake_verify_challenge_response_callback_t</a> callback, struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
 <tr class="separator:a593ca6d17243661159ff0635921b84f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -684,14 +686,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a9516161ddcca78bf3f66a24ee8e61020"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9516161ddcca78bf3f66a24ee8e61020">&#9670;&nbsp;</a></span>gosling_identity_client_handshake_build_challenge_response_callback_t</h2>
+<a id="a04f2d7b6581e842b6e75be40def36602"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a04f2d7b6581e842b6e75be40def36602">&#9670;&nbsp;</a></span>gosling_identity_client_handshake_build_challenge_response_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* gosling_identity_client_handshake_build_challenge_response_callback_t) (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const uint8_t *challenge_buffer, size_t challenge_buffer_size, uint8_t *out_challenge_response_buffer, size_t challenge_response_buffer_size)</td>
+          <td class="memname">typedef void(* gosling_identity_client_handshake_build_challenge_response_callback_t) (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const uint8_t *challenge_buffer, size_t challenge_buffer_size, uint8_t *out_challenge_response_buffer, size_t out_challenge_response_buffer_size)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -705,7 +707,7 @@ Functions</h2></td></tr>
     <tr><td class="paramname">challenge_buffer</td><td>the source buffer containing a BSON document received from the identity server to serve as an endpoint request challenge </td></tr>
     <tr><td class="paramname">challenge_buffer_size</td><td>the number of bytes in challenge_buffer </td></tr>
     <tr><td class="paramname">out_challenge_response_buffer</td><td>the destination buffer for the callback to write a BSON document representing the endpoint request challenge response object </td></tr>
-    <tr><td class="paramname">challenge_response_buffer_size</td><td>the number of bytes allocated in out_challenge_response_buffer </td></tr>
+    <tr><td class="paramname">out_challenge_response_buffer_size</td><td>the number of bytes allocated in out_challenge_response_buffer </td></tr>
   </table>
   </dd>
 </dl>
@@ -812,14 +814,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a5e0d43707c8ef22c3954543ac26b18eb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5e0d43707c8ef22c3954543ac26b18eb">&#9670;&nbsp;</a></span>gosling_identity_server_handshake_build_challenge_callback_t</h2>
+<a id="ad117e872332ca86a4d3bd6ba42bb4b78"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad117e872332ca86a4d3bd6ba42bb4b78">&#9670;&nbsp;</a></span>gosling_identity_server_handshake_build_challenge_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* gosling_identity_server_handshake_build_challenge_callback_t) (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, uint8_t *out_challenge_buffer, size_t challenge_buffer_size)</td>
+          <td class="memname">typedef void(* gosling_identity_server_handshake_build_challenge_callback_t) (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, uint8_t *out_challenge_buffer, size_t out_challenge_buffer_size)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -829,7 +831,7 @@ Functions</h2></td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
     <tr><td class="paramname">out_challenge_buffer</td><td>the destination buffer for the callback to write a BSON document representing the endpoint request challenge object </td></tr>
-    <tr><td class="paramname">challenge_buffer_size</td><td>the number of bytes allocated in out_challenge_buffer </td></tr>
+    <tr><td class="paramname">out_challenge_buffer_size</td><td>the number of bytes allocated in out_challenge_buffer </td></tr>
   </table>
   </dd>
 </dl>
@@ -859,14 +861,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="af6988af91ea3f87db753bb4600e1d08f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af6988af91ea3f87db753bb4600e1d08f">&#9670;&nbsp;</a></span>gosling_identity_server_handshake_client_allowed_callback_t</h2>
+<a id="a2090bad14e49c7342a0f6bda3179e702"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2090bad14e49c7342a0f6bda3179e702">&#9670;&nbsp;</a></span>gosling_identity_server_handshake_client_allowed_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef bool(* gosling_identity_server_handshake_client_allowed_callback_t) (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *contex, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const struct <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *client_service_id)</td>
+          <td class="memname">typedef bool(* gosling_identity_server_handshake_client_allowed_callback_t) (struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const struct <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *client_service_id)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1443,8 +1445,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a1c6529b0abc40766e6cafaf6093dd873"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1c6529b0abc40766e6cafaf6093dd873">&#9670;&nbsp;</a></span>gosling_context_free()</h2>
+<a id="afc92f208e73b78e94d274f4e95d94898"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afc92f208e73b78e94d274f4e95d94898">&#9670;&nbsp;</a></span>gosling_context_free()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1453,7 +1455,7 @@ Functions</h2></td></tr>
           <td class="memname">void gosling_context_free </td>
           <td>(</td>
           <td class="paramtype">struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *&#160;</td>
-          <td class="paramname"><em>context</em></td><td>)</td>
+          <td class="paramname"><em>in_context</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -1461,15 +1463,15 @@ Functions</h2></td></tr>
 <p>Frees a gosling_context object</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">context</td><td>the context object to free </td></tr>
+    <tr><td class="paramname">in_context</td><td>the context object to free </td></tr>
   </table>
   </dd>
 </dl>
 
 </div>
 </div>
-<a id="a90f3dac90a6ca71159467758b6343515"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a90f3dac90a6ca71159467758b6343515">&#9670;&nbsp;</a></span>gosling_context_init()</h2>
+<a id="ab611c71ca78a1db25250a4d98b528229"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab611c71ca78a1db25250a4d98b528229">&#9670;&nbsp;</a></span>gosling_context_init()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1484,7 +1486,7 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">struct <a class="el" href="cgosling_8h.html#aa9175b153fa7c5ba3eeddf5860da1a64">gosling_tor_provider</a> *&#160;</td>
-          <td class="paramname"><em>tor_provider</em>, </td>
+          <td class="paramname"><em>in_tor_provider</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -1521,7 +1523,7 @@ Functions</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">out_context</td><td>returned initialied gosling context </td></tr>
-    <tr><td class="paramname">tor_provider</td><td>the tor client implementation to use; this function consumes the tor_provider and it may not be re-used in subsequent gosling_* calls, and it does not need to be freed </td></tr>
+    <tr><td class="paramname">in_tor_provider</td><td>the tor client implementation to use; this function consumes the tor_provider and it may not be re-used in subsequent gosling_* calls, and it does not need to be freed </td></tr>
     <tr><td class="paramname">identity_port</td><td>the tor virtual port the identity server listens on </td></tr>
     <tr><td class="paramname">endpoint_port</td><td>the tor virtual port endpoint servers listen on </td></tr>
     <tr><td class="paramname">identity_private_key</td><td>the e25519 private key used to start th identity server's onion service </td></tr>
@@ -1927,7 +1929,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#a9516161ddcca78bf3f66a24ee8e61020">gosling_identity_client_handshake_build_challenge_response_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a04f2d7b6581e842b6e75be40def36602">gosling_identity_client_handshake_build_challenge_response_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
         </tr>
         <tr>
@@ -2099,7 +2101,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#a5e0d43707c8ef22c3954543ac26b18eb">gosling_identity_server_handshake_build_challenge_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#ad117e872332ca86a4d3bd6ba42bb4b78">gosling_identity_server_handshake_build_challenge_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
         </tr>
         <tr>
@@ -2185,7 +2187,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#af6988af91ea3f87db753bb4600e1d08f">gosling_identity_server_handshake_client_allowed_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a2090bad14e49c7342a0f6bda3179e702">gosling_identity_server_handshake_client_allowed_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
         </tr>
         <tr>
@@ -2872,8 +2874,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="af79b736f0d32d5458840ccdcebd5ada4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af79b736f0d32d5458840ccdcebd5ada4">&#9670;&nbsp;</a></span>gosling_ed25519_private_key_free()</h2>
+<a id="ae09cc2eff056ed89d3763dcaf40b8fd4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae09cc2eff056ed89d3763dcaf40b8fd4">&#9670;&nbsp;</a></span>gosling_ed25519_private_key_free()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2882,7 +2884,7 @@ Functions</h2></td></tr>
           <td class="memname">void gosling_ed25519_private_key_free </td>
           <td>(</td>
           <td class="paramtype">struct <a class="el" href="cgosling_8h.html#a1ce74ce2296552d7587de725370b773c">gosling_ed25519_private_key</a> *&#160;</td>
-          <td class="paramname"><em>private_key</em></td><td>)</td>
+          <td class="paramname"><em>in_private_key</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -2890,7 +2892,7 @@ Functions</h2></td></tr>
 <p>Frees a gosling_ed25519_private_key object</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">private_key</td><td>the private key to free </td></tr>
+    <tr><td class="paramname">in_private_key</td><td>the private key to free </td></tr>
   </table>
   </dd>
 </dl>
@@ -3033,6 +3035,49 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="ab2c27419a379968f1a6a8f3ef8d28b24"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab2c27419a379968f1a6a8f3ef8d28b24">&#9670;&nbsp;</a></span>gosling_error_clone()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void gosling_error_clone </td>
+          <td>(</td>
+          <td class="paramtype">struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **&#160;</td>
+          <td class="paramname"><em>out_error</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> *&#160;</td>
+          <td class="paramname"><em>orig_error</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">struct <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **&#160;</td>
+          <td class="paramname"><em>error</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Copy method for gosling_error</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">out_error</td><td>returned copy </td></tr>
+    <tr><td class="paramname">orig_error</td><td>original to copy </td></tr>
+    <tr><td class="paramname">error</td><td>fliled on error </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="a46013e10531a1445dccb3de29c95860c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a46013e10531a1445dccb3de29c95860c">&#9670;&nbsp;</a></span>gosling_error_free()</h2>
 
@@ -3084,8 +3129,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ad432c5e93fb50a508bff942a7462383c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad432c5e93fb50a508bff942a7462383c">&#9670;&nbsp;</a></span>gosling_library_free()</h2>
+<a id="a83ddc44ac389fd71f5978f88ec7454f4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a83ddc44ac389fd71f5978f88ec7454f4">&#9670;&nbsp;</a></span>gosling_library_free()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3094,7 +3139,7 @@ Functions</h2></td></tr>
           <td class="memname">void gosling_library_free </td>
           <td>(</td>
           <td class="paramtype">struct <a class="el" href="cgosling_8h.html#ad92d9c48fd5abaac182982f94cc13f8b">gosling_library</a> *&#160;</td>
-          <td class="paramname"><em>_library</em></td><td>)</td>
+          <td class="paramname"><em>in_library</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -3176,8 +3221,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a9ffa09a4cb7f2f7b0c182cfa4e2aed9c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9ffa09a4cb7f2f7b0c182cfa4e2aed9c">&#9670;&nbsp;</a></span>gosling_tor_provider_free()</h2>
+<a id="a7ee724466de93278b1508930e63d7c58"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7ee724466de93278b1508930e63d7c58">&#9670;&nbsp;</a></span>gosling_tor_provider_free()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3186,7 +3231,7 @@ Functions</h2></td></tr>
           <td class="memname">void gosling_tor_provider_free </td>
           <td>(</td>
           <td class="paramtype">struct <a class="el" href="cgosling_8h.html#aa9175b153fa7c5ba3eeddf5860da1a64">gosling_tor_provider</a> *&#160;</td>
-          <td class="paramname"><em>tor_provider</em></td><td>)</td>
+          <td class="paramname"><em>in_tor_provider</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -3194,7 +3239,7 @@ Functions</h2></td></tr>
 <p>Frees a gosling_tor_provider object</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">tor_provider</td><td>the tor provider object to free </td></tr>
+    <tr><td class="paramname">in_tor_provider</td><td>the tor provider object to free </td></tr>
   </table>
   </dd>
 </dl>
@@ -3344,8 +3389,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a8e8ed8fe0bb68a70b235caa8ac27ce11"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8e8ed8fe0bb68a70b235caa8ac27ce11">&#9670;&nbsp;</a></span>gosling_v3_onion_service_id_free()</h2>
+<a id="a729d7b900e3b60d43876506b4f89ae49"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a729d7b900e3b60d43876506b4f89ae49">&#9670;&nbsp;</a></span>gosling_v3_onion_service_id_free()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3354,7 +3399,7 @@ Functions</h2></td></tr>
           <td class="memname">void gosling_v3_onion_service_id_free </td>
           <td>(</td>
           <td class="paramtype">struct <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *&#160;</td>
-          <td class="paramname"><em>service_id</em></td><td>)</td>
+          <td class="paramname"><em>in_service_id</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -3362,7 +3407,7 @@ Functions</h2></td></tr>
 <p>Frees a gosling_v3_onion_service_id object</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">service_id</td><td>the service id object to free </td></tr>
+    <tr><td class="paramname">in_service_id</td><td>the service id object to free </td></tr>
   </table>
   </dd>
 </dl>
@@ -3555,8 +3600,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="aafbf2fc83e75ec456d6077997dfa5c17"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aafbf2fc83e75ec456d6077997dfa5c17">&#9670;&nbsp;</a></span>gosling_x25519_private_key_free()</h2>
+<a id="a2651acd107f2492e7d642c6d56201483"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2651acd107f2492e7d642c6d56201483">&#9670;&nbsp;</a></span>gosling_x25519_private_key_free()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3565,7 +3610,7 @@ Functions</h2></td></tr>
           <td class="memname">void gosling_x25519_private_key_free </td>
           <td>(</td>
           <td class="paramtype">struct <a class="el" href="cgosling_8h.html#ae2aaf774700e7b99f052b9d747da20ab">gosling_x25519_private_key</a> *&#160;</td>
-          <td class="paramname"><em>private_key</em></td><td>)</td>
+          <td class="paramname"><em>in_private_key</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -3573,7 +3618,7 @@ Functions</h2></td></tr>
 <p>Frees a gosling_x25519_private_key object</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">private_key</td><td>the private key to free </td></tr>
+    <tr><td class="paramname">in_private_key</td><td>the private key to free </td></tr>
   </table>
   </dd>
 </dl>
@@ -3723,8 +3768,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a6a34cda1a13eb349e26a1e16c32ab82c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6a34cda1a13eb349e26a1e16c32ab82c">&#9670;&nbsp;</a></span>gosling_x25519_public_key_free()</h2>
+<a id="aaced361195e95bee0806dafa4de46325"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaced361195e95bee0806dafa4de46325">&#9670;&nbsp;</a></span>gosling_x25519_public_key_free()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3733,7 +3778,7 @@ Functions</h2></td></tr>
           <td class="memname">void gosling_x25519_public_key_free </td>
           <td>(</td>
           <td class="paramtype">struct <a class="el" href="cgosling_8h.html#a07b38f7f7cae749babd88245465026c3">gosling_x25519_public_key</a> *&#160;</td>
-          <td class="paramname"><em>public_key</em></td><td>)</td>
+          <td class="paramname"><em>in_public_key</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
