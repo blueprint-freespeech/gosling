@@ -1,7 +1,21 @@
 cmake_minimum_required(VERSION 3.17)
 
+# ensure we have required Rust components
+find_program(RUSTC_EXECUTABLE NAMES rustc)
+
+if (NOT RUSTC_EXECUTABLE)
+    message(FATAL_ERROR "Could not find rustc Rust compiler")
+endif()
+
+find_program(CARGO_EXECUTABLE NAMES cargo)
+
+if (NOT CARGO_EXECUTABLE)
+    message(FATAL_ERROR "Could not find cargo Rust package manager")
+endif()
+
 # cmake variables reference: https://cmake.org/cmake/help/v3.21/manual/cmake-variables.7.html
 
+# define per-platform flags
 if(UNIX AND NOT APPLE)
     set(LINUX TRUE)
 endif()
