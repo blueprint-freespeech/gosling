@@ -28,6 +28,7 @@ add_custom_command(
     # generate java source
     COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo run --bin build_java_bindings ${CARGO_TARGET_DIR}/cgosling.json Gosling.java.handlebars ${CMAKE_CURRENT_BINARY_DIR}/src/net/blueprintforfreespeech/gosling/Gosling.java
     # build java classes and generate jni header
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/jar
     COMMAND javac -h ${CMAKE_CURRENT_BINARY_DIR} -d ${CMAKE_CURRENT_BINARY_DIR}/jar ${CMAKE_CURRENT_BINARY_DIR}/src/net/blueprintforfreespeech/gosling/Gosling.java
     # build java jar archive fomr built classes
     COMMAND jar -cvf ${CMAKE_CURRENT_BINARY_DIR}/Gosling.jar -C ${CMAKE_CURRENT_BINARY_DIR}/jar/ .
