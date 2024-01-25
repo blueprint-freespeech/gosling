@@ -13,7 +13,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libboost-all-dev libncurses-dev
+          sudo apt-get install -y libboost-all-dev libncurses-dev default-jdk
       - name: Build Debug
         run: |
           make install-debug
@@ -45,7 +45,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
-      - name: Install Dependencies
+      - name: Install MSYS2 Dependencies
         uses: msys2/setup-msys2@v2
         with:
           msystem: clang64
@@ -57,6 +57,11 @@ jobs:
             mingw-w64-clang-x86_64-rust
             mingw-w64-clang-x86_64-boost
             mingw-w64-clang-x86_64-ncurses
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'oracle'
+          java-version: '17'
       - name: Build Debug
         run: |
           make install-debug
@@ -87,7 +92,7 @@ jobs:
           submodules: true
       - name: Install Dependencies
         run: |
-          brew install boost ncurses
+          brew install boost ncurses openjdk@17
       - name: Build Debug
         run: |
           make install-debug
