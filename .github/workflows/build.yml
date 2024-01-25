@@ -64,6 +64,8 @@ jobs:
           java-version: '17'
       - name: Build Debug
         run: |
+          # manually add java bins to PATH >:[
+          export PATH=$(cygpath -u ${JAVA_HOME})/bin:$PATH
           make install-debug
           make install-examples-debug
       - name: Archive Debug
@@ -74,6 +76,8 @@ jobs:
             dist/debug
       - name: Build Release
         run: |
+          # manually add java bins to PATH >:[
+          export PATH=$(cygpath -u ${JAVA_HOME})/bin:$PATH
           make install-release
           make install-examples-release
       - name: Archive Release
