@@ -2,20 +2,6 @@ using namespace std;
 
 #include "terminal.hpp"
 
-namespace {
-    vector<string> split_lines(const string& input) {
-        vector<string> lines;
-        istringstream tokenStream(input);
-        string line;
-
-        while (getline(tokenStream, line, '\n')) {
-            lines.push_back (line);
-        }
-
-        return lines;
-    }
-}
-
 namespace hw {
     terminal::terminal() {
         // Initialize ncurses
@@ -33,7 +19,7 @@ namespace hw {
         ::endwin();
     }
 
-    void terminal::register_command(string command, function<void(vector<string>)> lambda) {
+    void terminal::register_command(string command, function<void(const vector<string>&)> lambda) {
         this->commands_.insert({command, lambda});
     }
 
@@ -157,7 +143,7 @@ namespace hw {
         if (const auto it = this->commands_.find(command); it != this->commands_.end()) {
             try {
                 it->second(args);
-            }    catch (std::runtime_error err) {
+            }    catch (const std::runtime_error& err) {
                 this->write_line(string("error: ") + err.what());
             }
         } else {

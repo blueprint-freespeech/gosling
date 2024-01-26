@@ -31,7 +31,7 @@ int main() try {
         TERM.update();
 
         for(auto it = ENDPOINT_CONNECTIONS.begin(); it != ENDPOINT_CONNECTIONS.end();) {
-            auto& peer_id = it->first;
+            const auto& peer_id = it->first;
             auto& read_buffer = it->second.read_buffer;
             auto& socket = it->second.socket;
 

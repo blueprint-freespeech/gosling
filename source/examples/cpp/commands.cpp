@@ -8,7 +8,7 @@ using namespace gosling;
 
 
 namespace hw {
-    void help(vector<string> args) {
+    void help(const vector<string>& args) {
         if (args.empty() || args.front() == "help") {
             TERM.write_line("Available commands:");
             TERM.write_line("  init-context             Initialise the gosling context");
@@ -81,7 +81,7 @@ namespace hw {
     }
 
     // initialise a new gosling context, launch tor and bootstrap
-    void init_context(vector<string> args) {
+    void init_context(const vector<string>& args) {
         if (args.size() != 1) {
             help({"init-context"});
             return;
@@ -131,7 +131,7 @@ namespace hw {
     }
 
     // start the identity server
-    void start_identity(vector<string> args) {
+    void start_identity(const vector<string>& args) {
         if (args.size() != 0) {
             help({"start-identity"});
             return;
@@ -147,7 +147,7 @@ namespace hw {
     }
 
     // stop the identity serve
-    void stop_identity(vector<string> args) {
+    void stop_identity(const vector<string>& args) {
         if (args.size() != 0) {
             help({"stop-identity"});
         }
@@ -163,7 +163,7 @@ namespace hw {
     }
 
     // request an endpoint from a remote identity server
-    void request_endpoint(vector<string> args) {
+    void request_endpoint(const vector<string>& args) {
         if (args.size() != 1) {
             help({"request-endpoint"});
             return;
@@ -194,7 +194,7 @@ namespace hw {
         IDENTITY_CLIENT_HANDSHAKES.insert({handle, std::move(data)});
     }
 
-    void start_endpoint(vector<string> args) {
+    void start_endpoint(const vector<string>& args) {
         if (args.size() != 1) {
             help({"start-endpoint"});
             return;
@@ -218,7 +218,7 @@ namespace hw {
         }
     }
 
-    void stop_endpoint(vector<string> args) {
+    void stop_endpoint(const vector<string>& args) {
         if (args.size() != 1) {
             help({"stop-endpoint"});
             return;
@@ -243,7 +243,7 @@ namespace hw {
         }
     }
 
-    void connect_endpoint(vector<string> args) {
+    void connect_endpoint(const vector<string>& args) {
         if (args.size() != 1) {
             help({"connect-endpoint"});
             return;
@@ -279,7 +279,7 @@ namespace hw {
         }
     }
 
-    void drop_peer(vector<string> args) {
+    void drop_peer(const vector<string>& args) {
         if (args.size() != 1) {
             help({"drop-peer"});
             return;
@@ -290,7 +290,7 @@ namespace hw {
             return;
         }
 
-        auto& peer = args[0];
+        const auto& peer = args[0];
 
         ostringstream ss;
         if (auto it = ENDPOINT_CONNECTIONS.find(args[0]);
@@ -304,7 +304,7 @@ namespace hw {
         }
     }
 
-    void list_peers(vector<string> args) {
+    void list_peers(const vector<string>& args) {
         if (!args.empty()) {
             help({"list-peers"});
             return;
@@ -322,14 +322,14 @@ namespace hw {
             ostringstream ss;
             ss << "available peers:\n";
 
-            for (auto& pair : ENDPOINT_CONNECTIONS) {
+            for (const auto& pair : ENDPOINT_CONNECTIONS) {
                 ss << "  " << pair.first << '\n';
             }
             TERM.write_line(ss.str());
         }
     }
 
-    void chat(vector<string> args) {
+    void chat(const vector<string>& args) {
         if (args.size() < 2) {
             help({"chat"});
             return;
@@ -358,7 +358,7 @@ namespace hw {
         boost::asio::write(it->second.socket, boost::asio::buffer(msg.data(), msg.size()));
     }
 
-    void exit(vector<string>) {
+    void exit(const vector<string>&) {
         EXIT_REQUESTED = true;
     }
 }
