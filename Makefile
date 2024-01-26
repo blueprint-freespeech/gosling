@@ -139,6 +139,7 @@ lint: config-debug
 	# generate our c and cpp headers
 	@$(MAKE) gosling_c_bindings_target -C out/debug
 	@$(MAKE) gosling_cpp_bindings_target -C out/debug
+	@$(MAKE) gosling_java_bindings_target -C out/debug
 	# remove Catch2 files from lint set
 	jq 'del(.[]|select(.directory|test("Catch2/src$$")))' out/debug/compile_commands.json > out/debug/compile_commands.sans-catch2.json
 	cppcheck\
