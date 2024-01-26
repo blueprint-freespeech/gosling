@@ -242,7 +242,7 @@ handlebars_helper!(marshallJNIParams: |function_name: String, params: Vec<Param>
                               cpp_src!("if (std::lock_guard<std::mutex> lock(g_jni_glue->listener_map_mutex); true) {{");
                     cpp_src!("    auto it = g_jni_glue->listener_map.find(context_native);");
                     cpp_src!("    assert(it != g_jni_glue->listener_map.end());");
-                    cpp_src!("    auto& callback_jni = it->second.{callback};");
+                    cpp_src!("    jobject& callback_jni = it->second.{callback};");
                     cpp_src!("    if (callback_jni != nullptr) env->DeleteGlobalRef(callback_jni);");
                     cpp_src!("    callback_jni = env->NewGlobalRef(callback);");
                     cpp_src!("}}");
@@ -467,7 +467,7 @@ handlebars_helper!(callJavaCallback: |name: String, return_type: String, input_p
     cpp_src!("    auto it = g_jni_glue->listener_map.find(context);");
     cpp_src!("    assert(it != g_jni_glue->listener_map.end());");
     let jni_callback_name = &name[8..name.len()-2];
-    cpp_src!("    jobject& callback_jni = it->second.{jni_callback_name};");
+    cpp_src!("    const jobject& callback_jni = it->second.{jni_callback_name};");
     cpp_src!("    assert(callback_jni != nullptr);");
     cpp_src!("    jclass jc = env->GetObjectClass(callback_jni);");
     cpp_src!("    assert(jc != nullptr);");

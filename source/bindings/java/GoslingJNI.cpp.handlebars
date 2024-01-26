@@ -31,9 +31,10 @@ public:
     // gosling_* pointers are stored as jlong (int64_t) in Java GoslingHandle
     // type. This method converts the int64_t to a native pointer type
     uintptr_t jlong_handle_to_uintptr(jlong handle) {
+        static_assert(sizeof(uintptr_t) <= sizeof(jlong));
         if constexpr (sizeof(uintptr_t) == sizeof(jlong)) {
             return static_cast<uintptr_t>(handle);
-        } else if (sizeof(uintptr_t) < sizeof(jlong)) {
+        } else {
             // mask off the high bits
             constexpr jlong MASK = static_cast<jlong>(~uintptr_t(0));
             return static_cast<uintptr_t>(handle & MASK);
@@ -140,7 +141,7 @@ public:
         acceptor_thread.join();
 
         // save off our tcp proxy
-        tcp_proxies.emplace_back(tcp_proxy{std::move(from_socket),{},std::move(to_socket),{}});
+        tcp_proxies.emplace_back(tcp_proxy(std::move(from_socket), std::move(to_socket)));
 
         // return the java.net.Socket to caller
         return socket_java;
@@ -168,6 +169,10 @@ public:
     boost::asio::io_service io_service{};
 
     struct tcp_proxy {
+        tcp_proxy(boost::asio::ip::tcp::socket&& a, boost::asio::ip::tcp::socket&& b) :
+        a(std::move(a)),
+        b(std::move(b)) {}
+
         boost::asio::ip::tcp::socket a;
         std::vector<uint8_t> a_buffer;
         boost::asio::ip::tcp::socket b;
@@ -183,8 +188,9 @@ public:
 
             // mutex on the tcp proxies and io_service
             std::lock_guard<std::mutex> lock(g_jni_glue->tcp_proxy_mutex);
-            auto it = g_jni_glue->tcp_proxies.begin();
-            while(it != g_jni_glue->tcp_proxies.end()) {
+            for(auto it = g_jni_glue->tcp_proxies.begin();
+                it != g_jni_glue->tcp_proxies.end();) {
+
                 // forward reads from reader as writes to writer
                 auto forward_traffic = [](
                     boost::asio::ip::tcp::socket& reader,
