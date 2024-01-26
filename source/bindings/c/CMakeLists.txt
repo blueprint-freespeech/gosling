@@ -5,8 +5,8 @@ file(MAKE_DIRECTORY ${GOSLING_INCLUDE_DIR})
 file(MAKE_DIRECTORY ${GOSLING_LIBRARY_DIR})
 
 set(GOSLING_STATIC ${CMAKE_STATIC_LIBRARY_PREFIX}cgosling${CMAKE_STATIC_LIBRARY_SUFFIX})
-# MINGW Rust doesn't geneate dll files with the right prefix (missing lib) so we need custom logic
 if (MINGW)
+    # Rust does not include the 'lib' prefix for mingw shared-library targets, so we need to handle that for mingw cmake to play nicely
     set(GOSLING_SHARED cgosling${CMAKE_SHARED_LIBRARY_SUFFIX})
 else()
     set(GOSLING_SHARED ${CMAKE_SHARED_LIBRARY_PREFIX}cgosling${CMAKE_SHARED_LIBRARY_SUFFIX})
@@ -25,6 +25,7 @@ set(gosling_c_bindings_outputs
     ${CMAKE_CURRENT_BINARY_DIR}/lib/${GOSLING_SHARED}
 )
 
+# add shared library import library if platform supports it
 if ((DEFINED CMAKE_IMPORT_LIBRARY_SUFFIX))
     list(APPEND gosling_c_bindings_sources ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${GOSLING_IMPORT})
     list(APPEND gosling_c_bindings_outputs ${CMAKE_CURRENT_BINARY_DIR}/lib/${GOSLING_IMPORT})
@@ -41,7 +42,8 @@ foreach(src dest IN ZIP_LISTS gosling_c_bindings_sources gosling_c_bindings_outp
 endforeach()
 
 add_custom_target(gosling_c_bindings_target ALL
-    DEPENDS ${gosling_c_bindings_outputs} cgosling_target)
+    DEPENDS ${gosling_c_bindings_outputs})
+add_dependencies(gosling_c_bindings_target cgosling_target)
 
 #
 # Static Library

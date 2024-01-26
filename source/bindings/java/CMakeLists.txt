@@ -7,18 +7,16 @@ elseif(NOT JNI_FOUND)
     message(WARNING "Java JNI not found; will not generate Java bindings")
 else()
     set(gosling_java_bindings_sources
+        ${CARGO_TARGET_DIR}/cgosling.json
         build_java_bindings.rs
         Cargo.toml
         Gosling.java.handlebars
-        GoslingJNI.cpp.handlebars
-        ${CARGO_TARGET_DIR}/cgosling.json
-    )
+        GoslingJNI.cpp.handlebars)
     set(gosling_java_bindings_outputs
         ${CMAKE_CURRENT_BINARY_DIR}/src/net/blueprintforfreespeech/gosling/Gosling.java
         ${CMAKE_CURRENT_BINARY_DIR}/Gosling.jar
-        ${CMAKE_CURRENT_BINARY_DIR}/GoslingJNI.h
         ${CMAKE_CURRENT_BINARY_DIR}/GoslingJNI.cpp
-    )
+        ${CMAKE_CURRENT_BINARY_DIR}/GoslingJNI.h)
 
     #
     # Generate Gosling.java, Gosling.jar, GoslingJNI.h, and GoslingJNI.cpp
@@ -50,7 +48,6 @@ else()
     target_include_directories(goslingjni PRIVATE ${Boost_INCLUDE_DIRS})
     target_link_libraries(goslingjni PRIVATE ${Java_JVM_LIBRARY})
     target_link_libraries(goslingjni PRIVATE gosling_cpp_static_bindings)
-
     target_compile_features(goslingjni PRIVATE cxx_std_17)
 
     add_custom_target(gosling_java_bindings_target ALL

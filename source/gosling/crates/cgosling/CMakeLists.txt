@@ -6,25 +6,29 @@ set(cgosling_sources
     src/lib.rs
     src/object_registry.rs)
 
+set(GOSLING_STATIC ${CMAKE_STATIC_LIBRARY_PREFIX}cgosling${CMAKE_STATIC_LIBRARY_SUFFIX})
+if (MINGW)
+    # Rust does not include the 'lib' prefix for mingw shared-library targets, so we need to handle that for mingw cmake to play nicely
+    set(GOSLING_SHARED cgosling${CMAKE_SHARED_LIBRARY_SUFFIX})
+else()
+    set(GOSLING_SHARED ${CMAKE_SHARED_LIBRARY_PREFIX}cgosling${CMAKE_SHARED_LIBRARY_SUFFIX})
+endif()
+if ((DEFINED CMAKE_IMPORT_LIBRARY_SUFFIX))
+    set(GOSLING_IMPORT ${CMAKE_IMPORT_LIBRARY_PREFIX}cgosling${CMAKE_IMPORT_LIBRARY_SUFFIX})
+endif()
+
 set(cgosling_outputs
     ${CARGO_TARGET_DIR}/include/cgosling.h
     ${CARGO_TARGET_DIR}/cgosling.json
     ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/libcgosling.d
     ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/libcgosling.rlib
-    ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CMAKE_STATIC_LIBRARY_PREFIX}cgosling${CMAKE_STATIC_LIBRARY_SUFFIX}
+    ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${GOSLING_STATIC}
+    ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${GOSLING_SHARED}
 )
 
-# add shared library
-if (MINGW)
-    # Rust does not include the 'lib' prefix for mingw shared-library targets, so we need to handle that for mingw cmake to play nicely
-    list(APPEND cgosling_outputs ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/cgosling${CMAKE_SHARED_LIBRARY_SUFFIX})
-else()
-    list(APPEND cgosling_outputs ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CMAKE_SHARED_LIBRARY_PREFIX}cgosling${CMAKE_SHARED_LIBRARY_SUFFIX})
-endif()
-
 # add shared library import library if platform supports it
-if ((DEFINED CMAKE_IMPORT_LIBRARY_SUFFIX))
-    list(APPEND cgosling_outputs ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CMAKE_IMPORT_LIBRARY_PREFIX}cgosling${CMAKE_IMPORT_LIBRARY_SUFFIX})
+if ((DEFINED GOSLING_IMPORT))
+    list(APPEND cgosling_outputs ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${GOSLING_IMPORT})
 endif()
 
 #

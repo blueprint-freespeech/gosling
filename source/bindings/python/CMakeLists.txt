@@ -1,8 +1,8 @@
 set(gosling_python_bindings_sources
+    ${CARGO_TARGET_DIR}/cgosling.json
     build_python_bindings.rs
     Cargo.toml
-    cgosling.py.handlebars
-    ${CARGO_TARGET_DIR}/cgosling.json)
+    cgosling.py.handlebars)
 
 set(gosling_python_bindings_outputs
     ${CMAKE_CURRENT_BINARY_DIR}/cgosling.py)
