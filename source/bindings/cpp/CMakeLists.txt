@@ -50,38 +50,44 @@ target_link_libraries(gosling_cpp_shared_bindings INTERFACE gosling_c_shared_bin
 install(FILES ${GOSLING_INCLUDE_DIR}/cgosling.hpp
     DESTINATION include)
 
-#
-# cgosling documentation
-#
-set(DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
-set(DOXYFILE ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
-configure_file(${DOXYFILE_IN} ${DOXYFILE} @ONLY)
-set(doxygen_depends
-    ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
-    ${CMAKE_CURRENT_BINARY_DIR}/../c/include/cgosling.h
-    ${GOSLING_INCLUDE_DIR}/cgosling.hpp)
-set(doxygen_output
-    ${CMAKE_CURRENT_BINARY_DIR}/html)
+find_program(DOXYGEN_EXECUTABLE NAMES doxygen)
 
-# doxygen command
-add_custom_command(
-    DEPENDS ${doxygen_depends}
-    OUTPUT ${doxygen_output}
-    COMMAND doxygen ${DOXYFILE})
-# make target
-add_custom_target(gosling_cpp_doxygen_target
-    DEPENDS ${doxygen_output})
-add_dependencies(gosling_cpp_doxygen_target gosling_cpp_bindings_target)
+if (NOT DOXYGEN_EXECUTABLE)
+    message(WARNING "Could not find doxygen; will not generate C/C++ documentation")
+else()
+    #
+    # cgosling documentation
+    #
+    set(DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
+    set(DOXYFILE ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+    configure_file(${DOXYFILE_IN} ${DOXYFILE} @ONLY)
+    set(doxygen_depends
+        ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
+        ${CMAKE_CURRENT_BINARY_DIR}/../c/include/cgosling.h
+        ${GOSLING_INCLUDE_DIR}/cgosling.hpp)
+    set(doxygen_output
+        ${CMAKE_CURRENT_BINARY_DIR}/html)
 
-#
-# Install C/C++ Doxygen documentation
-#
-add_custom_command(
-    DEPENDS gosling_cpp_doxygen_target
-    OUTPUT ${CMAKE_INSTALL_PREFIX}/website/cgosling
-    COMMAND mkdir -p ${CMAKE_INSTALL_PREFIX}/website/cgosling
-    COMMAND cp -r ${CMAKE_CURRENT_BINARY_DIR}/html/* ${CMAKE_INSTALL_PREFIX}/website/cgosling/.
-)
-add_custom_target(install_doxygen_output
-    DEPENDS ${CMAKE_INSTALL_PREFIX}/website/cgosling
-)
+    # doxygen command
+    add_custom_command(
+        DEPENDS ${doxygen_depends}
+        OUTPUT ${doxygen_output}
+        COMMAND doxygen ${DOXYFILE})
+    # make target
+    add_custom_target(gosling_cpp_doxygen_target
+        DEPENDS ${doxygen_output})
+    add_dependencies(gosling_cpp_doxygen_target gosling_cpp_bindings_target)
+
+    #
+    # Install C/C++ Doxygen documentation
+    #
+    add_custom_command(
+        DEPENDS gosling_cpp_doxygen_target
+        OUTPUT ${CMAKE_INSTALL_PREFIX}/website/cgosling
+        COMMAND mkdir -p ${CMAKE_INSTALL_PREFIX}/website/cgosling
+        COMMAND cp -r ${CMAKE_CURRENT_BINARY_DIR}/html/* ${CMAKE_INSTALL_PREFIX}/website/cgosling/.
+    )
+    add_custom_target(install_doxygen_output
+        DEPENDS ${CMAKE_INSTALL_PREFIX}/website/cgosling
+    )
+endif()
