@@ -13,26 +13,36 @@ It is meant to generalize (and improve upon) the authentication scheme [Ricochet
 
 ## Dependencies
 
-Gosling currently has the following external build dependencies:
+Gosling currently has the following required build dependencies:
 
-- rust >= [1.66.0](https://github.com/blueprint-freespeech/gosling/blob/main/source/gosling/Cargo.toml#L6)
-- cargo
-- cmake >= [3.17](https://github.com/blueprint-freespeech/gosling/blob/main/source/CMakeLists.txt#L1)
-- boost >= [1.66](https://github.com/blueprint-freespeech/gosling/blob/main/source/test/functional/CMakeLists.txt#L1) (for C++ example and tests)
-
-Gosling additionally has the following dependencies consumed as git submodules:
-
-- [Catch2](https://github.com/catchorg/Catch2) (for C++ tests)
-- [nlforohmann::json](https://github.com/nlohmann/json/releases/tag/v3.11.3) (for C++ example)
+- [cmake >= 3.17](https://cmake.org)
+- [rust >= 1.66.0](https://rust-lang.org)
 
 Cargo will automatically download and build the required Rust crates. The list of current dependencies can be found in each crate's Cargo.toml file:
 
 - [honk-rpc](./source/gosling/crates/honk-rpc/Cargo.toml)
 - [tor-interface](./source/gosling/crates/tor-interface/Cargo.toml)
 - [gosling](./source/gosling/crates/gosling/Cargo.toml)
-- [gosling-ffi](./source/gosling/crates/gosling-ffi/Cargo.toml)
+- [cgosling](./source/gosling/crates/cgosling/Cargo.toml)
 
 ## Optional Dependencies
+
+Gosling has a number of dependencies that are not needed to build the core library, but are needed for bindings, examples and tests:
+
+- [boost >= 1.66](https://www.boost.org/) (for C++ hello_world example and tests)
+- [ncurses](https://invisible-mirror.net/ncurses/ncurses.html) (for C++ hello_world example)
+- [Java JDK](https://openjdk.org/) (for Java JNI bindings)
+
+The following optional dependencies consumed as git submodules:
+
+- [Catch2](https://github.com/catchorg/Catch2) (for C++ tests)
+- [nlohmann::json](https://github.com/nlohmann/json/releases/tag/v3.11.3) (for C++ hello_world example)
+
+They can be initialised by:
+
+```shell
+$ git submodule update --init
+```
 
 The **coverage-** make targets have the following additional dependencies:
 
@@ -62,19 +72,9 @@ The **lint** make target has the following additional dependencies:
 - [cppcheck](https://cppcheck.sourceforge.io/)
 - [jq](https://jqlang.github.io/jq/)
 
-The **examples** make targets have the following additional dependencies:
-
-- [ ncurses](https://invisible-mirror.net/ncurses/ncurses.html)
-
 ## Building
 
 The reference implementation is a work-in-progress and the API is not yet fully stable.
-
-You will need to initialize the git submodules by:
-
-```shell
-$ git submodule update --init
-```
 
 The following make targets are supported:
 
