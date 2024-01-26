@@ -1,4 +1,5 @@
 set(gosling_sources
+    Cargo.toml
     src/ascii_string.rs
     src/context.rs
     src/endpoint_client.rs
@@ -8,13 +9,21 @@ set(gosling_sources
     src/identity_server.rs
     src/lib.rs)
 
+set(gosling_outputs
+    ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/libgosling.d
+    ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/libgosling.rlib)
+
 #
 # build target
 #
-add_custom_target(gosling_target
-    DEPENDS ${gosling_sources} honk_rpc_target tor_interface_target
+add_custom_command(
+    DEPENDS ${gosling_sources}
+    OUTPUT ${gosling_outputs}
     COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo build ${CARGO_FLAGS}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+add_custom_target(gosling_target
+    DEPENDS ${gosling_outputs})
+add_dependencies(gosling_target honk_rpc_target tor_interface_target)
 
 # cargo test
 add_custom_target(gosling_cargo_test
