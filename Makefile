@@ -146,7 +146,7 @@ lint: config-debug
 		--enable=all\
 		--inline-suppr\
 		--suppress=missingIncludeSystem\
-		--suppress=*:source/Catch2/src/catch2/*\
+		--suppress=*:source/extern/Catch2/src/catch2/*\
 		--include=out/debug/bindings/c/include/cgosling.h\
 		--include=out/debug/bindings/cpp/include/cgosling.hpp\
 		--project=out/debug/compile_commands.sans-catch2.json
