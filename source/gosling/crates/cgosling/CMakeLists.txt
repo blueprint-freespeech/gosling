@@ -37,6 +37,9 @@ endif()
 add_custom_command(
     DEPENDS ${cgosling_sources}
     OUTPUT ${cgosling_outputs}
+    # cargo test of this same project will also run build.rs, so we need to touch build.rs
+    # to force cargo to re-run it and generate cbindgen headers (cmake seems to delete the first output file)
+    COMMAND touch ${CMAKE_CURRENT_SOURCE_DIR}/build.rs
     COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo build ${CARGO_FLAGS}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
