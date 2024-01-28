@@ -186,6 +186,7 @@ fn main() {
     };
 
     let header_file_path = target_dir.join("include").join("cgosling.h");
+    println!("cargo:rerun-if-changed={}",header_file_path.display());
 
     // generate libgosling.h C header
     match cbindgen::generate(&crate_dir) {
@@ -196,6 +197,7 @@ fn main() {
 
     // convert generated header to json IDL
     let json_file_path = target_dir.join("cgosling.json");
+    println!("cargo:rerun-if-changed={}",json_file_path.display());
     let json_file = match File::create(json_file_path) {
         Ok(file) => file,
         Err(err) => panic!("{:?}", err),
