@@ -22,7 +22,7 @@ else()
     # list of build output filenames
     set(build_outputs)
     # list of final installed files
-    set(install_outputs)
+    set(deploy_outputs)
 
     # our source markdown files
     set(page_sources
@@ -82,7 +82,7 @@ else()
     )
 
     #
-    # Install website pages
+    # Deploy website pages
     #
 
     add_custom_command(
@@ -95,10 +95,10 @@ else()
             DEPENDS ${CMAKE_INSTALL_PREFIX}/website ${CMAKE_CURRENT_BINARY_DIR}/${file}
             COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/${file} ${CMAKE_INSTALL_PREFIX}/website/${file}
         )
-        list(APPEND install_outputs ${CMAKE_INSTALL_PREFIX}/website/${file})
+        list(APPEND deploy_outputs ${CMAKE_INSTALL_PREFIX}/website/${file})
     endforeach()
-
-    add_custom_target(install_pages
-        DEPENDS ${install_outputs} install_gosling_pages_images
+    add_custom_target(deploy_pages_website_target
+        DEPENDS ${deploy_outputs} deploy_gosling_pages_images_website_target
     )
+    add_dependencies(website_target deploy_pages_website_target)
 endif()

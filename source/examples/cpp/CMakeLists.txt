@@ -39,9 +39,14 @@ else()
 
     target_compile_features(hello_world_cpp PRIVATE cxx_std_17)
 
-    add_custom_target(install_hello_world_cpp
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/hello_world_cpp${CMAKE_EXECUTABLE_SUFFIX}
-        COMMAND mkdir -p ${CMAKE_INSTALL_PREFIX}/examples
-        COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/hello_world_cpp${CMAKE_EXECUTABLE_SUFFIX} ${CMAKE_INSTALL_PREFIX}/examples/
-    )
+    add_custom_target(hello_world_cpp_target)
+    add_dependencies(hello_world_cpp_target hello_world_cpp)
+    add_dependencies(build_target hello_world_cpp_target)
+
+    #
+    # Install hello world example binary
+    #
+
+    install(TARGETS hello_world_cpp
+        DESTINATION examples/hello_world_cpp)
 endif()

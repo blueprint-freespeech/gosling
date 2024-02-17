@@ -45,20 +45,22 @@ add_custom_target(cgosling_target
 add_dependencies(cgosling_target gosling_target)
 
 #
-# test target
+# cargo test target
 #
-add_custom_target(cgosling_cargo_test
+add_custom_target(cgosling_cargo_test_target
     COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo test ${CARGO_FLAGS}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
+add_dependencies(test_target cgosling_cargo_test_target)
 
 #
-# test target (offline)
+# cargo test (offline) target
 #
-add_custom_target(cgosling_cargo_test_offline
+add_custom_target(cgosling_cargo_test_offline_target
     COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo test ${CARGO_FLAGS} --features offline-test
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
+add_dependencies(test_offline_target cgosling_cargo_test_offline_target)
 
 #
 # fuzz targets

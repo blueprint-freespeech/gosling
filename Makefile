@@ -36,76 +36,59 @@ config-min-size-rel:
 
 # build debug target
 debug: config-debug
-	@$(MAKE) -C out/debug
+	@$(MAKE) build_target -C out/debug
 
 # build release target
 release: config-release
-	@$(MAKE) -C out/release
+	@$(MAKE) build_target -C out/release
 
 # build release target
 rel-with-deb-info: config-rel-with-deb-info
-	@$(MAKE) -C out/rel-with-deb-info
+	@$(MAKE) build_target -C out/rel-with-deb-info
 
 # build release target
 min-size-rel: config-min-size-rel
-	@$(MAKE) -C out/min-size-rel
+	@$(MAKE) build_target -C out/min-size-rel
 
 #
 # Online Test Targets (invokes real tor)
 #
 
-define test
-	@$(MAKE) honk_rpc_cargo_test -C out/$(1)
-	@$(MAKE) tor_interface_cargo_test -C out/$(1)
-	@$(MAKE) gosling_cargo_test -C out/$(1)
-	@$(MAKE) cgosling_cargo_test -C out/$(1)
-	@$(MAKE) gosling_functional_test -C out/$(1)
-	@$(MAKE) gosling_unit_test -C out/$(1)
-endef
-
 # build and run debug target tests
 test-debug: config-debug
-	@$(call test,"debug")
+	@$(MAKE) test_target -C out/debug
 
 # build and run release target tests
 test-release: config-release
-	@$(call test,"release")
+	@$(MAKE) test_target -C out/release
 
 # build and run rel-with-deb-info target tests
 test-rel-with-deb-info: config-rel-with-deb-info
-	@$(call test,"rel-with-deb-info")
+	@$(MAKE) test_target -C out/rel-with-deb-info
 
 # build and run min-size-rel target tests
 test-min-size-rel: config-min-size-rel
-	@$(call test,"min-size-rel")
+	@$(MAKE) test_target -C out/min-size-rel
 
 #
 # Offline Test targets (mock tor)
 #
 
-define test-offline
-	@$(MAKE) honk_rpc_cargo_test -C out/$(1)
-	@$(MAKE) tor_interface_cargo_test_offline -C out/$(1)
-	@$(MAKE) gosling_cargo_test_offline -C out/$(1)
-	@$(MAKE) cgosling_cargo_test_offline -C out/$(1)
-	@$(MAKE) gosling_unit_test -C out/$(1)
-endef
-
 # debug tests which do not require access to the tor network
 test-offline-debug: config-debug
-	@$(call test-offline,"debug")
+	@$(MAKE) test_offline_target -C out/debug
 
 # release tests which do not require access to the tor network
 test-offline-release: config-release
-	@$(call test-offline,"release")
+	@$(MAKE) test_offline_target -C out/release
 
 # release tests which do not require access to the tor network
 test-offline-rel-with-deb-info: config-rel-with-deb-info
-	@$(call test-offline,"rel-with-deb-info")
+	@$(MAKE) test_offline_target -C out/rel-with-deb-info
 
 # release tests which do not require access to the tor network
 test-offline-min-size-rel: config-min-size-rel
-	@$(call test-offline,"min-size-rel")
+	@$(MAKE) test_offline_target -C out/min-size-rel
 
 #
 # Rust Code Coverage Targets
@@ -151,68 +134,35 @@ lint: config-debug
 		--include=out/debug/bindings/cpp/include/cgosling.hpp\
 		--project=out/debug/compile_commands.sans-catch2.json
 
-define install_pages
-	@$(MAKE) install_pages -C out/$(1)
-	@$(MAKE) install_crate_docs -C out/$(1)
-	@$(MAKE) install_gosling_code_coverage -C out/$(1)
-	@$(MAKE) install_doxygen_output -C out/$(1)
-endef
-
 #
 # Website Install Targets
 #
 
-# debug build the website, code coverage, c/c++ apis, and rust docs
-install-pages-debug: config-debug
-	@$(call install_pages,"debug")
+website-debug: config-debug
+	@$(MAKE) website_target -C out/debug
 
-# release build the website, code coverage, c/c++ apis, and rust docs
-install-pages-rel-with-deb-info: config-rel-with-deb-info
-	@$(call install_pages,"rel-with-deb-info")
+website-rel-with-deb-info: config-rel-with-deb-info
+	@$(MAKE) website_target -C out/rel-with-deb-info
 
 #
 # Library Install Targets
 #
 
 # debug build everything and deploy to dist
-install-debug: config-debug
+install-debug: debug
 	@$(MAKE) install -C out/debug
 
 # release build everything and deploy to dist
-install-release: config-release
+install-release: release
 	@$(MAKE) install -C out/release
 
 # rel-with-deb-info build everything and deploy to dist
-install-rel-with-deb-info: config-rel-with-deb-info
+install-rel-with-deb-info: rel-with-deb-info
 	@$(MAKE) install -C out/rel-with-deb-info
 
 # min-size-rel build everything and deploy to dist
-install-min-size-rel: config-min-size-rel
+install-min-size-rel: min-size-rel
 	@$(MAKE) install -C out/min-size-rel
-
-#
-# Example Programs Install Targets
-#
-
-define install_examples
-	@$(MAKE) install_hello_world_cpp -C out/$(1)
-endef
-
-# debug build examples and deploy to dist
-install-examples-debug: config-debug
-	@$(call install_examples,"debug")
-
-# release build everything and deploy to dist
-install-examples-release: config-release
-	@$(call install_examples,"release")
-
-# rel-with-deb-info build everything and deploy to dist
-install-examples-rel-with-deb-info: config-rel-with-deb-info
-	@$(call install_examples,"rel-with-deb-info")
-
-# min-size-rel build everything and deploy to dist
-install-examples-min-size-rel: config-min-size-rel
-	@$(call install_examples,"min-size-rel")
 
 #
 # Fuzzing targets

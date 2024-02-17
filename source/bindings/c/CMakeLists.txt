@@ -41,7 +41,7 @@ foreach(src dest IN ZIP_LISTS gosling_c_bindings_sources gosling_c_bindings_outp
         COMMAND cp ${src} ${dest})
 endforeach()
 
-add_custom_target(gosling_c_bindings_target ALL
+add_custom_target(gosling_c_bindings_target
     DEPENDS ${gosling_c_bindings_outputs})
 add_dependencies(gosling_c_bindings_target cgosling_target)
 
@@ -70,6 +70,10 @@ if(WINDOWS)
     target_link_libraries(gosling_c_static_bindings INTERFACE ntdll)
 endif()
 
+add_custom_target(gosling_c_static_bindings_target)
+add_dependencies(gosling_c_static_bindings_target gosling_c_static_bindings)
+add_dependencies(build_target gosling_c_static_bindings_target)
+
 #
 # Shared Library
 #
@@ -86,6 +90,10 @@ if ((DEFINED CMAKE_IMPORT_LIBRARY_SUFFIX))
         IMPORTED_IMPLIB ${GOSLING_LIBRARY_DIR}/${GOSLING_IMPORT}
     )
 endif()
+
+add_custom_target(gosling_c_shared_bindings_target)
+add_dependencies(gosling_c_shared_bindings_target gosling_c_shared_bindings)
+add_dependencies(build_target gosling_c_shared_bindings_target)
 
 #
 # Install

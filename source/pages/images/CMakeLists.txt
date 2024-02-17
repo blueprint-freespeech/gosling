@@ -1,7 +1,7 @@
 # list of build output filenames
 set(build_outputs)
 # list of final installed files
-set(install_outputs)
+set(deploy_outputs)
 
 # files which we will just copy directly
 set(copy_sources
@@ -14,7 +14,7 @@ foreach(file ${copy_sources})
         DEPENDS ${file}
         COMMAND cp -r ${CMAKE_CURRENT_SOURCE_DIR}/${file} ${file})
     list(APPEND build_outputs ${file})
-    list(APPEND install_outputs ${CMAKE_CURRENT_BINARY_DIR}/${file})
+    list(APPEND deploy_outputs ${CMAKE_CURRENT_BINARY_DIR}/${file})
 endforeach()
 
 # files which we need to generate via plantuml
@@ -32,7 +32,7 @@ foreach(file_uml ${plantuml_sources})
         COMMAND plantuml -tsvg ${CMAKE_CURRENT_SOURCE_DIR}/${file_uml} -output ${CMAKE_CURRENT_BINARY_DIR}
         COMMAND tidy -xml -indent --hide-comments 1 --write-back 1 ${file_svg})
     list(APPEND build_outputs ${file_svg})
-    list(APPEND install_outputs ${CMAKE_CURRENT_BINARY_DIR}/${file_svg})
+    list(APPEND deploy_outputs ${CMAKE_CURRENT_BINARY_DIR}/${file_svg})
 endforeach()
 
 add_custom_target(gosling_pages_images_target
@@ -53,9 +53,8 @@ foreach(file ${build_outputs})
         DEPENDS ${CMAKE_INSTALL_PREFIX}/website/images ${CMAKE_CURRENT_BINARY_DIR}/${file}
         COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/${file} ${CMAKE_INSTALL_PREFIX}/website/images/${file}
     )
-    list(APPEND install_outputs ${CMAKE_INSTALL_PREFIX}/website/images/${file})
+    list(APPEND deploy_outputs ${CMAKE_INSTALL_PREFIX}/website/images/${file})
 endforeach()
-
-add_custom_target(install_gosling_pages_images
-    DEPENDS ${install_outputs} gosling_pages_images_target
+add_custom_target(deploy_gosling_pages_images_website_target
+    DEPENDS ${deploy_outputs} gosling_pages_images_target
 )

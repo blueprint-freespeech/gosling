@@ -18,3 +18,10 @@ add_custom_command(
 )
 add_custom_target(gosling_python_bindings_target ALL
     DEPENDS ${gosling_python_bindings_outputs})
+
+#
+# Install
+#
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cgosling.py
+    DESTINATION bindings/python)

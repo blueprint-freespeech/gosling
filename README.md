@@ -54,7 +54,7 @@ The **fuzz-** make targets have the following additional dependencies:
 - [cargo-fuzz](https://github.com/rust-fuzz/cargo-fuzz)
 - [libfuzzer](https://www.llvm.org/docs/LibFuzzer.html)
 
-The **pages-** make target has the following additional dependencies:
+The **website-** make target has the following additional dependencies:
 
 - [doxygen](https://www.doxygen.nl/)
 - [graphviz](https://www.graphviz.org/)
@@ -95,16 +95,11 @@ The following make targets are supported:
     - **release**
     - **rel-with-deb-info**
     - **min-size-rel**
-- **Install Targets:** build and deploy `cgosling` headers and static+shared libraries to `dist/*`
+- **Install Targets:** build and deploy `cgosling` headers, static+shared libraries, bindings, and examples to `dist/*`
     - **install-debug**
     - **install-release**
     - **install-rel-with-deb-info**
     - **install-min-size-rel**
-- **Install Examples Targets::** build and deploy the example projects to `dist/*`
-    - **install-examples-debug**
-    - **install-examples-release**
-    - **install-examples-rel-with-deb-info**
-    - **install-examples-min-size-rel**
 - **Test Targets:** build and run all tests using real tor daemon
     - **test-debug**
     - **test-release**

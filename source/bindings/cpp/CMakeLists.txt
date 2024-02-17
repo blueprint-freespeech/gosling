@@ -20,7 +20,7 @@ add_custom_command(
     COMMAND  env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo run ${CARGO_FLAGS} --bin build_cpp_bindings ${CARGO_TARGET_DIR}/cgosling.json cgosling.hpp.handlebars ${GOSLING_INCLUDE_DIR}/cgosling.hpp
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
-add_custom_target(gosling_cpp_bindings_target ALL
+add_custom_target(gosling_cpp_bindings_target
     DEPENDS ${gosling_cpp_bindings_outputs} gosling_c_bindings_target)
 
 #
@@ -33,6 +33,10 @@ add_dependencies(gosling_cpp_static_bindings gosling_cpp_bindings_target)
 target_include_directories(gosling_cpp_static_bindings INTERFACE ${GOSLING_INCLUDE_DIR})
 target_link_libraries(gosling_cpp_static_bindings INTERFACE gosling_c_static_bindings)
 
+add_custom_target(gosling_cpp_static_bindings_target)
+add_dependencies(gosling_cpp_static_bindings_target gosling_cpp_static_bindings)
+add_dependencies(build_target gosling_cpp_static_bindings_target)
+
 #
 # Shared Library
 #
@@ -42,6 +46,10 @@ add_dependencies(gosling_cpp_shared_bindings gosling_cpp_bindings_target)
 
 target_include_directories(gosling_cpp_shared_bindings INTERFACE ${GOSLING_INCLUDE_DIR})
 target_link_libraries(gosling_cpp_shared_bindings INTERFACE gosling_c_shared_bindings)
+
+add_custom_target(gosling_cpp_shared_bindings_target)
+add_dependencies(gosling_cpp_shared_bindings_target gosling_cpp_shared_bindings)
+add_dependencies(build_target gosling_cpp_shared_bindings_target)
 
 #
 # Install C++ Header
@@ -79,7 +87,7 @@ else()
     add_dependencies(gosling_cpp_doxygen_target gosling_cpp_bindings_target)
 
     #
-    # Install C/C++ Doxygen documentation
+    # Deploy C/C++ Doxygen documentation
     #
     add_custom_command(
         DEPENDS gosling_cpp_doxygen_target
@@ -87,7 +95,8 @@ else()
         COMMAND mkdir -p ${CMAKE_INSTALL_PREFIX}/website/cgosling
         COMMAND cp -r ${CMAKE_CURRENT_BINARY_DIR}/html/* ${CMAKE_INSTALL_PREFIX}/website/cgosling/.
     )
-    add_custom_target(install_doxygen_output
+    add_custom_target(deploy_doxygen_website_target
         DEPENDS ${CMAKE_INSTALL_PREFIX}/website/cgosling
     )
+    add_dependencies(website_target deploy_doxygen_website_target)
 endif()

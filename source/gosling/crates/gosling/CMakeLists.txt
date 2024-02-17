@@ -25,17 +25,19 @@ add_custom_target(gosling_target
     DEPENDS ${gosling_outputs})
 add_dependencies(gosling_target honk_rpc_target tor_interface_target)
 
-# cargo test
-add_custom_target(gosling_cargo_test
+# cargo test target
+add_custom_target(gosling_cargo_test_target
     COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo test ${CARGO_FLAGS}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
+add_dependencies(test_target gosling_cargo_test_target)
 
-# cargo test (offline)
-add_custom_target(gosling_cargo_test_offline
+# cargo test (offline) target
+add_custom_target(gosling_cargo_test_offline_target
     COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo test ${CARGO_FLAGS} --features offline-test
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
+add_dependencies(test_offline_target gosling_cargo_test_offline_target)
 
 #
 # fuzz targets

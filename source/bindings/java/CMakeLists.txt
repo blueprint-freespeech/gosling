@@ -50,7 +50,16 @@ else()
     target_link_libraries(goslingjni PRIVATE gosling_cpp_static_bindings)
     target_compile_features(goslingjni PRIVATE cxx_std_17)
 
-    add_custom_target(gosling_java_bindings_target ALL
-        DEPENDS goslingjni
-    )
+    add_custom_target(gosling_java_bindings_target)
+    add_dependencies(gosling_java_bindings_target goslingjni)
+    add_dependencies(build_target gosling_java_bindings_target)
+
+    #
+    # Install
+    #
+
+    install(TARGETS goslingjni)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Gosling.jar
+        DESTINATION bindings/java)
+
 endif()

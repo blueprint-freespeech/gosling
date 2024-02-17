@@ -56,6 +56,15 @@ endif()
 
 set(CARGO_TARGET_DIR ${CMAKE_CURRENT_BINARY_DIR}/gosling)
 
+# main build target needed for install
+add_custom_target(build_target)
+# runs all tests (requires internet access)
+add_custom_target(test_target)
+# runs the offline tests using mock tor provider
+add_custom_target(test_offline_target)
+# builds the documentation website
+add_custom_target(website_target)
+
 add_subdirectory(gosling)
 add_subdirectory(extern)
 add_subdirectory(test)

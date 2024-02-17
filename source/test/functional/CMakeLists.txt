@@ -19,13 +19,13 @@ else()
 
     target_compile_features(gosling_functional PRIVATE cxx_std_17)
 
-    add_custom_target(gosling_functional_test
+    add_custom_target(gosling_functional_test_target
         COMMAND ${CMAKE_COMMAND} -E copy
                 $<TARGET_FILE:gosling_c_shared_bindings>
                 ${CMAKE_CURRENT_BINARY_DIR}
         COMMAND gosling_functional
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     )
-    add_dependencies(gosling_functional_test gosling_functional)
-
+    add_dependencies(gosling_functional_test_target gosling_functional)
+    add_dependencies(test_target gosling_functional_test_target)
 endif()
