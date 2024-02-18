@@ -9,8 +9,10 @@ libcgosling = None
 os = platform.system()
 if os == 'Windows':  # Windows
     libcgosling = CDLL('cgosling.dll')
-elif os == 'Linux' or os == 'Darwin':  # Linux or macOS
-    libcgosling = CDLL('./libcgosling.so')
+elif os == 'Darwin': # macOS
+    libcgosling = CDLL('libcgosling.dylib')
+elif os == 'Linux':  # Linux
+    libcgosling = CDLL('libcgosling.so')
 
 #
 # Constants
