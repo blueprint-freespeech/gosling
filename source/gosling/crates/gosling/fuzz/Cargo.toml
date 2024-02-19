@@ -1,6 +1,7 @@
 [package]
 name = "gosling-fuzz"
 version = "0.0.0"
+rust-version = "1.63"
 publish = false
 edition = "2021"
 
@@ -8,11 +9,11 @@ edition = "2021"
 cargo-fuzz = true
 
 [dependencies]
-bson = "2.2.0"
-data-encoding = "2.3.2"
-libfuzzer-sys = { version = "0.4.0", features = ["arbitrary-derive"] }
-tor-interface = { path = "../../tor-interface" }
+bson = ">= 2.0, <= 2.4.0"
+data-encoding = "^2"
 honk-rpc = { path = "../../honk-rpc" }
+libfuzzer-sys = { version = "^0.4", features = ["arbitrary-derive"] }
+tor-interface = { path = "../../tor-interface" }
 
 [dependencies.gosling]
 path = ".."

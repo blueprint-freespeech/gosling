@@ -16,7 +16,7 @@ It is meant to generalize (and improve upon) the authentication scheme [Ricochet
 Gosling currently has the following required build dependencies:
 
 - [cmake >= 3.17](https://cmake.org)
-- [rust >= 1.66.0](https://rust-lang.org)
+- [rust >= 1.63.0](https://rust-lang.org)
 
 Cargo will automatically download and build the required Rust crates. The list of current dependencies can be found in each crate's Cargo.toml file:
 

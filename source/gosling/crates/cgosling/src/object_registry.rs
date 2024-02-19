@@ -15,7 +15,7 @@ use std::option::Option;
 //   for the unique id portion of the returne dkeys)
 pub struct ObjectRegistry<T, const TAG: usize, const TAG_BITS: u32> {
     // our internal mapping from handles to Ts
-    map: BTreeMap<usize, T>,
+    map: Option<BTreeMap<usize, T>>,
     // number of Ts registered to this registry over its lifetime
     counter: usize,
 }
@@ -41,38 +41,57 @@ impl<T, const TAG: usize, const TAG_BITS: u32> ObjectRegistry<T, TAG, TAG_BITS> 
         assert!(TAG_BITS == 0 || (TAG << Self::COUNTER_BITS) >> Self::COUNTER_BITS == TAG);
 
         ObjectRegistry {
-            map: BTreeMap::new(),
+            map: None,
             counter: 0,
         }
     }
 
     // determine if the registry has an object with the specified key
     pub fn contains_key(&self, key: usize) -> bool {
-        self.map.contains_key(&key)
+        match &self.map {
+            Some(map) => map.contains_key(&key),
+            None => false,
+        }
     }
 
     // remove and return an object with the specified key
     pub fn remove(&mut self, key: usize) -> Option<T> {
-        self.map.remove(&key)
+        match &mut self.map {
+            Some(map) => map.remove(&key),
+            None => None,
+        }
     }
 
     // add object into registry and return key to reference it
     pub fn insert(&mut self, val: T) -> usize {
         let key = self.next_key();
-        if self.map.insert(key, val).is_some() {
-            panic!();
+        match &mut self.map {
+            Some(map) => if map.insert(key, val).is_some() {
+                panic!();
+            },
+            None => {
+                let mut map = BTreeMap::new();
+                map.insert(key, val);
+                self.map = Some(map);
+            }
         }
         key
     }
 
     // gets a reference to a value by the given key
     pub fn get(&self, key: usize) -> Option<&T> {
-        self.map.get(&key)
+        match &self.map {
+            Some(map) => map.get(&key),
+            None => None,
+        }
     }
 
     // gets a mutable reference to a value by the given key
     pub fn get_mut(&mut self, key: usize) -> Option<&mut T> {
-        self.map.get_mut(&key)
+        match &mut self.map {
+            Some(map) => map.get_mut(&key),
+            None => None,
+        }
     }
 
     #[cfg(test)]
