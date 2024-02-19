@@ -325,6 +325,22 @@
 <a href="#324" id="324">324</a>
 <a href="#325" id="325">325</a>
 <a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
+<a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::collections::BTreeMap;
 <span class="kw">use </span>std::io::ErrorKind;
@@ -348,7 +364,7 @@
     </span>OnionServiceNotFound(OnionAddr),
 
     <span class="attr">#[error(<span class="string">"onion service not published: {}"</span>, .<span class="number">0</span>)]
-    </span>OnionServiceNoPublished(OnionAddr),
+    </span>OnionServiceNotPublished(OnionAddr),
 
     <span class="attr">#[error(<span class="string">"onion service requires onion auth"</span>)]
     </span>OnionServiceRequiresOnionAuth(),
@@ -404,13 +420,13 @@
 }
 
 <span class="kw">struct </span>MockTorNetwork {
-    onion_services: BTreeMap&lt;OnionAddr, (Vec&lt;X25519PublicKey&gt;, SocketAddr)&gt;,
+    onion_services: <span class="prelude-ty">Option</span>&lt;BTreeMap&lt;OnionAddr, (Vec&lt;X25519PublicKey&gt;, SocketAddr)&gt;&gt;,
 }
 
 <span class="kw">impl </span>MockTorNetwork {
     <span class="kw">const fn </span>new() -&gt; MockTorNetwork {
         MockTorNetwork {
-            onion_services: BTreeMap::new(),
+            onion_services: <span class="prelude-val">None</span>,
         }
     }
 
@@ -421,29 +437,35 @@
         client_auth: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>X25519PublicKey&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;OnionStream, Error&gt; {
         <span class="kw">let </span>onion_addr = OnionAddr::V3(OnionAddrV3::new(service_id.clone(), virt_port));
-        <span class="kw">if let </span><span class="prelude-val">Some</span>((client_auth_keys, socket_addr)) = <span class="self">self</span>.onion_services.get(<span class="kw-2">&amp;</span>onion_addr) {
-            <span class="kw">match </span>(client_auth_keys.len(), client_auth) {
-                (<span class="number">0</span>, <span class="prelude-val">None</span>) =&gt; (),
-                (<span class="kw">_</span>, <span class="prelude-val">None</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::OnionServiceRequiresOnionAuth()),
-                (<span class="number">0</span>, <span class="prelude-val">Some</span>(<span class="kw">_</span>)) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::OnionServiceAuthInvalid()),
-                (<span class="kw">_</span>, <span class="prelude-val">Some</span>(client_auth)) =&gt; {
-                    <span class="kw">if </span>!client_auth_keys.contains(client_auth) {
-                        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::OnionServiceAuthInvalid());
-                    }
-                }
-            }
 
-            <span class="kw">if let </span><span class="prelude-val">Ok</span>(stream) = TcpStream::connect(socket_addr) {
-                <span class="prelude-val">Ok</span>(OnionStream {
-                    stream,
-                    local_addr: <span class="prelude-val">None</span>,
-                    peer_addr: <span class="prelude-val">Some</span>(TargetAddr::OnionService(onion_addr)),
-                })
-            } <span class="kw">else </span>{
-                <span class="prelude-val">Err</span>(Error::OnionServiceNotFound(onion_addr))
-            }
-        } <span class="kw">else </span>{
-            <span class="prelude-val">Err</span>(Error::OnionServiceNoPublished(onion_addr))
+        <span class="kw">match </span><span class="kw-2">&amp;mut </span><span class="self">self</span>.onion_services {
+            <span class="prelude-val">Some</span>(onion_services) =&gt; {
+                <span class="kw">if let </span><span class="prelude-val">Some</span>((client_auth_keys, socket_addr)) = onion_services.get(<span class="kw-2">&amp;</span>onion_addr) {
+                    <span class="kw">match </span>(client_auth_keys.len(), client_auth) {
+                        (<span class="number">0</span>, <span class="prelude-val">None</span>) =&gt; (),
+                        (<span class="kw">_</span>, <span class="prelude-val">None</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::OnionServiceRequiresOnionAuth()),
+                        (<span class="number">0</span>, <span class="prelude-val">Some</span>(<span class="kw">_</span>)) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::OnionServiceAuthInvalid()),
+                        (<span class="kw">_</span>, <span class="prelude-val">Some</span>(client_auth)) =&gt; {
+                            <span class="kw">if </span>!client_auth_keys.contains(client_auth) {
+                                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::OnionServiceAuthInvalid());
+                            }
+                        }
+                    }
+
+                    <span class="kw">if let </span><span class="prelude-val">Ok</span>(stream) = TcpStream::connect(socket_addr) {
+                        <span class="prelude-val">Ok</span>(OnionStream {
+                            stream,
+                            local_addr: <span class="prelude-val">None</span>,
+                            peer_addr: <span class="prelude-val">Some</span>(TargetAddr::OnionService(onion_addr)),
+                        })
+                    } <span class="kw">else </span>{
+                        <span class="prelude-val">Err</span>(Error::OnionServiceNotFound(onion_addr))
+                    }
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">Err</span>(Error::OnionServiceNotPublished(onion_addr))
+                }
+            },
+            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(Error::OnionServiceNotPublished(onion_addr))
         }
     }
 
@@ -455,12 +477,22 @@
         address: SocketAddr,
     ) {
         <span class="kw">let </span>onion_addr = OnionAddr::V3(OnionAddrV3::new(service_id, virt_port));
-        <span class="self">self</span>.onion_services
-            .insert(onion_addr, (client_auth_keys, address));
+        <span class="kw">match </span><span class="kw-2">&amp;mut </span><span class="self">self</span>.onion_services {
+            <span class="prelude-val">Some</span>(onion_services) =&gt; {
+                onion_services.insert(onion_addr, (client_auth_keys, address));
+            },
+            <span class="prelude-val">None </span>=&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>onion_services = BTreeMap::new();
+                onion_services.insert(onion_addr, (client_auth_keys, address));
+                <span class="self">self</span>.onion_services = <span class="prelude-val">Some</span>(onion_services);
+            }
+        }
     }
 
     <span class="kw">fn </span>stop_onion(<span class="kw-2">&amp;mut </span><span class="self">self</span>, onion_addr: <span class="kw-2">&amp;</span>OnionAddr) {
-        <span class="self">self</span>.onion_services.remove(onion_addr);
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(onion_services) = <span class="kw-2">&amp;mut </span><span class="self">self</span>.onion_services {
+            onion_services.remove(onion_addr);
+        }
     }
 }
 
