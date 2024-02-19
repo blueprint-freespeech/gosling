@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/tor-interface/src/legacy_tor_controller.rs`."><title>legacy_tor_controller.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="tor_interface" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/tor-interface/src/legacy_tor_controller.rs`."><title>legacy_tor_controller.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="tor_interface" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -836,28 +837,28 @@
 
 <span class="attr">#[derive(thiserror::Error, Debug)]
 </span><span class="kw">pub enum </span>Error {
-    <span class="attr">#[error(<span class="string">&quot;response regex creation failed&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"response regex creation failed"</span>)]
     </span>ParsingRegexCreationFailed(<span class="attr">#[source] </span>regex::Error),
 
-    <span class="attr">#[error(<span class="string">&quot;control stream read reply failed&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"control stream read reply failed"</span>)]
     </span>ReadReplyFailed(<span class="attr">#[source] </span><span class="kw">crate</span>::legacy_tor_control_stream::Error),
 
-    <span class="attr">#[error(<span class="string">&quot;unexpected synchronous reply recieved&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"unexpected synchronous reply recieved"</span>)]
     </span>UnexpectedSynchonousReplyReceived(),
 
-    <span class="attr">#[error(<span class="string">&quot;control stream write command failed&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"control stream write command failed"</span>)]
     </span>WriteCommandFailed(<span class="attr">#[source] </span><span class="kw">crate</span>::legacy_tor_control_stream::Error),
 
-    <span class="attr">#[error(<span class="string">&quot;invalid command arguments: {0}&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"invalid command arguments: {0}"</span>)]
     </span>InvalidCommandArguments(String),
 
-    <span class="attr">#[error(<span class="string">&quot;command failed: {0} {}&quot;</span>, .<span class="number">1</span>.join(<span class="string">&quot;\n&quot;</span>))]
+    <span class="attr">#[error(<span class="string">"command failed: {0} {}"</span>, .<span class="number">1</span>.join(<span class="string">"\n"</span>))]
     </span>CommandFailed(u32, Vec&lt;String&gt;),
 
-    <span class="attr">#[error(<span class="string">&quot;failed to parse command reply: {0}&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"failed to parse command reply: {0}"</span>)]
     </span>CommandReplyParseFailed(String),
 
-    <span class="attr">#[error(<span class="string">&quot;failed to parse received tor version&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"failed to parse received tor version"</span>)]
     </span>TorVersionParseFailed(<span class="attr">#[source] </span><span class="kw">crate</span>::legacy_tor_version::Error),
 }
 
@@ -905,13 +906,13 @@
 <span class="kw">impl </span>LegacyTorController {
     <span class="kw">pub fn </span>new(control_stream: LegacyControlStream) -&gt; <span class="prelude-ty">Result</span>&lt;LegacyTorController, Error&gt; {
         <span class="kw">let </span>status_event_pattern =
-            Regex::new(<span class="string">r#&quot;^STATUS_CLIENT (?P&lt;severity&gt;NOTICE|WARN|ERR) (?P&lt;action&gt;[A-Za-z]+)&quot;#</span>)
+            Regex::new(<span class="string">r#"^STATUS_CLIENT (?P&lt;severity&gt;NOTICE|WARN|ERR) (?P&lt;action&gt;[A-Za-z]+)"#</span>)
                 .map_err(Error::ParsingRegexCreationFailed)<span class="question-mark">?</span>;
         <span class="kw">let </span>status_event_argument_pattern =
-            Regex::new(<span class="string">r#&quot;(?P&lt;key&gt;[A-Z]+)=(?P&lt;value&gt;[A-Za-z0-9_]+|&quot;[^&quot;]+&quot;)&quot;#</span>)
+            Regex::new(<span class="string">r#"(?P&lt;key&gt;[A-Z]+)=(?P&lt;value&gt;[A-Za-z0-9_]+|"[^"]+")"#</span>)
                 .map_err(Error::ParsingRegexCreationFailed)<span class="question-mark">?</span>;
         <span class="kw">let </span>hs_desc_pattern = Regex::new(
-            <span class="string">r#&quot;HS_DESC (?P&lt;action&gt;REQUESTED|UPLOAD|RECEIVED|UPLOADED|IGNORE|FAILED|CREATED) (?P&lt;hsaddress&gt;[a-z2-7]{56})&quot;#
+            <span class="string">r#"HS_DESC (?P&lt;action&gt;REQUESTED|UPLOAD|RECEIVED|UPLOADED|IGNORE|FAILED|CREATED) (?P&lt;hsaddress&gt;[a-z2-7]{56})"#
         </span>).map_err(Error::ParsingRegexCreationFailed)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(LegacyTorController {
@@ -952,13 +953,13 @@
         }
 
         <span class="comment">// not sure this is what we want but yolo
-        </span><span class="kw">let </span>reply_text = reply.reply_lines.join(<span class="string">&quot; &quot;</span>);
+        </span><span class="kw">let </span>reply_text = reply.reply_lines.join(<span class="string">" "</span>);
         <span class="kw">if let </span><span class="prelude-val">Some</span>(caps) = <span class="self">self</span>.status_event_pattern.captures(<span class="kw-2">&amp;</span>reply_text) {
-            <span class="kw">let </span>severity = <span class="kw">match </span>caps.name(<span class="string">&quot;severity&quot;</span>) {
+            <span class="kw">let </span>severity = <span class="kw">match </span>caps.name(<span class="string">"severity"</span>) {
                 <span class="prelude-val">Some</span>(severity) =&gt; severity.as_str(),
                 <span class="prelude-val">None </span>=&gt; <span class="macro">unreachable!</span>(),
             };
-            <span class="kw">let </span>action = <span class="kw">match </span>caps.name(<span class="string">&quot;action&quot;</span>) {
+            <span class="kw">let </span>action = <span class="kw">match </span>caps.name(<span class="string">"action"</span>) {
                 <span class="prelude-val">Some</span>(action) =&gt; action.as_str(),
                 <span class="prelude-val">None </span>=&gt; <span class="macro">unreachable!</span>(),
             };
@@ -968,16 +969,16 @@
                 </span>.status_event_argument_pattern
                 .captures_iter(<span class="kw-2">&amp;</span>reply_text)
             {
-                <span class="kw">let </span>key = <span class="kw">match </span>caps.name(<span class="string">&quot;key&quot;</span>) {
+                <span class="kw">let </span>key = <span class="kw">match </span>caps.name(<span class="string">"key"</span>) {
                     <span class="prelude-val">Some</span>(key) =&gt; key.as_str(),
                     <span class="prelude-val">None </span>=&gt; <span class="macro">unreachable!</span>(),
                 };
                 <span class="kw">let </span>value = {
-                    <span class="kw">let </span>value = <span class="kw">match </span>caps.name(<span class="string">&quot;value&quot;</span>) {
+                    <span class="kw">let </span>value = <span class="kw">match </span>caps.name(<span class="string">"value"</span>) {
                         <span class="prelude-val">Some</span>(value) =&gt; value.as_str(),
                         <span class="prelude-val">None </span>=&gt; <span class="macro">unreachable!</span>(),
                     };
-                    <span class="kw">if </span>value.starts_with(<span class="string">&#39;\&quot;&#39;</span>) &amp;&amp; value.ends_with(<span class="string">&#39;\&quot;&#39;</span>) {
+                    <span class="kw">if </span>value.starts_with(<span class="string">'\"'</span>) &amp;&amp; value.ends_with(<span class="string">'\"'</span>) {
                         <span class="kw-2">&amp;</span>value[<span class="number">1</span>..value.len() - <span class="number">1</span>]
                     } <span class="kw">else </span>{
                         value
@@ -994,11 +995,11 @@
         }
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(caps) = <span class="self">self</span>.hs_desc_pattern.captures(<span class="kw-2">&amp;</span>reply_text) {
-            <span class="kw">let </span>action = <span class="kw">match </span>caps.name(<span class="string">&quot;action&quot;</span>) {
+            <span class="kw">let </span>action = <span class="kw">match </span>caps.name(<span class="string">"action"</span>) {
                 <span class="prelude-val">Some</span>(action) =&gt; action.as_str(),
                 <span class="prelude-val">None </span>=&gt; <span class="macro">unreachable!</span>(),
             };
-            <span class="kw">let </span>hs_address = <span class="kw">match </span>caps.name(<span class="string">&quot;hsaddress&quot;</span>) {
+            <span class="kw">let </span>hs_address = <span class="kw">match </span>caps.name(<span class="string">"hsaddress"</span>) {
                 <span class="prelude-val">Some</span>(hs_address) =&gt; hs_address.as_str(),
                 <span class="prelude-val">None </span>=&gt; <span class="macro">unreachable!</span>(),
             };
@@ -1065,15 +1066,15 @@
     </span><span class="kw">fn </span>setconf_cmd(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key_values: <span class="kw-2">&amp;</span>[(<span class="kw-2">&amp;</span>str, <span class="kw-2">&amp;</span>str)]) -&gt; <span class="prelude-ty">Result</span>&lt;Reply, Error&gt; {
         <span class="kw">if </span>key_values.is_empty() {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidCommandArguments(
-                <span class="string">&quot;SETCONF key-value pairs list must not be empty&quot;</span>.to_string(),
+                <span class="string">"SETCONF key-value pairs list must not be empty"</span>.to_string(),
             ));
         }
-        <span class="kw">let </span><span class="kw-2">mut </span>command_buffer = <span class="macro">vec!</span>[<span class="string">&quot;SETCONF&quot;</span>.to_string()];
+        <span class="kw">let </span><span class="kw-2">mut </span>command_buffer = <span class="macro">vec!</span>[<span class="string">"SETCONF"</span>.to_string()];
 
         <span class="kw">for </span>(key, value) <span class="kw">in </span>key_values.iter() {
-            command_buffer.push(<span class="macro">format!</span>(<span class="string">&quot;{}={}&quot;</span>, key, value));
+            command_buffer.push(<span class="macro">format!</span>(<span class="string">"{}={}"</span>, key, value));
         }
-        <span class="kw">let </span>command = command_buffer.join(<span class="string">&quot; &quot;</span>);
+        <span class="kw">let </span>command = command_buffer.join(<span class="string">" "</span>);
 
         <span class="self">self</span>.write_command(<span class="kw-2">&amp;</span>command)
     }
@@ -1083,10 +1084,10 @@
     </span><span class="kw">fn </span>getconf_cmd(<span class="kw-2">&amp;mut </span><span class="self">self</span>, keywords: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>str]) -&gt; <span class="prelude-ty">Result</span>&lt;Reply, Error&gt; {
         <span class="kw">if </span>keywords.is_empty() {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidCommandArguments(
-                <span class="string">&quot;GETCONF keywords list must not be empty&quot;</span>.to_string(),
+                <span class="string">"GETCONF keywords list must not be empty"</span>.to_string(),
             ));
         }
-        <span class="kw">let </span>command = <span class="macro">format!</span>(<span class="string">&quot;GETCONF {}&quot;</span>, keywords.join(<span class="string">&quot; &quot;</span>));
+        <span class="kw">let </span>command = <span class="macro">format!</span>(<span class="string">"GETCONF {}"</span>, keywords.join(<span class="string">" "</span>));
 
         <span class="self">self</span>.write_command(<span class="kw-2">&amp;</span>command)
     }
@@ -1095,17 +1096,17 @@
     </span><span class="kw">fn </span>setevents_cmd(<span class="kw-2">&amp;mut </span><span class="self">self</span>, event_codes: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>str]) -&gt; <span class="prelude-ty">Result</span>&lt;Reply, Error&gt; {
         <span class="kw">if </span>event_codes.is_empty() {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidCommandArguments(
-                <span class="string">&quot;SETEVENTS event codes list mut not be empty&quot;</span>.to_string(),
+                <span class="string">"SETEVENTS event codes list mut not be empty"</span>.to_string(),
             ));
         }
-        <span class="kw">let </span>command = <span class="macro">format!</span>(<span class="string">&quot;SETEVENTS {}&quot;</span>, event_codes.join(<span class="string">&quot; &quot;</span>));
+        <span class="kw">let </span>command = <span class="macro">format!</span>(<span class="string">"SETEVENTS {}"</span>, event_codes.join(<span class="string">" "</span>));
 
         <span class="self">self</span>.write_command(<span class="kw-2">&amp;</span>command)
     }
 
     <span class="comment">// AUTHENTICATE (3.5)
     </span><span class="kw">fn </span>authenticate_cmd(<span class="kw-2">&amp;mut </span><span class="self">self</span>, password: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Reply, Error&gt; {
-        <span class="kw">let </span>command = <span class="macro">format!</span>(<span class="string">&quot;AUTHENTICATE \&quot;{}\&quot;&quot;</span>, password);
+        <span class="kw">let </span>command = <span class="macro">format!</span>(<span class="string">"AUTHENTICATE \"{}\""</span>, password);
 
         <span class="self">self</span>.write_command(<span class="kw-2">&amp;</span>command)
     }
@@ -1114,10 +1115,10 @@
     </span><span class="kw">fn </span>getinfo_cmd(<span class="kw-2">&amp;mut </span><span class="self">self</span>, keywords: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>str]) -&gt; <span class="prelude-ty">Result</span>&lt;Reply, Error&gt; {
         <span class="kw">if </span>keywords.is_empty() {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidCommandArguments(
-                <span class="string">&quot;GETINFO keywords list must not be empty&quot;</span>.to_string(),
+                <span class="string">"GETINFO keywords list must not be empty"</span>.to_string(),
             ));
         }
-        <span class="kw">let </span>command = <span class="macro">format!</span>(<span class="string">&quot;GETINFO {}&quot;</span>, keywords.join(<span class="string">&quot; &quot;</span>));
+        <span class="kw">let </span>command = <span class="macro">format!</span>(<span class="string">"GETINFO {}"</span>, keywords.join(<span class="string">" "</span>));
 
         <span class="self">self</span>.write_command(<span class="kw-2">&amp;</span>command)
     }
@@ -1132,64 +1133,64 @@
         target: <span class="prelude-ty">Option</span>&lt;SocketAddr&gt;,
         client_auth: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>[X25519PublicKey]&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Reply, Error&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>command_buffer = <span class="macro">vec!</span>[<span class="string">&quot;ADD_ONION&quot;</span>.to_string()];
+        <span class="kw">let </span><span class="kw-2">mut </span>command_buffer = <span class="macro">vec!</span>[<span class="string">"ADD_ONION"</span>.to_string()];
 
         <span class="comment">// set our key or request a new one
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(key) = key {
             command_buffer.push(key.to_key_blob());
         } <span class="kw">else </span>{
-            command_buffer.push(<span class="string">&quot;NEW:ED25519-V3&quot;</span>.to_string());
+            command_buffer.push(<span class="string">"NEW:ED25519-V3"</span>.to_string());
         }
 
         <span class="comment">// set our flags
         </span><span class="kw">let </span><span class="kw-2">mut </span>flag_buffer: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = Default::default();
         <span class="kw">if </span>flags.discard_pk {
-            flag_buffer.push(<span class="string">&quot;DiscardPK&quot;</span>);
+            flag_buffer.push(<span class="string">"DiscardPK"</span>);
         }
         <span class="kw">if </span>flags.detach {
-            flag_buffer.push(<span class="string">&quot;Detach&quot;</span>);
+            flag_buffer.push(<span class="string">"Detach"</span>);
         }
         <span class="kw">if </span>flags.v3_auth {
-            flag_buffer.push(<span class="string">&quot;V3Auth&quot;</span>);
+            flag_buffer.push(<span class="string">"V3Auth"</span>);
         }
         <span class="kw">if </span>flags.non_anonymous {
-            flag_buffer.push(<span class="string">&quot;NonAnonymous&quot;</span>);
+            flag_buffer.push(<span class="string">"NonAnonymous"</span>);
         }
         <span class="kw">if </span>flags.max_streams_close_circuit {
-            flag_buffer.push(<span class="string">&quot;MaxStreamsCloseCircuit&quot;</span>);
+            flag_buffer.push(<span class="string">"MaxStreamsCloseCircuit"</span>);
         }
 
         <span class="kw">if </span>!flag_buffer.is_empty() {
-            command_buffer.push(<span class="macro">format!</span>(<span class="string">&quot;Flags={}&quot;</span>, flag_buffer.join(<span class="string">&quot;,&quot;</span>)));
+            command_buffer.push(<span class="macro">format!</span>(<span class="string">"Flags={}"</span>, flag_buffer.join(<span class="string">","</span>)));
         }
 
         <span class="comment">// set max concurrent streams
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(max_streams) = max_streams {
-            command_buffer.push(<span class="macro">format!</span>(<span class="string">&quot;MaxStreams={}&quot;</span>, max_streams));
+            command_buffer.push(<span class="macro">format!</span>(<span class="string">"MaxStreams={}"</span>, max_streams));
         }
 
         <span class="comment">// set our onion service target
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(target) = target {
-            command_buffer.push(<span class="macro">format!</span>(<span class="string">&quot;Port={},{}&quot;</span>, virt_port, target));
+            command_buffer.push(<span class="macro">format!</span>(<span class="string">"Port={},{}"</span>, virt_port, target));
         } <span class="kw">else </span>{
-            command_buffer.push(<span class="macro">format!</span>(<span class="string">&quot;Port={}&quot;</span>, virt_port));
+            command_buffer.push(<span class="macro">format!</span>(<span class="string">"Port={}"</span>, virt_port));
         }
         <span class="comment">// setup client auth
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(client_auth) = client_auth {
             <span class="kw">for </span>key <span class="kw">in </span>client_auth.iter() {
-                command_buffer.push(<span class="macro">format!</span>(<span class="string">&quot;ClientAuthV3={}&quot;</span>, key.to_base32()));
+                command_buffer.push(<span class="macro">format!</span>(<span class="string">"ClientAuthV3={}"</span>, key.to_base32()));
             }
         }
 
         <span class="comment">// finally send the command
-        </span><span class="kw">let </span>command = command_buffer.join(<span class="string">&quot; &quot;</span>);
+        </span><span class="kw">let </span>command = command_buffer.join(<span class="string">" "</span>);
 
         <span class="self">self</span>.write_command(<span class="kw-2">&amp;</span>command)
     }
 
     <span class="comment">// DEL_ONION (3.38)
     </span><span class="kw">fn </span>del_onion_cmd(<span class="kw-2">&amp;mut </span><span class="self">self</span>, service_id: <span class="kw-2">&amp;</span>V3OnionServiceId) -&gt; <span class="prelude-ty">Result</span>&lt;Reply, Error&gt; {
-        <span class="kw">let </span>command = <span class="macro">format!</span>(<span class="string">&quot;DEL_ONION {}&quot;</span>, service_id);
+        <span class="kw">let </span>command = <span class="macro">format!</span>(<span class="string">"DEL_ONION {}"</span>, service_id);
 
         <span class="self">self</span>.write_command(<span class="kw-2">&amp;</span>command)
     }
@@ -1202,24 +1203,24 @@
         client_name: <span class="prelude-ty">Option</span>&lt;String&gt;,
         flags: <span class="kw-2">&amp;</span>OnionClientAuthAddFlags,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Reply, Error&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>command_buffer = <span class="macro">vec!</span>[<span class="string">&quot;ONION_CLIENT_AUTH_ADD&quot;</span>.to_string()];
+        <span class="kw">let </span><span class="kw-2">mut </span>command_buffer = <span class="macro">vec!</span>[<span class="string">"ONION_CLIENT_AUTH_ADD"</span>.to_string()];
 
         <span class="comment">// set the onion service id
         </span>command_buffer.push(service_id.to_string());
 
-        <span class="comment">// set our client&#39;s private key
-        </span>command_buffer.push(<span class="macro">format!</span>(<span class="string">&quot;x25519:{}&quot;</span>, private_key.to_base64()));
+        <span class="comment">// set our client's private key
+        </span>command_buffer.push(<span class="macro">format!</span>(<span class="string">"x25519:{}"</span>, private_key.to_base64()));
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(client_name) = client_name {
-            command_buffer.push(<span class="macro">format!</span>(<span class="string">&quot;ClientName={}&quot;</span>, client_name));
+            command_buffer.push(<span class="macro">format!</span>(<span class="string">"ClientName={}"</span>, client_name));
         }
 
         <span class="kw">if </span>flags.permanent {
-            command_buffer.push(<span class="string">&quot;Flags=Permanent&quot;</span>.to_string());
+            command_buffer.push(<span class="string">"Flags=Permanent"</span>.to_string());
         }
 
         <span class="comment">// finally send command
-        </span><span class="kw">let </span>command = command_buffer.join(<span class="string">&quot; &quot;</span>);
+        </span><span class="kw">let </span>command = command_buffer.join(<span class="string">" "</span>);
 
         <span class="self">self</span>.write_command(<span class="kw-2">&amp;</span>command)
     }
@@ -1229,7 +1230,7 @@
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         service_id: <span class="kw-2">&amp;</span>V3OnionServiceId,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;Reply, Error&gt; {
-        <span class="kw">let </span>command = <span class="macro">format!</span>(<span class="string">&quot;ONION_CLIENT_AUTH_REMOVE {}&quot;</span>, service_id);
+        <span class="kw">let </span>command = <span class="macro">format!</span>(<span class="string">"ONION_CLIENT_AUTH_REMOVE {}"</span>, service_id);
 
         <span class="self">self</span>.write_command(<span class="kw-2">&amp;</span>command)
     }
@@ -1255,7 +1256,7 @@
             <span class="number">250u32 </span>=&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>key_values: Vec&lt;(String, String)&gt; = Default::default();
                 <span class="kw">for </span>line <span class="kw">in </span>reply.reply_lines {
-                    <span class="kw">match </span>line.find(<span class="string">&#39;=&#39;</span>) {
+                    <span class="kw">match </span>line.find(<span class="string">'='</span>) {
                         <span class="prelude-val">Some</span>(index) =&gt; key_values
                             .push((line[<span class="number">0</span>..index].to_string(), line[index + <span class="number">1</span>..].to_string())),
                         <span class="prelude-val">None </span>=&gt; key_values.push((line, String::new())),
@@ -1292,11 +1293,11 @@
             <span class="number">250u32 </span>=&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>key_values: Vec&lt;(String, String)&gt; = Default::default();
                 <span class="kw">for </span>line <span class="kw">in </span>reply.reply_lines {
-                    <span class="kw">match </span>line.find(<span class="string">&#39;=&#39;</span>) {
+                    <span class="kw">match </span>line.find(<span class="string">'='</span>) {
                         <span class="prelude-val">Some</span>(index) =&gt; key_values
                             .push((line[<span class="number">0</span>..index].to_string(), line[index + <span class="number">1</span>..].to_string())),
                         <span class="prelude-val">None </span>=&gt; {
-                            <span class="kw">if </span>line != <span class="string">&quot;OK&quot; </span>{
+                            <span class="kw">if </span>line != <span class="string">"OK" </span>{
                                 key_values.push((line, String::new()))
                             }
                         }
@@ -1325,49 +1326,49 @@
         <span class="kw">match </span>reply.status_code {
             <span class="number">250u32 </span>=&gt; {
                 <span class="kw">for </span>line <span class="kw">in </span>reply.reply_lines {
-                    <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>index) = line.find(<span class="string">&quot;ServiceID=&quot;</span>) {
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>index) = line.find(<span class="string">"ServiceID="</span>) {
                         <span class="kw">if </span>service_id.is_some() {
                             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::CommandReplyParseFailed(
-                                <span class="string">&quot;received duplicate ServiceID entries&quot;</span>.to_string(),
+                                <span class="string">"received duplicate ServiceID entries"</span>.to_string(),
                             ));
                         }
-                        index += <span class="string">&quot;ServiceId=&quot;</span>.len();
+                        index += <span class="string">"ServiceId="</span>.len();
                         <span class="kw">let </span>service_id_string = <span class="kw-2">&amp;</span>line[index..];
                         service_id = <span class="kw">match </span>V3OnionServiceId::from_string(service_id_string) {
                             <span class="prelude-val">Ok</span>(service_id) =&gt; <span class="prelude-val">Some</span>(service_id),
                             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::CommandReplyParseFailed(<span class="macro">format!</span>(
-                                    <span class="string">&quot;could not parse &#39;{}&#39; as V3OnionServiceId&quot;</span>,
+                                    <span class="string">"could not parse '{}' as V3OnionServiceId"</span>,
                                     service_id_string
                                 )))
                             }
                         }
-                    } <span class="kw">else if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>index) = line.find(<span class="string">&quot;PrivateKey=&quot;</span>) {
+                    } <span class="kw">else if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>index) = line.find(<span class="string">"PrivateKey="</span>) {
                         <span class="kw">if </span>private_key.is_some() {
                             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::CommandReplyParseFailed(
-                                <span class="string">&quot;received duplicate PrivateKey entries&quot;</span>.to_string(),
+                                <span class="string">"received duplicate PrivateKey entries"</span>.to_string(),
                             ));
                         }
-                        index += <span class="string">&quot;PrivateKey=&quot;</span>.len();
+                        index += <span class="string">"PrivateKey="</span>.len();
                         <span class="kw">let </span>key_blob_string = <span class="kw-2">&amp;</span>line[index..];
                         private_key = <span class="kw">match </span>Ed25519PrivateKey::from_key_blob(key_blob_string) {
                             <span class="prelude-val">Ok</span>(private_key) =&gt; <span class="prelude-val">Some</span>(private_key),
                             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::CommandReplyParseFailed(<span class="macro">format!</span>(
-                                    <span class="string">&quot;could not parse {} as Ed25519PrivateKey&quot;</span>,
+                                    <span class="string">"could not parse {} as Ed25519PrivateKey"</span>,
                                     key_blob_string
                                 )))
                             }
                         };
-                    } <span class="kw">else if </span>line.contains(<span class="string">&quot;ClientAuthV3=&quot;</span>) {
+                    } <span class="kw">else if </span>line.contains(<span class="string">"ClientAuthV3="</span>) {
                         <span class="kw">if </span>client_auth.unwrap_or_default().is_empty() {
                             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::CommandReplyParseFailed(
-                                <span class="string">&quot;recieved unexpected ClientAuthV3 keys&quot;</span>.to_string(),
+                                <span class="string">"recieved unexpected ClientAuthV3 keys"</span>.to_string(),
                             ));
                         }
-                    } <span class="kw">else if </span>!line.contains(<span class="string">&quot;OK&quot;</span>) {
+                    } <span class="kw">else if </span>!line.contains(<span class="string">"OK"</span>) {
                         <span class="kw">return </span><span class="prelude-val">Err</span>(Error::CommandReplyParseFailed(<span class="macro">format!</span>(
-                            <span class="string">&quot;received unexpected reply line &#39;{}&#39;&quot;</span>,
+                            <span class="string">"received unexpected reply line '{}'"</span>,
                             line
                         )));
                     }
@@ -1379,19 +1380,19 @@
         <span class="kw">if </span>flags.discard_pk {
             <span class="kw">if </span>private_key.is_some() {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::CommandReplyParseFailed(
-                    <span class="string">&quot;PrivateKey response should have been discard&quot;</span>.to_string(),
+                    <span class="string">"PrivateKey response should have been discard"</span>.to_string(),
                 ));
             }
         } <span class="kw">else if </span>private_key.is_none() {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::CommandReplyParseFailed(
-                <span class="string">&quot;did not receive a PrivateKey&quot;</span>.to_string(),
+                <span class="string">"did not receive a PrivateKey"</span>.to_string(),
             ));
         }
 
         <span class="kw">match </span>service_id {
             <span class="prelude-val">Some</span>(service_id) =&gt; <span class="prelude-val">Ok</span>((private_key, service_id)),
             <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(Error::CommandReplyParseFailed(
-                <span class="string">&quot;did not receive a ServiceID&quot;</span>.to_string(),
+                <span class="string">"did not receive a ServiceID"</span>.to_string(),
             )),
         }
     }
@@ -1408,19 +1409,19 @@
     <span class="comment">// more specific encapulsation of specific command invocations
 
     </span><span class="kw">pub fn </span>getinfo_net_listeners_socks(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;SocketAddr&gt;, Error&gt; {
-        <span class="kw">let </span>response = <span class="self">self</span>.getinfo(<span class="kw-2">&amp;</span>[<span class="string">&quot;net/listeners/socks&quot;</span>])<span class="question-mark">?</span>;
+        <span class="kw">let </span>response = <span class="self">self</span>.getinfo(<span class="kw-2">&amp;</span>[<span class="string">"net/listeners/socks"</span>])<span class="question-mark">?</span>;
         <span class="kw">for </span>(key, value) <span class="kw">in </span>response.iter() {
-            <span class="kw">if </span>key.as_str() == <span class="string">&quot;net/listeners/socks&quot; </span>{
+            <span class="kw">if </span>key.as_str() == <span class="string">"net/listeners/socks" </span>{
                 <span class="kw">if </span>value.is_empty() {
                     <span class="kw">return </span><span class="prelude-val">Ok</span>(Default::default());
                 }
                 <span class="comment">// get our list of double-quoted strings
-                </span><span class="kw">let </span>listeners: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = value.split(<span class="string">&#39; &#39;</span>).collect();
+                </span><span class="kw">let </span>listeners: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = value.split(<span class="string">' '</span>).collect();
                 <span class="kw">let </span><span class="kw-2">mut </span>result: Vec&lt;SocketAddr&gt; = Default::default();
                 <span class="kw">for </span>socket_addr <span class="kw">in </span>listeners.iter() {
-                    <span class="kw">if </span>!socket_addr.starts_with(<span class="string">&#39;\&quot;&#39;</span>) || !socket_addr.ends_with(<span class="string">&#39;\&quot;&#39;</span>) {
+                    <span class="kw">if </span>!socket_addr.starts_with(<span class="string">'\"'</span>) || !socket_addr.ends_with(<span class="string">'\"'</span>) {
                         <span class="kw">return </span><span class="prelude-val">Err</span>(Error::CommandReplyParseFailed(<span class="macro">format!</span>(
-                            <span class="string">&quot;could not parse &#39;{}&#39; as socket address&quot;</span>,
+                            <span class="string">"could not parse '{}' as socket address"</span>,
                             socket_addr
                         )));
                     }
@@ -1431,7 +1432,7 @@
                         <span class="prelude-val">Ok</span>(result) =&gt; result,
                         <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::CommandReplyParseFailed(<span class="macro">format!</span>(
-                                <span class="string">&quot;could not parse &#39;{}&#39; as socket address&quot;</span>,
+                                <span class="string">"could not parse '{}' as socket address"</span>,
                                 socket_addr
                             )))
                         }
@@ -1441,19 +1442,19 @@
             }
         }
         <span class="prelude-val">Err</span>(Error::CommandReplyParseFailed(
-            <span class="string">&quot;reply did not find a &#39;net/listeners/socks&#39; key/value&quot;</span>.to_string(),
+            <span class="string">"reply did not find a 'net/listeners/socks' key/value"</span>.to_string(),
         ))
     }
 
     <span class="kw">pub fn </span>getinfo_version(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;LegacyTorVersion, Error&gt; {
-        <span class="kw">let </span>response = <span class="self">self</span>.getinfo(<span class="kw-2">&amp;</span>[<span class="string">&quot;version&quot;</span>])<span class="question-mark">?</span>;
+        <span class="kw">let </span>response = <span class="self">self</span>.getinfo(<span class="kw-2">&amp;</span>[<span class="string">"version"</span>])<span class="question-mark">?</span>;
         <span class="kw">for </span>(key, value) <span class="kw">in </span>response.iter() {
-            <span class="kw">if </span>key.as_str() == <span class="string">&quot;version&quot; </span>{
+            <span class="kw">if </span>key.as_str() == <span class="string">"version" </span>{
                 <span class="kw">return </span>LegacyTorVersion::from_str(value).map_err(Error::TorVersionParseFailed);
             }
         }
         <span class="prelude-val">Err</span>(Error::CommandReplyParseFailed(
-            <span class="string">&quot;did not find a &#39;version&#39; key/value&quot;</span>.to_string(),
+            <span class="string">"did not find a 'version' key/value"</span>.to_string(),
         ))
     }
 
@@ -1485,11 +1486,11 @@
 
 <span class="attr">#[test]
 #[serial]
-#[cfg(not(feature = <span class="string">&quot;offline-test&quot;</span>))]
+#[cfg(not(feature = <span class="string">"offline-test"</span>))]
 </span><span class="kw">fn </span>test_tor_controller() -&gt; anyhow::Result&lt;()&gt; {
-    <span class="kw">let </span>tor_path = which::which(<span class="macro">format!</span>(<span class="string">&quot;tor{}&quot;</span>, std::env::consts::EXE_SUFFIX))<span class="question-mark">?</span>;
+    <span class="kw">let </span>tor_path = which::which(<span class="macro">format!</span>(<span class="string">"tor{}"</span>, std::env::consts::EXE_SUFFIX))<span class="question-mark">?</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>data_path = std::env::temp_dir();
-    data_path.push(<span class="string">&quot;test_tor_controller&quot;</span>);
+    data_path.push(<span class="string">"test_tor_controller"</span>);
     <span class="kw">let </span>tor_process = LegacyTorProcess::new(<span class="kw-2">&amp;</span>tor_path, <span class="kw-2">&amp;</span>data_path)<span class="question-mark">?</span>;
 
     <span class="comment">// create a scope to ensure tor_controller is dropped
@@ -1502,7 +1503,7 @@
         tor_controller.authenticate_cmd(tor_process.get_password())<span class="question-mark">?</span>;
         <span class="macro">assert!</span>(
             tor_controller
-                .authenticate_cmd(<span class="string">&quot;invalid password&quot;</span>)<span class="question-mark">?
+                .authenticate_cmd(<span class="string">"invalid password"</span>)<span class="question-mark">?
                 </span>.status_code
                 == <span class="number">515u32
         </span>);
@@ -1512,7 +1513,7 @@
             tor_controller
                 .authenticate_cmd(tor_process.get_password())
                 .is_err(),
-            <span class="string">&quot;expected failure due to closed connection&quot;
+            <span class="string">"expected failure due to closed connection"
         </span>);
         <span class="macro">assert!</span>(tor_controller.control_stream.closed_by_remote());
     }
@@ -1527,71 +1528,71 @@
         tor_controller.authenticate(tor_process.get_password())<span class="question-mark">?</span>;
 
         <span class="comment">// ensure everything is matching our default_torrc settings
-        </span><span class="kw">let </span>vals = tor_controller.getconf(<span class="kw-2">&amp;</span>[<span class="string">&quot;SocksPort&quot;</span>, <span class="string">&quot;AvoidDiskWrites&quot;</span>, <span class="string">&quot;DisableNetwork&quot;</span>])<span class="question-mark">?</span>;
+        </span><span class="kw">let </span>vals = tor_controller.getconf(<span class="kw-2">&amp;</span>[<span class="string">"SocksPort"</span>, <span class="string">"AvoidDiskWrites"</span>, <span class="string">"DisableNetwork"</span>])<span class="question-mark">?</span>;
         <span class="kw">for </span>(key, value) <span class="kw">in </span>vals.iter() {
             <span class="kw">let </span>expected = <span class="kw">match </span>key.as_str() {
-                <span class="string">&quot;SocksPort&quot; </span>=&gt; <span class="string">&quot;auto OnionTrafficOnly&quot;</span>,
-                <span class="string">&quot;AvoidDiskWrites&quot; </span>=&gt; <span class="string">&quot;1&quot;</span>,
-                <span class="string">&quot;DisableNetwork&quot; </span>=&gt; <span class="string">&quot;1&quot;</span>,
-                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unexpected returned key: {}&quot;</span>, key),
+                <span class="string">"SocksPort" </span>=&gt; <span class="string">"auto OnionTrafficOnly"</span>,
+                <span class="string">"AvoidDiskWrites" </span>=&gt; <span class="string">"1"</span>,
+                <span class="string">"DisableNetwork" </span>=&gt; <span class="string">"1"</span>,
+                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"unexpected returned key: {}"</span>, key),
             };
             <span class="macro">assert!</span>(value == expected);
         }
 
-        <span class="kw">let </span>vals = tor_controller.getinfo(<span class="kw-2">&amp;</span>[<span class="string">&quot;version&quot;</span>, <span class="string">&quot;config-file&quot;</span>, <span class="string">&quot;config-text&quot;</span>])<span class="question-mark">?</span>;
+        <span class="kw">let </span>vals = tor_controller.getinfo(<span class="kw-2">&amp;</span>[<span class="string">"version"</span>, <span class="string">"config-file"</span>, <span class="string">"config-text"</span>])<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>expected_torrc_path = data_path.clone();
-        expected_torrc_path.push(<span class="string">&quot;torrc&quot;</span>);
+        expected_torrc_path.push(<span class="string">"torrc"</span>);
         <span class="kw">let </span><span class="kw-2">mut </span>expected_control_port_path = data_path.clone();
-        expected_control_port_path.push(<span class="string">&quot;control_port&quot;</span>);
+        expected_control_port_path.push(<span class="string">"control_port"</span>);
         <span class="kw">for </span>(key, value) <span class="kw">in </span>vals.iter() {
             <span class="kw">match </span>key.as_str() {
-                <span class="string">&quot;version&quot; </span>=&gt; <span class="macro">assert!</span>(Regex::new(<span class="string">r&quot;\d+\.\d+\.\d+\.\d+&quot;</span>)<span class="question-mark">?</span>.is_match(<span class="kw-2">&amp;</span>value)),
-                <span class="string">&quot;config-file&quot; </span>=&gt; <span class="macro">assert!</span>(Path::new(<span class="kw-2">&amp;</span>value) == expected_torrc_path),
-                <span class="string">&quot;config-text&quot; </span>=&gt; <span class="macro">assert!</span>(
+                <span class="string">"version" </span>=&gt; <span class="macro">assert!</span>(Regex::new(<span class="string">r"\d+\.\d+\.\d+\.\d+"</span>)<span class="question-mark">?</span>.is_match(<span class="kw-2">&amp;</span>value)),
+                <span class="string">"config-file" </span>=&gt; <span class="macro">assert!</span>(Path::new(<span class="kw-2">&amp;</span>value) == expected_torrc_path),
+                <span class="string">"config-text" </span>=&gt; <span class="macro">assert!</span>(
                     value.to_string()
                         == <span class="macro">format!</span>(
-                            <span class="string">&quot;\nControlPort auto\nControlPortWriteToFile {}\nDataDirectory {}&quot;</span>,
+                            <span class="string">"\nControlPort auto\nControlPortWriteToFile {}\nDataDirectory {}"</span>,
                             expected_control_port_path.display(),
                             data_path.display()
                         )
                 ),
-                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;unexpected returned key: {}&quot;</span>, key),
+                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"unexpected returned key: {}"</span>, key),
             }
         }
 
-        tor_controller.setevents(<span class="kw-2">&amp;</span>[<span class="string">&quot;STATUS_CLIENT&quot;</span>])<span class="question-mark">?</span>;
+        tor_controller.setevents(<span class="kw-2">&amp;</span>[<span class="string">"STATUS_CLIENT"</span>])<span class="question-mark">?</span>;
         <span class="comment">// begin bootstrap
-        </span>tor_controller.setconf(<span class="kw-2">&amp;</span>[(<span class="string">&quot;DisableNetwork&quot;</span>, <span class="string">&quot;0&quot;</span>)])<span class="question-mark">?</span>;
+        </span>tor_controller.setconf(<span class="kw-2">&amp;</span>[(<span class="string">"DisableNetwork"</span>, <span class="string">"0"</span>)])<span class="question-mark">?</span>;
 
         <span class="comment">// add an onoin service
         </span><span class="kw">let </span>(private_key, service_id) =
             <span class="kw">match </span>tor_controller.add_onion(<span class="prelude-val">None</span>, <span class="kw-2">&amp;</span>Default::default(), <span class="prelude-val">None</span>, <span class="number">22</span>, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>)<span class="question-mark">? </span>{
                 (<span class="prelude-val">Some</span>(private_key), service_id) =&gt; (private_key, service_id),
-                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;add_onion did not return expected values&quot;</span>),
+                <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"add_onion did not return expected values"</span>),
             };
-        <span class="macro">println!</span>(<span class="string">&quot;private_key: {}&quot;</span>, private_key.to_key_blob());
-        <span class="macro">println!</span>(<span class="string">&quot;service_id: {}&quot;</span>, service_id.to_string());
+        <span class="macro">println!</span>(<span class="string">"private_key: {}"</span>, private_key.to_key_blob());
+        <span class="macro">println!</span>(<span class="string">"service_id: {}"</span>, service_id.to_string());
 
         <span class="macro">assert!</span>(
             tor_controller
                 .del_onion(<span class="kw-2">&amp;</span>V3OnionServiceId::from_string(
-                    <span class="string">&quot;6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd&quot;
+                    <span class="string">"6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd"
                 </span>)<span class="question-mark">?</span>)
                 .is_err(),
-            <span class="string">&quot;deleting unknown onion should have failed&quot;
+            <span class="string">"deleting unknown onion should have failed"
         </span>);
 
         <span class="comment">// delete our new onion
         </span>tor_controller.del_onion(<span class="kw-2">&amp;</span>service_id)<span class="question-mark">?</span>;
 
-        <span class="macro">println!</span>(<span class="string">&quot;listeners: &quot;</span>);
+        <span class="macro">println!</span>(<span class="string">"listeners: "</span>);
         <span class="kw">for </span>sock_addr <span class="kw">in </span>tor_controller.getinfo_net_listeners_socks()<span class="question-mark">?</span>.iter() {
-            <span class="macro">println!</span>(<span class="string">&quot; {}&quot;</span>, sock_addr);
+            <span class="macro">println!</span>(<span class="string">" {}"</span>, sock_addr);
         }
 
         <span class="comment">// print our event names available to tor
-        </span><span class="kw">for </span>(key, value) <span class="kw">in </span>tor_controller.getinfo(<span class="kw-2">&amp;</span>[<span class="string">&quot;events/names&quot;</span>])<span class="question-mark">?</span>.iter() {
-            <span class="macro">println!</span>(<span class="string">&quot;{} : {}&quot;</span>, key, value);
+        </span><span class="kw">for </span>(key, value) <span class="kw">in </span>tor_controller.getinfo(<span class="kw-2">&amp;</span>[<span class="string">"events/names"</span>])<span class="question-mark">?</span>.iter() {
+            <span class="macro">println!</span>(<span class="string">"{} : {}"</span>, key, value);
         }
 
         <span class="kw">let </span>stop_time = Instant::now() + std::time::Duration::from_secs(<span class="number">5</span>);
@@ -1599,21 +1600,21 @@
             <span class="kw">for </span>async_event <span class="kw">in </span>tor_controller.wait_async_events()<span class="question-mark">?</span>.iter() {
                 <span class="kw">match </span>async_event {
                     AsyncEvent::Unknown { lines } =&gt; {
-                        <span class="macro">println!</span>(<span class="string">&quot;Unknown: {}&quot;</span>, lines.join(<span class="string">&quot;\n&quot;</span>));
+                        <span class="macro">println!</span>(<span class="string">"Unknown: {}"</span>, lines.join(<span class="string">"\n"</span>));
                     }
                     AsyncEvent::StatusClient {
                         severity,
                         action,
                         arguments,
                     } =&gt; {
-                        <span class="macro">println!</span>(<span class="string">&quot;STATUS_CLIENT severity={}, action={}&quot;</span>, severity, action);
+                        <span class="macro">println!</span>(<span class="string">"STATUS_CLIENT severity={}, action={}"</span>, severity, action);
                         <span class="kw">for </span>(key, value) <span class="kw">in </span>arguments.iter() {
-                            <span class="macro">println!</span>(<span class="string">&quot; {}=&#39;{}&#39;&quot;</span>, key, value);
+                            <span class="macro">println!</span>(<span class="string">" {}='{}'"</span>, key, value);
                         }
                     }
                     AsyncEvent::HsDesc { action, hs_address } =&gt; {
                         <span class="macro">println!</span>(
-                            <span class="string">&quot;HS_DESC action={}, hsaddress={}&quot;</span>,
+                            <span class="string">"HS_DESC action={}, hsaddress={}"</span>,
                             action,
                             hs_address.to_string()
                         );

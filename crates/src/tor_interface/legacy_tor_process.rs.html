@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/tor-interface/src/legacy_tor_process.rs`."><title>legacy_tor_process.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="tor_interface" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/tor-interface/src/legacy_tor_process.rs`."><title>legacy_tor_process.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="tor_interface" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -399,49 +400,49 @@
 
 <span class="attr">#[derive(thiserror::Error, Debug)]
 </span><span class="kw">pub enum </span>Error {
-    <span class="attr">#[error(<span class="string">&quot;failed to read control port file&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"failed to read control port file"</span>)]
     </span>ControlPortFileReadFailed(<span class="attr">#[source] </span>std::io::Error),
 
-    <span class="attr">#[error(<span class="string">&quot;provided control port file &#39;{0}&#39; larger than expected ({1} bytes)&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"provided control port file '{0}' larger than expected ({1} bytes)"</span>)]
     </span>ControlPortFileTooLarge(String, u64),
 
-    <span class="attr">#[error(<span class="string">&quot;failed to parse &#39;{0}&#39; as control port file&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"failed to parse '{0}' as control port file"</span>)]
     </span>ControlPortFileContentsInvalid(String),
 
-    <span class="attr">#[error(<span class="string">&quot;provided tor bin path &#39;{0}&#39; must be an absolute path&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"provided tor bin path '{0}' must be an absolute path"</span>)]
     </span>TorBinPathNotAbsolute(String),
 
-    <span class="attr">#[error(<span class="string">&quot;provided data directory &#39;{0}&#39; must be an absolute path&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"provided data directory '{0}' must be an absolute path"</span>)]
     </span>TorDataDirectoryPathNotAbsolute(String),
 
-    <span class="attr">#[error(<span class="string">&quot;failed to create data directory&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"failed to create data directory"</span>)]
     </span>DataDirectoryCreationFailed(<span class="attr">#[source] </span>std::io::Error),
 
-    <span class="attr">#[error(<span class="string">&quot;file exists in provided data directory path &#39;{0}&#39;&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"file exists in provided data directory path '{0}'"</span>)]
     </span>DataDirectoryPathExistsAsFile(String),
 
-    <span class="attr">#[error(<span class="string">&quot;failed to create default_torrc file&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"failed to create default_torrc file"</span>)]
     </span>DefaultTorrcFileCreationFailed(<span class="attr">#[source] </span>std::io::Error),
 
-    <span class="attr">#[error(<span class="string">&quot;failed to write default_torrc file&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"failed to write default_torrc file"</span>)]
     </span>DefaultTorrcFileWriteFailed(<span class="attr">#[source] </span>std::io::Error),
 
-    <span class="attr">#[error(<span class="string">&quot;failed to create torrc file&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"failed to create torrc file"</span>)]
     </span>TorrcFileCreationFailed(<span class="attr">#[source] </span>std::io::Error),
 
-    <span class="attr">#[error(<span class="string">&quot;failed to remove control_port file&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"failed to remove control_port file"</span>)]
     </span>ControlPortFileDeleteFailed(<span class="attr">#[source] </span>std::io::Error),
 
-    <span class="attr">#[error(<span class="string">&quot;failed to start legacy tor process&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"failed to start legacy tor process"</span>)]
     </span>LegacyTorProcessStartFailed(<span class="attr">#[source] </span>std::io::Error),
 
-    <span class="attr">#[error(<span class="string">&quot;failed to read control addr from control_file &#39;{0}&#39;&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"failed to read control addr from control_file '{0}'"</span>)]
     </span>ControlPortFileMissing(String),
 
-    <span class="attr">#[error(<span class="string">&quot;unable to take legacy tor process stdout&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"unable to take legacy tor process stdout"</span>)]
     </span>LegacyTorProcessStdoutTakeFailed(),
 
-    <span class="attr">#[error(<span class="string">&quot;failed to spawn tor process stdout read thread&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"failed to spawn tor process stdout read thread"</span>)]
     </span>StdoutReadThreadSpawnFailed(<span class="attr">#[source] </span>std::io::Error),
 }
 
@@ -453,7 +454,7 @@
     </span><span class="kw">let </span>metadata = file.metadata().map_err(Error::ControlPortFileReadFailed)<span class="question-mark">?</span>;
     <span class="kw">if </span>metadata.len() &gt;= <span class="number">1024 </span>{
         <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ControlPortFileTooLarge(
-            <span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, control_port_file.display()),
+            <span class="macro">format!</span>(<span class="string">"{}"</span>, control_port_file.display()),
             metadata.len(),
         ));
     }
@@ -463,14 +464,14 @@
     file.read_to_string(<span class="kw-2">&amp;mut </span>contents)
         .map_err(Error::ControlPortFileReadFailed)<span class="question-mark">?</span>;
 
-    <span class="kw">if </span>contents.starts_with(<span class="string">&quot;PORT=&quot;</span>) {
-        <span class="kw">let </span>addr_string = <span class="kw-2">&amp;</span>contents.trim_end()[<span class="string">&quot;PORT=&quot;</span>.len()..];
+    <span class="kw">if </span>contents.starts_with(<span class="string">"PORT="</span>) {
+        <span class="kw">let </span>addr_string = <span class="kw-2">&amp;</span>contents.trim_end()[<span class="string">"PORT="</span>.len()..];
         <span class="kw">if let </span><span class="prelude-val">Ok</span>(addr) = SocketAddr::from_str(addr_string) {
             <span class="kw">return </span><span class="prelude-val">Ok</span>(addr);
         }
     }
     <span class="prelude-val">Err</span>(Error::ControlPortFileContentsInvalid(<span class="macro">format!</span>(
-        <span class="string">&quot;{}&quot;</span>,
+        <span class="string">"{}"</span>,
         control_port_file.display()
     )))
 }
@@ -500,7 +501,7 @@
 
         <span class="comment">// squash together our hash input
         </span><span class="kw">let </span><span class="kw-2">mut </span>input: Vec&lt;u8&gt; = Default::default();
-        <span class="comment">// append salt (sans the &#39;C&#39; constant&#39;)
+        <span class="comment">// append salt (sans the 'C' constant')
         </span>input.extend_from_slice(<span class="kw-2">&amp;</span>salt[<span class="number">0</span>..<span class="self">Self</span>::S2K_RFC2440_SPECIFIER_LEN - <span class="number">1</span>]);
         <span class="comment">// append password bytes
         </span>input.extend_from_slice(password.as_bytes());
@@ -522,7 +523,7 @@
 
         <span class="kw">let </span>key = sha1.finalize();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>hash = <span class="string">&quot;16:&quot;</span>.to_string();
+        <span class="kw">let </span><span class="kw-2">mut </span>hash = <span class="string">"16:"</span>.to_string();
         HEXUPPER.encode_append(salt, <span class="kw-2">&amp;mut </span>hash);
         HEXUPPER.encode_append(<span class="kw-2">&amp;</span>key, <span class="kw-2">&amp;mut </span>hash);
 
@@ -548,31 +549,31 @@
     <span class="kw">pub fn </span>new(tor_bin_path: <span class="kw-2">&amp;</span>Path, data_directory: <span class="kw-2">&amp;</span>Path) -&gt; <span class="prelude-ty">Result</span>&lt;LegacyTorProcess, Error&gt; {
         <span class="kw">if </span>tor_bin_path.is_relative() {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::TorBinPathNotAbsolute(<span class="macro">format!</span>(
-                <span class="string">&quot;{}&quot;</span>,
+                <span class="string">"{}"</span>,
                 tor_bin_path.display()
             )));
         }
         <span class="kw">if </span>data_directory.is_relative() {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::TorDataDirectoryPathNotAbsolute(<span class="macro">format!</span>(
-                <span class="string">&quot;{}&quot;</span>,
+                <span class="string">"{}"</span>,
                 data_directory.display()
             )));
         }
 
-        <span class="comment">// create data directory if it doesn&#39;t exist
+        <span class="comment">// create data directory if it doesn't exist
         </span><span class="kw">if </span>!data_directory.exists() {
             fs::create_dir_all(data_directory).map_err(Error::DataDirectoryCreationFailed)<span class="question-mark">?</span>;
         } <span class="kw">else if </span>data_directory.is_file() {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::DataDirectoryPathExistsAsFile(<span class="macro">format!</span>(
-                <span class="string">&quot;{}&quot;</span>,
+                <span class="string">"{}"</span>,
                 data_directory.display()
             )));
         }
 
         <span class="comment">// construct paths to torrc files
-        </span><span class="kw">let </span>default_torrc = data_directory.join(<span class="string">&quot;default_torrc&quot;</span>);
-        <span class="kw">let </span>torrc = data_directory.join(<span class="string">&quot;torrc&quot;</span>);
-        <span class="kw">let </span>control_port_file = data_directory.join(<span class="string">&quot;control_port&quot;</span>);
+        </span><span class="kw">let </span>default_torrc = data_directory.join(<span class="string">"default_torrc"</span>);
+        <span class="kw">let </span>torrc = data_directory.join(<span class="string">"torrc"</span>);
+        <span class="kw">let </span>control_port_file = data_directory.join(<span class="string">"control_port"</span>);
 
         <span class="comment">// TODO: should we nuke the existing torrc between runs? Do we want
         // users setting custom nonsense in there?
@@ -581,9 +582,9 @@
         //  - minimize writes to disk
         //  - start with network disabled by default
         </span><span class="kw">if </span>!default_torrc.exists() {
-            <span class="kw">const </span>DEFAULT_TORRC_CONTENT: <span class="kw-2">&amp;</span>str = <span class="string">&quot;SocksPort auto OnionTrafficOnly\n\
+            <span class="kw">const </span>DEFAULT_TORRC_CONTENT: <span class="kw-2">&amp;</span>str = <span class="string">"SocksPort auto OnionTrafficOnly\n\
             AvoidDiskWrites 1\n\
-            DisableNetwork 1\n\n&quot;</span>;
+            DisableNetwork 1\n\n"</span>;
 
             <span class="kw">let </span><span class="kw-2">mut </span>default_torrc_file =
                 File::create(<span class="kw-2">&amp;</span>default_torrc).map_err(Error::DefaultTorrcFileCreationFailed)<span class="question-mark">?</span>;
@@ -611,28 +612,28 @@
             .stdin(Stdio::null())
             .stderr(Stdio::null())
             <span class="comment">// point to our above written torrc file
-            </span>.arg(<span class="string">&quot;--defaults-torrc&quot;</span>)
+            </span>.arg(<span class="string">"--defaults-torrc"</span>)
             .arg(default_torrc)
             <span class="comment">// location of torrc
-            </span>.arg(<span class="string">&quot;--torrc-file&quot;</span>)
+            </span>.arg(<span class="string">"--torrc-file"</span>)
             .arg(torrc)
             <span class="comment">// root data directory
-            </span>.arg(<span class="string">&quot;DataDirectory&quot;</span>)
+            </span>.arg(<span class="string">"DataDirectory"</span>)
             .arg(data_directory)
             <span class="comment">// daemon will assign us a port, and we will
             // read it from the control port file
-            </span>.arg(<span class="string">&quot;ControlPort&quot;</span>)
-            .arg(<span class="string">&quot;auto&quot;</span>)
+            </span>.arg(<span class="string">"ControlPort"</span>)
+            .arg(<span class="string">"auto"</span>)
             <span class="comment">// control port file destination
-            </span>.arg(<span class="string">&quot;ControlPortWriteToFile&quot;</span>)
+            </span>.arg(<span class="string">"ControlPortWriteToFile"</span>)
             .arg(control_port_file.clone())
             <span class="comment">// use password authentication to prevent other apps
-            // from modifying our daemon&#39;s settings
-            </span>.arg(<span class="string">&quot;HashedControlPassword&quot;</span>)
+            // from modifying our daemon's settings
+            </span>.arg(<span class="string">"HashedControlPassword"</span>)
             .arg(password_hash)
             <span class="comment">// tor process will shut down after this process shuts down
             // to avoid orphaned tor daemon
-            </span>.arg(<span class="string">&quot;__OwningControllerProcess&quot;</span>)
+            </span>.arg(<span class="string">"__OwningControllerProcess"</span>)
             .arg(process::id().to_string())
             .spawn()
             .map_err(Error::LegacyTorProcessStartFailed)<span class="question-mark">?</span>;
@@ -654,7 +655,7 @@
             <span class="prelude-val">Some</span>(control_addr) =&gt; control_addr,
             <span class="prelude-val">None </span>=&gt; {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ControlPortFileMissing(<span class="macro">format!</span>(
-                    <span class="string">&quot;{}&quot;</span>,
+                    <span class="string">"{}"</span>,
                     control_port_file.display()
                 )))
             }
@@ -670,7 +671,7 @@
             });
 
             std::thread::Builder::new()
-                .name(<span class="string">&quot;tor_stdout_reader&quot;</span>.to_string())
+                .name(<span class="string">"tor_stdout_reader"</span>.to_string())
                 .spawn(<span class="kw">move </span>|| {
                     LegacyTorProcess::read_stdout_task(<span class="kw-2">&amp;</span>stdout_lines, stdout);
                 })
@@ -693,7 +694,7 @@
             <span class="kw">let </span><span class="kw-2">mut </span>line = String::default();
             <span class="comment">// read line
             </span><span class="kw">if </span>stdout.read_line(<span class="kw-2">&amp;mut </span>line).is_ok() {
-                <span class="comment">// remove trailing &#39;\n&#39;
+                <span class="comment">// remove trailing '\n'
                 </span>line.pop();
                 <span class="comment">// then acquire the lock on the line buffer
                 </span><span class="kw">let </span><span class="kw-2">mut </span>stdout_lines = <span class="kw">match </span>stdout_lines.lock() {
@@ -725,25 +726,25 @@
     <span class="kw">let </span>salt1: [u8; LegacyTorProcess::S2K_RFC2440_SPECIFIER_LEN] = [
         <span class="number">0xbeu8</span>, <span class="number">0x2au8</span>, <span class="number">0x25u8</span>, <span class="number">0x1du8</span>, <span class="number">0xe6u8</span>, <span class="number">0x2cu8</span>, <span class="number">0xb2u8</span>, <span class="number">0x7au8</span>, <span class="number">0x60u8</span>,
     ];
-    <span class="kw">let </span>hash1 = LegacyTorProcess::hash_tor_password_with_salt(<span class="kw-2">&amp;</span>salt1, <span class="string">&quot;abcdefghijklmnopqrstuvwxyz&quot;</span>);
+    <span class="kw">let </span>hash1 = LegacyTorProcess::hash_tor_password_with_salt(<span class="kw-2">&amp;</span>salt1, <span class="string">"abcdefghijklmnopqrstuvwxyz"</span>);
     <span class="macro">assert_eq!</span>(
         hash1,
-        <span class="string">&quot;16:BE2A251DE62CB27A60AC9178A937990E8ED0AB662FA82A5C7DE3EBB23A&quot;
+        <span class="string">"16:BE2A251DE62CB27A60AC9178A937990E8ED0AB662FA82A5C7DE3EBB23A"
     </span>);
 
     <span class="kw">let </span>salt2: [u8; LegacyTorProcess::S2K_RFC2440_SPECIFIER_LEN] = [
         <span class="number">0x36u8</span>, <span class="number">0x73u8</span>, <span class="number">0x0eu8</span>, <span class="number">0xefu8</span>, <span class="number">0xd1u8</span>, <span class="number">0x8cu8</span>, <span class="number">0x60u8</span>, <span class="number">0xd6u8</span>, <span class="number">0x60u8</span>,
     ];
-    <span class="kw">let </span>hash2 = LegacyTorProcess::hash_tor_password_with_salt(<span class="kw-2">&amp;</span>salt2, <span class="string">&quot;password&quot;</span>);
+    <span class="kw">let </span>hash2 = LegacyTorProcess::hash_tor_password_with_salt(<span class="kw-2">&amp;</span>salt2, <span class="string">"password"</span>);
     <span class="macro">assert_eq!</span>(
         hash2,
-        <span class="string">&quot;16:36730EEFD18C60D66052E7EA535438761C0928D316EEA56A190C99B50A&quot;
+        <span class="string">"16:36730EEFD18C60D66052E7EA535438761C0928D316EEA56A190C99B50A"
     </span>);
 
     <span class="comment">// ensure same password is hashed to different things
     </span><span class="macro">assert_ne!</span>(
-        LegacyTorProcess::hash_tor_password(<span class="string">&quot;password&quot;</span>),
-        LegacyTorProcess::hash_tor_password(<span class="string">&quot;password&quot;</span>)
+        LegacyTorProcess::hash_tor_password(<span class="string">"password"</span>),
+        LegacyTorProcess::hash_tor_password(<span class="string">"password"</span>)
     );
 
     <span class="prelude-val">Ok</span>(())

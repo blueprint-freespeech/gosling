@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/tor-interface/src/legacy_tor_control_stream.rs`."><title>legacy_tor_control_stream.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="tor_interface" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/tor-interface/src/legacy_tor_control_stream.rs`."><title>legacy_tor_control_stream.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="tor_interface" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -275,31 +276,31 @@
 
 <span class="attr">#[derive(thiserror::Error, Debug)]
 </span><span class="kw">pub enum </span>Error {
-    <span class="attr">#[error(<span class="string">&quot;control stream read timeout must not be zero&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"control stream read timeout must not be zero"</span>)]
     </span>ReadTimeoutZero(),
 
-    <span class="attr">#[error(<span class="string">&quot;could not connect to control port&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"could not connect to control port"</span>)]
     </span>CreationFailed(<span class="attr">#[source] </span>std::io::Error),
 
-    <span class="attr">#[error(<span class="string">&quot;configure control port socket failed&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"configure control port socket failed"</span>)]
     </span>ConfigurationFailed(<span class="attr">#[source] </span>std::io::Error),
 
-    <span class="attr">#[error(<span class="string">&quot;control port parsing regex creation failed&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"control port parsing regex creation failed"</span>)]
     </span>ParsingRegexCreationFailed(<span class="attr">#[source] </span>regex::Error),
 
-    <span class="attr">#[error(<span class="string">&quot;control port stream read failure&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"control port stream read failure"</span>)]
     </span>ReadFailed(<span class="attr">#[source] </span>std::io::Error),
 
-    <span class="attr">#[error(<span class="string">&quot;control port stream closed by remote&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"control port stream closed by remote"</span>)]
     </span>ClosedByRemote(),
 
-    <span class="attr">#[error(<span class="string">&quot;received control port response invalid utf8&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"received control port response invalid utf8"</span>)]
     </span>InvalidResponse(<span class="attr">#[source] </span>std::str::Utf8Error),
 
-    <span class="attr">#[error(<span class="string">&quot;failed to parse control port reply: {0}&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"failed to parse control port reply: {0}"</span>)]
     </span>ReplyParseFailed(String),
 
-    <span class="attr">#[error(<span class="string">&quot;control port stream write failure&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"control port stream write failure"</span>)]
     </span>WriteFailed(<span class="attr">#[source] </span>std::io::Error),
 }
 
@@ -338,11 +339,11 @@
         <span class="kw">let </span>pending_data = Vec::with_capacity(READ_BUFFER_SIZE);
 
         <span class="kw">let </span>single_line_data =
-            Regex::new(<span class="string">r&quot;^\d\d\d-.*&quot;</span>).map_err(Error::ParsingRegexCreationFailed)<span class="question-mark">?</span>;
+            Regex::new(<span class="string">r"^\d\d\d-.*"</span>).map_err(Error::ParsingRegexCreationFailed)<span class="question-mark">?</span>;
         <span class="kw">let </span>multi_line_data =
-            Regex::new(<span class="string">r&quot;^\d\d\d+.*&quot;</span>).map_err(Error::ParsingRegexCreationFailed)<span class="question-mark">?</span>;
+            Regex::new(<span class="string">r"^\d\d\d+.*"</span>).map_err(Error::ParsingRegexCreationFailed)<span class="question-mark">?</span>;
         <span class="kw">let </span>end_reply_line =
-            Regex::new(<span class="string">r&quot;^\d\d\d .*&quot;</span>).map_err(Error::ParsingRegexCreationFailed)<span class="question-mark">?</span>;
+            Regex::new(<span class="string">r"^\d\d\d .*"</span>).map_err(Error::ParsingRegexCreationFailed)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(LegacyControlStream {
             stream,
@@ -387,7 +388,7 @@
             <span class="comment">// split our read buffer into individual lines
             </span><span class="kw">let </span><span class="kw-2">mut </span>begin = <span class="number">0</span>;
             <span class="kw">for </span>index <span class="kw">in </span><span class="number">1</span>..<span class="self">self</span>.pending_data.len() {
-                <span class="kw">if </span><span class="self">self</span>.pending_data[index - <span class="number">1</span>] == <span class="string">b&#39;\r&#39; </span>&amp;&amp; <span class="self">self</span>.pending_data[index] == <span class="string">b&#39;\n&#39; </span>{
+                <span class="kw">if </span><span class="self">self</span>.pending_data[index - <span class="number">1</span>] == <span class="string">b'\r' </span>&amp;&amp; <span class="self">self</span>.pending_data[index] == <span class="string">b'\n' </span>{
                     <span class="kw">let </span>end = index - <span class="number">1</span>;
                     <span class="comment">// view into byte vec of just the found line
                     </span><span class="kw">let </span>line_view: <span class="kw-2">&amp;</span>[u8] = <span class="kw-2">&amp;</span><span class="self">self</span>.pending_data[begin..end];
@@ -423,7 +424,7 @@
                     <span class="kw">let </span>current_status_code = <span class="kw-2">&amp;</span>current_line[<span class="number">0</span>..<span class="number">3</span>];
                     <span class="kw">if </span>first_status_code != current_status_code {
                         <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ReplyParseFailed(<span class="macro">format!</span>(
-                            <span class="string">&quot;mismatched status codes, {} != {}&quot;</span>,
+                            <span class="string">"mismatched status codes, {} != {}"</span>,
                             first_status_code, current_status_code
                         )));
                     }
@@ -434,7 +435,7 @@
             </span><span class="kw">if </span><span class="self">self</span>.end_reply_line.is_match(<span class="kw-2">&amp;</span>current_line) {
                 <span class="kw">if </span><span class="self">self</span>.reading_multiline_value {
                     <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ReplyParseFailed(
-                        <span class="string">&quot;found multi-line end reply but not reading a multi-line reply&quot;</span>.to_string(),
+                        <span class="string">"found multi-line end reply but not reading a multi-line reply"</span>.to_string(),
                     ));
                 }
                 <span class="self">self</span>.pending_reply.push(current_line);
@@ -443,7 +444,7 @@
             </span>} <span class="kw">else if </span><span class="self">self</span>.single_line_data.is_match(<span class="kw-2">&amp;</span>current_line) {
                 <span class="kw">if </span><span class="self">self</span>.reading_multiline_value {
                     <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ReplyParseFailed(
-                        <span class="string">&quot;found single-line reply but still reading a multi-line reply&quot;</span>.to_string(),
+                        <span class="string">"found single-line reply but still reading a multi-line reply"</span>.to_string(),
                     ));
                 }
                 <span class="self">self</span>.pending_reply.push(current_line);
@@ -451,7 +452,7 @@
             </span>} <span class="kw">else if </span><span class="self">self</span>.multi_line_data.is_match(<span class="kw-2">&amp;</span>current_line) {
                 <span class="kw">if </span><span class="self">self</span>.reading_multiline_value {
                     <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ReplyParseFailed(
-                        <span class="string">&quot;found multi-line start reply but still reading a multi-line reply&quot;
+                        <span class="string">"found multi-line start reply but still reading a multi-line reply"
                             </span>.to_string(),
                     ));
                 }
@@ -461,12 +462,12 @@
             </span>} <span class="kw">else </span>{
                 <span class="kw">if </span>!<span class="self">self</span>.reading_multiline_value {
                     <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ReplyParseFailed(
-                        <span class="string">&quot;found a multi-line intermediate reply but not reading a multi-line reply&quot;
+                        <span class="string">"found a multi-line intermediate reply but not reading a multi-line reply"
                             </span>.to_string(),
                     ));
                 }
-                <span class="comment">// don&#39;t bother writing the end of multiline token
-                </span><span class="kw">if </span>current_line == <span class="string">&quot;.&quot; </span>{
+                <span class="comment">// don't bother writing the end of multiline token
+                </span><span class="kw">if </span>current_line == <span class="string">"." </span>{
                     <span class="self">self</span>.reading_multiline_value = <span class="bool-val">false</span>;
                 } <span class="kw">else </span>{
                     <span class="kw">let </span>multiline = <span class="kw">match </span><span class="self">self</span>.pending_reply.last_mut() {
@@ -477,7 +478,7 @@
                         // from the control port
                         </span><span class="prelude-val">None </span>=&gt; <span class="macro">unreachable!</span>(),
                     };
-                    multiline.push(<span class="string">&#39;\n&#39;</span>);
+                    multiline.push(<span class="string">'\n'</span>);
                     multiline.push_str(<span class="kw-2">&amp;</span>current_line);
                 }
             }
@@ -497,7 +498,7 @@
             <span class="prelude-val">Ok</span>(status_code) =&gt; status_code,
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ReplyParseFailed(<span class="macro">format!</span>(
-                    <span class="string">&quot;unable to parse &#39;{}&#39; as status code&quot;</span>,
+                    <span class="string">"unable to parse '{}' as status code"</span>,
                     status_code_string
                 )))
             }
@@ -517,7 +518,7 @@
     }
 
     <span class="kw">pub fn </span>write(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cmd: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
-        <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = <span class="macro">write!</span>(<span class="self">self</span>.stream, <span class="string">&quot;{}\r\n&quot;</span>, cmd) {
+        <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = <span class="macro">write!</span>(<span class="self">self</span>.stream, <span class="string">"{}\r\n"</span>, cmd) {
             <span class="self">self</span>.closed_by_remote = <span class="bool-val">true</span>;
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::WriteFailed(err));
         }

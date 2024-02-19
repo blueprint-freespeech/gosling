@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/tor-interface/src/legacy_tor_version.rs`."><title>legacy_tor_version.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="tor_interface" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/tor-interface/src/legacy_tor_version.rs`."><title>legacy_tor_version.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="tor_interface" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -301,7 +302,7 @@
 
 <span class="attr">#[derive(thiserror::Error, Debug)]
 </span><span class="kw">pub enum </span>Error {
-    <span class="attr">#[error(<span class="string">&quot;{}&quot;</span>, .<span class="number">0</span>)]
+    <span class="attr">#[error(<span class="string">"{}"</span>, .<span class="number">0</span>)]
     </span>ParseError(String),
 }
 
@@ -341,7 +342,7 @@
                 <span class="prelude-val">Some</span>(status_tag.to_string())
             } <span class="kw">else </span>{
                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ParseError(
-                    <span class="string">&quot;tor version status tag may not be empty or contain white-space&quot;</span>.to_string(),
+                    <span class="string">"tor version status tag may not be empty or contain white-space"</span>.to_string(),
                 ));
             }
         } <span class="kw">else </span>{
@@ -363,25 +364,25 @@
 
     <span class="kw">fn </span>from_str(s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;LegacyTorVersion, <span class="self">Self</span>::Err&gt; {
         <span class="comment">// MAJOR.MINOR.MICRO[.PATCHLEVEL][-STATUS_TAG][ (EXTRA_INFO)]*
-        </span><span class="kw">let </span><span class="kw-2">mut </span>tokens = s.split(<span class="string">&#39; &#39;</span>);
+        </span><span class="kw">let </span><span class="kw-2">mut </span>tokens = s.split(<span class="string">' '</span>);
         <span class="kw">let </span>(major, minor, micro, patch_level, status_tag) =
             <span class="kw">if let </span><span class="prelude-val">Some</span>(version_status_tag) = tokens.next() {
-                <span class="kw">let </span><span class="kw-2">mut </span>tokens = version_status_tag.split(<span class="string">&#39;-&#39;</span>);
+                <span class="kw">let </span><span class="kw-2">mut </span>tokens = version_status_tag.split(<span class="string">'-'</span>);
                 <span class="kw">let </span>(major, minor, micro, patch_level) = <span class="kw">if let </span><span class="prelude-val">Some</span>(version) = tokens.next() {
-                    <span class="kw">let </span><span class="kw-2">mut </span>tokens = version.split(<span class="string">&#39;.&#39;</span>);
+                    <span class="kw">let </span><span class="kw-2">mut </span>tokens = version.split(<span class="string">'.'</span>);
                     <span class="kw">let </span>major: u32 = <span class="kw">if let </span><span class="prelude-val">Some</span>(major) = tokens.next() {
                         <span class="kw">match </span>major.parse() {
                             <span class="prelude-val">Ok</span>(major) =&gt; major,
                             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ParseError(<span class="macro">format!</span>(
-                                    <span class="string">&quot;failed to parse &#39;{}&#39; as MAJOR portion of tor version&quot;</span>,
+                                    <span class="string">"failed to parse '{}' as MAJOR portion of tor version"</span>,
                                     major
                                 )))
                             }
                         }
                     } <span class="kw">else </span>{
                         <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ParseError(
-                            <span class="string">&quot;failed to find MAJOR portion of tor version&quot;</span>.to_string(),
+                            <span class="string">"failed to find MAJOR portion of tor version"</span>.to_string(),
                         ));
                     };
                     <span class="kw">let </span>minor: u32 = <span class="kw">if let </span><span class="prelude-val">Some</span>(minor) = tokens.next() {
@@ -389,14 +390,14 @@
                             <span class="prelude-val">Ok</span>(minor) =&gt; minor,
                             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ParseError(<span class="macro">format!</span>(
-                                    <span class="string">&quot;failed to parse &#39;{}&#39; as MINOR portion of tor version&quot;</span>,
+                                    <span class="string">"failed to parse '{}' as MINOR portion of tor version"</span>,
                                     minor
                                 )))
                             }
                         }
                     } <span class="kw">else </span>{
                         <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ParseError(
-                            <span class="string">&quot;failed to find MINOR portion of tor version&quot;</span>.to_string(),
+                            <span class="string">"failed to find MINOR portion of tor version"</span>.to_string(),
                         ));
                     };
                     <span class="kw">let </span>micro: u32 = <span class="kw">if let </span><span class="prelude-val">Some</span>(micro) = tokens.next() {
@@ -404,14 +405,14 @@
                             <span class="prelude-val">Ok</span>(micro) =&gt; micro,
                             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ParseError(<span class="macro">format!</span>(
-                                    <span class="string">&quot;failed to parse &#39;{}&#39; as MICRO portion of tor version&quot;</span>,
+                                    <span class="string">"failed to parse '{}' as MICRO portion of tor version"</span>,
                                     micro
                                 )))
                             }
                         }
                     } <span class="kw">else </span>{
                         <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ParseError(
-                            <span class="string">&quot;failed to find MICRO portion of tor version&quot;</span>.to_string(),
+                            <span class="string">"failed to find MICRO portion of tor version"</span>.to_string(),
                         ));
                     };
                     <span class="kw">let </span>patch_level: u32 = <span class="kw">if let </span><span class="prelude-val">Some</span>(patch_level) = tokens.next() {
@@ -419,7 +420,7 @@
                             <span class="prelude-val">Ok</span>(patch_level) =&gt; patch_level,
                             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ParseError(<span class="macro">format!</span>(
-                                    <span class="string">&quot;failed to parse &#39;{}&#39; as PATCHLEVEL portion of tor version&quot;</span>,
+                                    <span class="string">"failed to parse '{}' as PATCHLEVEL portion of tor version"</span>,
                                     patch_level
                                 )))
                             }
@@ -429,20 +430,20 @@
                     </span>};
                     (major, minor, micro, patch_level)
                 } <span class="kw">else </span>{
-                    <span class="comment">// if there were &#39;-&#39; the previous next() would have returned the enire string
+                    <span class="comment">// if there were '-' the previous next() would have returned the enire string
                     </span><span class="macro">unreachable!</span>();
                 };
                 <span class="kw">let </span>status_tag = tokens.next().map(|status_tag| status_tag.to_string());
 
                 (major, minor, micro, patch_level, status_tag)
             } <span class="kw">else </span>{
-                <span class="comment">// if there were no &#39; &#39; character the previou snext() would have returned the enire string
+                <span class="comment">// if there were no ' ' character the previou snext() would have returned the enire string
                 </span><span class="macro">unreachable!</span>();
             };
         <span class="kw">for </span>extra_info <span class="kw">in </span>tokens {
-            <span class="kw">if </span>!extra_info.starts_with(<span class="string">&#39;(&#39;</span>) || !extra_info.ends_with(<span class="string">&#39;)&#39;</span>) {
+            <span class="kw">if </span>!extra_info.starts_with(<span class="string">'('</span>) || !extra_info.ends_with(<span class="string">')'</span>) {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ParseError(<span class="macro">format!</span>(
-                    <span class="string">&quot;failed to parse &#39;{}&#39; as [ (EXTRA_INFO)]&quot;</span>,
+                    <span class="string">"failed to parse '{}' as [ (EXTRA_INFO)]"</span>,
                     extra_info
                 )));
             }
@@ -461,11 +462,11 @@
     <span class="kw">fn </span>to_string(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
         <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.status_tag {
             <span class="prelude-val">Some</span>(status_tag) =&gt; <span class="macro">format!</span>(
-                <span class="string">&quot;{}.{}.{}.{}-{}&quot;</span>,
+                <span class="string">"{}.{}.{}.{}-{}"</span>,
                 <span class="self">self</span>.major, <span class="self">self</span>.minor, <span class="self">self</span>.micro, <span class="self">self</span>.patch_level, status_tag
             ),
             <span class="prelude-val">None </span>=&gt; <span class="macro">format!</span>(
-                <span class="string">&quot;{}.{}.{}.{}&quot;</span>,
+                <span class="string">"{}.{}.{}.{}"</span>,
                 <span class="self">self</span>.major, <span class="self">self</span>.minor, <span class="self">self</span>.micro, <span class="self">self</span>.patch_level
             ),
         }
@@ -513,7 +514,7 @@
         // going to diverge here and say we can only compare tags for equality.
         //
         // In practice we will be comparing tor daemon tags against tagless (stable)
-        // versions so this shouldn&#39;t be an issue
+        // versions so this shouldn't be an issue
 
         </span><span class="kw">if </span><span class="self">self</span>.status_tag == other.status_tag {
             <span class="kw">return </span><span class="prelude-val">Some</span>(Ordering::Equal);
@@ -525,44 +526,44 @@
 
 <span class="attr">#[test]
 </span><span class="kw">fn </span>test_version() -&gt; anyhow::Result&lt;()&gt; {
-    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">&quot;1.2.3&quot;</span>)<span class="question-mark">? </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>)<span class="question-mark">?</span>);
+    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">"1.2.3"</span>)<span class="question-mark">? </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>)<span class="question-mark">?</span>);
     <span class="macro">assert!</span>(
-        LegacyTorVersion::from_str(<span class="string">&quot;1.2.3.4&quot;</span>)<span class="question-mark">? </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">None</span>)<span class="question-mark">?
+        LegacyTorVersion::from_str(<span class="string">"1.2.3.4"</span>)<span class="question-mark">? </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">None</span>)<span class="question-mark">?
     </span>);
     <span class="macro">assert!</span>(
-        LegacyTorVersion::from_str(<span class="string">&quot;1.2.3-test&quot;</span>)<span class="question-mark">?
-            </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="string">&quot;test&quot;</span>))<span class="question-mark">?
+        LegacyTorVersion::from_str(<span class="string">"1.2.3-test"</span>)<span class="question-mark">?
+            </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="string">"test"</span>))<span class="question-mark">?
     </span>);
     <span class="macro">assert!</span>(
-        LegacyTorVersion::from_str(<span class="string">&quot;1.2.3.4-test&quot;</span>)<span class="question-mark">?
-            </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">Some</span>(<span class="string">&quot;test&quot;</span>))<span class="question-mark">?
+        LegacyTorVersion::from_str(<span class="string">"1.2.3.4-test"</span>)<span class="question-mark">?
+            </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">Some</span>(<span class="string">"test"</span>))<span class="question-mark">?
     </span>);
     <span class="macro">assert!</span>(
-        LegacyTorVersion::from_str(<span class="string">&quot;1.2.3 (extra_info)&quot;</span>)<span class="question-mark">?
+        LegacyTorVersion::from_str(<span class="string">"1.2.3 (extra_info)"</span>)<span class="question-mark">?
             </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>)<span class="question-mark">?
     </span>);
     <span class="macro">assert!</span>(
-        LegacyTorVersion::from_str(<span class="string">&quot;1.2.3.4 (extra_info)&quot;</span>)<span class="question-mark">?
+        LegacyTorVersion::from_str(<span class="string">"1.2.3.4 (extra_info)"</span>)<span class="question-mark">?
             </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">None</span>)<span class="question-mark">?
     </span>);
     <span class="macro">assert!</span>(
-        LegacyTorVersion::from_str(<span class="string">&quot;1.2.3.4-tag (extra_info)&quot;</span>)<span class="question-mark">?
-            </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">Some</span>(<span class="string">&quot;tag&quot;</span>))<span class="question-mark">?
+        LegacyTorVersion::from_str(<span class="string">"1.2.3.4-tag (extra_info)"</span>)<span class="question-mark">?
+            </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">Some</span>(<span class="string">"tag"</span>))<span class="question-mark">?
     </span>);
 
     <span class="macro">assert!</span>(
-        LegacyTorVersion::from_str(<span class="string">&quot;1.2.3.4-tag (extra_info) (extra_info)&quot;</span>)<span class="question-mark">?
-            </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">Some</span>(<span class="string">&quot;tag&quot;</span>))<span class="question-mark">?
+        LegacyTorVersion::from_str(<span class="string">"1.2.3.4-tag (extra_info) (extra_info)"</span>)<span class="question-mark">?
+            </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">Some</span>(<span class="string">"tag"</span>))<span class="question-mark">?
     </span>);
 
-    <span class="macro">assert!</span>(LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">Some</span>(<span class="string">&quot;spaced tag&quot;</span>)).is_err());
-    <span class="macro">assert!</span>(LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">Some</span>(<span class="string">&quot;&quot; </span><span class="comment">/* empty tag */</span>)).is_err());
-    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">&quot;&quot;</span>).is_err());
-    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">&quot;1.2&quot;</span>).is_err());
-    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">&quot;1.2-foo&quot;</span>).is_err());
-    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">&quot;1.2.3.4-foo bar&quot;</span>).is_err());
-    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">&quot;1.2.3.4-foo bar (extra_info)&quot;</span>).is_err());
-    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">&quot;1.2.3.4-foo (extra_info) badtext&quot;</span>).is_err());
+    <span class="macro">assert!</span>(LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">Some</span>(<span class="string">"spaced tag"</span>)).is_err());
+    <span class="macro">assert!</span>(LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">Some</span>(<span class="string">"" </span><span class="comment">/* empty tag */</span>)).is_err());
+    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">""</span>).is_err());
+    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">"1.2"</span>).is_err());
+    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">"1.2-foo"</span>).is_err());
+    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">"1.2.3.4-foo bar"</span>).is_err());
+    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">"1.2.3.4-foo bar (extra_info)"</span>).is_err());
+    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">"1.2.3.4-foo (extra_info) badtext"</span>).is_err());
     <span class="macro">assert!</span>(
         LegacyTorVersion::new(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="prelude-val">Some</span>(<span class="number">0</span>), <span class="prelude-val">None</span>)<span class="question-mark">?
             </span>&lt; LegacyTorVersion::new(<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="prelude-val">Some</span>(<span class="number">0</span>), <span class="prelude-val">None</span>)<span class="question-mark">?
@@ -579,7 +580,7 @@
     <span class="comment">// ensure status tags make comparison between equal versions (apart from
     // tags) unknowable
     </span><span class="kw">let </span>zero_version = LegacyTorVersion::new(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="prelude-val">Some</span>(<span class="number">0</span>), <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
-    <span class="kw">let </span>zero_version_tag = LegacyTorVersion::new(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="prelude-val">Some</span>(<span class="number">0</span>), <span class="prelude-val">Some</span>(<span class="string">&quot;tag&quot;</span>))<span class="question-mark">?</span>;
+    <span class="kw">let </span>zero_version_tag = LegacyTorVersion::new(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="prelude-val">Some</span>(<span class="number">0</span>), <span class="prelude-val">Some</span>(<span class="string">"tag"</span>))<span class="question-mark">?</span>;
 
     <span class="macro">assert!</span>(!(zero_version &lt; zero_version_tag));
     <span class="macro">assert!</span>(!(zero_version &lt;= zero_version_tag));

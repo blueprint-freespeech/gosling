@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/gosling/src/gosling.rs`."><title>gosling.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="gosling" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/gosling/src/gosling.rs`."><title>gosling.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="gosling" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -610,18 +611,18 @@
 
 <span class="attr">#[derive(thiserror::Error, Debug)]
 </span><span class="kw">pub enum </span>Error {
-    <span class="attr">#[error(<span class="string">&quot;invalid argument: {0}&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"invalid argument: {0}"</span>)]
     </span>InvalidArgument(String),
 
     <span class="attr">#[error(
-        <span class="string">&quot;context is not connected, must call bootstrap() and wait for TorBootstrapCompleted event&quot;
+        <span class="string">"context is not connected, must call bootstrap() and wait for TorBootstrapCompleted event"
     </span>)]
     </span>TorNotConnected(),
 
-    <span class="attr">#[error(<span class="string">&quot;handshake handle {0} not found&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"handshake handle {0} not found"</span>)]
     </span>HandshakeHandleNotFound(context::HandshakeHandle),
 
-    <span class="attr">#[error(<span class="string">&quot;incorrect usage: {0}&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"incorrect usage: {0}"</span>)]
     </span>IncorrectUsage(String),
 
     <span class="attr">#[error(transparent)]
@@ -649,7 +650,7 @@
     </span>EndpointServerError(<span class="attr">#[from] </span>endpoint_server::Error),
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>GOSLING_VERSION: <span class="kw-2">&amp;</span>str = <span class="macro">std::env!</span>(<span class="string">&quot;CARGO_PKG_VERSION&quot;</span>);
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>GOSLING_VERSION: <span class="kw-2">&amp;</span>str = <span class="macro">std::env!</span>(<span class="string">"CARGO_PKG_VERSION"</span>);
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>CLIENT_COOKIE_SIZE: usize = <span class="number">32usize</span>;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>SERVER_COOKIE_SIZE: usize = <span class="number">32usize</span>;
@@ -664,10 +665,10 @@
 }
 
 <span class="kw">impl </span>From&lt;DomainSeparator&gt; <span class="kw">for </span><span class="kw-2">&amp;</span>[u8] {
-    <span class="kw">fn </span>from(sep: DomainSeparator) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>[u8] {
+    <span class="kw">fn </span>from(sep: DomainSeparator) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'static </span>[u8] {
         <span class="kw">match </span>sep {
-            DomainSeparator::GoslingIdentity =&gt; <span class="string">b&quot;gosling-identity&quot;</span>,
-            DomainSeparator::GoslingEndpoint =&gt; <span class="string">b&quot;gosling-endpoint&quot;</span>,
+            DomainSeparator::GoslingIdentity =&gt; <span class="string">b"gosling-identity"</span>,
+            DomainSeparator::GoslingEndpoint =&gt; <span class="string">b"gosling-endpoint"</span>,
         }
     }
 }
@@ -762,7 +763,7 @@
                     requested_endpoint,
                 })) =&gt; {
                     <span class="macro">println!</span>(
-                        <span class="string">&quot;server challenge send: client_service_id {}, requested_endpoint: {}&quot;</span>,
+                        <span class="string">"server challenge send: client_service_id {}, requested_endpoint: {}"</span>,
                         client_service_id.to_string(),
                         requested_endpoint
                     );
@@ -774,7 +775,7 @@
                     )<span class="question-mark">?</span>;
                 }
                 <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(IdentityServerEvent::ChallengeResponseReceived { challenge_response })) =&gt; {
-                    <span class="macro">println!</span>(<span class="string">&quot;server challenge repsonse received&quot;</span>);
+                    <span class="macro">println!</span>(<span class="string">"server challenge repsonse received"</span>);
                     ident_server.handle_challenge_response_received(
                         challenge_response == server_expected_response,
                     )<span class="question-mark">?</span>;
@@ -787,7 +788,7 @@
                 })) =&gt; {
                     <span class="macro">assert!</span>(endpoint_name == client_requested_endpoint);
                     <span class="macro">println!</span>(
-                        <span class="string">&quot;server complete! client_service_id : {}&quot;</span>,
+                        <span class="string">"server complete! client_service_id : {}"</span>,
                         client_service_id.to_string()
                     );
                     server_complete = <span class="bool-val">true</span>;
@@ -799,27 +800,27 @@
                     client_auth_signature_valid,
                     challenge_response_valid,
                 })) =&gt; {
-                    <span class="macro">println!</span>(<span class="string">&quot;server complete! client request rejected&quot;</span>);
-                    <span class="macro">println!</span>(<span class="string">&quot; client_allowed: {}&quot;</span>, client_allowed);
+                    <span class="macro">println!</span>(<span class="string">"server complete! client request rejected"</span>);
+                    <span class="macro">println!</span>(<span class="string">" client_allowed: {}"</span>, client_allowed);
                     <span class="macro">println!</span>(
-                        <span class="string">&quot; client_requested_endpoint_valid: {}&quot;</span>,
+                        <span class="string">" client_requested_endpoint_valid: {}"</span>,
                         client_requested_endpoint_valid
                     );
                     <span class="macro">println!</span>(
-                        <span class="string">&quot; client_proof_signature_valid: {}&quot;</span>,
+                        <span class="string">" client_proof_signature_valid: {}"</span>,
                         client_proof_signature_valid
                     );
                     <span class="macro">println!</span>(
-                        <span class="string">&quot; client_auth_signature_valid: {}&quot;</span>,
+                        <span class="string">" client_auth_signature_valid: {}"</span>,
                         client_auth_signature_valid
                     );
-                    <span class="macro">println!</span>(<span class="string">&quot; client_response_valid: {}&quot;</span>, challenge_response_valid);
+                    <span class="macro">println!</span>(<span class="string">" client_response_valid: {}"</span>, challenge_response_valid);
                     server_complete = <span class="bool-val">true</span>;
                     failure_ocurred = <span class="bool-val">true</span>;
                 }
                 <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; {}
                 <span class="prelude-val">Err</span>(err) =&gt; {
-                    <span class="macro">println!</span>(<span class="string">&quot;server failure: {:?}&quot;</span>, err);
+                    <span class="macro">println!</span>(<span class="string">"server failure: {:?}"</span>, err);
                     server_complete = <span class="bool-val">true</span>;
                     failure_ocurred = <span class="bool-val">true</span>;
                 }
@@ -830,7 +831,7 @@
             <span class="kw">match </span>ident_client.update() {
                 <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(IdentityClientEvent::ChallengeReceived { endpoint_challenge })) =&gt; {
                     <span class="macro">println!</span>(
-                        <span class="string">&quot;client challenge request received: endpoint_challenge: {}&quot;</span>,
+                        <span class="string">"client challenge request received: endpoint_challenge: {}"</span>,
                         endpoint_challenge
                     );
                     ident_client.send_response(client_response.clone())<span class="question-mark">?</span>;
@@ -844,14 +845,14 @@
                     <span class="macro">assert!</span>(identity_service_id == server_service_id);
                     <span class="macro">assert!</span>(endpoint_name == client_requested_endpoint.clone().to_string());
                     <span class="macro">println!</span>(
-                        <span class="string">&quot;client complete! endpoint_server : {}&quot;</span>,
+                        <span class="string">"client complete! endpoint_server : {}"</span>,
                         endpoint_service_id.to_string()
                     );
                     client_complete = <span class="bool-val">true</span>;
                 }
                 <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; {}
                 <span class="prelude-val">Err</span>(err) =&gt; {
-                    <span class="macro">println!</span>(<span class="string">&quot;client failure: {:?}&quot;</span>, err);
+                    <span class="macro">println!</span>(<span class="string">"client failure: {:?}"</span>, err);
                     client_complete = <span class="bool-val">true</span>;
                     failure_ocurred = <span class="bool-val">true</span>;
                 }
@@ -865,14 +866,14 @@
 
 <span class="attr">#[test]
 </span><span class="kw">fn </span>test_identity_handshake() -&gt; anyhow::Result&lt;()&gt; {
-    <span class="macro">println!</span>(<span class="string">&quot;Sucessful ---&quot;</span>);
+    <span class="macro">println!</span>(<span class="string">"Sucessful ---"</span>);
     {
         <span class="kw">let </span>client_blocked: bool = <span class="bool-val">false</span>;
-        <span class="kw">let </span>client_requested_endpoint: <span class="kw-2">&amp;</span>str = <span class="string">&quot;endpoint&quot;</span>;
+        <span class="kw">let </span>client_requested_endpoint: <span class="kw-2">&amp;</span>str = <span class="string">"endpoint"</span>;
         <span class="kw">let </span>client_requested_endpoint_valid: bool = <span class="bool-val">true</span>;
-        <span class="kw">let </span>server_challenge: bson::document::Document = <span class="macro">doc!</span>(<span class="string">&quot;msg&quot;</span>: <span class="string">&quot;Speak friend and enter&quot;</span>);
-        <span class="kw">let </span>client_response: bson::document::Document = <span class="macro">doc!</span>(<span class="string">&quot;msg&quot;</span>: <span class="string">&quot;Mellon&quot;</span>);
-        <span class="kw">let </span>server_expected_response: bson::document::Document = <span class="macro">doc!</span>(<span class="string">&quot;msg&quot;</span>: <span class="string">&quot;Mellon&quot;</span>);
+        <span class="kw">let </span>server_challenge: bson::document::Document = <span class="macro">doc!</span>(<span class="string">"msg"</span>: <span class="string">"Speak friend and enter"</span>);
+        <span class="kw">let </span>client_response: bson::document::Document = <span class="macro">doc!</span>(<span class="string">"msg"</span>: <span class="string">"Mellon"</span>);
+        <span class="kw">let </span>server_expected_response: bson::document::Document = <span class="macro">doc!</span>(<span class="string">"msg"</span>: <span class="string">"Mellon"</span>);
         <span class="kw">let </span>should_fail: bool = <span class="bool-val">false</span>;
         identity_test(
             client_blocked,
@@ -884,14 +885,14 @@
             should_fail,
         )<span class="question-mark">?</span>;
     }
-    <span class="macro">println!</span>(<span class="string">&quot;Bad Endpoint ---&quot;</span>);
+    <span class="macro">println!</span>(<span class="string">"Bad Endpoint ---"</span>);
     {
         <span class="kw">let </span>client_blocked: bool = <span class="bool-val">false</span>;
-        <span class="kw">let </span>client_requested_endpoint: <span class="kw-2">&amp;</span>str = <span class="string">&quot;endpoint&quot;</span>;
+        <span class="kw">let </span>client_requested_endpoint: <span class="kw-2">&amp;</span>str = <span class="string">"endpoint"</span>;
         <span class="kw">let </span>client_requested_endpoint_valid: bool = <span class="bool-val">false</span>;
-        <span class="kw">let </span>server_challenge: bson::document::Document = <span class="macro">doc!</span>(<span class="string">&quot;msg&quot;</span>: <span class="string">&quot;Speak friend and enter&quot;</span>);
-        <span class="kw">let </span>client_response: bson::document::Document = <span class="macro">doc!</span>(<span class="string">&quot;msg&quot;</span>: <span class="string">&quot;Mellon&quot;</span>);
-        <span class="kw">let </span>server_expected_response: bson::document::Document = <span class="macro">doc!</span>(<span class="string">&quot;msg&quot;</span>: <span class="string">&quot;Mellon&quot;</span>);
+        <span class="kw">let </span>server_challenge: bson::document::Document = <span class="macro">doc!</span>(<span class="string">"msg"</span>: <span class="string">"Speak friend and enter"</span>);
+        <span class="kw">let </span>client_response: bson::document::Document = <span class="macro">doc!</span>(<span class="string">"msg"</span>: <span class="string">"Mellon"</span>);
+        <span class="kw">let </span>server_expected_response: bson::document::Document = <span class="macro">doc!</span>(<span class="string">"msg"</span>: <span class="string">"Mellon"</span>);
         <span class="kw">let </span>should_fail: bool = <span class="bool-val">true</span>;
         identity_test(
             client_blocked,
@@ -903,14 +904,14 @@
             should_fail,
         )<span class="question-mark">?</span>;
     }
-    <span class="macro">println!</span>(<span class="string">&quot;Bad Challenge Response ---&quot;</span>);
+    <span class="macro">println!</span>(<span class="string">"Bad Challenge Response ---"</span>);
     {
         <span class="kw">let </span>client_blocked: bool = <span class="bool-val">false</span>;
-        <span class="kw">let </span>client_requested_endpoint: <span class="kw-2">&amp;</span>str = <span class="string">&quot;endpoint&quot;</span>;
+        <span class="kw">let </span>client_requested_endpoint: <span class="kw-2">&amp;</span>str = <span class="string">"endpoint"</span>;
         <span class="kw">let </span>client_requested_endpoint_valid: bool = <span class="bool-val">true</span>;
-        <span class="kw">let </span>server_challenge: bson::document::Document = <span class="macro">doc!</span>(<span class="string">&quot;msg&quot;</span>: <span class="string">&quot;Speak friend and enter&quot;</span>);
-        <span class="kw">let </span>client_response: bson::document::Document = <span class="macro">doc!</span>(<span class="string">&quot;msg&quot;</span>: <span class="string">&quot;Friend?&quot;</span>);
-        <span class="kw">let </span>server_expected_response: bson::document::Document = <span class="macro">doc!</span>(<span class="string">&quot;msg&quot;</span>: <span class="string">&quot;Mellon&quot;</span>);
+        <span class="kw">let </span>server_challenge: bson::document::Document = <span class="macro">doc!</span>(<span class="string">"msg"</span>: <span class="string">"Speak friend and enter"</span>);
+        <span class="kw">let </span>client_response: bson::document::Document = <span class="macro">doc!</span>(<span class="string">"msg"</span>: <span class="string">"Friend?"</span>);
+        <span class="kw">let </span>server_expected_response: bson::document::Document = <span class="macro">doc!</span>(<span class="string">"msg"</span>: <span class="string">"Mellon"</span>);
         <span class="kw">let </span>should_fail: bool = <span class="bool-val">true</span>;
         identity_test(
             client_blocked,
@@ -922,14 +923,14 @@
             should_fail,
         )<span class="question-mark">?</span>;
     }
-    <span class="macro">println!</span>(<span class="string">&quot;Blocked Client ---&quot;</span>);
+    <span class="macro">println!</span>(<span class="string">"Blocked Client ---"</span>);
     {
         <span class="kw">let </span>client_blocked: bool = <span class="bool-val">true</span>;
-        <span class="kw">let </span>client_requested_endpoint: <span class="kw-2">&amp;</span>str = <span class="string">&quot;endpoint&quot;</span>;
+        <span class="kw">let </span>client_requested_endpoint: <span class="kw-2">&amp;</span>str = <span class="string">"endpoint"</span>;
         <span class="kw">let </span>client_requested_endpoint_valid: bool = <span class="bool-val">true</span>;
-        <span class="kw">let </span>server_challenge: bson::document::Document = <span class="macro">doc!</span>(<span class="string">&quot;msg&quot;</span>: <span class="string">&quot;Speak friend and enter&quot;</span>);
-        <span class="kw">let </span>client_response: bson::document::Document = <span class="macro">doc!</span>(<span class="string">&quot;msg&quot;</span>: <span class="string">&quot;Mellon&quot;</span>);
-        <span class="kw">let </span>server_expected_response: bson::document::Document = <span class="macro">doc!</span>(<span class="string">&quot;msg&quot;</span>: <span class="string">&quot;Mellon&quot;</span>);
+        <span class="kw">let </span>server_challenge: bson::document::Document = <span class="macro">doc!</span>(<span class="string">"msg"</span>: <span class="string">"Speak friend and enter"</span>);
+        <span class="kw">let </span>client_response: bson::document::Document = <span class="macro">doc!</span>(<span class="string">"msg"</span>: <span class="string">"Mellon"</span>);
+        <span class="kw">let </span>server_expected_response: bson::document::Document = <span class="macro">doc!</span>(<span class="string">"msg"</span>: <span class="string">"Mellon"</span>);
         <span class="kw">let </span>should_fail: bool = <span class="bool-val">true</span>;
         identity_test(
             client_blocked,
@@ -941,14 +942,14 @@
             should_fail,
         )<span class="question-mark">?</span>;
     }
-    <span class="macro">println!</span>(<span class="string">&quot;Non-ASCII endpoint ---&quot;</span>);
+    <span class="macro">println!</span>(<span class="string">"Non-ASCII endpoint ---"</span>);
     {
         <span class="kw">let </span>client_blocked: bool = <span class="bool-val">false</span>;
-        <span class="kw">let </span>client_requested_endpoint: <span class="kw-2">&amp;</span>str = <span class="string">&quot;𝕦𝕥𝕗𝟠&quot;</span>;
+        <span class="kw">let </span>client_requested_endpoint: <span class="kw-2">&amp;</span>str = <span class="string">"𝕦𝕥𝕗𝟠"</span>;
         <span class="kw">let </span>client_requested_endpoint_valid: bool = <span class="bool-val">true</span>;
-        <span class="kw">let </span>server_challenge: bson::document::Document = <span class="macro">doc!</span>(<span class="string">&quot;msg&quot;</span>: <span class="string">&quot;Speak friend and enter&quot;</span>);
-        <span class="kw">let </span>client_response: bson::document::Document = <span class="macro">doc!</span>(<span class="string">&quot;msg&quot;</span>: <span class="string">&quot;Mellon&quot;</span>);
-        <span class="kw">let </span>server_expected_response: bson::document::Document = <span class="macro">doc!</span>(<span class="string">&quot;msg&quot;</span>: <span class="string">&quot;Mellon&quot;</span>);
+        <span class="kw">let </span>server_challenge: bson::document::Document = <span class="macro">doc!</span>(<span class="string">"msg"</span>: <span class="string">"Speak friend and enter"</span>);
+        <span class="kw">let </span>client_response: bson::document::Document = <span class="macro">doc!</span>(<span class="string">"msg"</span>: <span class="string">"Mellon"</span>);
+        <span class="kw">let </span>server_expected_response: bson::document::Document = <span class="macro">doc!</span>(<span class="string">"msg"</span>: <span class="string">"Mellon"</span>);
         <span class="kw">let </span>should_fail: bool = <span class="bool-val">true</span>;
         identity_test(
             client_blocked,
@@ -1051,13 +1052,13 @@
                     client_requested_channel_valid,
                     client_proof_signature_valid,
                 })) =&gt; {
-                    <span class="macro">println!</span>(<span class="string">&quot;handshake rejected: client_allowed: {}, client_requested_channel_valid: {}, client_proof_signature_valid: {}&quot;</span>, client_allowed, client_requested_channel_valid, client_proof_signature_valid);
+                    <span class="macro">println!</span>(<span class="string">"handshake rejected: client_allowed: {}, client_requested_channel_valid: {}, client_proof_signature_valid: {}"</span>, client_allowed, client_requested_channel_valid, client_proof_signature_valid);
                     server_complete = <span class="bool-val">true</span>;
                     failure_ocurred = <span class="bool-val">true</span>;
                 }
                 <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; {}
                 <span class="prelude-val">Err</span>(err) =&gt; {
-                    <span class="macro">println!</span>(<span class="string">&quot;server failure: {:?}&quot;</span>, err);
+                    <span class="macro">println!</span>(<span class="string">"server failure: {:?}"</span>, err);
                     server_complete = <span class="bool-val">true</span>;
                     failure_ocurred = <span class="bool-val">true</span>;
                 }
@@ -1071,7 +1072,7 @@
                 }
                 <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; {}
                 <span class="prelude-val">Err</span>(err) =&gt; {
-                    <span class="macro">println!</span>(<span class="string">&quot;client failure: {:?}&quot;</span>, err);
+                    <span class="macro">println!</span>(<span class="string">"client failure: {:?}"</span>, err);
                     client_complete = <span class="bool-val">true</span>;
                     failure_ocurred = <span class="bool-val">true</span>;
                 }
@@ -1079,8 +1080,8 @@
         }
     }
 
-    <span class="macro">println!</span>(<span class="string">&quot;server_complete: {}&quot;</span>, server_complete);
-    <span class="macro">println!</span>(<span class="string">&quot;client_complete: {}&quot;</span>, client_complete);
+    <span class="macro">println!</span>(<span class="string">"server_complete: {}"</span>, server_complete);
+    <span class="macro">println!</span>(<span class="string">"client_complete: {}"</span>, client_complete);
 
     <span class="macro">assert!</span>(should_fail == failure_ocurred);
 
@@ -1089,43 +1090,43 @@
 
 <span class="attr">#[test]
 </span><span class="kw">fn </span>test_endpoint_handshake() -&gt; anyhow::Result&lt;()&gt; {
-    <span class="macro">println!</span>(<span class="string">&quot;Success ---&quot;</span>);
+    <span class="macro">println!</span>(<span class="string">"Success ---"</span>);
     {
         <span class="kw">let </span>should_fail = <span class="bool-val">false</span>;
         <span class="kw">let </span>client_allowed = <span class="bool-val">true</span>;
-        <span class="kw">let </span>channel = <span class="string">&quot;channel&quot;</span>;
+        <span class="kw">let </span>channel = <span class="string">"channel"</span>;
         <span class="kw">let </span>channel_allowed = <span class="bool-val">true</span>;
         endpoint_test(should_fail, client_allowed, channel, channel_allowed)<span class="question-mark">?</span>;
     }
-    <span class="macro">println!</span>(<span class="string">&quot;Client Not Allowed ---&quot;</span>);
+    <span class="macro">println!</span>(<span class="string">"Client Not Allowed ---"</span>);
     {
         <span class="kw">let </span>should_fail = <span class="bool-val">true</span>;
         <span class="kw">let </span>client_allowed = <span class="bool-val">false</span>;
-        <span class="kw">let </span>channel = <span class="string">&quot;channel&quot;</span>;
+        <span class="kw">let </span>channel = <span class="string">"channel"</span>;
         <span class="kw">let </span>channel_allowed = <span class="bool-val">true</span>;
         endpoint_test(should_fail, client_allowed, channel, channel_allowed)<span class="question-mark">?</span>;
     }
-    <span class="macro">println!</span>(<span class="string">&quot;Channel Not Allowed ---&quot;</span>);
+    <span class="macro">println!</span>(<span class="string">"Channel Not Allowed ---"</span>);
     {
         <span class="kw">let </span>should_fail = <span class="bool-val">true</span>;
         <span class="kw">let </span>client_allowed = <span class="bool-val">true</span>;
-        <span class="kw">let </span>channel = <span class="string">&quot;channel&quot;</span>;
+        <span class="kw">let </span>channel = <span class="string">"channel"</span>;
         <span class="kw">let </span>channel_allowed = <span class="bool-val">false</span>;
         endpoint_test(should_fail, client_allowed, channel, channel_allowed)<span class="question-mark">?</span>;
     }
-    <span class="macro">println!</span>(<span class="string">&quot;Client and Channel Not Allowed ---&quot;</span>);
+    <span class="macro">println!</span>(<span class="string">"Client and Channel Not Allowed ---"</span>);
     {
         <span class="kw">let </span>should_fail = <span class="bool-val">true</span>;
         <span class="kw">let </span>client_allowed = <span class="bool-val">false</span>;
-        <span class="kw">let </span>channel = <span class="string">&quot;channel&quot;</span>;
+        <span class="kw">let </span>channel = <span class="string">"channel"</span>;
         <span class="kw">let </span>channel_allowed = <span class="bool-val">false</span>;
         endpoint_test(should_fail, client_allowed, channel, channel_allowed)<span class="question-mark">?</span>;
     }
-    <span class="macro">println!</span>(<span class="string">&quot;Non-Ascii Channel ---&quot;</span>);
+    <span class="macro">println!</span>(<span class="string">"Non-Ascii Channel ---"</span>);
     {
         <span class="kw">let </span>should_fail = <span class="bool-val">true</span>;
         <span class="kw">let </span>client_allowed = <span class="bool-val">true</span>;
-        <span class="kw">let </span>channel = <span class="string">&quot;𝕦𝕥𝕗𝟠&quot;</span>;
+        <span class="kw">let </span>channel = <span class="string">"𝕦𝕥𝕗𝟠"</span>;
         <span class="kw">let </span>channel_allowed = <span class="bool-val">true</span>;
         endpoint_test(should_fail, client_allowed, channel, channel_allowed)<span class="question-mark">?</span>;
     }

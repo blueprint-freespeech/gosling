@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/honk-rpc/src/honk_rpc.rs`."><title>honk_rpc.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="honk_rpc" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0 (82e1608df 2023-12-21)" data-channel="1.75.0" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-9dd44ab47b99a0fb.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/honk-rpc/src/honk_rpc.rs`."><title>honk_rpc.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-ac92e1bbe349e143.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="honk_rpc" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0 (07dca489a 2024-02-04)" data-channel="1.76.0" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1464,42 +1465,42 @@
 
 <span class="attr">#[derive(thiserror::Error, Debug)]
 </span><span class="kw">pub enum </span>Error {
-    <span class="attr">#[error(<span class="string">&quot;failed to read data from read stream&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"failed to read data from read stream"</span>)]
     </span>ReaderReadFailed(<span class="attr">#[source] </span>std::io::Error),
 
-    <span class="attr">#[error(<span class="string">&quot;received invalid bson document size header value of {0}, must be at least 4&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"received invalid bson document size header value of {0}, must be at least 4"</span>)]
     </span>BsonDocumentSizeTooSmall(i32),
 
-    <span class="attr">#[error(<span class="string">&quot;received invalid bson document size header value of {0}, must be less than {1}&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"received invalid bson document size header value of {0}, must be less than {1}"</span>)]
     </span>BsonDocumentSizeTooLarge(i32, i32),
 
-    <span class="attr">#[error(<span class="string">&quot;waited longer than {} seconds for read&quot;</span>, .<span class="number">0</span>.as_secs_f32())]
+    <span class="attr">#[error(<span class="string">"waited longer than {} seconds for read"</span>, .<span class="number">0</span>.as_secs_f32())]
     </span>MessageReadTimedOut(std::time::Duration),
 
-    <span class="attr">#[error(<span class="string">&quot;failed to parse bson Message document&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"failed to parse bson Message document"</span>)]
     </span>BsonDocumentParseFailed(<span class="attr">#[source] </span>bson::de::Error),
 
-    <span class="attr">#[error(<span class="string">&quot;failed to convert bson document to Message&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"failed to convert bson document to Message"</span>)]
     </span>MessageConversionFailed(<span class="attr">#[source] </span><span class="kw">crate</span>::honk_rpc::ErrorCode),
 
-    <span class="attr">#[error(<span class="string">&quot;failed to serialize bson Message document&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"failed to serialize bson Message document"</span>)]
     </span>MessageWriteFailed(<span class="attr">#[source] </span>bson::ser::Error),
 
-    <span class="attr">#[error(<span class="string">&quot;failed to write message to write stream&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"failed to write message to write stream"</span>)]
     </span>WriterWriteFailed(<span class="attr">#[source] </span>std::io::Error),
 
-    <span class="attr">#[error(<span class="string">&quot;failed to flush message to write stream&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"failed to flush message to write stream"</span>)]
     </span>WriterFlushFailed(<span class="attr">#[source] </span>std::io::Error),
 
-    <span class="attr">#[error(<span class="string">&quot;recieved error section without cookie&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"recieved error section without cookie"</span>)]
     </span>UnknownErrorSectionReceived(<span class="attr">#[source] </span><span class="kw">crate</span>::honk_rpc::ErrorCode),
 
     <span class="attr">#[error(
-        <span class="string">&quot;tried to set invalid max message size; must be &gt;=5 bytes and &lt;= i32::MAX (2147483647)&quot;
+        <span class="string">"tried to set invalid max message size; must be &gt;=5 bytes and &lt;= i32::MAX (2147483647)"
     </span>)]
     </span>InvalidMaxMesageSize(),
 
-    <span class="attr">#[error(<span class="string">&quot;queued message section is too large to write; calculated size is {0} but must be less than {1}&quot;</span>)]
+    <span class="attr">#[error(<span class="string">"queued message section is too large to write; calculated size is {0} but must be less than {1}"</span>)]
     </span>SectionTooLarge(usize, usize),
 }
 
@@ -1555,43 +1556,43 @@
 <span class="kw">impl </span>std::fmt::Display <span class="kw">for </span>ErrorCode {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter) -&gt; std::fmt::Result {
         <span class="kw">match </span><span class="self">self </span>{
-            ErrorCode::BsonParseFailed =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;ProtocolError: failed to parse BSON object&quot;</span>),
-            ErrorCode::MessageTooBig =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;ProtocolError: received document too large&quot;</span>),
+            ErrorCode::BsonParseFailed =&gt; <span class="macro">write!</span>(f, <span class="string">"ProtocolError: failed to parse BSON object"</span>),
+            ErrorCode::MessageTooBig =&gt; <span class="macro">write!</span>(f, <span class="string">"ProtocolError: received document too large"</span>),
             ErrorCode::MessageParseFailed =&gt; {
-                <span class="macro">write!</span>(f, <span class="string">&quot;ProtocolError: received message has invalid schema&quot;</span>)
+                <span class="macro">write!</span>(f, <span class="string">"ProtocolError: received message has invalid schema"</span>)
             }
             ErrorCode::MessageVersionIncompatible =&gt; <span class="macro">write!</span>(
                 f,
-                <span class="string">&quot;ProtocolError: received message has incompatible version&quot;
+                <span class="string">"ProtocolError: received message has incompatible version"
             </span>),
             ErrorCode::SectionIdUnknown =&gt; <span class="macro">write!</span>(
                 f,
-                <span class="string">&quot;ProtocolError: received message contains section of unknown type&quot;
+                <span class="string">"ProtocolError: received message contains section of unknown type"
             </span>),
             ErrorCode::SectionParseFailed =&gt; <span class="macro">write!</span>(
                 f,
-                <span class="string">&quot;ProtocolError: received message contains section with invalid schema&quot;
+                <span class="string">"ProtocolError: received message contains section with invalid schema"
             </span>),
             ErrorCode::RequestCookieInvalid =&gt; {
-                <span class="macro">write!</span>(f, <span class="string">&quot;ProtocolError: request cookie already in use&quot;</span>)
+                <span class="macro">write!</span>(f, <span class="string">"ProtocolError: request cookie already in use"</span>)
             }
             ErrorCode::RequestNamespaceInvalid =&gt; <span class="macro">write!</span>(
                 f,
-                <span class="string">&quot;ProtocolError: request function does not exist in requested namespace&quot;
+                <span class="string">"ProtocolError: request function does not exist in requested namespace"
             </span>),
             ErrorCode::RequestFunctionInvalid =&gt; {
-                <span class="macro">write!</span>(f, <span class="string">&quot;ProtocolError: request function does not exist&quot;</span>)
+                <span class="macro">write!</span>(f, <span class="string">"ProtocolError: request function does not exist"</span>)
             }
             ErrorCode::RequestVersionInvalid =&gt; {
-                <span class="macro">write!</span>(f, <span class="string">&quot;ProtocolError: request function version does not exist&quot;</span>)
+                <span class="macro">write!</span>(f, <span class="string">"ProtocolError: request function version does not exist"</span>)
             }
             ErrorCode::ResponseCookieInvalid =&gt; {
-                <span class="macro">write!</span>(f, <span class="string">&quot;ProtocolError: response cookie is not recognized&quot;</span>)
+                <span class="macro">write!</span>(f, <span class="string">"ProtocolError: response cookie is not recognized"</span>)
             }
-            ErrorCode::ResponseStateInvalid =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;ProtocolError: response state not valid&quot;</span>),
-            ErrorCode::Success =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;Success&quot;</span>),
-            ErrorCode::Runtime(code) =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;RuntimeError: runtime error {}&quot;</span>, code),
-            ErrorCode::Unknown(code) =&gt; <span class="macro">write!</span>(f, <span class="string">&quot;UnknownError: unknown error code {}&quot;</span>, code),
+            ErrorCode::ResponseStateInvalid =&gt; <span class="macro">write!</span>(f, <span class="string">"ProtocolError: response state not valid"</span>),
+            ErrorCode::Success =&gt; <span class="macro">write!</span>(f, <span class="string">"Success"</span>),
+            ErrorCode::Runtime(code) =&gt; <span class="macro">write!</span>(f, <span class="string">"RuntimeError: runtime error {}"</span>, code),
+            ErrorCode::Unknown(code) =&gt; <span class="macro">write!</span>(f, <span class="string">"UnknownError: unknown error code {}"</span>, code),
         }
     }
 }
@@ -1612,13 +1613,13 @@
         <span class="kw">let </span><span class="kw-2">mut </span>value = value;
 
         <span class="comment">// verify version
-        </span><span class="kw">let </span>honk_rpc = <span class="kw">match </span>value.get_i32(<span class="string">&quot;honk_rpc&quot;</span>) {
+        </span><span class="kw">let </span>honk_rpc = <span class="kw">match </span>value.get_i32(<span class="string">"honk_rpc"</span>) {
             <span class="prelude-val">Ok</span>(HONK_RPC_VERSION) =&gt; HONK_RPC_VERSION,
             <span class="prelude-val">Ok</span>(_bad_version) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::MessageVersionIncompatible),
             <span class="prelude-val">Err</span>(_err) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::MessageParseFailed),
         };
 
-        <span class="kw">if let </span><span class="prelude-val">Ok</span>(sections) = value.get_array_mut(<span class="string">&quot;sections&quot;</span>) {
+        <span class="kw">if let </span><span class="prelude-val">Ok</span>(sections) = value.get_array_mut(<span class="string">"sections"</span>) {
             <span class="comment">// messages must have at least one section
             </span><span class="kw">if </span>sections.is_empty() {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::MessageParseFailed);
@@ -1647,7 +1648,7 @@
     <span class="kw">fn </span>from(value: Message) -&gt; bson::document::Document {
         <span class="kw">let </span><span class="kw-2">mut </span>value = value;
         <span class="kw">let </span><span class="kw-2">mut </span>message = bson::document::Document::new();
-        message.insert(<span class="string">&quot;honk_rpc&quot;</span>, value.honk_rpc);
+        message.insert(<span class="string">"honk_rpc"</span>, value.honk_rpc);
 
         <span class="kw">let </span><span class="kw-2">mut </span>sections = bson::Array::new();
         <span class="kw">for </span>section <span class="kw">in </span>value.sections.drain(<span class="number">0</span>..) {
@@ -1655,7 +1656,7 @@
                 section,
             )));
         }
-        message.insert(<span class="string">&quot;sections&quot;</span>, sections);
+        message.insert(<span class="string">"sections"</span>, sections);
 
         message
     }
@@ -1707,7 +1708,7 @@
     <span class="kw">fn </span>try_from(
         value: bson::document::Document,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, &lt;<span class="self">Self </span><span class="kw">as </span>TryFrom&lt;bson::document::Document&gt;&gt;::Error&gt; {
-        <span class="kw">match </span>value.get_i32(<span class="string">&quot;id&quot;</span>) {
+        <span class="kw">match </span>value.get_i32(<span class="string">"id"</span>) {
             <span class="prelude-val">Ok</span>(ERROR_SECTION_ID) =&gt; <span class="prelude-val">Ok</span>(Section::Error(ErrorSection::try_from(value)<span class="question-mark">?</span>)),
             <span class="prelude-val">Ok</span>(REQUEST_SECTION_ID) =&gt; <span class="prelude-val">Ok</span>(Section::Request(RequestSection::try_from(value)<span class="question-mark">?</span>)),
             <span class="prelude-val">Ok</span>(RESPONSE_SECTION_ID) =&gt; <span class="prelude-val">Ok</span>(Section::Response(ResponseSection::try_from(value)<span class="question-mark">?</span>)),
@@ -1733,24 +1734,24 @@
     <span class="kw">fn </span>try_from(value: bson::document::Document) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>value = value;
 
-        <span class="kw">let </span>cookie = <span class="kw">match </span>value.get_i64(<span class="string">&quot;cookie&quot;</span>) {
+        <span class="kw">let </span>cookie = <span class="kw">match </span>value.get_i64(<span class="string">"cookie"</span>) {
             <span class="prelude-val">Ok</span>(cookie) =&gt; <span class="prelude-val">Some</span>(cookie),
             <span class="prelude-val">Err</span>(ValueAccessError::NotPresent) =&gt; <span class="prelude-val">None</span>,
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::SectionParseFailed),
         };
 
-        <span class="kw">let </span>code = <span class="kw">match </span>value.get_i32(<span class="string">&quot;code&quot;</span>) {
+        <span class="kw">let </span>code = <span class="kw">match </span>value.get_i32(<span class="string">"code"</span>) {
             <span class="prelude-val">Ok</span>(code) =&gt; ErrorCode::from(code),
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::SectionParseFailed),
         };
 
-        <span class="kw">let </span>message = <span class="kw">match </span>value.get_str(<span class="string">&quot;message&quot;</span>) {
+        <span class="kw">let </span>message = <span class="kw">match </span>value.get_str(<span class="string">"message"</span>) {
             <span class="prelude-val">Ok</span>(message) =&gt; <span class="prelude-val">Some</span>(message.to_string()),
             <span class="prelude-val">Err</span>(ValueAccessError::NotPresent) =&gt; <span class="prelude-val">None</span>,
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::SectionParseFailed),
         };
 
-        <span class="kw">let </span>data = value.get_mut(<span class="string">&quot;data&quot;</span>).map(std::mem::take);
+        <span class="kw">let </span>data = value.get_mut(<span class="string">"data"</span>).map(std::mem::take);
 
         <span class="prelude-val">Ok</span>(ErrorSection {
             cookie,
@@ -1764,20 +1765,20 @@
 <span class="kw">impl </span>From&lt;ErrorSection&gt; <span class="kw">for </span>bson::document::Document {
     <span class="kw">fn </span>from(value: ErrorSection) -&gt; bson::document::Document {
         <span class="kw">let </span><span class="kw-2">mut </span>error_section = bson::document::Document::new();
-        error_section.insert(<span class="string">&quot;id&quot;</span>, ERROR_SECTION_ID);
+        error_section.insert(<span class="string">"id"</span>, ERROR_SECTION_ID);
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(cookie) = value.cookie {
-            error_section.insert(<span class="string">&quot;cookie&quot;</span>, cookie);
+            error_section.insert(<span class="string">"cookie"</span>, cookie);
         }
 
-        error_section.insert(<span class="string">&quot;code&quot;</span>, Into::&lt;i32&gt;::into(value.code));
+        error_section.insert(<span class="string">"code"</span>, Into::&lt;i32&gt;::into(value.code));
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(message) = value.message {
-            error_section.insert(<span class="string">&quot;message&quot;</span>, message);
+            error_section.insert(<span class="string">"message"</span>, message);
         }
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(data) = value.data {
-            error_section.insert(<span class="string">&quot;data&quot;</span>, data);
+            error_section.insert(<span class="string">"data"</span>, data);
         }
 
         error_section
@@ -1790,19 +1791,19 @@
     <span class="kw">fn </span>try_from(value: bson::document::Document) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>value = value;
 
-        <span class="kw">let </span>cookie = <span class="kw">match </span>value.get_i64(<span class="string">&quot;cookie&quot;</span>) {
+        <span class="kw">let </span>cookie = <span class="kw">match </span>value.get_i64(<span class="string">"cookie"</span>) {
             <span class="prelude-val">Ok</span>(cookie) =&gt; <span class="prelude-val">Some</span>(cookie),
             <span class="prelude-val">Err</span>(ValueAccessError::NotPresent) =&gt; <span class="prelude-val">None</span>,
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::SectionParseFailed),
         };
 
-        <span class="kw">let </span>namespace = <span class="kw">match </span>value.get_str(<span class="string">&quot;namespace&quot;</span>) {
+        <span class="kw">let </span>namespace = <span class="kw">match </span>value.get_str(<span class="string">"namespace"</span>) {
             <span class="prelude-val">Ok</span>(namespace) =&gt; namespace.to_string(),
             <span class="prelude-val">Err</span>(ValueAccessError::NotPresent) =&gt; String::default(),
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::SectionParseFailed),
         };
 
-        <span class="kw">let </span>function = <span class="kw">match </span>value.get_str(<span class="string">&quot;function&quot;</span>) {
+        <span class="kw">let </span>function = <span class="kw">match </span>value.get_str(<span class="string">"function"</span>) {
             <span class="prelude-val">Ok</span>(function) =&gt; {
                 <span class="kw">if </span>function.is_empty() {
                     <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::RequestFunctionInvalid);
@@ -1813,13 +1814,13 @@
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::SectionParseFailed),
         };
 
-        <span class="kw">let </span>version = <span class="kw">match </span>value.get_i32(<span class="string">&quot;version&quot;</span>) {
+        <span class="kw">let </span>version = <span class="kw">match </span>value.get_i32(<span class="string">"version"</span>) {
             <span class="prelude-val">Ok</span>(version) =&gt; version,
             <span class="prelude-val">Err</span>(ValueAccessError::NotPresent) =&gt; <span class="number">0i32</span>,
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::SectionParseFailed),
         };
 
-        <span class="kw">let </span>arguments = <span class="kw">match </span>value.get_document_mut(<span class="string">&quot;arguments&quot;</span>) {
+        <span class="kw">let </span>arguments = <span class="kw">match </span>value.get_document_mut(<span class="string">"arguments"</span>) {
             <span class="prelude-val">Ok</span>(arguments) =&gt; std::mem::take(arguments),
             <span class="prelude-val">Err</span>(ValueAccessError::NotPresent) =&gt; bson::document::Document::new(),
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::SectionParseFailed),
@@ -1838,23 +1839,23 @@
 <span class="kw">impl </span>From&lt;RequestSection&gt; <span class="kw">for </span>bson::document::Document {
     <span class="kw">fn </span>from(value: RequestSection) -&gt; bson::document::Document {
         <span class="kw">let </span><span class="kw-2">mut </span>request_section = bson::document::Document::new();
-        request_section.insert(<span class="string">&quot;id&quot;</span>, REQUEST_SECTION_ID);
+        request_section.insert(<span class="string">"id"</span>, REQUEST_SECTION_ID);
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(cookie) = value.cookie {
-            request_section.insert(<span class="string">&quot;cookie&quot;</span>, cookie);
+            request_section.insert(<span class="string">"cookie"</span>, cookie);
         }
 
         <span class="kw">if </span>!value.namespace.is_empty() {
-            request_section.insert(<span class="string">&quot;namespace&quot;</span>, value.namespace);
+            request_section.insert(<span class="string">"namespace"</span>, value.namespace);
         }
 
-        request_section.insert(<span class="string">&quot;function&quot;</span>, value.function);
+        request_section.insert(<span class="string">"function"</span>, value.function);
 
         <span class="kw">if </span>value.version != <span class="number">0i32 </span>{
-            request_section.insert(<span class="string">&quot;version&quot;</span>, value.version);
+            request_section.insert(<span class="string">"version"</span>, value.version);
         }
 
-        request_section.insert(<span class="string">&quot;arguments&quot;</span>, value.arguments);
+        request_section.insert(<span class="string">"arguments"</span>, value.arguments);
 
         request_section
     }
@@ -1865,19 +1866,19 @@
 
     <span class="kw">fn </span>try_from(value: bson::document::Document) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>value = value;
-        <span class="kw">let </span>cookie = <span class="kw">match </span>value.get_i64(<span class="string">&quot;cookie&quot;</span>) {
+        <span class="kw">let </span>cookie = <span class="kw">match </span>value.get_i64(<span class="string">"cookie"</span>) {
             <span class="prelude-val">Ok</span>(cookie) =&gt; cookie,
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::SectionParseFailed),
         };
 
-        <span class="kw">let </span>state = <span class="kw">match </span>value.get_i32(<span class="string">&quot;state&quot;</span>) {
+        <span class="kw">let </span>state = <span class="kw">match </span>value.get_i32(<span class="string">"state"</span>) {
             <span class="prelude-val">Ok</span>(<span class="number">0i32</span>) =&gt; RequestState::Pending,
             <span class="prelude-val">Ok</span>(<span class="number">1i32</span>) =&gt; RequestState::Complete,
             <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::ResponseStateInvalid),
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::SectionParseFailed),
         };
 
-        <span class="kw">let </span>result = value.get_mut(<span class="string">&quot;result&quot;</span>).map(std::mem::take);
+        <span class="kw">let </span>result = value.get_mut(<span class="string">"result"</span>).map(std::mem::take);
 
         <span class="comment">// if complete the result must be present
         </span><span class="kw">if </span>state == RequestState::Complete &amp;&amp; result.is_none() {
@@ -1900,13 +1901,13 @@
 <span class="kw">impl </span>From&lt;ResponseSection&gt; <span class="kw">for </span>bson::document::Document {
     <span class="kw">fn </span>from(value: ResponseSection) -&gt; bson::document::Document {
         <span class="kw">let </span><span class="kw-2">mut </span>response_section = bson::document::Document::new();
-        response_section.insert(<span class="string">&quot;id&quot;</span>, RESPONSE_SECTION_ID);
+        response_section.insert(<span class="string">"id"</span>, RESPONSE_SECTION_ID);
 
-        response_section.insert(<span class="string">&quot;cookie&quot;</span>, value.cookie);
-        response_section.insert(<span class="string">&quot;state&quot;</span>, value.state <span class="kw">as </span>i32);
+        response_section.insert(<span class="string">"cookie"</span>, value.cookie);
+        response_section.insert(<span class="string">"state"</span>, value.state <span class="kw">as </span>i32);
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(result) = value.result {
-            response_section.insert(<span class="string">&quot;result&quot;</span>, result);
+            response_section.insert(<span class="string">"result"</span>, result);
         }
 
         response_section
@@ -1950,9 +1951,9 @@
 <span class="comment">// Base Message Bson Format
 // document size             4 (sizeof i32 )
 </span><span class="kw">const </span>HEADER_SIZE: usize = <span class="number">4usize</span>;
-<span class="comment">// &quot;honk_rpc&quot; : i32          1 (0x10) + 8 (strlen &quot;honk_rpc&quot;) + 1 (null) + 4 (sizeof i32)
+<span class="comment">// "honk_rpc" : i32          1 (0x10) + 8 (strlen "honk_rpc") + 1 (null) + 4 (sizeof i32)
 </span><span class="kw">const </span>HONK_RPC_SIZE: usize = <span class="number">14usize</span>;
-<span class="comment">// &quot;sections&quot; : {&quot;0&quot;: Null}  1 (0x04) + 8 (strlen &quot;sections&quot;) + 1 (null) + 4 (sizeof i32) + 1 (0x0a) + 1 (strlen &quot;0&quot;) + 1 (null) + 1 (0x00)
+<span class="comment">// "sections" : {"0": Null}  1 (0x04) + 8 (strlen "sections") + 1 (null) + 4 (sizeof i32) + 1 (0x0a) + 1 (strlen "0") + 1 (null) + 1 (0x00)
 </span><span class="kw">const </span>SECTIONS_SIZE: usize = <span class="number">18usize</span>;
 <span class="comment">// footer                    1 (0x00)
 </span><span class="kw">const </span>FOOTER_SIZE: usize = <span class="number">1usize</span>;
@@ -1966,8 +1967,8 @@
     <span class="comment">// construct an example empty message; the size of a real message with
     // one section can be calculated as the sizeof(message) + sizeof(section)
     </span><span class="kw">let </span>message = <span class="macro">doc! </span>{
-        <span class="string">&quot;honk_rpc&quot; </span>: HONK_RPC_VERSION,
-        <span class="string">&quot;sections&quot; </span>: [
+        <span class="string">"honk_rpc" </span>: HONK_RPC_VERSION,
+        <span class="string">"sections" </span>: [
             bson::Bson::Null
         ]
     };
@@ -1986,20 +1987,20 @@
     data: <span class="prelude-ty">Option</span>&lt;bson::Bson&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;usize, Error&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>error_section = <span class="macro">doc! </span>{
-        <span class="string">&quot;id&quot;</span>: ERROR_SECTION_ID,
-        <span class="string">&quot;code&quot;</span>: Into::&lt;i32&gt;::into(ErrorCode::Success),
+        <span class="string">"id"</span>: ERROR_SECTION_ID,
+        <span class="string">"code"</span>: Into::&lt;i32&gt;::into(ErrorCode::Success),
     };
 
     <span class="kw">if let </span><span class="prelude-val">Some</span>(cookie) = cookie {
-        error_section.insert(<span class="string">&quot;cookie&quot;</span>, bson::Bson::Int64(cookie));
+        error_section.insert(<span class="string">"cookie"</span>, bson::Bson::Int64(cookie));
     }
 
     <span class="kw">if let </span><span class="prelude-val">Some</span>(message) = message {
-        error_section.insert(<span class="string">&quot;message&quot;</span>, bson::Bson::String(message));
+        error_section.insert(<span class="string">"message"</span>, bson::Bson::String(message));
     }
 
     <span class="kw">if let </span><span class="prelude-val">Some</span>(data) = data {
-        error_section.insert(<span class="string">&quot;data&quot;</span>, data);
+        error_section.insert(<span class="string">"data"</span>, data);
     }
 
     <span class="kw">let </span><span class="kw-2">mut </span>counter: ByteCounter = Default::default();
@@ -2018,24 +2019,24 @@
     arguments: <span class="prelude-ty">Option</span>&lt;bson::Document&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;usize, Error&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>request_section = <span class="macro">doc! </span>{
-        <span class="string">&quot;id&quot;</span>: REQUEST_SECTION_ID,
-        <span class="string">&quot;function&quot;</span>: bson::Bson::String(function),
+        <span class="string">"id"</span>: REQUEST_SECTION_ID,
+        <span class="string">"function"</span>: bson::Bson::String(function),
     };
 
     <span class="kw">if let </span><span class="prelude-val">Some</span>(cookie) = cookie {
-        request_section.insert(<span class="string">&quot;cookie&quot;</span>, bson::Bson::Int64(cookie));
+        request_section.insert(<span class="string">"cookie"</span>, bson::Bson::Int64(cookie));
     }
 
     <span class="kw">if let </span><span class="prelude-val">Some</span>(namespace) = namespace {
-        request_section.insert(<span class="string">&quot;namespace&quot;</span>, bson::Bson::String(namespace));
+        request_section.insert(<span class="string">"namespace"</span>, bson::Bson::String(namespace));
     }
 
     <span class="kw">if let </span><span class="prelude-val">Some</span>(version) = version {
-        request_section.insert(<span class="string">&quot;version&quot;</span>, bson::Bson::Int32(version));
+        request_section.insert(<span class="string">"version"</span>, bson::Bson::Int32(version));
     }
 
     <span class="kw">if let </span><span class="prelude-val">Some</span>(arguments) = arguments {
-        request_section.insert(<span class="string">&quot;arguments&quot;</span>, arguments);
+        request_section.insert(<span class="string">"arguments"</span>, arguments);
     }
 
     <span class="kw">let </span><span class="kw-2">mut </span>counter: ByteCounter = Default::default();
@@ -2048,13 +2049,13 @@
 
 <span class="kw">pub fn </span>get_response_section_size(result: <span class="prelude-ty">Option</span>&lt;bson::Bson&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;usize, Error&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>response_section = <span class="macro">doc! </span>{
-        <span class="string">&quot;id&quot;</span>: RESPONSE_SECTION_ID,
-        <span class="string">&quot;cookie&quot;</span>: bson::Bson::Int64(<span class="number">0</span>),
-        <span class="string">&quot;state&quot;</span>: bson::Bson::Int32(<span class="number">0</span>),
+        <span class="string">"id"</span>: RESPONSE_SECTION_ID,
+        <span class="string">"cookie"</span>: bson::Bson::Int64(<span class="number">0</span>),
+        <span class="string">"state"</span>: bson::Bson::Int32(<span class="number">0</span>),
     };
 
     <span class="kw">if let </span><span class="prelude-val">Some</span>(result) = result {
-        response_section.insert(<span class="string">&quot;result&quot;</span>, result);
+        response_section.insert(<span class="string">"result"</span>, result);
     }
 
     <span class="kw">let </span><span class="kw-2">mut </span>counter: ByteCounter = Default::default();
@@ -2076,13 +2077,13 @@
     // remaining number of bytes to read for current message
     // if None, no message read is in progress
     </span>remaining_byte_count: <span class="prelude-ty">Option</span>&lt;usize&gt;,
-    <span class="comment">// data we&#39;ve read but not yet a full Message object
+    <span class="comment">// data we've read but not yet a full Message object
     </span>message_read_buffer: Vec&lt;u8&gt;,
     <span class="comment">// received sections to be handled
     </span>pending_sections: VecDeque&lt;Section&gt;,
-    <span class="comment">// remote client&#39;s inbound remote procedure calls to local server
+    <span class="comment">// remote client's inbound remote procedure calls to local server
     </span>inbound_requests: Vec&lt;RequestSection&gt;,
-    <span class="comment">// remote server&#39;s responses to local client&#39;s remote procedure calls
+    <span class="comment">// remote server's responses to local client's remote procedure calls
     </span>inbound_responses: VecDeque&lt;Response&gt;,
 
     <span class="comment">// message write data
@@ -2094,7 +2095,7 @@
     <span class="comment">// sections to be sent to the remote server
     </span>outbound_sections: Vec&lt;bson::Document&gt;,
 
-    <span class="comment">// the maximum size of a message we&#39;ve agreed to allow in the session
+    <span class="comment">// the maximum size of a message we've agreed to allow in the session
     </span>max_message_size: usize,
     <span class="comment">// the maximum amount of time the session is willing to wait to receive a message
     // before terminating the session
@@ -2162,7 +2163,7 @@
         <span class="kw">match </span><span class="self">self</span>.stream.read(buffer) {
             <span class="prelude-val">Err</span>(err) =&gt; {
                 <span class="kw">if </span>err.kind() == ErrorKind::WouldBlock || err.kind() == ErrorKind::TimedOut {
-                    <span class="comment">// abort if we&#39;ve gone too long without a new message
+                    <span class="comment">// abort if we've gone too long without a new message
                     </span><span class="kw">if </span>std::time::Instant::now().duration_since(<span class="self">self</span>.read_timestamp)
                         &gt; <span class="self">self</span>.max_wait_time
                     {
@@ -2187,11 +2188,11 @@
 
     <span class="kw">fn </span>read_message_size(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
         <span class="kw">match </span><span class="self">self</span>.remaining_byte_count {
-            <span class="comment">// we&#39;ve already read the size header
+            <span class="comment">// we've already read the size header
             </span><span class="prelude-val">Some</span>(_remaining) =&gt; <span class="prelude-val">Ok</span>(()),
             <span class="comment">// still need to read the size header
             </span><span class="prelude-val">None </span>=&gt; {
-                <span class="comment">// may have been partially read already so ensure it&#39;s the right size
+                <span class="comment">// may have been partially read already so ensure it's the right size
                 </span><span class="macro">assert!</span>(<span class="self">self</span>.message_read_buffer.len() &lt; std::mem::size_of::&lt;i32&gt;());
                 <span class="kw">let </span>bytes_needed = std::mem::size_of::&lt;i32&gt;() - <span class="self">self</span>.message_read_buffer.len();
                 <span class="comment">// ensure we have enough space for an entire int32
@@ -2203,7 +2204,7 @@
                     <span class="prelude-val">Ok</span>(<span class="number">0</span>) =&gt; <span class="prelude-val">Ok</span>(()),
                     <span class="prelude-val">Ok</span>(count) =&gt; {
                         <span class="attr">#[cfg(test)]
-                        </span><span class="macro">println!</span>(<span class="string">&quot;&lt;&lt;&lt; read {} bytes for message header&quot;</span>, count);
+                        </span><span class="macro">println!</span>(<span class="string">"&lt;&lt;&lt; read {} bytes for message header"</span>, count);
                         <span class="self">self</span>.message_read_buffer
                             .extend_from_slice(<span class="kw-2">&amp;</span>buffer[<span class="number">0</span>..count]);
 
@@ -2218,7 +2219,7 @@
                             </span><span class="kw">if </span>size &lt;= std::mem::size_of::&lt;i32&gt;() <span class="kw">as </span>i32 {
                                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::BsonDocumentSizeTooSmall(size));
                             }
-                            <span class="comment">// convert to usize type now that we know it&#39;s not negative
+                            <span class="comment">// convert to usize type now that we know it's not negative
                             </span><span class="kw">if </span>size <span class="kw">as </span>usize &gt; <span class="self">self</span>.max_message_size {
                                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::BsonDocumentSizeTooLarge(
                                     size,
@@ -2244,7 +2245,7 @@
         <span class="comment">// read the message bytes
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(remaining) = <span class="self">self</span>.remaining_byte_count {
             <span class="attr">#[cfg(test)]
-            </span><span class="macro">println!</span>(<span class="string">&quot;--- message requires {} more bytes&quot;</span>, remaining);
+            </span><span class="macro">println!</span>(<span class="string">"--- message requires {} more bytes"</span>, remaining);
 
             <span class="kw">let </span><span class="kw-2">mut </span>buffer = <span class="macro">vec!</span>[<span class="number">0u8</span>; remaining];
             <span class="kw">match </span><span class="self">self</span>.stream_read(<span class="kw-2">&amp;mut </span>buffer) {
@@ -2252,7 +2253,7 @@
                 <span class="prelude-val">Ok</span>(<span class="number">0</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
                 <span class="prelude-val">Ok</span>(count) =&gt; {
                     <span class="attr">#[cfg(test)]
-                    </span><span class="macro">println!</span>(<span class="string">&quot;&lt;&lt;&lt; read {} bytes&quot;</span>, count);
+                    </span><span class="macro">println!</span>(<span class="string">"&lt;&lt;&lt; read {} bytes"</span>, count);
                     <span class="comment">// append read bytes
                     </span><span class="self">self</span>.message_read_buffer
                         .extend_from_slice(<span class="kw-2">&amp;</span>buffer[<span class="number">0</span>..count]);
@@ -2268,7 +2269,7 @@
                         <span class="self">self</span>.message_read_buffer.clear();
 
                         <span class="attr">#[cfg(test)]
-                        </span><span class="macro">println!</span>(<span class="string">&quot;&lt;&lt;&lt; read message: {}&quot;</span>, bson);
+                        </span><span class="macro">println!</span>(<span class="string">"&lt;&lt;&lt; read message: {}"</span>, bson);
 
                         <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(
                             Message::try_from(bson).map_err(Error::MessageConversionFailed)<span class="question-mark">?</span>,
@@ -2382,7 +2383,7 @@
             sections: Default::default(),
         };
         <span class="kw">let </span><span class="kw-2">mut </span>message = bson::document::Document::from(message);
-        message.insert(<span class="string">&quot;sections&quot;</span>, std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.outbound_sections));
+        message.insert(<span class="string">"sections"</span>, std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.outbound_sections));
         <span class="self">self</span>.serialize_messages_impl(message)
     }
 
@@ -2396,13 +2397,13 @@
             .map_err(Error::MessageWriteFailed)<span class="question-mark">?</span>;
 
         <span class="kw">if </span><span class="self">self</span>.message_serialization_buffer.len() &gt; <span class="self">self</span>.max_message_size {
-            <span class="comment">// if we can&#39;t split a message anymore then we have a problem
-            </span><span class="kw">let </span>sections = message.get_array_mut(<span class="string">&quot;sections&quot;</span>).unwrap();
+            <span class="comment">// if we can't split a message anymore then we have a problem
+            </span><span class="kw">let </span>sections = message.get_array_mut(<span class="string">"sections"</span>).unwrap();
             <span class="macro">assert!</span>(sections.len() &gt; <span class="number">1</span>);
 
             <span class="kw">let </span>right = <span class="macro">doc! </span>{
-                <span class="string">&quot;honk_rpc&quot; </span>: HONK_RPC_VERSION,
-                <span class="string">&quot;sections&quot; </span>: sections.split_off(sections.len() / <span class="number">2</span>),
+                <span class="string">"honk_rpc" </span>: HONK_RPC_VERSION,
+                <span class="string">"sections" </span>: sections.split_off(sections.len() / <span class="number">2</span>),
             };
             <span class="kw">let </span>left = message;
 
@@ -2410,7 +2411,7 @@
             <span class="self">self</span>.serialize_messages_impl(right)<span class="question-mark">?</span>;
         } <span class="kw">else </span>{
             <span class="attr">#[cfg(test)]
-            </span><span class="macro">println!</span>(<span class="string">&quot;&gt;&gt;&gt; write message: {:?}&quot;</span>, message);
+            </span><span class="macro">println!</span>(<span class="string">"&gt;&gt;&gt; write message: {:?}"</span>, message);
             <span class="comment">// copy the serialized message into the pending write buffer
             </span><span class="self">self</span>.message_write_buffer
                 .append(<span class="kw-2">&amp;mut </span><span class="self">self</span>.message_serialization_buffer);
@@ -2451,7 +2452,7 @@
                 <span class="prelude-val">Ok</span>(count) =&gt; {
                     bytes_written += count;
                     <span class="attr">#[cfg(test)]
-                    </span><span class="macro">println!</span>(<span class="string">&quot;&gt;&gt;&gt; sent {} of {} bytes&quot;</span>, bytes_written, pending_bytes);
+                    </span><span class="macro">println!</span>(<span class="string">"&gt;&gt;&gt; sent {} of {} bytes"</span>, bytes_written, pending_bytes);
                     pending_data = <span class="kw-2">&amp;</span>pending_data[count..];
                 }
             }
@@ -2554,7 +2555,7 @@
                     }
                     (cookie, result, error_code) =&gt; {
                         <span class="kw">if let </span><span class="prelude-val">Some</span>(result) = result {
-                            <span class="macro">println!</span>(<span class="string">&quot;Server::update(): ApiSet next_result() returned both result and an ErrorCode {{ result : &#39;{}&#39;, error : {} }}&quot;</span>, result, error_code);
+                            <span class="macro">println!</span>(<span class="string">"Server::update(): ApiSet next_result() returned both result and an ErrorCode {{ result : '{}', error : {} }}"</span>, result, error_code);
                         }
                         <span class="self">self</span>.push_outbound_section(Section::Error(ErrorSection {
                             cookie: <span class="prelude-val">Some</span>(cookie),
@@ -2569,7 +2570,7 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="comment">// call a remote client&#39;s function
+    <span class="comment">// call a remote client's function
     </span><span class="kw">pub fn </span>client_call(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         namespace: <span class="kw-2">&amp;</span>str,
@@ -2618,32 +2619,32 @@
     <span class="kw">let </span><span class="kw-2">mut </span>alice = Session::new(stream1);
     <span class="kw">let </span><span class="kw-2">mut </span>pat = Session::new(stream2);
 
-    <span class="macro">println!</span>(<span class="string">&quot;--- pat reads message, but none has been sent&quot;</span>);
+    <span class="macro">println!</span>(<span class="string">"--- pat reads message, but none has been sent"</span>);
 
     <span class="comment">// no message sent yet
     </span><span class="macro">assert!</span>(pat.read_message()<span class="question-mark">?</span>.is_none());
 
-    <span class="macro">println!</span>(<span class="string">&quot;--- alice sends no message, but no pending sections so no message sent&quot;</span>);
+    <span class="macro">println!</span>(<span class="string">"--- alice sends no message, but no pending sections so no message sent"</span>);
 
     <span class="comment">// send an empty message
     </span>alice.serialize_messages()<span class="question-mark">?</span>;
     alice.write_pending_data()<span class="question-mark">?</span>;
 
-    <span class="macro">println!</span>(<span class="string">&quot;--- pat reads message, but none has been sent&quot;</span>);
+    <span class="macro">println!</span>(<span class="string">"--- pat reads message, but none has been sent"</span>);
 
     <span class="comment">// ensure no mesage as actually sent
     </span><span class="kw">match </span>pat.read_message() {
         <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(msg)) =&gt; <span class="macro">panic!</span>(
-            <span class="string">&quot;message should not have been sent: {}&quot;</span>,
+            <span class="string">"message should not have been sent: {}"</span>,
             bson::document::Document::from(msg)
         ),
         <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; {}
-        <span class="prelude-val">Err</span>(err) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;{:?}&quot;</span>, err),
+        <span class="prelude-val">Err</span>(err) =&gt; <span class="macro">panic!</span>(<span class="string">"{:?}"</span>, err),
     }
 
-    <span class="macro">println!</span>(<span class="string">&quot;--- pat sends an error message&quot;</span>);
+    <span class="macro">println!</span>(<span class="string">"--- pat sends an error message"</span>);
 
-    <span class="kw">const </span>CUSTOM_ERROR: <span class="kw-2">&amp;</span>str = <span class="string">&quot;Custom Error!&quot;</span>;
+    <span class="kw">const </span>CUSTOM_ERROR: <span class="kw-2">&amp;</span>str = <span class="string">"Custom Error!"</span>;
 
     pat.push_outbound_section(Section::Error(ErrorSection {
         cookie: <span class="prelude-val">Some</span>(<span class="number">42069</span>),
@@ -2655,12 +2656,12 @@
     pat.serialize_messages()<span class="question-mark">?</span>;
     pat.write_pending_data()<span class="question-mark">?</span>;
 
-    <span class="macro">println!</span>(<span class="string">&quot;--- alice reads and verifies message&quot;</span>);
+    <span class="macro">println!</span>(<span class="string">"--- alice reads and verifies message"</span>);
 
     <span class="comment">// wait for alice to receive message
     </span><span class="kw">let </span><span class="kw-2">mut </span>alice_read_message: bool = <span class="bool-val">false</span>;
     <span class="kw">while </span>!alice_read_message {
-        <span class="comment">// println!(&quot;reading...&quot;);
+        <span class="comment">// println!("reading...");
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>msg) = alice.read_message()<span class="question-mark">? </span>{
             <span class="macro">assert_eq!</span>(msg.sections.len(), <span class="number">1</span>);
             <span class="kw">match </span>msg.sections.pop() {
@@ -2671,18 +2672,18 @@
                             alice_read_message = <span class="bool-val">true</span>;
                         }
                         (cookie, code, message) =&gt; <span class="macro">panic!</span>(
-                            <span class="string">&quot;unexpected error section: cookie: {:?}, code: {:?}, message: {:?}&quot;</span>,
+                            <span class="string">"unexpected error section: cookie: {:?}, code: {:?}, message: {:?}"</span>,
                             cookie, code, message
                         ),
                     };
                 }
-                <span class="prelude-val">Some</span>(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;was expecting an Error section&quot;</span>),
-                <span class="prelude-val">None </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;we should have a message&quot;</span>),
+                <span class="prelude-val">Some</span>(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">"was expecting an Error section"</span>),
+                <span class="prelude-val">None </span>=&gt; <span class="macro">panic!</span>(<span class="string">"we should have a message"</span>),
             }
         }
     }
 
-    <span class="macro">println!</span>(<span class="string">&quot;--- alice sends multi-section message&quot;</span>);
+    <span class="macro">println!</span>(<span class="string">"--- alice sends multi-section message"</span>);
 
     alice.push_outbound_section(Section::Error(ErrorSection {
         cookie: <span class="prelude-val">Some</span>(<span class="number">42069</span>),
@@ -2692,10 +2693,10 @@
     }))<span class="question-mark">?</span>;
     alice.push_outbound_section(Section::Request(RequestSection {
         cookie: <span class="prelude-val">None</span>,
-        namespace: <span class="string">&quot;std&quot;</span>.to_string(),
-        function: <span class="string">&quot;print&quot;</span>.to_string(),
+        namespace: <span class="string">"std"</span>.to_string(),
+        function: <span class="string">"print"</span>.to_string(),
         version: <span class="number">0</span>,
-        arguments: <span class="macro">doc! </span>{<span class="string">&quot;message&quot;</span>: <span class="string">&quot;hello!&quot;</span>},
+        arguments: <span class="macro">doc! </span>{<span class="string">"message"</span>: <span class="string">"hello!"</span>},
     }))<span class="question-mark">?</span>;
     alice.push_outbound_section(Section::Response(ResponseSection {
         cookie: <span class="number">123456</span>,
@@ -2707,7 +2708,7 @@
     </span>alice.serialize_messages()<span class="question-mark">?</span>;
     alice.write_pending_data()<span class="question-mark">?</span>;
 
-    <span class="macro">println!</span>(<span class="string">&quot;--- pat reads and verifies multi-section message&quot;</span>);
+    <span class="macro">println!</span>(<span class="string">"--- pat reads and verifies multi-section message"</span>);
 
     <span class="comment">// read sections sent to pat
     </span><span class="kw">let </span><span class="kw-2">mut </span>pat_read_message: bool = <span class="bool-val">false</span>;
@@ -2724,8 +2725,8 @@
                     }
                     Section::Request(section) =&gt; {
                         <span class="macro">assert_eq!</span>(section.cookie, <span class="prelude-val">None</span>);
-                        <span class="macro">assert_eq!</span>(section.namespace, <span class="string">&quot;std&quot;</span>);
-                        <span class="macro">assert_eq!</span>(section.function, <span class="string">&quot;print&quot;</span>);
+                        <span class="macro">assert_eq!</span>(section.namespace, <span class="string">"std"</span>);
+                        <span class="macro">assert_eq!</span>(section.function, <span class="string">"print"</span>);
                         <span class="macro">assert_eq!</span>(section.version, <span class="number">0i32</span>);
                     }
                     Section::Response(section) =&gt; {
@@ -2750,7 +2751,7 @@
 <span class="attr">#[cfg(test)]
 </span><span class="kw">impl </span>ApiSet <span class="kw">for </span>TestApiSet {
     <span class="kw">fn </span>namespace(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>str {
-        <span class="string">&quot;namespace&quot;
+        <span class="string">"namespace"
     </span>}
 
     <span class="kw">fn </span>exec_function(
@@ -2761,8 +2762,8 @@
         _request_section: <span class="prelude-ty">Option</span>&lt;RequestCookie&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;bson::Bson&gt;, ErrorCode&gt; {
         <span class="kw">match </span>(name, version) {
-            (<span class="string">&quot;function&quot;</span>, <span class="number">0</span>) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;--- namespace::function_0() called&quot;</span>);
+            (<span class="string">"function"</span>, <span class="number">0</span>) =&gt; {
+                <span class="macro">println!</span>(<span class="string">"--- namespace::function_0() called"</span>);
                 <span class="self">self</span>.call_count += <span class="number">1</span>;
             }
             <span class="kw">_ </span>=&gt; (),
@@ -2780,7 +2781,7 @@
     <span class="kw">let </span>alice_stream = TcpStream::connect(socket_addr)<span class="question-mark">?</span>;
     alice_stream.set_nonblocking(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
     alice_stream.set_nodelay(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
-    <span class="macro">println!</span>(<span class="string">&quot;--- alice peer_addr: {}&quot;</span>, alice_stream.peer_addr()<span class="question-mark">?</span>);
+    <span class="macro">println!</span>(<span class="string">"--- alice peer_addr: {}"</span>, alice_stream.peer_addr()<span class="question-mark">?</span>);
     <span class="kw">let </span>(pat_stream, _socket_addr) = listener.accept()<span class="question-mark">?</span>;
     pat_stream.set_nonblocking(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
     pat_stream.set_nodelay(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
@@ -2792,7 +2793,7 @@
     <span class="kw">let </span>start = std::time::Instant::now();
 
     <span class="macro">println!</span>(
-        <span class="string">&quot;--- {:?} alice set max_wait_time to 3 seconds&quot;</span>,
+        <span class="string">"--- {:?} alice set max_wait_time to 3 seconds"</span>,
         std::time::Instant::now().duration_since(start)
     );
     alice.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
@@ -2801,16 +2802,16 @@
 
     <span class="comment">// a read will happen so time should reset
     </span><span class="macro">println!</span>(
-        <span class="string">&quot;--- {:?} sleep 2 seconds&quot;</span>,
+        <span class="string">"--- {:?} sleep 2 seconds"</span>,
         std::time::Instant::now().duration_since(start)
     );
     std::thread::sleep(std::time::Duration::from_secs(<span class="number">2</span>));
 
     <span class="macro">println!</span>(
-        <span class="string">&quot;--- {:?} pat calls namespace::function_0()&quot;</span>,
+        <span class="string">"--- {:?} pat calls namespace::function_0()"</span>,
         std::time::Instant::now().duration_since(start)
     );
-    pat.client_call(<span class="string">&quot;namespace&quot;</span>, <span class="string">&quot;function&quot;</span>, <span class="number">0</span>, <span class="macro">doc! </span>{})<span class="question-mark">?</span>;
+    pat.client_call(<span class="string">"namespace"</span>, <span class="string">"function"</span>, <span class="number">0</span>, <span class="macro">doc! </span>{})<span class="question-mark">?</span>;
     <span class="kw">while </span>alice_apiset.call_count != <span class="number">1 </span>{
         pat.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
         alice.update(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut </span>[<span class="kw-2">&amp;mut </span>alice_apiset]))<span class="question-mark">?</span>;
@@ -2818,7 +2819,7 @@
 
     <span class="comment">// a read will happen so time should reset
     </span><span class="macro">println!</span>(
-        <span class="string">&quot;--- {:?} sleep 2 seconds&quot;</span>,
+        <span class="string">"--- {:?} sleep 2 seconds"</span>,
         std::time::Instant::now().duration_since(start)
     );
     std::thread::sleep(std::time::Duration::from_secs(<span class="number">2</span>));
@@ -2826,10 +2827,10 @@
     alice.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
 
     <span class="macro">println!</span>(
-        <span class="string">&quot;--- {:?} pat calls namespace::function_0()&quot;</span>,
+        <span class="string">"--- {:?} pat calls namespace::function_0()"</span>,
         std::time::Instant::now().duration_since(start)
     );
-    pat.client_call(<span class="string">&quot;namespace&quot;</span>, <span class="string">&quot;function&quot;</span>, <span class="number">0</span>, <span class="macro">doc! </span>{})<span class="question-mark">?</span>;
+    pat.client_call(<span class="string">"namespace"</span>, <span class="string">"function"</span>, <span class="number">0</span>, <span class="macro">doc! </span>{})<span class="question-mark">?</span>;
     <span class="kw">while </span>alice_apiset.call_count != <span class="number">2 </span>{
         pat.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
         alice.update(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut </span>[<span class="kw-2">&amp;mut </span>alice_apiset]))<span class="question-mark">?</span>;
@@ -2837,22 +2838,22 @@
 
     <span class="comment">// on reads occur so alice should timeout
     </span><span class="macro">println!</span>(
-        <span class="string">&quot;--- {:?} sleep 4 seconds&quot;</span>,
+        <span class="string">"--- {:?} sleep 4 seconds"</span>,
         std::time::Instant::now().duration_since(start)
     );
     std::thread::sleep(std::time::Duration::from_secs(<span class="number">4</span>));
 
     <span class="macro">println!</span>(
-        <span class="string">&quot;--- {:?} pat+alice update&quot;</span>,
+        <span class="string">"--- {:?} pat+alice update"</span>,
         std::time::Instant::now().duration_since(start)
     );
     pat.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
     <span class="kw">match </span>alice.update(<span class="prelude-val">None</span>) {
-        <span class="prelude-val">Ok</span>(()) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;should have timed out&quot;</span>),
+        <span class="prelude-val">Ok</span>(()) =&gt; <span class="macro">panic!</span>(<span class="string">"should have timed out"</span>),
         <span class="prelude-val">Err</span>(Error::MessageReadTimedOut(duration)) =&gt; {
-            <span class="macro">println!</span>(<span class="string">&quot;--- expected time out after {:?}&quot;</span>, duration)
+            <span class="macro">println!</span>(<span class="string">"--- expected time out after {:?}"</span>, duration)
         }
-        <span class="prelude-val">Err</span>(err) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;unexpected error: {:?}&quot;</span>, err),
+        <span class="prelude-val">Err</span>(err) =&gt; <span class="macro">panic!</span>(<span class="string">"unexpected error: {:?}"</span>, err),
     }
     <span class="prelude-val">Ok</span>(())
 }
