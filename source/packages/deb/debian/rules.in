@@ -1,0 +1,29 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	$(MAKE) config-release
+	$(MAKE) gosling_c_shared_bindings_target -C out/release
+	$(MAKE) gosling_cpp_shared_bindings_target -C out/release
+
+override_dh_auto_install:
+	dh_auto_install
+
+	#
+	# libcgosling0
+	#
+	mkdir -p debian/libcgosling@CGOSLING_MAJOR_VERSION@/usr/lib/$(DEB_HOST_MULTIARCH)
+	cp out/release/bindings/c/lib/libcgosling.so.@CGOSLING_VERSION@ debian/libcgosling@CGOSLING_MAJOR_VERSION@/usr/lib/$(DEB_HOST_MULTIARCH)/.
+	cp -P out/release/bindings/c/lib/libcgosling.so.@CGOSLING_MAJOR_VERSION@ debian/libcgosling@CGOSLING_MAJOR_VERSION@/usr/lib/$(DEB_HOST_MULTIARCH)/.
+
+	#
+	# libcgosling-dev
+	#
+	mkdir -p debian/libcgosling-dev/usr/lib/$(DEB_HOST_MULTIARCH)
+	cp -P out/release/bindings/c/lib/libcgosling.so debian/libcgosling-dev/usr/lib/$(DEB_HOST_MULTIARCH)/.
+
+	mkdir -p debian/libcgosling-dev/usr/include/$(DEB_HOST_MULTIARCH)
+	cp out/release/bindings/c/include/* debian/libcgosling-dev/usr/include/$(DEB_HOST_MULTIARCH)/.
+	cp out/release/bindings/cpp/include/* debian/libcgosling-dev/usr/include/$(DEB_HOST_MULTIARCH)/.
