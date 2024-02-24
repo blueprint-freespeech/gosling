@@ -6,6 +6,8 @@ if (NOT CURSES_FOUND)
     message(WARNING "curses or ncurses not found; will not build C++ example")
 elseif(NOT Boost_FOUND)
     message(WARNING "Boost 1.66 or newer not found; will not build C++ example")
+elseif (NOT TARGET nlohmann_json::nlohmann_json)
+    message(WARNING "nlohmann_json not found; will not build C++ example")
 else()
     add_executable(hello_world_cpp EXCLUDE_FROM_ALL
         precomp.cpp

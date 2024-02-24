@@ -1,3 +1,8 @@
-add_subdirectory(Catch2)
-set(JSON_Install OFF CACHE INTERNAL "")
-add_subdirectory(json)
+if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/Catch2)
+    add_subdirectory(Catch2)
+endif()
+
+if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/json)
+    set(JSON_Install OFF CACHE INTERNAL "")
+    add_subdirectory(json)
+endif()
