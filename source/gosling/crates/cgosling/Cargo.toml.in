@@ -2,7 +2,8 @@
 name = "cgosling"
 build = "build.rs"
 authors = ["Richard Pospesel <richard@blueprintforfreespeech.net>"]
-version = "0.2.1"
+# see CMakeLists.txt for this variable's definition
+version = "@CGOSLING_VERSION@"
 rust-version = "1.63"
 edition = "2021"
 
@@ -11,7 +12,6 @@ cbindgen = "0.20.0"
 regex = "<= 1.9.6"
 serde = "1.0.193"
 serde_json = "1.0"
-
 
 [dependencies]
 anyhow = "^1"
