@@ -20,15 +20,15 @@ else()
         src/lib.rs
         src/object_registry.rs)
 
-    set(GOSLING_STATIC "${CMAKE_STATIC_LIBRARY_PREFIX}cgosling${CMAKE_STATIC_LIBRARY_SUFFIX}" CACHE STRING "cgosling static library filename" FORCE)
+    set(CGOSLING_STATIC "${CMAKE_STATIC_LIBRARY_PREFIX}cgosling${CMAKE_STATIC_LIBRARY_SUFFIX}" CACHE STRING "cgosling static library filename" FORCE)
     if (MINGW)
         # Rust does not include the 'lib' prefix for mingw shared-library targets, so we need to handle that for mingw cmake to play nicely
-        set(GOSLING_SHARED "cgosling${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE STRING "cgosling shared library filename" FORCE)
+        set(CGOSLING_SHARED "cgosling${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE STRING "cgosling shared library filename" FORCE)
     else()
-        set(GOSLING_SHARED "${CMAKE_SHARED_LIBRARY_PREFIX}cgosling${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE STRING "cgosling shared library filename" FORCE)
+        set(CGOSLING_SHARED "${CMAKE_SHARED_LIBRARY_PREFIX}cgosling${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE STRING "cgosling shared library filename" FORCE)
     endif()
     if ((DEFINED CMAKE_IMPORT_LIBRARY_SUFFIX))
-        set(GOSLING_IMPORT "${CMAKE_IMPORT_LIBRARY_PREFIX}cgosling${CMAKE_IMPORT_LIBRARY_SUFFIX}" CACHE STRING "cgosling import library filename" FORCE)
+        set(CGOSLING_IMPORT "${CMAKE_IMPORT_LIBRARY_PREFIX}cgosling${CMAKE_IMPORT_LIBRARY_SUFFIX}" CACHE STRING "cgosling import library filename" FORCE)
     endif()
 
     set(cgosling_outputs
@@ -36,13 +36,13 @@ else()
         ${CARGO_TARGET_DIR}/cgosling.json
         ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/libcgosling.d
         ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/libcgosling.rlib
-        ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${GOSLING_STATIC}
-        ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${GOSLING_SHARED}
+        ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_STATIC}
+        ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SHARED}
     )
 
     # add shared library import library if platform supports it
-    if ((DEFINED GOSLING_IMPORT))
-        list(APPEND cgosling_outputs ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${GOSLING_IMPORT})
+    if ((DEFINED CGOSLING_IMPORT))
+        list(APPEND cgosling_outputs ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_IMPORT})
     endif()
 
     #
@@ -61,29 +61,29 @@ else()
     if (LINUX)
         # rename the generated .so and patch the soname
         add_custom_command(
-            DEPENDS ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${GOSLING_SHARED}
-            OUTPUT ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${GOSLING_SHARED}.${CGOSLING_VERSION}
+            DEPENDS ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SHARED}
+            OUTPUT ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SHARED}.${CGOSLING_VERSION}
             # rename our library to include the full SemVer
-            COMMAND ${CMAKE_COMMAND} -E rename ${GOSLING_SHARED} ${GOSLING_SHARED}.${CGOSLING_VERSION}
+            COMMAND ${CMAKE_COMMAND} -E rename ${CGOSLING_SHARED} ${CGOSLING_SHARED}.${CGOSLING_VERSION}
             # update the soname of our library to include the SemVer mojor version
-            COMMAND patchelf --set-soname libcgosling.so.${CGOSLING_MAJOR_VERSION} ${GOSLING_SHARED}.${CGOSLING_VERSION}
+            COMMAND patchelf --set-soname libcgosling.so.${CGOSLING_MAJOR_VERSION} ${CGOSLING_SHARED}.${CGOSLING_VERSION}
             WORKING_DIRECTORY ${CARGO_TARGET_DIR}/${CARGO_PROFILE}
         )
         # generate symlinks
         add_custom_command(
-            DEPENDS ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${GOSLING_SHARED}.${CGOSLING_VERSION}
+            DEPENDS ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SHARED}.${CGOSLING_VERSION}
             OUTPUT
-                ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${GOSLING_SHARED}.${CGOSLING_MAJOR_VERSION}
-                ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${GOSLING_SHARED}
+                ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SHARED}.${CGOSLING_MAJOR_VERSION}
+                ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SHARED}
 
             # create symlinks
-            COMMAND ${CMAKE_COMMAND} -E create_symlink ${GOSLING_SHARED}.${CGOSLING_VERSION} ${GOSLING_SHARED}.${CGOSLING_MAJOR_VERSION}
-            COMMAND ${CMAKE_COMMAND} -E create_symlink ${GOSLING_SHARED}.${CGOSLING_VERSION} ${GOSLING_SHARED}
+            COMMAND ${CMAKE_COMMAND} -E create_symlink ${CGOSLING_SHARED}.${CGOSLING_VERSION} ${CGOSLING_SHARED}.${CGOSLING_MAJOR_VERSION}
+            COMMAND ${CMAKE_COMMAND} -E create_symlink ${CGOSLING_SHARED}.${CGOSLING_VERSION} ${CGOSLING_SHARED}
             WORKING_DIRECTORY ${CARGO_TARGET_DIR}/${CARGO_PROFILE}
         )
         # add symlinks to our cgosling_outputs list
-        list(APPEND cgosling_outputs ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${GOSLING_SHARED}.${CGOSLING_MAJOR_VERSION})
-        list(APPEND cgosling_outputs ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${GOSLING_SHARED}.${CGOSLING_VERSION})
+        list(APPEND cgosling_outputs ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SHARED}.${CGOSLING_MAJOR_VERSION})
+        list(APPEND cgosling_outputs ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SHARED}.${CGOSLING_VERSION})
     endif()
     add_custom_target(cgosling_target
         DEPENDS ${cgosling_outputs})
