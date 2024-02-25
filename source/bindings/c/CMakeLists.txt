@@ -4,15 +4,6 @@ set(GOSLING_LIBRARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/lib)
 file(MAKE_DIRECTORY ${GOSLING_INCLUDE_DIR})
 file(MAKE_DIRECTORY ${GOSLING_LIBRARY_DIR})
 
-set(GOSLING_STATIC ${CMAKE_STATIC_LIBRARY_PREFIX}cgosling${CMAKE_STATIC_LIBRARY_SUFFIX})
-if (MINGW)
-    # Rust does not include the 'lib' prefix for mingw shared-library targets, so we need to handle that for mingw cmake to play nicely
-    set(GOSLING_SHARED cgosling${CMAKE_SHARED_LIBRARY_SUFFIX})
-else()
-    set(GOSLING_SHARED ${CMAKE_SHARED_LIBRARY_PREFIX}cgosling${CMAKE_SHARED_LIBRARY_SUFFIX})
-endif()
-set(GOSLING_IMPORT ${CMAKE_IMPORT_LIBRARY_PREFIX}cgosling${CMAKE_IMPORT_LIBRARY_SUFFIX})
-
 set(gosling_c_bindings_sources
     ${CARGO_TARGET_DIR}/include/cgosling.h
     ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${GOSLING_STATIC}
@@ -31,6 +22,14 @@ if ((DEFINED CMAKE_IMPORT_LIBRARY_SUFFIX))
     list(APPEND gosling_c_bindings_outputs ${CMAKE_CURRENT_BINARY_DIR}/lib/${GOSLING_IMPORT})
 endif()
 
+# Linux also needs to copy over the symlinks
+if (LINUX)
+    list(APPEND gosling_c_bindings_sources ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${GOSLING_SHARED}.${CGOSLING_MAJOR_VERSION})
+    list(APPEND gosling_c_bindings_outputs ${CMAKE_CURRENT_BINARY_DIR}/lib/${GOSLING_SHARED}.${CGOSLING_MAJOR_VERSION})
+    list(APPEND gosling_c_bindings_sources ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${GOSLING_SHARED}.${CGOSLING_VERSION})
+    list(APPEND gosling_c_bindings_outputs ${CMAKE_CURRENT_BINARY_DIR}/lib/${GOSLING_SHARED}.${CGOSLING_VERSION})
+endif()
+
 #
 # Just copy header and lib from the cgosling crate build outputs
 #
@@ -38,7 +37,7 @@ foreach(src dest IN ZIP_LISTS gosling_c_bindings_sources gosling_c_bindings_outp
     add_custom_command(
         DEPENDS ${src} cgosling_target
         OUTPUT ${dest}
-        COMMAND cp ${src} ${dest})
+        COMMAND  cp -P ${src} ${dest})
 endforeach()
 
 add_custom_target(gosling_c_bindings_target
@@ -101,8 +100,16 @@ add_dependencies(build_target gosling_c_shared_bindings_target)
 
 install(FILES ${GOSLING_INCLUDE_DIR}/cgosling.h
     DESTINATION include)
-install(FILES ${GOSLING_LIBRARY_DIR}/${GOSLING_STATIC} ${GOSLING_LIBRARY_DIR}/${GOSLING_SHARED}
+install(FILES
+    ${GOSLING_LIBRARY_DIR}/${GOSLING_STATIC}
+    ${GOSLING_LIBRARY_DIR}/${GOSLING_SHARED}
     DESTINATION lib)
+if (LINUX)
+    install(FILES
+        ${GOSLING_LIBRARY_DIR}/${GOSLING_SHARED}.${CGOSLING_MAJOR_VERSION}
+        ${GOSLING_LIBRARY_DIR}/${GOSLING_SHARED}.${CGOSLING_VERSION}
+        DESTINATION lib)
+endif()
 if ((DEFINED CMAKE_IMPORT_LIBRARY_SUFFIX))
     install(FILES ${GOSLING_LIBRARY_DIR}/${GOSLING_IMPORT}
         DESTINATION lib)
