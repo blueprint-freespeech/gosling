@@ -1,7 +1,7 @@
 find_package(Boost 1.66.0)
 
 if (NOT TARGET Catch2::Catch2WithMain)
-    message(WARNING "Catch2 3 or newer not found; will not build gosling_unit_test")
+    message(WARNING "Catch2 3 or newer not found; will not build gosling_functional_test")
 elseif (NOT Boost_FOUND)
     message(WARNING "Boost 1.66 or newer not found; will not build gosling_functional_test")
 else()
