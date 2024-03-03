@@ -21,10 +21,15 @@ jobs:
           sudo apt-get install -y doxygen pandoc plantuml tidy ruby-mustache graphviz
       - name: Build Pages
         run: |
-          make website-rel-with-deb-info
-          echo "gosling.technology" > dist/share/doc/gosling/CNAME
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=../dist -DBUILD_PAGES=ON
+          make
+          make install
+          echo "gosling.technology" > ../dist/share/doc/gosling/CNAME
       - name: Deploy to Github Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: dist/rel-with-deb-info/website
+          publish_dir: dist/share/doc/gosling
+

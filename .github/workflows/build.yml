@@ -13,26 +13,39 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libboost-all-dev libncurses-dev default-jdk
+          sudo apt-get install -y libboost-all-dev libncurses-dev default-jdk dpkg-dev
       - name: Build Debug
         run: |
-          make install-debug
+          mkdir -p build/debug
+          cd build/debug
+          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../../dist/debug -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_DEBIAN_SOURCE_PACKAGE=ON
+          make
+          make install
       - name: Archive Debug
-        uses: actions/upload-artifact@v3
+        run: |
+          cd dist
+          tar -cf gosling-linux-debug.tar debug
+      - name: Upload Debug
+        uses: actions/upload-artifact@v4
         with:
-          name: linux-debug
-          path: |
-            dist/debug
+          name: gosling-linux-debug.tar
+          path: dist/gosling-linux-debug.tar
       - name: Build Release
         run: |
-          make install-release
+          mkdir -p build/release
+          cd build/release
+          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist/release -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_DEBIAN_SOURCE_PACKAGE=ON
+          make
+          make install
       - name: Archive Release
-        uses: actions/upload-artifact@v3
+        run: |
+          cd dist
+          tar -cf gosling-linux-release.tar release
+      - name: Upload Release
+        uses: actions/upload-artifact@v4
         with:
-          name: linux-release
-          path: |
-            dist/release
-
+          name: gosling-linux-release.tar
+          path: dist/gosling-linux-release.tar
   windows:
     runs-on: windows-latest
     defaults:
@@ -64,24 +77,38 @@ jobs:
         run: |
           # manually add java bins to PATH >:[
           export PATH=$(cygpath -u ${JAVA_HOME})/bin:$PATH
-          make install-debug
+          mkdir -p build/debug
+          cd build/debug
+          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../../dist/debug -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON
+          make
+          make install
       - name: Archive Debug
-        uses: actions/upload-artifact@v3
+        run: |
+          cd dist
+          tar -cf gosling-windows-debug.tar debug
+      - name: Upload Debug
+        uses: actions/upload-artifact@v4
         with:
-          name: windows-debug
-          path: |
-            dist/debug
+          name: gosling-windows-debug.tar
+          path: dist/gosling-windows-debug.tar
       - name: Build Release
         run: |
           # manually add java bins to PATH >:[
           export PATH=$(cygpath -u ${JAVA_HOME})/bin:$PATH
-          make install-release
+          mkdir -p build/release
+          cd build/release
+          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist/release -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON
+          make
+          make install
       - name: Archive Release
-        uses: actions/upload-artifact@v3
+        run: |
+          cd dist
+          tar -cf gosling-windows-release.tar release
+      - name: Upload Release
+        uses: actions/upload-artifact@v4
         with:
-          name: windows-release
-          path: |
-            dist/release
+          name: gosling-windows-release.tar
+          path: dist/gosling-windows-release.tar
 
   macos:
     runs-on: macos-latest
@@ -92,22 +119,36 @@ jobs:
           submodules: true
       - name: Install Dependencies
         run: |
-          brew install boost ncurses openjdk@17
+          brew install boost ncurses
       - name: Build Debug
         run: |
-          make install-debug
+          mkdir -p build/debug
+          cd build/debug
+          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../../dist/debug -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON
+          make
+          make install
       - name: Archive Debug
-        uses: actions/upload-artifact@v3
+        run: |
+          cd dist
+          tar -cf gosling-macos-debug.tar debug
+      - name: Upload Debug
+        uses: actions/upload-artifact@v4
         with:
-          name: macos-debug
-          path: |
-            dist/debug
+          name: gosling-macos-debug.tar
+          path: dist/gosling-macos-debug.tar
       - name: Build Release
         run: |
-          make install-release
+          mkdir -p build/release
+          cd build/release
+          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist/release -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON
+          make
+          make install
       - name: Archive Release
-        uses: actions/upload-artifact@v3
+        run: |
+          cd dist
+          tar -cf gosling-macos-release.tar release
+      - name: Upload Release
+        uses: actions/upload-artifact@v4
         with:
-          name: macos-release
-          path: |
-            dist/release
+          name: gosling-macos-release.tar
+          path: dist/gosling-macos-release.tar
