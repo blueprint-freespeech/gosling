@@ -1,18 +1,20 @@
+if (BUILD_PAGES)
 
-find_program(PANDOC_EXECUTABLE NAMES pandoc)
-find_program(MUSTACHE_EXECUTABLE NAMES mustache)
-find_program(PLANTUML_EXECUTABLE NAMES plantuml)
-find_program(TIDY_EXECUTABLE NAMES tidy)
+    find_program(PANDOC_EXECUTABLE NAMES pandoc)
+    find_program(MUSTACHE_EXECUTABLE NAMES mustache)
+    find_program(PLANTUML_EXECUTABLE NAMES plantuml)
+    find_program(TIDY_EXECUTABLE NAMES tidy)
 
-if (NOT PANDOC_EXECUTABLE)
-    message(WARNING "pandoc not found; will not build pages")
-elseif(NOT MUSTACHE_EXECUTABLE)
-    message(WARNING "mustache not found; will not build pages")
-elseif(NOT PLANTUML_EXECUTABLE)
-    message(WARNING "plantuml not found; will not build pages")
-elseif(NOT TIDY_EXECUTABLE)
-    message(WARNING "tidy not found; will not build pages")
-else()
+    if (NOT PANDOC_EXECUTABLE)
+        message(FATAL_ERROR "pandoc not found; required to build pages")
+    elseif(NOT MUSTACHE_EXECUTABLE)
+        message(FATAL_ERROR "mustache not found; required to build pages")
+    elseif(NOT PLANTUML_EXECUTABLE)
+        message(FATAL_ERROR "plantuml not found; required to build pages")
+    elseif(NOT TIDY_EXECUTABLE)
+        message(FATAL_ERROR "tidy not found; required to build pages")
+    endif()
+
     #
     # convert our markdown to html
     #
@@ -57,7 +59,7 @@ else()
         add_custom_command(
             OUTPUT ${file_xhtml}
             DEPENDS ${file_inc_xhtml} ${file_yml} ${CMAKE_CURRENT_SOURCE_DIR}/templates/page.mustache
-            COMMAND cp ${file_inc_xhtml} content.mustache
+            COMMAND ${CMAKE_COMMAND} -E copy ${file_inc_xhtml} content.mustache
             COMMAND mustache ${file_yml} ${CMAKE_CURRENT_SOURCE_DIR}/templates/page.mustache > ${file_xhtml}
             COMMAND rm content.mustache)
 
@@ -72,33 +74,19 @@ else()
         add_custom_command(
             OUTPUT ${file}
             DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${file}
-            COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/${file} ${file})
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${file} ${file})
 
         list(APPEND build_outputs ${file})
     endforeach()
 
-    add_custom_target(gosling_pages_target
-        DEPENDS ${build_outputs} gosling_pages_images
+    add_custom_target(gosling_pages_target ALL
+        DEPENDS ${build_outputs} gosling_pages_images_target
     )
 
     #
-    # Deploy website pages
+    # Install gosling website pages
     #
-
-    add_custom_command(
-        OUTPUT ${CMAKE_INSTALL_PREFIX}/website
-        COMMAND mkdir -p ${CMAKE_INSTALL_PREFIX}/website
-    )
     foreach(file ${build_outputs})
-        add_custom_command(
-            OUTPUT ${CMAKE_INSTALL_PREFIX}/website/${file}
-            DEPENDS ${CMAKE_INSTALL_PREFIX}/website ${CMAKE_CURRENT_BINARY_DIR}/${file}
-            COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/${file} ${CMAKE_INSTALL_PREFIX}/website/${file}
-        )
-        list(APPEND deploy_outputs ${CMAKE_INSTALL_PREFIX}/website/${file})
+        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${file} DESTINATION ${CMAKE_INSTALL_DOCDIR})
     endforeach()
-    add_custom_target(deploy_pages_website_target
-        DEPENDS ${deploy_outputs} deploy_gosling_pages_images_website_target
-    )
-    add_dependencies(website_target deploy_pages_website_target)
 endif()

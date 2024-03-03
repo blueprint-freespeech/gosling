@@ -19,20 +19,21 @@ add_custom_command(
 add_custom_target(honk_rpc_target
     DEPENDS ${honk_rpc_outputs})
 
-#
-# cargo test target
-#
-add_custom_target(honk_rpc_cargo_test_target
-    COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo test ${CARGO_FLAGS}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-)
-add_dependencies(test_target honk_rpc_cargo_test_target)
-add_dependencies(test_offline_target honk_rpc_cargo_test_target)
-
-#
-# fuzz target
-#
-add_custom_target(honk_rpc_cargo_fuzz_session
-    COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo fuzz run fuzz_session ${CARGO_FLAGS}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-)
+if (ENABLE_TESTS)
+    #
+    # cargo test target
+    #
+    add_test(NAME honk_rpc_cargo_test
+        COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo test ${CARGO_FLAGS}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    #
+    # fuzz target
+    #
+    if (ENABLE_FUZZ_TESTS)
+        add_test(NAME honk_rpc_cargo_fuzz_test
+            COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo fuzz run fuzz_session ${CARGO_FLAGS}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        )
+    endif()
+endif()

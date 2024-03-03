@@ -1,1 +1,1 @@
-add_subdirectory(deb)
+add_subdirectory(deb-src)

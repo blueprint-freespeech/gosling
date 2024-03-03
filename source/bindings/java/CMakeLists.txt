@@ -1,13 +1,13 @@
-find_package(Boost 1.66.0)
-include(FindJNI)
+if (BUILD_JAVA_BINDINGS)
+    find_package(Boost 1.66.0)
+    include(FindJNI)
 
-if (NOT Boost_FOUND)
-    message(WARNING "Boost 1.66 or newer not found; will not generate Java bindings")
-elseif(NOT JNI_FOUND)
-    message(WARNING "Java JNI not found; will not generate Java bindings")
-else()
+    if (NOT Boost_FOUND)
+        message(FATAL_ERROR "Boost 1.66 or newer not found; will not generate Java bindings")
+    elseif(NOT JNI_FOUND)
+        message(FATAL_ERROR "Java JNI not found; will not generate Java bindings")
+    endif()
     set(gosling_java_bindings_sources
-        ${CARGO_TARGET_DIR}/cgosling.json
         build_java_bindings.rs
         Cargo.toml
         Gosling.java.handlebars
@@ -22,7 +22,7 @@ else()
     # Generate Gosling.java, Gosling.jar, GoslingJNI.h, and GoslingJNI.cpp
     #
     add_custom_command(
-        DEPENDS ${gosling_java_bindings_sources}
+        DEPENDS ${gosling_java_bindings_sources} cgosling_target
         OUTPUT ${gosling_java_bindings_outputs}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/src/net/blueprintforfreespeech/gosling
         # generate java source
@@ -49,17 +49,24 @@ else()
     target_link_libraries(goslingjni PRIVATE ${Java_JVM_LIBRARY})
     target_link_libraries(goslingjni PRIVATE gosling_cpp_static_bindings)
     target_compile_features(goslingjni PRIVATE cxx_std_17)
+    set_target_properties(goslingjni
+        PROPERTIES
+        VERSION ${CGOSLING_VERSION}
+        SOVERSION ${CGOSLING_MAJOR_VERSION})
 
     add_custom_target(gosling_java_bindings_target)
     add_dependencies(gosling_java_bindings_target goslingjni)
-    add_dependencies(build_target gosling_java_bindings_target)
 
     #
-    # Install
+    # Install JNI library and Java jar archive
     #
 
-    install(TARGETS goslingjni)
+    install(TARGETS goslingjni LIBRARY)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Gosling.jar
-        DESTINATION bindings/java)
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/gosling/bindings/java
+    )
 
+    if (ENABLE_LINTING)
+        add_dependencies(linting goslingjni)
+    endif()
 endif()

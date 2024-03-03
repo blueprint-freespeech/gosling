@@ -1,11 +1,13 @@
-find_package(Boost 1.66.0)
+if (ENABLE_TESTS AND ENABLE_ONLINE_TESTS)
+    find_package(Boost 1.66.0)
 
-if (NOT TARGET Catch2::Catch2WithMain)
-    message(WARNING "Catch2 3 or newer not found; will not build gosling_functional_test")
-elseif (NOT Boost_FOUND)
-    message(WARNING "Boost 1.66 or newer not found; will not build gosling_functional_test")
-else()
-    add_executable(gosling_functional EXCLUDE_FROM_ALL
+    if (NOT TARGET Catch2::Catch2WithMain)
+        message(FATAL_ERROR "Catch2 3 or newer not found; required for gosling_functional_test")
+    elseif (NOT Boost_FOUND)
+        message(FATAL_ERROR "Boost 1.66 or newer not found; required for gosling_functional_test")
+    endif()
+
+    add_executable(gosling_functional
         precomp.cpp
         test.cpp)
     target_precompile_headers(gosling_functional PRIVATE precomp.hpp)
@@ -21,13 +23,20 @@ else()
 
     target_compile_features(gosling_functional PRIVATE cxx_std_17)
 
-    add_custom_target(gosling_functional_test_target
-        COMMAND ${CMAKE_COMMAND} -E copy
-                $<TARGET_FILE:gosling_c_shared_bindings>
-                ${CMAKE_CURRENT_BINARY_DIR}
+    # create soft-link to dependent cgosling.dll on Windows
+    if(WINDOWS)
+        add_custom_command(TARGET gosling_functional POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E create_symlink $<TARGET_FILE:gosling_c_shared_bindings> $<TARGET_FILE_NAME:gosling_c_shared_bindings>
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        )
+    endif()
+
+    add_test(NAME gosling_functional_test
         COMMAND gosling_functional
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     )
-    add_dependencies(gosling_functional_test_target gosling_functional)
-    add_dependencies(test_target gosling_functional_test_target)
+
+    if (ENABLE_FORMATTING)
+        add_format_target(format_functional_target ${CMAKE_CURRENT_SOURCE_DIR})
+    endif()
 endif()

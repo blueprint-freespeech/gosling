@@ -1,5 +1,7 @@
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/Catch2/CMakeLists.txt)
-    add_subdirectory(Catch2)
+    if (ENABLE_TESTS)
+        add_subdirectory(Catch2)
+    endif()
 endif()
 
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/json/CMakeLists.txt)

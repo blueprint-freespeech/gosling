@@ -1,15 +1,17 @@
-set(CURSES_NEED_NCURSES TRUE)
-find_package(Curses)
-find_package(Boost 1.66.0)
+if (BUILD_EXAMPLES)
+    set(CURSES_NEED_NCURSES TRUE)
+    find_package(Curses)
+    find_package(Boost 1.66.0)
 
-if (NOT CURSES_FOUND)
-    message(WARNING "curses or ncurses not found; will not build C++ example")
-elseif(NOT Boost_FOUND)
-    message(WARNING "Boost 1.66 or newer not found; will not build C++ example")
-elseif (NOT TARGET nlohmann_json::nlohmann_json)
-    message(WARNING "nlohmann_json not found; will not build C++ example")
-else()
-    add_executable(hello_world_cpp EXCLUDE_FROM_ALL
+    if (NOT CURSES_FOUND)
+        message(FATAL_ERROR "curses or ncurses not found; needed for C++ example")
+    elseif(NOT Boost_FOUND)
+        message(FATAL_ERROR "Boost 1.66 or newer not found; needed for C++ example")
+    elseif (NOT TARGET nlohmann_json::nlohmann_json)
+        message(FATAL_ERROR "nlohmann_json not found; needed for C++ example")
+    endif()
+
+    add_executable(hello_world_cpp
         precomp.cpp
         terminal.cpp
         identity_server_callbacks.cpp
@@ -41,14 +43,17 @@ else()
 
     target_compile_features(hello_world_cpp PRIVATE cxx_std_17)
 
-    add_custom_target(hello_world_cpp_target)
+    add_custom_target(hello_world_cpp_target ALL)
     add_dependencies(hello_world_cpp_target hello_world_cpp)
-    add_dependencies(build_target hello_world_cpp_target)
+
+    if (ENABLE_FORMATTING)
+        add_format_target(format_cpp_example_target ${CMAKE_CURRENT_SOURCE_DIR})
+    endif()
 
     #
     # Install hello world example binary
     #
 
     install(TARGETS hello_world_cpp
-        DESTINATION examples/hello_world_cpp)
+        RUNTIME)
 endif()

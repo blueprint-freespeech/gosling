@@ -1,19 +1,20 @@
-set(GOSLING_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
-set(GOSLING_LIBRARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/lib)
+find_program(PATCHELF_EXECUTABLE NAMES patchelf)
 
-file(MAKE_DIRECTORY ${GOSLING_INCLUDE_DIR})
-file(MAKE_DIRECTORY ${GOSLING_LIBRARY_DIR})
+if (NOT PATCHELF_EXECUTABLE AND LINUX)
+    message(FATAL_ERROR "Could not find patchelf executable; required for linux shared library generation")
+endif()
+
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
 
 set(gosling_c_bindings_sources
     ${CARGO_TARGET_DIR}/include/cgosling.h
     ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_STATIC}
-    ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SHARED}
 )
 
 set(gosling_c_bindings_outputs
     ${CMAKE_CURRENT_BINARY_DIR}/include/cgosling.h
     ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_STATIC}
-    ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}
 )
 
 # add shared library import library if platform supports it
@@ -22,16 +23,8 @@ if ((DEFINED CMAKE_IMPORT_LIBRARY_SUFFIX))
     list(APPEND gosling_c_bindings_outputs ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_IMPORT})
 endif()
 
-# Linux also needs to copy over the symlinks
-if (LINUX)
-    list(APPEND gosling_c_bindings_sources ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SHARED}.${CGOSLING_MAJOR_VERSION})
-    list(APPEND gosling_c_bindings_outputs ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}.${CGOSLING_MAJOR_VERSION})
-    list(APPEND gosling_c_bindings_sources ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SHARED}.${CGOSLING_VERSION})
-    list(APPEND gosling_c_bindings_outputs ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}.${CGOSLING_VERSION})
-endif()
-
 #
-# Just copy header and lib from the cgosling crate build outputs
+# Just copy header and libs from the cgosling crate build outputs
 #
 foreach(src dest IN ZIP_LISTS gosling_c_bindings_sources gosling_c_bindings_outputs)
     add_custom_command(
@@ -40,9 +33,37 @@ foreach(src dest IN ZIP_LISTS gosling_c_bindings_sources gosling_c_bindings_outp
         COMMAND  cp -P ${src} ${dest})
 endforeach()
 
+# Linux includes the semantic version at the end
+if (LINUX)
+    add_custom_command(
+        DEPENDS ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SHARED}
+        OUTPUT
+            ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}.${CGOSLING_VERSION}
+            ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}.${CGOSLING_MAJOR_VERSION}
+            ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}
+        # copy shared library and set soname
+        COMMAND ${CMAKE_COMMAND} -E copy ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SHARED} ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}.${CGOSLING_VERSION}
+        COMMAND patchelf --set-soname libcgosling.so.${CGOSLING_MAJOR_VERSION} ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}.${CGOSLING_VERSION}
+        # create symlinks
+        COMMAND ${CMAKE_COMMAND} -E create_symlink ${CGOSLING_SHARED}.${CGOSLING_VERSION} ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}.${CGOSLING_MAJOR_VERSION}
+        COMMAND ${CMAKE_COMMAND} -E create_symlink ${CGOSLING_SHARED}.${CGOSLING_MAJOR_VERSION} ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED})
+    list(APPEND gosling_c_bindings_outputs ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}.${CGOSLING_VERSION})
+    list(APPEND gosling_c_bindings_outputs ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}.${CGOSLING_MAJOR_VERSION})
+    list(APPEND gosling_c_bindings_outputs ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED})
+else()
+    add_custom_command(
+        DEPENDS ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SHARED}
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}
+        COMMAND ${CMAKE_COMMAND} -E copy ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SHARED} ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED})
+    list(APPEND gosling_c_bindings_outputs ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED})
+endif()
+
 add_custom_target(gosling_c_bindings_target
     DEPENDS ${gosling_c_bindings_outputs})
 add_dependencies(gosling_c_bindings_target cgosling_target)
+if (ENABLE_LINTING)
+    add_dependencies(linting gosling_c_bindings_target)
+endif()
 
 #
 # Static Library
@@ -51,9 +72,9 @@ add_dependencies(gosling_c_bindings_target cgosling_target)
 add_library(gosling_c_static_bindings STATIC IMPORTED GLOBAL)
 add_dependencies(gosling_c_static_bindings gosling_c_bindings_target)
 
-target_include_directories(gosling_c_static_bindings INTERFACE ${GOSLING_INCLUDE_DIR})
+target_include_directories(gosling_c_static_bindings INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/include)
 set_target_properties(gosling_c_static_bindings PROPERTIES
-    IMPORTED_LOCATION ${GOSLING_LIBRARY_DIR}/${CGOSLING_STATIC}
+    IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_STATIC}
 )
 
 # Linux targets needed by rust runtime
@@ -69,9 +90,8 @@ if(WINDOWS)
     target_link_libraries(gosling_c_static_bindings INTERFACE ntdll)
 endif()
 
-add_custom_target(gosling_c_static_bindings_target)
+add_custom_target(gosling_c_static_bindings_target ALL)
 add_dependencies(gosling_c_static_bindings_target gosling_c_static_bindings)
-add_dependencies(build_target gosling_c_static_bindings_target)
 
 #
 # Shared Library
@@ -80,37 +100,56 @@ add_dependencies(build_target gosling_c_static_bindings_target)
 add_library(gosling_c_shared_bindings SHARED IMPORTED GLOBAL)
 add_dependencies(gosling_c_shared_bindings gosling_c_bindings_target)
 
-target_include_directories(gosling_c_shared_bindings INTERFACE ${GOSLING_INCLUDE_DIR})
+target_include_directories(gosling_c_shared_bindings INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/include)
 set_target_properties(gosling_c_shared_bindings PROPERTIES
-    IMPORTED_LOCATION ${GOSLING_LIBRARY_DIR}/${CGOSLING_SHARED}
+    IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}
 )
 if ((DEFINED CMAKE_IMPORT_LIBRARY_SUFFIX))
     set_target_properties(gosling_c_shared_bindings PROPERTIES
-        IMPORTED_IMPLIB ${GOSLING_LIBRARY_DIR}/${CGOSLING_IMPORT}
+        IMPORTED_IMPLIB ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_IMPORT}
     )
 endif()
 
-add_custom_target(gosling_c_shared_bindings_target)
+add_custom_target(gosling_c_shared_bindings_target ALL)
 add_dependencies(gosling_c_shared_bindings_target gosling_c_shared_bindings)
-add_dependencies(build_target gosling_c_shared_bindings_target)
 
 #
 # Install
 #
 
-install(FILES ${GOSLING_INCLUDE_DIR}/cgosling.h
-    DESTINATION include)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/cgosling.h
+    TYPE INCLUDE)
 install(FILES
-    ${GOSLING_LIBRARY_DIR}/${CGOSLING_STATIC}
-    ${GOSLING_LIBRARY_DIR}/${CGOSLING_SHARED}
-    DESTINATION lib)
-if (LINUX)
+    ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_STATIC}
+    ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}
+    TYPE LIB)
+if (WINDOWS)
+    # staticlib goes to lib
     install(FILES
-        ${GOSLING_LIBRARY_DIR}/${CGOSLING_SHARED}.${CGOSLING_MAJOR_VERSION}
-        ${GOSLING_LIBRARY_DIR}/${CGOSLING_SHARED}.${CGOSLING_VERSION}
-        DESTINATION lib)
+        ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_STATIC}
+        TYPE LIB)
+    # dll goes to bin
+    install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}
+        TYPE BIN)
+elseif (LINUX)
+    # so and a go to lib
+    install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_STATIC}
+        ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}
+        TYPE LIB)
+    # versioned symlinks go to lib
+    install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}.${CGOSLING_MAJOR_VERSION}
+        ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}.${CGOSLING_VERSION}
+        TYPE LIB)
+else()
+    install(FILES
+            ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_STATIC}
+            ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}
+            TYPE LIB)
 endif()
 if ((DEFINED CMAKE_IMPORT_LIBRARY_SUFFIX))
-    install(FILES ${GOSLING_LIBRARY_DIR}/${CGOSLING_IMPORT}
-        DESTINATION lib)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_IMPORT}
+        TYPE LIB)
 endif()

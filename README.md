@@ -11,7 +11,31 @@ It is meant to generalize (and improve upon) the authentication scheme [Ricochet
 - [Gosling Protocol](https://blueprint-freespeech.github.io/gosling/gosling-spec.xhtml)
 
 
-## Dependencies
+## Building
+
+Gosling is built using cmake. By default, only the cgosling static and shared libraries and C/C++ headers are built. A typical development setup would be:
+
+```shell
+# Create out-of-tree build directory
+mkdir build && cd build
+
+# Generate Makefiles
+cmake .. -DCMAKE_INSTALL_PREFOX=../dist
+
+# Build default targets
+make
+
+# Install to ../dist
+make install
+```
+
+Tests and examples depend on additional libraries consumed as git submodules. They can be initialised by:
+
+```shell
+$ git submodule update --init
+```
+
+## Required Dependencies
 
 Gosling currently has the following required build dependencies:
 
@@ -25,36 +49,134 @@ Cargo will automatically download and build the required Rust crates. The list o
 - [gosling](./source/gosling/crates/gosling/Cargo.toml)
 - [cgosling](./source/gosling/crates/cgosling/Cargo.toml)
 
-## Optional Dependencies
 
-Gosling has a number of dependencies that are not needed to build the core library, but are needed for bindings, examples and tests:
+## Additional Configuration Options and Optional Dependencies
 
-- [boost >= 1.66](https://www.boost.org/) (for C++ hello_world example and tests)
-- [ncurses](https://invisible-mirror.net/ncurses/ncurses.html) (for C++ hello_world example)
-- [Java JDK](https://openjdk.org/) (for Java JNI bindings)
+Additional bindings, tests, and documentation can be enabeld with the following cmake options. Each of these options are **OFF** by default.
 
-The following optional dependencies consumed as git submodules:
-
-- [Catch2](https://github.com/catchorg/Catch2) (for C++ tests)
-- [nlohmann::json](https://github.com/nlohmann/json/releases/tag/v3.11.3) (for C++ hello_world example)
-
-They can be initialised by:
+### ENABLE_TESTS
 
 ```shell
-$ git submodule update --init
+cmake -DENABLE_TESTS=ON
 ```
 
-The **coverage-** make targets have the following additional dependencies:
+Enables the following ctest test targets (internet access is not required for these tests):
 
-- [cargo-tarpaulin](https://crates.io/crates/cargo-tarpaulin)
+- honk_rpc_cargo_fuzz_test
+- tor_interface_offline_cargo_test
+- cgosling_offline_cargo_test
+- gosling_offline_cargo_test
+- gosling_unit_test
 
-The **fuzz-** make targets have the following additional dependencies:
+The following additional dependencies are required for this configure option:
+
+- [Catch2 >= 3.0](https://github.com/catchorg/Catch2)
+
+### ENABLE_ONLINE_TESTS
+
+```shell
+cmake -DENABLE_ONLINE_TESTS=ON
+```
+
+Enables the following ctest test targets which require internet access and connect to the Tor Network (enabling this option also enables the **ENABLE_TESTS** option):
+
+- tor_interface_cargo_test
+- gosling_cargo_test
+- cgosling_cargo_test
+- gosling_functional_test
+
+The following additional dependencies are required for this configure option:
+
+- [boost >= 1.66](https://www.boost.org/)
+- [Catch2 >= 3.0](https://github.com/catchorg/Catch2)
+
+### ENABLE_FUZZ_TESTS
+
+```shell
+cmake -DENABLE_FUZZ_TESTS=ON
+```
+
+Enables the following cargo-fuzz ctest test targets (enabling this option also enables the **ENABLE_TESTS** option):
+
+- honk_rpc_cargo_fuzz_test
+- tor_interface_crypto_cargo_fuzz_test
+- gosling_identity_server_cargo_fuzz_test
+- gosling_identity_client_cargo_fuzz_test
+- gosling_endpoint_server_cargo_fuzz_test
+- gosling_endpoint_client_cargo_fuzz_test
+- cgosling_cargo_fuzz_test
+
+The following additional dependencies are required for this configure option:
 
 - rust nightly (for `-z`  rustc compiler flag)
 - [cargo-fuzz](https://github.com/rust-fuzz/cargo-fuzz)
 - [libfuzzer](https://www.llvm.org/docs/LibFuzzer.html)
 
-The **website-** make target has the following additional dependencies:
+### ENABLE_LINTING
+
+```shell
+cmake -DENABLE_LINTING=ON
+```
+
+The following additional dependencies are required for this configure option:
+
+- [cppcheck](https://cppcheck.sourceforge.io/)
+- [jq](https://jqlang.github.io/jq/)
+
+### ENABLE_FORMATTING
+
+```shell
+cmake -DENABLE_FORMATTING=ON
+```
+
+The following additional dependencies are required for this configure option:
+
+- [clang-format](https://clang.llvm.org/docs/ClangFormat.html)
+
+### BUILD_PYTHON_BINDINGS
+
+```shell
+cmake -DBUILD_PYTHON_BINDINGS=ON
+```
+
+Generates cgosling.py Python bindings as part of build
+
+### BUILD_JAVA_BINDINGS
+
+```shell
+cmake -DBUILD_JAVA_BINDINGS=ON
+```
+
+Builds a cgosling-based JNI shared library and Gosling.jar java bindings.
+
+The following additional dependencies are required for this configure option:
+
+- [Java JDK](https://openjdk.org/)
+- [boost >= 1.66](https://www.boost.org/)
+
+### BUILD_EXAMPLES
+
+```shell
+cmake -DBUILD_EXAMPLES=ON
+```
+
+Builds a cgosling-based C++ example program.
+
+The following additional dependencies are required for this configure option:
+
+- [boost >= 1.66](https://www.boost.org/)
+- [ncurses](https://invisible-mirror.net/ncurses/ncurses.html)
+- [nlohmann::json](https://github.com/nlohmann/json/releases/tag/v3.11.3)
+
+### BUILD_PAGES
+
+```shell
+cmake -DBUILD_PAGES=ON
+```
+
+Generate the gosling.technolgoy website including test code-coverage, Rust crate documentation, cgosling C/C++ documentation, and specifications. This configuration is only valid for **Debug** and **RelWithDebInfo** cmake targets.
+
+The following additional dependencies are required for this configure option:
 
 - [doxygen](https://www.doxygen.nl/)
 - [graphviz](https://www.graphviz.org/)
@@ -63,70 +185,7 @@ The **website-** make target has the following additional dependencies:
 - [plantuml](https://github.com/plantuml/plantuml)
 - [tidy](https://github.com/htacg/tidy-html5)
 
-The **format** make target has the following additional dependencies:
-
-- [clang-format](https://clang.llvm.org/docs/ClangFormat.html)
-
-The **lint** make target has the following additional dependencies:
-
-- [cppcheck](https://cppcheck.sourceforge.io/)
-- [jq](https://jqlang.github.io/jq/)
-
-## Building
-
-The reference implementation is a work-in-progress and the API is not yet fully stable.
-
-The following make targets are supported:
-
-- **Misc**
-    - **clean** - deletes **all** build artifacts in `out` and `dist` directories
-    - **format** - runs `cargo fmt` on Rust source and `clang-format` on the C++ source
-    - **lint** - runs `cargo clippy` on the Rust source and `cppcheck` on the C++ source
-- **Config Targets:** creates Makefiles for different build types
-    - **config-debug** - **Debug** CMake build type: no optimization, asserts enabled, debug symbols generated; build artifacts placed in `out/debug`
-    - **config-release** - **Release** Cmake build type: optimize for speed, asserts disabled, debug symbols stripped; build artifacts placed in `out/release`
-    - **config-rel-with-deb-info** - **RelWithDebInfo** CMake build type: optimize for speed, asserts disabled, debug symbols generated; build artifacts placed in `out/rel-with-deb-info`
-    - **config-min-size-rel** - **MinSizeRel** CMake build type: optimize for size, asserts disabled, debug symbols stripped; build artifacts placed in `out/min-size-rel`
-
-    Further information about CMake build types can be found in the CMake documentation:
-    - https://cmake.org/cmake/help/v3.16/variable/CMAKE_BUILD_TYPE.html
-- **Build Targets:** build gosling crates, cgosling, and language bindings
-    - **debug**
-    - **release**
-    - **rel-with-deb-info**
-    - **min-size-rel**
-- **Install Targets:** build and deploy `cgosling` headers, static+shared libraries, bindings, and examples to `dist/*`
-    - **install-debug**
-    - **install-release**
-    - **install-rel-with-deb-info**
-    - **install-min-size-rel**
-- **Test Targets:** build and run all tests using real tor daemon
-    - **test-debug**
-    - **test-release**
-    - **test-rel-with-deb-info**
-    - **test-min-size-rel**
-- **Offline Test Targets:** build and run all tests using mock offline tor daemon
-    - **test-offline-debug**
-    - **test-offline-release**
-    - **test-offline-rel-with-deb-info**
-    - **test-offline-min-size-rel**
-- **Rust Test Coverage:** build and run Rust tests and calculate code coverage using real tor daemon
-    - **coverage-debug**
-    - **coverage-rel-with-deb-info**
-- **Rust Offline Test Coverage:** build and run Rust tets and calculate code coverage using mock offline tor daemon
-    - **coverage-offline-debug**
-    - **coverage-offline-rel-with-deb-info**
-- **Fuzz Targets:** run `cargo-fuzz` tests
-    - **fuzz-honk-rpc-session** - honk-rpc session
-    - **fuzz-tor-interface-crypto** - tor-interface cryptography
-    - **fuzz-gosling-identity-server** - gosling identity server protocol
-    - **fuzz-gosling-identity-client** - gosling identity client protocol
-    - **fuzz-gosling-endpoint-server** - gosling endpoint server protocol
-    - **fuzz-gosling-endpoint-client** - gosling endpoint client protocol
-    - **fuzz cgosling** - cgosling C FFI
-- **Website Targets:** build pages, Rust crate documentation, C/C++ doxygen documentation, and Rust test coverage; websites deployed to `dist/*`
-    - **install-pages-debug**
-    - **install-pages-rel-with-deb-info**
+---
 
 ## Acknowledgements
 

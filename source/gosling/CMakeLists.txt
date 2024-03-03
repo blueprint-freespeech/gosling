@@ -1,12 +1,25 @@
+# ensure we have required Rust components
+find_program(RUSTC_EXECUTABLE NAMES rustc)
+find_program(CARGO_EXECUTABLE NAMES cargo)
+find_program(CARGO_TARPAULIN_EXECUTABLE NAMES cargo-tarpaulin)
+find_program(CARGO_FUZZ_EXECUTABLE NAMES cargo-fuzz)
+
+if (NOT RUSTC_EXECUTABLE)
+    message(FATAL_ERROR "rustc not found; required to build gosling")
+elseif (NOT CARGO_EXECUTABLE)
+    message(FATAL_ERROR "cargo not found; required to build gosling")
+elseif (NOT CARGO_TARPAULIN_EXECUTABLE AND BUILD_PAGES)
+    message(FATAL_ERROR "cargo-tarpaulin not found; required to generate Rust test coverage and build pages")
+elseif (NOT CARGO_FUZZ_EXECUTABLE AND ENABLE_FUZZ_TESTS)
+    message(FATAL_ERROR "cargo-fuzz not found; required to run fuzz tests")
+endif()
+
 add_subdirectory(crates)
 
-find_program(CARGO_TARPAULIN_EXECUTABLE NAMES cargo-tarpaulin)
-
-if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-    message(WARNING "Debug symbols not available; will not generate Rust test coverage")
-elseif (NOT CARGO_TARPAULIN_EXECUTABLE)
-    message(WARNING "Could not find cargo-tarpaulin; will not generate Rust test coverage")
-else()
+if (BUILD_PAGES)
+    if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+        message(FATAL_ERROR "Debug symbols not available; required to generate Rust test coverage")
+    endif()
 
     #
     # Code coverage
@@ -18,7 +31,7 @@ else()
         COMMAND ${CMAKE_COMMAND} -E echo "Test Coverage Report: ${CARGO_TARGET_DIR}/tarpaulin/coverage.html"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
-    add_custom_target(gosling_cargo_tarpaulin
+    add_custom_target(gosling_cargo_tarpaulin ALL
         DEPENDS ${CARGO_TARGET_DIR}/tarpaulin/coverage.html
     )
 
@@ -32,57 +45,55 @@ else()
         COMMAND ${CMAKE_COMMAND} -E echo "Test Coverage Report: ${CARGO_TARGET_DIR}/tarpaulin/coverage-offline.html"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
-    add_custom_target(gosling_cargo_tarpaulin_offline
+    add_custom_target(gosling_cargo_tarpaulin_offline ALL
         DEPENDS ${CARGO_TARGET_DIR}/tarpaulin/coverage-offline.html
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
     #
-    # Deploy Rust test code-coverage reports to website
+    # Install code coverage pages
+    #
+    install(FILES
+        ${CARGO_TARGET_DIR}/tarpaulin/coverage-offline.html
+        ${CARGO_TARGET_DIR}/tarpaulin/coverage.html
+        DESTINATION ${CMAKE_INSTALL_DOCDIR})
+
+    #
+    # Build crate documentation
     #
     add_custom_command(
-        OUTPUT ${CMAKE_INSTALL_PREFIX}/website/coverage.html ${CMAKE_INSTALL_PREFIX}/website/coverage-offline.html
-        DEPENDS ${CARGO_TARGET_DIR}/tarpaulin/coverage.html ${CARGO_TARGET_DIR}/tarpaulin/coverage-offline.html
-        COMMAND mkdir -p ${CMAKE_INSTALL_PREFIX}/website
-        COMMAND cp ${CARGO_TARGET_DIR}/tarpaulin/coverage.html ${CMAKE_INSTALL_PREFIX}/website/coverage.html
-        COMMAND cp ${CARGO_TARGET_DIR}/tarpaulin/coverage-offline.html ${CMAKE_INSTALL_PREFIX}/website/coverage-offline.html
+        OUTPUT ${CARGO_TARGET_DIR}/doc
+        COMMAND CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo doc --no-deps --workspace --exclude cgosling
+        COMMAND ${CMAKE_COMMAND} -E echo "Rust Crate Documentation: ${CARGO_TARGET_DIR}/doc/gosling/index.html"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/crates)
+    add_custom_target(gosling_cargo_doc_target ALL
+        DEPENDS ${CARGO_TARGET_DIR}/doc
     )
-    add_custom_target(deploy_gosling_test_coverage_website_target
-        DEPENDS ${CMAKE_INSTALL_PREFIX}/website/coverage.html ${CMAKE_INSTALL_PREFIX}/website/coverage-offline.html
-    )
-    add_dependencies(website_target deploy_gosling_test_coverage_website_target)
+
+    #
+    # Install crate documentation pages
+    #
+    install(DIRECTORY ${CARGO_TARGET_DIR}/doc/
+        DESTINATION ${CMAKE_INSTALL_DOCDIR}/crates)
+
 endif()
 
-#
-# Run crate linting
-#
-add_custom_target(gosling_cargo_clippy
-    COMMAND CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo clippy
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+if (ENABLE_LINTING)
+    #
+    # Run crate linting
+    #
+    add_custom_target(gosling_cargo_clippy
+        COMMAND CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo clippy
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    add_dependencies(linting gosling_cargo_clippy)
+endif()
 
-#
-# Build crate documentation
-#
-add_custom_command(
-    OUTPUT ${CARGO_TARGET_DIR}/doc
-    COMMAND CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo doc --no-deps --workspace --exclude cgosling
-    COMMAND ${CMAKE_COMMAND} -E echo "Rust Crate Documentation: ${CARGO_TARGET_DIR}/doc/gosling/index.html"
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/crates)
-
-add_custom_target(gosling_cargo_doc_target
-    DEPENDS ${CARGO_TARGET_DIR}/doc)
-
-#
-# Deploy Rust crate documenation to website
-#
-add_custom_command(
-    DEPENDS gosling_cargo_doc_target
-    OUTPUT ${CMAKE_INSTALL_PREFIX}/website/crates
-    COMMAND mkdir -p ${CMAKE_INSTALL_PREFIX}/website/crates
-    COMMAND cp -r ${CARGO_TARGET_DIR}/doc/* ${CMAKE_INSTALL_PREFIX}/website/crates/.
-)
-add_custom_target(deploy_crate_docs_website_target
-    DEPENDS ${CMAKE_INSTALL_PREFIX}/website/crates
-)
-add_dependencies(website_target deploy_crate_docs_website_target)
-
+if (ENABLE_FORMATTING)
+    #
+    # Run rust formatting
+    #
+    add_custom_target(format_rust_source
+        COMMAND cargo fmt
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    add_dependencies(format format_rust_source)
+endif()

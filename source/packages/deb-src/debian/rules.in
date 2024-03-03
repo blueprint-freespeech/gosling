@@ -1,0 +1,25 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	dh_auto_configure -- -DCMAKE_BUILD_TYPE=Release
+
+override_dh_auto_install:
+	DESTDIR=debian/tmp make install -C obj-$(DEB_HOST_MULTIARCH)
+	#
+	# libcgosling0
+	#
+	mkdir -p debian/libcgosling@CGOSLING_MAJOR_VERSION@/usr/lib/$(DEB_HOST_MULTIARCH)
+	cp obj-$(DEB_HOST_MULTIARCH)/debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/libcgosling.so.@CGOSLING_VERSION@ debian/libcgosling@CGOSLING_MAJOR_VERSION@/usr/lib/$(DEB_HOST_MULTIARCH)/.
+	cp -P obj-$(DEB_HOST_MULTIARCH)/debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/libcgosling.so.@CGOSLING_MAJOR_VERSION@ debian/libcgosling@CGOSLING_MAJOR_VERSION@/usr/lib/$(DEB_HOST_MULTIARCH)/.
+
+	#
+	# libcgosling-dev
+	#
+	mkdir -p debian/libcgosling-dev/usr/lib/$(DEB_HOST_MULTIARCH)
+	cp -P obj-$(DEB_HOST_MULTIARCH)/debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/libcgosling.so debian/libcgosling-dev/usr/lib/$(DEB_HOST_MULTIARCH)/.
+
+	mkdir -p debian/libcgosling-dev/usr/include/$(DEB_HOST_MULTIARCH)
+	cp obj-$(DEB_HOST_MULTIARCH)/debian/tmp/usr/include/* debian/libcgosling-dev/usr/include/$(DEB_HOST_MULTIARCH)/.
