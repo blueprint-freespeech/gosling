@@ -17,14 +17,11 @@ set(cgosling_sources
     src/object_registry.rs)
 
 set(CGOSLING_STATIC "${CMAKE_STATIC_LIBRARY_PREFIX}cgosling${CMAKE_STATIC_LIBRARY_SUFFIX}" CACHE STRING "cgosling static library filename" FORCE)
-if (MINGW)
-    # Rust does not include the 'lib' prefix for mingw shared-library targets, so we need to handle that for mingw cmake to play nicely
+if (WINDOWS)
     set(CGOSLING_SHARED "cgosling${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE STRING "cgosling shared library filename" FORCE)
+    set(CGOSLING_IMPORT "libcgosling${CMAKE_IMPORT_LIBRARY_SUFFIX}" CACHE STRING "cgosling import library filename" FORCE)
 else()
     set(CGOSLING_SHARED "${CMAKE_SHARED_LIBRARY_PREFIX}cgosling${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE STRING "cgosling shared library filename" FORCE)
-endif()
-if ((DEFINED CMAKE_IMPORT_LIBRARY_SUFFIX))
-    set(CGOSLING_IMPORT "${CMAKE_IMPORT_LIBRARY_PREFIX}cgosling${CMAKE_IMPORT_LIBRARY_SUFFIX}" CACHE STRING "cgosling import library filename" FORCE)
 endif()
 
 set(cgosling_outputs

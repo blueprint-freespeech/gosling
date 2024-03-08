@@ -17,8 +17,8 @@ set(gosling_c_bindings_outputs
     ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_STATIC}
 )
 
-# add shared library import library if platform supports it
-if ((DEFINED CMAKE_IMPORT_LIBRARY_SUFFIX))
+# add Shared library import library
+if (WINDOWS)
     list(APPEND gosling_c_bindings_sources ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_IMPORT})
     list(APPEND gosling_c_bindings_outputs ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_IMPORT})
 endif()
@@ -33,7 +33,7 @@ foreach(src dest IN ZIP_LISTS gosling_c_bindings_sources gosling_c_bindings_outp
         COMMAND  cp -P ${src} ${dest})
 endforeach()
 
-# Linux includes the semantic version at the end
+# Shared Library + Symlinks
 if (LINUX)
     add_custom_command(
         DEPENDS ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SHARED}
@@ -49,6 +49,21 @@ if (LINUX)
         COMMAND ${CMAKE_COMMAND} -E create_symlink ${CGOSLING_SHARED}.${CGOSLING_MAJOR_VERSION} ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED})
     list(APPEND gosling_c_bindings_outputs ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}.${CGOSLING_VERSION})
     list(APPEND gosling_c_bindings_outputs ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}.${CGOSLING_MAJOR_VERSION})
+    list(APPEND gosling_c_bindings_outputs ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED})
+elseif(MACOS)
+    add_custom_command(
+        DEPENDS ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SHARED}
+        OUTPUT
+            ${CMAKE_CURRENT_BINARY_DIR}/lib/libcgosling.${CGOSLING_VERSION}.dylib
+            ${CMAKE_CURRENT_BINARY_DIR}/lib/libcgosling.${CGOSLING_MAJOR_VERSION}.dylib
+            ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}
+        # copy shared library
+        COMMAND ${CMAKE_COMMAND} -E copy ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SHARED} ${CMAKE_CURRENT_BINARY_DIR}/lib/libcgosling.${CGOSLING_VERSION}.dylib
+        # create symlinks
+        COMMAND ${CMAKE_COMMAND} -E create_symlink libcgosling.${CGOSLING_VERSION}.dylib ${CMAKE_CURRENT_BINARY_DIR}/lib/libcgosling.${CGOSLING_MAJOR_VERSION}.dylib
+        COMMAND ${CMAKE_COMMAND} -E create_symlink libcgosling.${CGOSLING_MAJOR_VERSION}.dylib ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED})
+    list(APPEND gosling_c_bindings_outputs ${CMAKE_CURRENT_BINARY_DIR}/lib/libcgosling.${CGOSLING_VERSION}.dylib)
+    list(APPEND gosling_c_bindings_outputs ${CMAKE_CURRENT_BINARY_DIR}/lib/libcgosling.${CGOSLING_MAJOR_VERSION}.dylib)
     list(APPEND gosling_c_bindings_outputs ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED})
 else()
     add_custom_command(
@@ -104,7 +119,7 @@ target_include_directories(gosling_c_shared_bindings INTERFACE ${CMAKE_CURRENT_B
 set_target_properties(gosling_c_shared_bindings PROPERTIES
     IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}
 )
-if ((DEFINED CMAKE_IMPORT_LIBRARY_SUFFIX))
+if (WINDOWS)
     set_target_properties(gosling_c_shared_bindings PROPERTIES
         IMPORTED_IMPLIB ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_IMPORT}
     )
@@ -124,16 +139,17 @@ install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}
     TYPE LIB)
 if (WINDOWS)
-    # staticlib goes to lib
+    # .a + .dll.a goes to lib
     install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_STATIC}
+        ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_IMPORT}
         TYPE LIB)
-    # dll goes to bin
+    # .dll goes to bin
     install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}
         TYPE BIN)
 elseif (LINUX)
-    # so and a go to lib
+    # .so and .a go to lib
     install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_STATIC}
         ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}
@@ -143,13 +159,21 @@ elseif (LINUX)
         ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}.${CGOSLING_MAJOR_VERSION}
         ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}.${CGOSLING_VERSION}
         TYPE LIB)
+elseif (MACOS)
+    # .dylib and .a go to lib
+    install(FILES
+            ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_STATIC}
+            ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}
+            TYPE LIB)
+    # versioned symlinks go to lib
+    install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/lib/libcgosling.${CGOSLING_MAJOR_VERSION}.dylib
+        ${CMAKE_CURRENT_BINARY_DIR}/lib/libcgosling.${CGOSLING_VERSION}.dylib
+        TYPE LIB)
 else()
     install(FILES
             ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_STATIC}
             ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_SHARED}
             TYPE LIB)
 endif()
-if ((DEFINED CMAKE_IMPORT_LIBRARY_SUFFIX))
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_IMPORT}
-        TYPE LIB)
-endif()
+
