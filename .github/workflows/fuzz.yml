@@ -18,31 +18,36 @@ jobs:
       - name: Install fuzzer
         run: |
           cargo install cargo-fuzz
+      - name: Init Project
+        run: |
+          mkdir build
+          cd build
+          cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DENABLE_FUZZ_TESTS=On -DFUZZ_TEST_MAX_TOTAL_TIME=1200
       - name: Fuzz HonkRPC
         run: |
-          cd source/gosling/crates/honk-rpc
-          cargo fuzz run fuzz_session -- -max_total_time=600
+          cd build
+          ctest -R honk_rpc_cargo_fuzz_test --verbose
       - name: Fuzz Tor Crypto
         run: |
-          cd source/gosling/crates/tor-interface
-          cargo fuzz run fuzz_crypto -- -max_total_time=600
+          cd build
+          ctest -R tor_interface_crypto_cargo_fuzz_test --verbose
       - name: Fuzz Identity Server
         run: |
-          cd source/gosling/crates/gosling
-          cargo fuzz run fuzz_identity_server -- -max_total_time=600
+          cd build
+          ctest -R gosling_identity_server_cargo_fuzz_test --verbose
       - name: Fuzz Identity Client
         run: |
-          cd source/gosling/crates/gosling
-          cargo fuzz run fuzz_identity_client -- -max_total_time=600
+          cd build
+          ctest -R gosling_identity_client_cargo_fuzz_test --verbose
       - name: Fuzz Endpoint Server
         run: |
-          cd source/gosling/crates/gosling
-          cargo fuzz run fuzz_endpoint_server -- -max_total_time=600
+          cd build
+          ctest -R gosling_endpoint_server_cargo_fuzz_test --verbose
       - name: Fuzz Endpoint Client
         run: |
-          cd source/gosling/crates/gosling
-          cargo fuzz run fuzz_endpoint_client -- -max_total_time=600
+          cd build
+          ctest -R gosling_endpoint_client_cargo_fuzz_test --verbose
       - name: Fuzz C-Gosling
         run: |
-          cd source/gosling/crates/cgosling
-          cargo fuzz run fuzz_cgosling -- -max_total_time=600
+          cd build
+          ctest -R cgosling_cargo_fuzz_test --verbose
