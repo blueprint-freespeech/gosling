@@ -1,0 +1,12 @@
+[package]
+name = "cgosling-proc-macros"
+version = "0.1.0"
+rust-version = "1.63"
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1.0"
+syn = {version = "2.0", features = ["parsing"]}

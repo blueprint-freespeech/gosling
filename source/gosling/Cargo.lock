@@ -214,6 +214,7 @@ dependencies = [
  "backtrace",
  "bson",
  "cbindgen",
+ "cgosling-proc-macros",
  "gosling",
  "home",
  "paste",
@@ -223,6 +224,14 @@ dependencies = [
  "static_assertions",
  "tor-interface",
  "which",
+]
+
+[[package]]
+name = "cgosling-proc-macros"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn 2.0.50",
 ]
 
 [[package]]
