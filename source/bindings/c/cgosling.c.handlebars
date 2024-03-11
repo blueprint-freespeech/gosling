@@ -1,0 +1,8 @@
+#include <cgosling.h>
+{{#each functions}}
+
+{{return_param}} {{name}}_impl({{#each input_params}}{{#unless (eq @index 0)}}, {{/unless}}{{typename}} {{name}}{{/each}});
+{{return_param}} {{name}}({{#each input_params}}{{#unless (eq @index 0)}}, {{/unless}}{{typename}} {{name}}{{/each}}) {
+    return {{name}}_impl({{#each input_params}}{{#unless (eq @index 0)}}, {{/unless}}{{name}}{{/each}});
+}
+{{/each}}

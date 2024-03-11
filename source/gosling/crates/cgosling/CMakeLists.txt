@@ -17,26 +17,14 @@ set(cgosling_sources
     src/object_registry.rs)
 
 set(CGOSLING_STATIC "${CMAKE_STATIC_LIBRARY_PREFIX}cgosling${CMAKE_STATIC_LIBRARY_SUFFIX}" CACHE STRING "cgosling static library filename" FORCE)
-if (WINDOWS)
-    set(CGOSLING_SHARED "cgosling${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE STRING "cgosling shared library filename" FORCE)
-    set(CGOSLING_IMPORT "libcgosling${CMAKE_IMPORT_LIBRARY_SUFFIX}" CACHE STRING "cgosling import library filename" FORCE)
-else()
-    set(CGOSLING_SHARED "${CMAKE_SHARED_LIBRARY_PREFIX}cgosling${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE STRING "cgosling shared library filename" FORCE)
-endif()
+set(CGOSLING_IMPL_STATIC "${CMAKE_STATIC_LIBRARY_PREFIX}cgosling_impl${CMAKE_STATIC_LIBRARY_SUFFIX}" CACHE STRING "cgosling static impl library filename" FORCE)
 
 set(cgosling_outputs
     ${CARGO_TARGET_DIR}/include/cgosling.h
     ${CARGO_TARGET_DIR}/cgosling.json
-    ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/libcgosling.d
-    ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/libcgosling.rlib
     ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_STATIC}
-    ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SHARED}
+    ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_IMPL_STATIC}
 )
-
-# add shared library import library if platform supports it
-if ((DEFINED CGOSLING_IMPORT))
-    list(APPEND cgosling_outputs ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_IMPORT})
-endif()
 
 #
 # build target
@@ -44,6 +32,8 @@ endif()
 add_custom_command(
     DEPENDS ${cgosling_sources}
     OUTPUT ${cgosling_outputs}
+    COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo build ${CARGO_FLAGS} --features impl-lib
+    COMMAND ${CMAKE_COMMAND} -E rename ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_STATIC} ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_IMPL_STATIC}
     COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo build ${CARGO_FLAGS}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )

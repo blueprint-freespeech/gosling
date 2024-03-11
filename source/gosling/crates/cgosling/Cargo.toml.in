@@ -17,6 +17,7 @@ serde_json = "1.0"
 anyhow = "^1"
 backtrace = ">= 0.3, <= 0.3.67"
 bson = ">= 2.0, <= 2.4.0"
+cgosling-proc-macros = { version = "0.1.0", path = "../cgosling-proc-macros" }
 gosling = { version = "^0.1.0", path = "../gosling" }
 home = ">= 0.5, <= 0.5.5"
 paste = "^1.0"
@@ -26,7 +27,8 @@ which = ">= 4.4.2, <= 5.0.0"
 
 [lib]
 name = "cgosling"
-crate-type = ["staticlib", "cdylib", "rlib"]
+crate-type = ["staticlib" ,"rlib"]
 
 [features]
 offline-test = ["gosling/offline-test"]
+impl-lib = []

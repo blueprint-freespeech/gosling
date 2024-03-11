@@ -19,6 +19,8 @@ use std::time::Duration;
 // extern crates
 use anyhow::anyhow;
 use anyhow::bail;
+#[cfg(feature = "impl-lib")]
+use cgosling_proc_macros::*;
 use gosling::context::*;
 use tor_interface::legacy_tor_client::*;
 use tor_interface::mock_tor_client::*;
@@ -92,12 +94,14 @@ define_registry! {Error}
 /// A wrapper object containing an error message
 pub struct GoslingFFIError;
 
-#[no_mangle]
+
 /// Get error message from gosling_error
 ///
 /// @param error: the error object to get the message from
 /// @return null-terminated string with error message whose
 ///  lifetime is tied to the source
+#[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_error_get_message(error: *const GoslingFFIError) -> *const c_char {
     if !error.is_null() {
         let key = error as usize;
@@ -119,6 +123,7 @@ pub extern "C" fn gosling_error_get_message(error: *const GoslingFFIError) -> *c
 /// @param orig_error: original to copy
 /// @param error: fliled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_error_clone(
     out_error: *mut *mut GoslingFFIError,
     orig_error: *const GoslingFFIError,
@@ -164,6 +169,7 @@ macro_rules! impl_registry_free {
 ///
 /// @param error: the error object to free
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_error_free(error: *mut GoslingFFIError) {
     impl_registry_free!(error, Error);
 }
@@ -200,6 +206,7 @@ define_registry! {ContextTuple}
 ///
 /// @param in_private_key: the private key to free
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_ed25519_private_key_free(in_private_key: *mut GoslingEd25519PrivateKey) {
     impl_registry_free!(in_private_key, Ed25519PrivateKey);
 }
@@ -208,6 +215,7 @@ pub extern "C" fn gosling_ed25519_private_key_free(in_private_key: *mut GoslingE
 ///
 /// @param in_private_key: the private key to free
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_x25519_private_key_free(in_private_key: *mut GoslingX25519PrivateKey) {
     impl_registry_free!(in_private_key, X25519PrivateKey);
 }
@@ -215,6 +223,7 @@ pub extern "C" fn gosling_x25519_private_key_free(in_private_key: *mut GoslingX2
 ///
 /// @param public_key: the public key to free
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_x25519_public_key_free(in_public_key: *mut GoslingX25519PublicKey) {
     impl_registry_free!(in_public_key, X25519PublicKey);
 }
@@ -222,6 +231,7 @@ pub extern "C" fn gosling_x25519_public_key_free(in_public_key: *mut GoslingX255
 ///
 /// @param in_service_id: the service id object to free
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_v3_onion_service_id_free(in_service_id: *mut GoslingV3OnionServiceId) {
     impl_registry_free!(in_service_id, V3OnionServiceId);
 }
@@ -229,6 +239,7 @@ pub extern "C" fn gosling_v3_onion_service_id_free(in_service_id: *mut GoslingV3
 ///
 /// @param in_tor_provider: the tor provider object to free
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_tor_provider_free(in_tor_provider: *mut GoslingTorProvider) {
     impl_registry_free!(in_tor_provider, ContextTuple);
 }
@@ -236,6 +247,7 @@ pub extern "C" fn gosling_tor_provider_free(in_tor_provider: *mut GoslingTorProv
 ///
 /// @param in_context: the context object to free
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_free(in_context: *mut GoslingContext) {
     impl_registry_free!(in_context, ContextTuple);
 }
@@ -291,6 +303,7 @@ const GOSLING_LIBRARY_HANDLE: usize = {
 ///
 /// @return: returns 0 on success
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_library_init(
     out_library: *mut *mut GoslingLibrary,
     error: *mut *mut GoslingFFIError,
@@ -315,6 +328,7 @@ pub unsafe extern "C" fn gosling_library_init(
 /// is not initialized or if it has already been freed
 #[no_mangle]
 #[allow(unused_variables)]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_library_free(in_library: *mut GoslingLibrary) {
     if GOSLING_LIBRARY_INITED.load(Ordering::Relaxed) {
         clear_error_registry();
@@ -335,6 +349,7 @@ pub extern "C" fn gosling_library_free(in_library: *mut GoslingLibrary) {
 /// @param out_private_key: returned generated ed25519 private key
 /// @param error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_ed25519_private_key_generate(
     out_private_key: *mut *mut GoslingEd25519PrivateKey,
     error: *mut *mut GoslingFFIError,
@@ -358,6 +373,7 @@ pub unsafe extern "C" fn gosling_ed25519_private_key_generate(
 /// @param private_key: original to copy
 /// @param error: fliled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_ed25519_private_key_clone(
     out_private_key: *mut *mut GoslingEd25519PrivateKey,
     private_key: *const GoslingEd25519PrivateKey,
@@ -391,6 +407,7 @@ pub unsafe extern "C" fn gosling_ed25519_private_key_clone(
 /// @param key_blob_length: number of chars in key_blob not including any null-terminator
 /// @param error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_ed25519_private_key_from_keyblob(
     out_private_key: *mut *mut GoslingEd25519PrivateKey,
     key_blob: *const c_char,
@@ -430,6 +447,7 @@ pub unsafe extern "C" fn gosling_ed25519_private_key_from_keyblob(
 ///  least 100 characters (99 for string + 1 for null-terminator)
 /// @param error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_ed25519_private_key_to_keyblob(
     private_key: *const GoslingEd25519PrivateKey,
     out_key_blob: *mut c_char,
@@ -484,6 +502,7 @@ pub extern "C" fn gosling_ed25519_private_key_to_keyblob(
 /// @param private_key: original to copy
 /// @param error: fliled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_x25519_private_key_clone(
     out_private_key: *mut *mut GoslingX25519PrivateKey,
     private_key: *const GoslingX25519PrivateKey,
@@ -516,6 +535,7 @@ pub unsafe extern "C" fn gosling_x25519_private_key_clone(
 /// @param base64_length: the number of chars in base64 not including any null-terminator
 /// @param error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_x25519_private_key_from_base64(
     out_private_key: *mut *mut GoslingX25519PrivateKey,
     base64: *const c_char,
@@ -554,6 +574,7 @@ pub unsafe extern "C" fn gosling_x25519_private_key_from_base64(
 ///  least 45 characters (44 for string + 1 for null-terminator)
 /// @param error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_x25519_private_key_to_base64(
     private_key: *const GoslingX25519PrivateKey,
     out_base64: *mut c_char,
@@ -608,6 +629,7 @@ pub extern "C" fn gosling_x25519_private_key_to_base64(
 /// @param public_key: original to copy
 /// @param error: fliled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_x25519_public_key_clone(
     out_public_key: *mut *mut GoslingX25519PublicKey,
     public_key: *const GoslingX25519PublicKey,
@@ -640,6 +662,7 @@ pub unsafe extern "C" fn gosling_x25519_public_key_clone(
 /// @param base32_length: the number of chars in base32 not including any null-terminator
 /// @param error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_x25519_public_key_from_base32(
     out_public_key: *mut *mut GoslingX25519PublicKey,
     base32: *const c_char,
@@ -678,6 +701,7 @@ pub unsafe extern "C" fn gosling_x25519_public_key_from_base32(
 ///  least 53 characters (52 for string + 1 for null-terminator)
 /// @param error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_x25519_public_key_to_base32(
     public_key: *const GoslingX25519PublicKey,
     out_base32: *mut c_char,
@@ -732,6 +756,7 @@ pub extern "C" fn gosling_x25519_public_key_to_base32(
 /// @param service_id: original to copy
 /// @param error: fliled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_v3_onion_service_id_clone(
     out_service_id: *mut *mut GoslingV3OnionServiceId,
     service_id: *const GoslingV3OnionServiceId,
@@ -765,6 +790,7 @@ pub unsafe extern "C" fn gosling_v3_onion_service_id_clone(
 ///  null-terminator
 /// @param error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_v3_onion_service_id_from_string(
     out_service_id: *mut *mut GoslingV3OnionServiceId,
     service_id_string: *const c_char,
@@ -802,6 +828,7 @@ pub unsafe extern "C" fn gosling_v3_onion_service_id_from_string(
 /// @param ed25519_private_key: an e25519 private key
 /// @param error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_v3_onion_service_id_from_ed25519_private_key(
     out_service_id: *mut *mut GoslingV3OnionServiceId,
     ed25519_private_key: *const GoslingEd25519PrivateKey,
@@ -841,6 +868,7 @@ pub unsafe extern "C" fn gosling_v3_onion_service_id_from_ed25519_private_key(
 ///  must be at least 57 characters (56 for string + 1 for null-terminator)
 /// @param error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_v3_onion_service_id_to_string(
     service_id: *const GoslingV3OnionServiceId,
     out_service_id_string: *mut c_char,
@@ -899,6 +927,7 @@ pub extern "C" fn gosling_v3_onion_service_id_to_string(
 ///  null-terminator; must be V3_ONION_SERVICE_ID_STRING_LENGTH (56)
 /// @param error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_string_is_valid_v3_onion_service_id(
     service_id_string: *const c_char,
     service_id_string_length: usize,
@@ -936,6 +965,7 @@ pub extern "C" fn gosling_string_is_valid_v3_onion_service_id(
 ///  null-terminator
 /// @param error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_tor_provider_new_legacy_client(
     out_tor_provider: *mut *mut GoslingTorProvider,
     tor_bin_path: *const c_char,
@@ -994,6 +1024,7 @@ pub unsafe extern "C" fn gosling_tor_provider_new_legacy_client(
 /// @param out_tor_provider: returned tor provider
 /// @param error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_tor_provider_new_mock_client(
     out_tor_provider: *mut *mut GoslingTorProvider,
     error: *mut *mut GoslingFFIError,
@@ -1023,6 +1054,7 @@ pub unsafe extern "C" fn gosling_tor_provider_new_mock_client(
 /// @param identity_private_key: the e25519 private key used to start th identity server's onion service
 /// @param error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_context_init(
     // out context
     out_context: *mut *mut GoslingContext,
@@ -1086,6 +1118,7 @@ pub unsafe extern "C" fn gosling_context_init(
 /// @param context: the gosling context object to connect to the tor network
 /// @param error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_bootstrap_tor(
     context: *mut GoslingContext,
     error: *mut *mut GoslingFFIError,
@@ -1109,6 +1142,7 @@ pub extern "C" fn gosling_context_bootstrap_tor(
 /// @param context: the gosling context whose identity server to start
 /// @param error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_start_identity_server(
     context: *mut GoslingContext,
     error: *mut *mut GoslingFFIError,
@@ -1132,6 +1166,7 @@ pub extern "C" fn gosling_context_start_identity_server(
 /// @param context: the gosling context whose identity server to stop
 /// @param error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_stop_identity_server(
     context: *mut GoslingContext,
     error: *mut *mut GoslingFFIError,
@@ -1161,6 +1196,7 @@ pub extern "C" fn gosling_context_stop_identity_server(
 /// @param client_auth_public_key: the x25519 public key used to encrypt the onion service descriptor
 /// @param error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_start_endpoint_server(
     context: *mut GoslingContext,
     endpoint_private_key: *const GoslingEd25519PrivateKey,
@@ -1238,6 +1274,7 @@ pub extern "C" fn gosling_context_start_endpoint_server(
 /// @param endpoint_private_key: the ed25519 private key associated with the endpoint server to stop
 /// @param error: filled on erro
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_stop_endpoint_server(
     context: *mut GoslingContext,
     endpoint_private_key: *const GoslingEd25519PrivateKey,
@@ -1278,6 +1315,7 @@ pub extern "C" fn gosling_context_stop_endpoint_server(
 /// @param endpoint_name_length: the number of chars in endpoin_name not including any null-terminator
 /// @param error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_begin_identity_handshake(
     context: *mut GoslingContext,
     identity_service_id: *const GoslingV3OnionServiceId,
@@ -1336,6 +1374,7 @@ pub extern "C" fn gosling_context_begin_identity_handshake(
 /// @param handshake_handle: the handle associated with the identity client handshake
 /// @param error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_abort_identity_client_handshake(
     context: *mut GoslingContext,
     handshake_handle: GoslingHandshakeHandle,
@@ -1367,6 +1406,7 @@ pub extern "C" fn gosling_context_abort_identity_client_handshake(
 /// @param channel_name: the ascii-encoded name of the channel to open
 /// @param channel_name_length: the number of chars in channel name not including any null-terminator
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_begin_endpoint_handshake(
     context: *mut GoslingContext,
     endpoint_service_id: *const GoslingV3OnionServiceId,
@@ -1438,6 +1478,7 @@ pub extern "C" fn gosling_context_begin_endpoint_handshake(
 /// @param handshake_handle: the handle associated with the identity client handshake
 /// @param error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_abort_endpoint_client_handshake(
     context: *mut GoslingContext,
     handshake_handle: GoslingHandshakeHandle,
@@ -1993,6 +2034,7 @@ fn handle_context_event(
 /// @param context: the context object we are updating
 /// @param error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_poll_events(
     context: *mut GoslingContext,
     error: *mut *mut GoslingFFIError,
@@ -2622,6 +2664,7 @@ macro_rules! impl_callback_setter {
 /// @param callback: the callback to register
 /// @param  error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_tor_bootstrap_status_received_callback(
     context: *mut GoslingContext,
     callback: GoslingTorBootstrapStatusReceivedCallback,
@@ -2641,6 +2684,7 @@ pub extern "C" fn gosling_context_set_tor_bootstrap_status_received_callback(
 /// @param callback: the callback to register
 /// @param  error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_tor_bootstrap_completed_callback(
     context: *mut GoslingContext,
     callback: GoslingTorBootstrapCompletedCallback,
@@ -2655,6 +2699,7 @@ pub extern "C" fn gosling_context_set_tor_bootstrap_completed_callback(
 /// @param callback: the callback to register
 /// @param  error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_tor_log_received_callback(
     context: *mut GoslingContext,
     callback: GoslingTorLogReceivedCallback,
@@ -2670,6 +2715,7 @@ pub extern "C" fn gosling_context_set_tor_log_received_callback(
 /// @param callback: the callback to register
 /// @param  error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_client_challenge_response_size_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityClientHandshakeChallengeResponseSizeCallback,
@@ -2689,6 +2735,7 @@ pub extern "C" fn gosling_context_set_identity_client_challenge_response_size_ca
 /// @param callback: the callback to register
 /// @param  error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_client_build_challenge_response_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityClientHandshakeBuildChallengeResponseCallback,
@@ -2708,6 +2755,7 @@ pub extern "C" fn gosling_context_set_identity_client_build_challenge_response_c
 /// @param callback: the callback to register
 /// @param  error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_client_handshake_completed_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityClientHandshakeCompletedCallback,
@@ -2727,6 +2775,7 @@ pub extern "C" fn gosling_context_set_identity_client_handshake_completed_callba
 /// @param callback: the callback to register
 /// @param  error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_client_handshake_failed_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityClientHandshakeFailedCallback,
@@ -2746,6 +2795,7 @@ pub extern "C" fn gosling_context_set_identity_client_handshake_failed_callback(
 /// @param callback: the callback to register
 /// @param  error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_server_published_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerPublishedCallback,
@@ -2760,6 +2810,7 @@ pub extern "C" fn gosling_context_set_identity_server_published_callback(
 /// @param callback: the callback to register
 /// @param  error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_server_handshake_started_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeStartedCallback,
@@ -2779,6 +2830,7 @@ pub extern "C" fn gosling_context_set_identity_server_handshake_started_callback
 /// @param callback: the callback to register
 /// @param  error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_server_client_allowed_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeClientAllowedCallback,
@@ -2798,6 +2850,7 @@ pub extern "C" fn gosling_context_set_identity_server_client_allowed_callback(
 /// @param callback: the callback to register
 /// @param  error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_server_endpoint_supported_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerEndpointSupportedCallback,
@@ -2817,6 +2870,7 @@ pub extern "C" fn gosling_context_set_identity_server_endpoint_supported_callbac
 /// @param callback: the callback to register
 /// @param  error: filled on erro
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_server_challenge_size_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeChallengeSizeCallback,
@@ -2836,6 +2890,7 @@ pub extern "C" fn gosling_context_set_identity_server_challenge_size_callback(
 /// @param callback: the callback to register
 /// @param  error: filled on erro
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_server_build_challenge_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeBuildChallengeCallback,
@@ -2855,6 +2910,7 @@ pub extern "C" fn gosling_context_set_identity_server_build_challenge_callback(
 /// @param callback: the callback to register
 /// @param  error: filled on erro
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_server_verify_challenge_response_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeVerifyChallengeResponseCallback,
@@ -2874,6 +2930,7 @@ pub extern "C" fn gosling_context_set_identity_server_verify_challenge_response_
 /// @param callback: the callback to register
 /// @param  error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_server_handshake_completed_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeCompletedCallback,
@@ -2893,6 +2950,7 @@ pub extern "C" fn gosling_context_set_identity_server_handshake_completed_callba
 /// @param callback: the callback to register
 /// @param  error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_server_handshake_rejected_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeRejectedCallback,
@@ -2912,6 +2970,7 @@ pub extern "C" fn gosling_context_set_identity_server_handshake_rejected_callbac
 /// @param callback: the callback to register
 /// @param  error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_server_handshake_failed_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeFailedCallback,
@@ -2931,6 +2990,7 @@ pub extern "C" fn gosling_context_set_identity_server_handshake_failed_callback(
 /// @param callback: the callback to register
 /// @param  error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_endpoint_client_handshake_completed_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointClientHandshakeCompletedCallback,
@@ -2950,6 +3010,7 @@ pub extern "C" fn gosling_context_set_endpoint_client_handshake_completed_callba
 /// @param callback: the callback to register
 /// @param  error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_endpoint_client_handshake_failed_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointClientHandshakeFailedCallback,
@@ -2969,6 +3030,7 @@ pub extern "C" fn gosling_context_set_endpoint_client_handshake_failed_callback(
 /// @param callback: the callback to register
 /// @param  error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_endpoint_server_published_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointServerPublishedCallback,
@@ -2983,6 +3045,7 @@ pub extern "C" fn gosling_context_set_endpoint_server_published_callback(
 /// @param callback: the callback to register
 /// @param  error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_endpoint_server_handshake_started_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointServerHandshakeStartedCallback,
@@ -3002,6 +3065,7 @@ pub extern "C" fn gosling_context_set_endpoint_server_handshake_started_callback
 /// @param callback: the callback to register
 /// @param  error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_endpoint_server_channel_supported_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointServerChannelSupportedCallback,
@@ -3021,6 +3085,7 @@ pub extern "C" fn gosling_context_set_endpoint_server_channel_supported_callback
 /// @param callback: the callback to register
 /// @param  error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_endpoint_server_handshake_completed_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointServerHandshakeCompletedCallback,
@@ -3040,6 +3105,7 @@ pub extern "C" fn gosling_context_set_endpoint_server_handshake_completed_callba
 /// @param callback: the callback to register
 /// @param  error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_endpoint_server_handshake_rejected_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointServerHandshakeRejectedCallback,
@@ -3059,6 +3125,7 @@ pub extern "C" fn gosling_context_set_endpoint_server_handshake_rejected_callbac
 /// @param callback: the callback to register
 /// @param  error: filled on error
 #[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_endpoint_server_handshake_failed_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointServerHandshakeFailedCallback,
