@@ -13,14 +13,14 @@ It is meant to generalize (and improve upon) the authentication scheme [Ricochet
 
 ## Building
 
-Gosling is built using cmake. By default, only the cgosling static and shared libraries and C/C++ headers are built. A typical development setup would be:
+Gosling is built using cmake. By default, only the cgosling static libraries, shared libraries, and C/C++ headers are built. A typical development setup would be:
 
 ```shell
 # Create out-of-tree build directory
 mkdir build && cd build
 
 # Generate Makefiles
-cmake .. -DCMAKE_INSTALL_PREFOX=../dist
+cmake .. -DCMAKE_INSTALL_PREFIX=../dist -DCMAKE_BUILD_TYPE=Release
 
 # Build default targets
 make
@@ -28,6 +28,15 @@ make
 # Install to ../dist
 make install
 ```
+
+You must explicitly set the `CMAKE_BUILD_TYPE` variable. The usual CMake build types are supported and mapped to equivalent cargo flags:
+
+- **Debug**: no optimization, asserts enabled, debug symbols generated
+- **Release**: optimize for speed, asserts disabled, debug symbols stripped
+- **ReleaseWithDebInfo**: optimize for speed, asserts disabled, debug symbols generated
+- **MinSizeRel**: optimize for size, asserts disabled, debug symbols stripped
+
+See CMake's [CMAKE_BUILD_TYPE](https://cmake.org/cmake/help/v3.16/variable/CMAKE_BUILD_TYPE.html) documentation for additional information.
 
 Tests and examples depend on additional libraries consumed as git submodules. They can be initialised by:
 
@@ -48,7 +57,6 @@ Cargo will automatically download and build the required Rust crates. The list o
 - [tor-interface](./source/gosling/crates/tor-interface/Cargo.toml)
 - [gosling](./source/gosling/crates/gosling/Cargo.toml)
 - [cgosling](./source/gosling/crates/cgosling/Cargo.toml)
-
 
 ## Additional Configuration Options and Optional Dependencies
 
