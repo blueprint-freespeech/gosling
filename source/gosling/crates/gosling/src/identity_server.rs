@@ -424,7 +424,7 @@ impl ApiSet for IdentityServer {
                 None, // endpoint_private_key
             ) => {
                 let valid_version = match args.remove("version") {
-                    Some(Bson::String(value)) => value == GOSLING_VERSION,
+                    Some(Bson::String(value)) => value == GOSLING_PROTOCOL_VERSION,
                     _ => false,
                 };
                 if !valid_version {

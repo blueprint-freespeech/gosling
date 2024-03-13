@@ -106,7 +106,7 @@ impl EndpointClient {
                         "begin_handshake",
                         0,
                         doc! {
-                            "version" : bson::Bson::String(GOSLING_VERSION.to_string()),
+                            "version" : bson::Bson::String(GOSLING_PROTOCOL_VERSION.to_string()),
                             "client_identity" : bson::Bson::String(self.client_service_id.to_string()),
                             "channel" : bson::Bson::String(self.requested_channel.to_string()),
                         },

@@ -16,7 +16,7 @@ pub(crate) const PENDING_REQUEST_STATE: i32 = 0;
 pub(crate) const COMPLETE_REQUEST_STATE: i32 = 1;
 
 // gosling constants
-pub(crate) const GOSLING_VERSION: &str = "0.1.0";
+pub(crate) const GOSLING_VERSION: &str = gosling::gosling::GOSLING_PROTOCOL_VERSION;
 pub(crate) const GOSLING_IDENTITY_NAMESPACE: &str = "gosling_identity";
 pub(crate) const GOSLING_IDENTITY_BEGIN_HANDSHAKE_FUNCTION: &str = "begin_handshake";
 pub(crate) const GOSLING_IDENTITY_SEND_RESPONSE_FUNCTION: &str = "send_response";

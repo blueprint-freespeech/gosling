@@ -221,12 +221,13 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "cgosling"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "backtrace",
  "bson",
  "cbindgen",
+ "cgosling-proc-macros",
  "gosling",
  "home",
  "paste",
@@ -244,6 +245,14 @@ version = "0.0.0"
 dependencies = [
  "cgosling",
  "libfuzzer-sys",
+]
+
+[[package]]
+name = "cgosling-proc-macros"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn 2.0.49",
 ]
 
 [[package]]
@@ -540,7 +549,7 @@ checksum = "b6c80984affa11d98d1b88b66ac8853f143217b399d3c74116778ff8fdb4ed2e"
 
 [[package]]
 name = "gosling"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bson",
  "data-encoding",
@@ -555,9 +564,11 @@ dependencies = [
  "socks",
  "static_assertions",
  "thiserror",
+ "toml_datetime",
  "tor-interface",
  "tor-llcrypto",
  "url",
+ "winnow",
  "zeroize",
 ]
 
@@ -608,7 +619,7 @@ dependencies = [
 
 [[package]]
 name = "honk-rpc"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bson",
  "thiserror",
@@ -1388,24 +1399,24 @@ dependencies = [
 
 [[package]]
 name = "toml_datetime"
-version = "0.6.5"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3550f4e9685620ac18a50ed434eb3aec30db8ba93b0287467bca5826ea25baf1"
+checksum = "3ab8ed2edee10b50132aed5f331333428b011c99402b5a534154ed15746f9622"
 
 [[package]]
 name = "toml_edit"
-version = "0.19.15"
+version = "0.19.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b5bb770da30e5cbfde35a2d7b9b8a2c4b8ef89548a7a6aeab5c9a576e3e7421"
+checksum = "239410c8609e8125456927e6707163a3b1fdb40561e4b803bc041f466ccfdc13"
 dependencies = [
- "indexmap 2.2.3",
+ "indexmap 1.9.3",
  "toml_datetime",
  "winnow",
 ]
 
 [[package]]
 name = "tor-interface"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "data-encoding",
  "data-encoding-macro",
@@ -1760,9 +1771,9 @@ checksum = "dff9641d1cd4be8d1a070daf9e3773c5f67e78b4d9d42263020c057706765c04"
 
 [[package]]
 name = "winnow"
-version = "0.5.40"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f593a95398737aeed53e489c785df13f3618e41dbcd6718c6addbf1395aa6876"
+checksum = "ae8970b36c66498d8ff1d66685dc86b91b29db0c7739899012f63a63814b4b28"
 dependencies = [
  "memchr",
 ]
