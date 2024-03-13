@@ -199,6 +199,8 @@ cmake -DBUILD_PAGES=ON
 
 Generate the gosling.technolgoy website including test code-coverage, Rust crate documentation, cgosling C/C++ documentation, and specifications. This configuration is only valid for **Debug** and **RelWithDebInfo** cmake targets.
 
+Access to the tor network is required to run the tests and generate code-coverage.
+
 The following additional dependencies are required for this configure option:
 
 - [doxygen](https://www.doxygen.nl/)
