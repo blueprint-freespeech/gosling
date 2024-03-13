@@ -47,7 +47,7 @@ if (ENABLE_TESTS)
     #
     # fuzz targets
     #
-    if (ENABLE_FUZZ_TESTING)
+    if (ENABLE_FUZZ_TESTS)
         add_test(NAME gosling_identity_server_cargo_fuzz_test
             COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo fuzz run fuzz_identity_server -- -max_total_time=${FUZZ_TEST_MAX_TOTAL_TIME}
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
