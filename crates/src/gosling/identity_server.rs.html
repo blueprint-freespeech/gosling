@@ -1120,7 +1120,7 @@
                 </span><span class="prelude-val">None</span>, <span class="comment">// endpoint_private_key
             </span>) =&gt; {
                 <span class="kw">let </span>valid_version = <span class="kw">match </span>args.remove(<span class="string">"version"</span>) {
-                    <span class="prelude-val">Some</span>(Bson::String(value)) =&gt; value == GOSLING_VERSION,
+                    <span class="prelude-val">Some</span>(Bson::String(value)) =&gt; value == GOSLING_PROTOCOL_VERSION,
                     <span class="kw">_ </span>=&gt; <span class="bool-val">false</span>,
                 };
                 <span class="kw">if </span>!valid_version {

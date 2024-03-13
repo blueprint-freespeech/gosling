@@ -566,6 +566,8 @@
 <a href="#565" id="565">565</a>
 <a href="#566" id="566">566</a>
 <a href="#567" id="567">567</a>
+<a href="#568" id="568">568</a>
+<a href="#569" id="569">569</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="attr">#[cfg(test)]
 </span><span class="kw">use </span>std::net::{SocketAddr, TcpListener, TcpStream};
@@ -650,7 +652,9 @@
     </span>EndpointServerError(<span class="attr">#[from] </span>endpoint_server::Error),
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>GOSLING_VERSION: <span class="kw-2">&amp;</span>str = <span class="macro">std::env!</span>(<span class="string">"CARGO_PKG_VERSION"</span>);
+<span class="kw">pub const </span>GOSLING_CRATE_VERSION: <span class="kw-2">&amp;</span>str = <span class="macro">std::env!</span>(<span class="string">"CARGO_PKG_VERSION"</span>);
+<span class="kw">pub const </span>GOSLING_PROTOCOL_VERSION: <span class="kw-2">&amp;</span>str = <span class="string">"0.1.0"</span>;
+
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>CLIENT_COOKIE_SIZE: usize = <span class="number">32usize</span>;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>SERVER_COOKIE_SIZE: usize = <span class="number">32usize</span>;

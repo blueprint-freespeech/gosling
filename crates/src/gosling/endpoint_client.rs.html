@@ -393,7 +393,7 @@
                         <span class="string">"begin_handshake"</span>,
                         <span class="number">0</span>,
                         <span class="macro">doc! </span>{
-                            <span class="string">"version" </span>: bson::Bson::String(GOSLING_VERSION.to_string()),
+                            <span class="string">"version" </span>: bson::Bson::String(GOSLING_PROTOCOL_VERSION.to_string()),
                             <span class="string">"client_identity" </span>: bson::Bson::String(<span class="self">self</span>.client_service_id.to_string()),
                             <span class="string">"channel" </span>: bson::Bson::String(<span class="self">self</span>.requested_channel.to_string()),
                         },

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Error","RpcError"]};
+window.SIDEBAR_ITEMS = {"constant":["GOSLING_CRATE_VERSION","GOSLING_PROTOCOL_VERSION"],"enum":["Error","RpcError"]};
