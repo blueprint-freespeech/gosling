@@ -1,3 +1,10 @@
+gosling (0.2.2-1) unstable; urgency=low
+
+  * Made cmake build-system more idiomatic
+  * Now building cgosling shared library with C toolchain rather than rustc cdylib target
+
+ -- Richard Pospesel <richard@blueprintforfreespeech.net>  Wed, 13 Mar 2024 00:00:00 +0000
+
 gosling (0.2.1-1) unstable; urgency=low
 
   * Initial release.
