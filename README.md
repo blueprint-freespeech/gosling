@@ -168,6 +168,21 @@ The following additional dependencies are required for this configure option:
 - [ncurses](https://invisible-mirror.net/ncurses/ncurses.html)
 - [nlohmann::json](https://github.com/nlohmann/json/releases/tag/v3.11.3)
 
+### BUILD_DEBIAN_SOURCE_PACKAGE
+
+```shell
+cmake -DBUILD_DEBIAN_SOURCE_PACKAGE=ON
+```
+
+Builds a debian source package which generate `libcgosling0`, `libcgosling-dev`, and `libcgosling0-dbgsym` debian packages.
+
+The following additional dependencies are required for this configure option:
+
+- tar
+- dpkg-source
+
+See [source/packages/deb-src/README.md](source/packages/deb-src/README.md) for additional information.
+
 ### BUILD_PAGES
 
 ```shell

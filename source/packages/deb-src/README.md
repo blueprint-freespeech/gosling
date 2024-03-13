@@ -3,6 +3,7 @@
 This builds a debian source package from the cgosling crate which can be used to build the following packages:
 
 - libcgosling0
+- libcgosling0-dbgsym
 - libcgosling-dev
 
 Depends on the rustc, cargo, and cmake packages.
