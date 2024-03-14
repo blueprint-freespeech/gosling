@@ -1,4 +1,4 @@
-# deb-src
+# debian-source
 
 This builds a debian source package from the cgosling crate which can be used to build the following packages:
 

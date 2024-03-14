@@ -1,1 +1,1 @@
-add_subdirectory(deb-src)
+add_subdirectory(debian-source)

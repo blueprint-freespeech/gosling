@@ -189,7 +189,7 @@ The following additional dependencies are required for this configure option:
 - tar
 - dpkg-source
 
-See [source/packages/deb-src/README.md](source/packages/deb-src/README.md) for additional information.
+See [source/packages/debian-source/README.md](source/packages/debian-source/README.md) for additional information.
 
 ### BUILD_PAGES
 

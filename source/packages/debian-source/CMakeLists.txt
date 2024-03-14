@@ -63,6 +63,6 @@ if (BUILD_DEBIAN_SOURCE_PACKAGE)
     )
 
     install(FILES ${cgosling_debian_source_package_outputs}
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/gosling/packages/deb-src)
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/gosling/packages/debian-source)
 
 endif()
