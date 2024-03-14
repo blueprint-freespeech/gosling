@@ -76,6 +76,7 @@ option(BUILD_EXAMPLES "Build example targets" OFF)
 
 # Packages options
 option(BUILD_DEBIAN_SOURCE_PACKAGE "Build debian cgosling source package" OFF)
+option(BUILD_HOMEBREW_FORMULA "Build homebrew flask formula" OFF)
 
 # Documentation options
 option(BUILD_PAGES "Build webpages" OFF)

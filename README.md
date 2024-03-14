@@ -191,6 +191,16 @@ The following additional dependencies are required for this configure option:
 
 See [source/packages/debian-source/README.md](source/packages/debian-source/README.md) for additional information.
 
+### BUILD_HOMEBREW_FORMULA
+
+```shell
+cmake -DBUILD_HOMEBREW_FORMULA=ON
+```
+
+Builds a homebrew flask formula which installs libcgosling static libs, shared libs, and developemnt headers.
+
+See [source/packages/homebrew-formula/README.md](source/packages/homebrew-formula/README.md) for more additional information.
+
 ### BUILD_PAGES
 
 ```shell
