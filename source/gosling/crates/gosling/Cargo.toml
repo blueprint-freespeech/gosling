@@ -25,7 +25,6 @@ static_assertions = "^1.1"
 thiserror = "^1"
 toml_datetime = ">= 0.6, <= 0.6.1"
 tor-interface = { version = "^0.2.0", path = "../tor-interface" }
-tor-llcrypto = { version = ">= 0.3, <= 0.4.4", features = ["relay"] }
 url = "^2.3"
 winnow = ">=0.4, <= 0.4.1"
 zeroize = "^1"
