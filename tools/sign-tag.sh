@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 
-# Check if three arguments are provided
-if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 crate version"
+# Check if at least two arguments are provided
+if [ "$#" -lt 2 ]; then
+    echo "Usage: $0 crate version [commit]"
     exit 1
 fi
 
 # Assign arguments to variables
 crate=$1
 version=$2
+commit=${3:-HEAD}
 
 # Check if the crate name is valid
 valid_crates=("honk-rpc" "tor-interface" "gosling" "cgosling")
@@ -23,9 +24,9 @@ if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     exit 1
 fi
 
-# Sign and tag the current git HEAD
+# Sign and tag the specified git commit
 tag_name="${crate}-v${version}"
 commit_message="signing ${crate} version ${version}"
 
-echo "Signing and tagging with tag name: ${tag_name}"
-git tag -s "$tag_name" -m "$commit_message"
+echo "Signing and tagging commit $commit with tag name: ${tag_name}"
+git tag -s "$tag_name" "$commit" -m "$commit_message"
