@@ -201,6 +201,16 @@ Builds a homebrew flask formula which installs libcgosling static libs, shared l
 
 See [source/packages/homebrew-formula/README.md](source/packages/homebrew-formula/README.md) for more additional information.
 
+### BUILD_MSYS2_PKGBUILD
+
+```shell
+cmake -DBUILD_MSYS2_PKGBUILD=ON
+```
+
+Builds an MSYS2 PKGBUILD script which builds and installs libcgosling static libs, shared libs, and development headers.
+
+See [source/packages/msys2-pckbuild/README.md](source/packages/msys2-pckbuild/README.md) for more additional information.
+
 ### BUILD_PAGES
 
 ```shell
