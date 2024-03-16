@@ -123,6 +123,9 @@ jobs:
         with:
           distribution: 'oracle'
           java-version: '17'
+      - name: Install Boost
+        run: |
+          choco install boost-msvc-14.3
       - name: Build Debug
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=dist -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON
