@@ -134,8 +134,8 @@ jobs:
           BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=dist -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON
-          cmake --build build
-          cmake --install build
+          cmake --build build --config Debug
+          cmake --install build --config Debug
       - name: Upload Debug
         uses: actions/upload-artifact@v4
         with:
