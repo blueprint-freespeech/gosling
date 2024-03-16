@@ -127,7 +127,7 @@ jobs:
         uses: MarkusJx/install-boost@v2.4.5
         id: install-boost
         with:
-            boost_version: 1.66.0
+            boost_version: 1.73.0
             toolset: msvc
       - name: Build Debug
         run: |
