@@ -46,7 +46,8 @@ jobs:
         with:
           name: gosling-linux-release.tar
           path: dist/gosling-linux-release.tar
-  windows:
+
+  windows-gnu:
     runs-on: windows-latest
     defaults:
       run:
@@ -85,12 +86,12 @@ jobs:
       - name: Archive Debug
         run: |
           cd dist
-          tar -cf gosling-windows-debug.tar debug
+          tar -cf gosling-windows-gnu-debug.tar debug
       - name: Upload Debug
         uses: actions/upload-artifact@v4
         with:
-          name: gosling-windows-debug.tar
-          path: dist/gosling-windows-debug.tar
+          name: gosling-windows-gnu-debug.tar
+          path: dist/gosling-windows-gnu-debug.tar
       - name: Build Release
         run: |
           # manually add java bins to PATH >:[
@@ -103,12 +104,35 @@ jobs:
       - name: Archive Release
         run: |
           cd dist
-          tar -cf gosling-windows-release.tar release
+          tar -cf gosling-windows-gnu-release.tar release
       - name: Upload Release
         uses: actions/upload-artifact@v4
         with:
-          name: gosling-windows-release.tar
-          path: dist/gosling-windows-release.tar
+          name: gosling-windows-gnu-release.tar
+          path: dist/gosling-windows-gnu-release.tar
+
+  windows-msvc:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Gosling
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'oracle'
+          java-version: '17'
+      - name: Build Debug
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=dist -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON
+          cmake --build build
+          cmake --install build
+      - name: Upload Debug
+        uses: actions/upload-artifact@v4
+        with:
+          name: gosling-windows-mscvc-debug.tar
+          path: dist/debug
 
   macos:
     runs-on: macos-latest
