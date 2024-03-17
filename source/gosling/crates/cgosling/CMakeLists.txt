@@ -16,7 +16,11 @@ set(cgosling_sources
     src/lib.rs
     src/object_registry.rs)
 
-set(CGOSLING_STATIC "${CMAKE_STATIC_LIBRARY_PREFIX}cgosling${CMAKE_STATIC_LIBRARY_SUFFIX}" CACHE STRING "cgosling static library filename" FORCE)
+# The name of the static library built by rust
+set(CGOSLING_SRC_STATIC "${CMAKE_STATIC_LIBRARY_PREFIX}cgosling${CMAKE_STATIC_LIBRARY_SUFFIX}" CACHE STRING "cgosling static library filename" FORCE)
+# The name we use for the static cgosling bindings
+set(CGOSLING_STATIC "${CMAKE_STATIC_LIBRARY_PREFIX}cgosling_static${CMAKE_STATIC_LIBRARY_SUFFIX}" CACHE STRING "cgosling static library filename" FORCE)
+# The naem we use for the _impl suffixed version of the static cgosling bindings
 set(CGOSLING_IMPL_STATIC "${CMAKE_STATIC_LIBRARY_PREFIX}cgosling_impl${CMAKE_STATIC_LIBRARY_SUFFIX}" CACHE STRING "cgosling static impl library filename" FORCE)
 
 set(cgosling_outputs
@@ -33,8 +37,9 @@ add_custom_command(
     DEPENDS ${cgosling_sources}
     OUTPUT ${cgosling_outputs}
     COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo build ${CARGO_FLAGS} --features impl-lib
-    COMMAND ${CMAKE_COMMAND} -E rename ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_STATIC} ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_IMPL_STATIC}
+    COMMAND ${CMAKE_COMMAND} -E rename ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SRC_STATIC} ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_IMPL_STATIC}
     COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo build ${CARGO_FLAGS}
+    COMMAND ${CMAKE_COMMAND} -E rename ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SRC_STATIC} ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_STATIC}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
