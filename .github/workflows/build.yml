@@ -141,6 +141,19 @@ jobs:
         with:
           name: gosling-windows-mscvc-debug
           path: dist/debug
+      - name: Build Release
+        env:
+          BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=dist/release -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON
+          cmake --build build --config Release
+          cmake --install build --config Release
+      - name: Upload Release
+        uses: actions/upload-artifact@v4
+        with:
+          name: gosling-windows-mscvc-release
+          path: dist/release
+
 
   macos:
     runs-on: macos-latest
