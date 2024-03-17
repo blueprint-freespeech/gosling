@@ -1,8 +1,38 @@
-#include <cgosling.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#if (defined(_WIN32) || defined(_WIN64))
+#include <winsock2.h>
+#endif
+
+#if defined(_MSC_VER)
+    #define EXPORT_SYMBOL __declspec(dllexport)
+#elif defined(__GNUC__)
+    #define EXPORT_SYMBOL __attribute__((visibility("default")))
+#else
+    #define EXPORT_SYMBOL
+#endif
+
+// Forward declare structs and typedefs
+{{#each aliases}}
+{{#if (eq typename "uintptr_t")}}
+typedef struct {{name}} {{name}};
+{{else}}
+typedef {{typename}} {{name}};
+{{/if}}
+{{/each}}
+
+// Forward declare function pointer types
+{{#each callbacks}}
+typedef {{return_param}}(*{{name}})({{#each input_params}}{{#unless (eq @index 0)}}, {{/unless}}{{typename}} {{name}}{{/each}});
+{{/each}}
+
+// write function stubs
 {{#each functions}}
 
 {{return_param}} {{name}}_impl({{#each input_params}}{{#unless (eq @index 0)}}, {{/unless}}{{typename}} {{name}}{{/each}});
-{{return_param}} {{name}}({{#each input_params}}{{#unless (eq @index 0)}}, {{/unless}}{{typename}} {{name}}{{/each}}) {
+EXPORT_SYMBOL {{return_param}} {{name}}({{#each input_params}}{{#unless (eq @index 0)}}, {{/unless}}{{typename}} {{name}}{{/each}}) {
     return {{name}}_impl({{#each input_params}}{{#unless (eq @index 0)}}, {{/unless}}{{name}}{{/each}});
 }
 {{/each}}
