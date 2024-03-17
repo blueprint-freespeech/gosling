@@ -1,4 +1,6 @@
-#include <cgosling.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #if defined(_MSC_VER)
     #define EXPORT_SYMBOL __declspec(dllexport)
@@ -8,6 +10,21 @@
     #define EXPORT_SYMBOL
 #endif
 
+// forward declare structs and typedefs
+{{#each aliases}}
+{{#if (eq typename "uintptr_t")}}
+typedef struct {{name}} {{name}};
+{{else}}
+typedef {{typename}} {{name}};
+{{/if}}
+{{/each}}
+
+// forward declare function pointer types
+{{#each callbacks}}
+typedef {{return_param}}(*{{name}})({{#each input_params}}{{#unless (eq @index 0)}}, {{/unless}}{{typename}} {{name}}{{/each}});
+{{/each}}
+
+// write function stubs
 {{#each functions}}
 
 {{return_param}} {{name}}_impl({{#each input_params}}{{#unless (eq @index 0)}}, {{/unless}}{{typename}} {{name}}{{/each}});
