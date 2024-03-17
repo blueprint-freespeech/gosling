@@ -2,6 +2,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#if (defined(_WIN32) || defined(_WIN64))
+#include <winsock2.h>
+#endif
+
 #if defined(_MSC_VER)
     #define EXPORT_SYMBOL __declspec(dllexport)
 #elif defined(__GNUC__)
@@ -10,7 +14,7 @@
     #define EXPORT_SYMBOL
 #endif
 
-// forward declare structs and typedefs
+// Forward declare structs and typedefs
 {{#each aliases}}
 {{#if (eq typename "uintptr_t")}}
 typedef struct {{name}} {{name}};
@@ -19,7 +23,7 @@ typedef {{typename}} {{name}};
 {{/if}}
 {{/each}}
 
-// forward declare function pointer types
+// Forward declare function pointer types
 {{#each callbacks}}
 typedef {{return_param}}(*{{name}})({{#each input_params}}{{#unless (eq @index 0)}}, {{/unless}}{{typename}} {{name}}{{/each}});
 {{/each}}
