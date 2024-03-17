@@ -4,6 +4,19 @@ on: [push, pull_request]
 
 jobs:
   linux:
+    strategy:
+      matrix:
+        include:
+          - debian-arch: i386
+            cflags: -m32
+            cxxflags: -m32
+            rust-target: i686-unknown-linux-gnu
+            cmake-find-root-path: /usr/lib/i386-linux-gnu
+            arch: i386
+          - debian-arch: amd64
+            rust-target: x86_64-unknown-linux-gnu
+            cmake-find-root-path: /usr/lib/x86_64-linux-gnu
+            arch: x86_64
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Gosling
@@ -12,40 +25,42 @@ jobs:
           submodules: true
       - name: Install Dependencies
         run: |
+          sudo dpkg --add-architecture ${{ matrix.debian-arch }}
           sudo apt-get update
-          sudo apt-get install -y libboost-all-dev libncurses-dev default-jdk dpkg-dev
+          sudo apt install -y gcc-multilib g++-multilib
+          sudo apt-get install -y libc6:${{ matrix.debian-arch }} libstdc++6:${{ matrix.debian-arch }} libboost-all-dev:${{ matrix.debian-arch }} libncurses-dev:${{ matrix.debian-arch }} default-jdk:${{ matrix.debian-arch }} dpkg-dev
+      - name: Configure Rust
+        run: |
+          rustup target add ${{ matrix.rust-target }}
+          rustup default stable-${{ matrix.rust-target }}
       - name: Build Debug
         run: |
-          mkdir -p build/debug
-          cd build/debug
-          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../../dist/debug -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_DEBIAN_SOURCE_PACKAGE=ON
-          make
-          make install
+          cmake -S . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=dist/debug -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DCMAKE_C_FLAGS="${{ matrix.cflags }}" -DCMAKE_CXX_FLAGS="${{ matrix.cxxflags }}" -DCMAKE_FIND_ROOT_PATH=${{ matrix.cmake-find-root-path }}
+          cmake --build build
+          cmake --install build
       - name: Archive Debug
         run: |
           cd dist
-          tar -cf gosling-linux-debug.tar debug
+          tar -cf gosling-linux-gnu-${{ matrix.arch }}-debug.tar debug
       - name: Upload Debug
         uses: actions/upload-artifact@v4
         with:
-          name: gosling-linux-debug.tar
-          path: dist/gosling-linux-debug.tar
+          name: gosling-linux-gnu-${{ matrix.arch }}-debug.tar
+          path: dist/gosling-linux-gnu-${{ matrix.arch }}-debug.tar
       - name: Build Release
         run: |
-          mkdir -p build/release
-          cd build/release
-          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist/release -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_DEBIAN_SOURCE_PACKAGE=ON
-          make
-          make install
+          cmake -S . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=dist/release -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DCMAKE_C_FLAGS="${{ matrix.cflags }}"
+          cmake --build build
+          cmake --install build
       - name: Archive Release
         run: |
           cd dist
-          tar -cf gosling-linux-release.tar release
+          tar -cf gosling-linux-gnu-${{ matrix.arch }}-release.tar release
       - name: Upload Release
         uses: actions/upload-artifact@v4
         with:
-          name: gosling-linux-release.tar
-          path: dist/gosling-linux-release.tar
+          name: gosling-linux-gnu-${{ matrix.arch }}-release.tar
+          path: dist/gosling-linux-gnu-${{ matrix.arch }}-release.tar
 
   windows-gnu:
     runs-on: windows-latest
