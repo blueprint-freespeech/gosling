@@ -62,7 +62,25 @@ jobs:
           name: gosling-linux-gnu-${{ matrix.arch }}-release.tar
           path: dist/gosling-linux-gnu-${{ matrix.arch }}-release.tar
 
-  windows-gnu:
+  windows-msys2:
+    strategy:
+      matrix:
+        include:
+          - msystem: ucrt64
+            msys-env: ucrt-x86_64
+            java-arch: x64
+          - msystem: clang64
+            msys-env: clang-x86_64
+            java-arch: x64
+          - msystem: clang32
+            msys-env: clang-i686
+            java-arch: x86
+          - msystem: mingw64
+            msys-env: x86_64
+            java-arch: x86_64
+          - msystem: mingw32
+            msys-env: i686
+            java-arch: x86
     runs-on: windows-latest
     defaults:
       run:
@@ -75,20 +93,21 @@ jobs:
       - name: Install MSYS2 Dependencies
         uses: msys2/setup-msys2@v2
         with:
-          msystem: clang64
+          msystem: ${{ matrix.msystem }}
           update: true
           install: >-
             make
-            mingw-w64-clang-x86_64-cmake
-            mingw-w64-clang-x86_64-clang
-            mingw-w64-clang-x86_64-rust
-            mingw-w64-clang-x86_64-boost
-            mingw-w64-clang-x86_64-ncurses
+            mingw-w64-${{ matrix.msys-env }}-cmake
+            mingw-w64-${{ matrix.msys-env }}-clang
+            mingw-w64-${{ matrix.msys-env }}-rust
+            mingw-w64-${{ matrix.msys-env }}-boost
+            mingw-w64-${{ matrix.msys-env }}-ncurses
       - name: Install Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'oracle'
+          distribution: 'zulu'
           java-version: '17'
+          architecture: ${{ matrix.java-arch }}
       - name: Build Debug
         run: |
           # manually add java bins to PATH >:[
@@ -101,12 +120,12 @@ jobs:
       - name: Archive Debug
         run: |
           cd dist
-          tar -cf gosling-windows-gnu-debug.tar debug
+          tar -cf gosling-windows-mingw-w64-${{ matrix.msys-env }}-debug.tar debug
       - name: Upload Debug
         uses: actions/upload-artifact@v4
         with:
-          name: gosling-windows-gnu-debug.tar
-          path: dist/gosling-windows-gnu-debug.tar
+          name: gosling-windows-mingw-w64-${{ matrix.msys-env }}-debug.tar
+          path: dist/gosling-windows-mingw-w64-${{ matrix.msys-env }}-debug.tar
       - name: Build Release
         run: |
           # manually add java bins to PATH >:[
@@ -119,12 +138,12 @@ jobs:
       - name: Archive Release
         run: |
           cd dist
-          tar -cf gosling-windows-gnu-release.tar release
+          tar -cf gosling-windows-mingw-w64-${{ matrix.msys-env }}-release.tar release
       - name: Upload Release
         uses: actions/upload-artifact@v4
         with:
-          name: gosling-windows-gnu-release.tar
-          path: dist/gosling-windows-gnu-release.tar
+          name: gosling-windows-mingw-w64-${{ matrix.msys-env }}-release.tar
+          path: dist/gosling-windows-mingw-w64-${{ matrix.msys-env }}-release.tar
 
   windows-msvc:
     runs-on: windows-latest
