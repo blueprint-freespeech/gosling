@@ -146,6 +146,15 @@ jobs:
           path: dist/gosling-windows-mingw-w64-${{ matrix.msys-env }}-release.tar
 
   windows-msvc:
+    strategy:
+      matrix:
+        include:
+          - java-arch: x64
+            platform: x64
+            rust-target: x86_64-pc-windows-msvc
+          - java-arch: x86
+            platform: Win32
+            rust-target: i686-pc-windows-msvc
     runs-on: windows-latest
     steps:
       - name: Checkout Gosling
@@ -155,39 +164,44 @@ jobs:
       - name: Install Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'oracle'
+          distribution: 'zulu'
           java-version: '17'
+          architecture: ${{ matrix.java-arch }}
       - name: Install boost
         uses: MarkusJx/install-boost@v2.4.5
         id: install-boost
         with:
             boost_version: 1.78.0
+            platform_version: 2022
             toolset: msvc
+      - name: Configure Rust
+        run: |
+          rustup target add ${{ matrix.rust-target }}
+          rustup default stable-${{ matrix.rust-target }}
       - name: Build Debug
         env:
           BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
         run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=dist/debug -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON
-          cmake --build build --config Debug
-          cmake --install build --config Debug
+          cmake -S . -B build/debug -DCMAKE_BUILD_TYPE=Debug -A ${{ matrix.platform }} -DCMAKE_INSTALL_PREFIX=dist/debug -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON
+          cmake --build build/debug --config Debug
+          cmake --install build/debug --config Debug
       - name: Upload Debug
         uses: actions/upload-artifact@v4
         with:
-          name: gosling-windows-mscvc-debug
+          name: gosling-windows-msvc-${{ matrix.java-arch}}-debug
           path: dist/debug
       - name: Build Release
         env:
           BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
         run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=dist/release -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON
-          cmake --build build --config Release
-          cmake --install build --config Release
+          cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release -A ${{ matrix.platform }} -DCMAKE_INSTALL_PREFIX=dist/release -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON
+          cmake --build build/release --config Release
+          cmake --install build/release --config Release
       - name: Upload Release
         uses: actions/upload-artifact@v4
         with:
-          name: gosling-windows-mscvc-release
+          name: gosling-windows-msvc-${{ matrix.java-arch}}-release
           path: dist/release
-
 
   macos:
     runs-on: macos-latest
