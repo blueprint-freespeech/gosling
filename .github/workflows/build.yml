@@ -204,7 +204,14 @@ jobs:
           path: dist/release
 
   macos:
-    runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          - runs-on: macos-12
+            arch: x86_64
+          - runs-on: macos-14
+            arch: aarch64
+    runs-on: ${{ matrix.runs-on }}
     steps:
       - name: Checkout Gosling
         uses: actions/checkout@v3
@@ -212,7 +219,7 @@ jobs:
           submodules: true
       - name: Install Dependencies
         run: |
-          brew install boost ncurses
+          brew install boost
       - name: Build Debug
         run: |
           mkdir -p build/debug
@@ -223,12 +230,12 @@ jobs:
       - name: Archive Debug
         run: |
           cd dist
-          tar -cf gosling-macos-debug.tar debug
+          tar -cf gosling-macos-${{ matrix.arch }}-debug.tar debug
       - name: Upload Debug
         uses: actions/upload-artifact@v4
         with:
-          name: gosling-macos-debug.tar
-          path: dist/gosling-macos-debug.tar
+          name: gosling-macos-${{ matrix.arch }}-debug.tar
+          path: dist/gosling-macos-${{ matrix.arch }}-debug.tar
       - name: Build Release
         run: |
           mkdir -p build/release
@@ -239,9 +246,9 @@ jobs:
       - name: Archive Release
         run: |
           cd dist
-          tar -cf gosling-macos-release.tar release
+          tar -cf gosling-macos-${{ matrix.arch }}-release.tar release
       - name: Upload Release
         uses: actions/upload-artifact@v4
         with:
-          name: gosling-macos-release.tar
-          path: dist/gosling-macos-release.tar
+          name: gosling-macos-${{ matrix.arch }}-release.tar
+          path: dist/gosling-macos-${{ matrix.arch }}-release.tar
