@@ -1,16 +1,15 @@
 [package]
 name = "honk-rpc-fuzz"
 version = "0.0.0"
-rust-version = "1.63"
-publish = false
 edition = "2021"
+publish = false
 
 [package.metadata]
 cargo-fuzz = true
 
 [dependencies]
-bson = ">= 2.0, <= 2.4.0"
-libfuzzer-sys = { version = "^0.4", features = ["arbitrary-derive"] }
+bson = "2.0"
+libfuzzer-sys = { version = "0.4", features = ["arbitrary-derive"] }
 
 [dependencies.honk-rpc]
 path = ".."

@@ -22,7 +22,7 @@ dependencies = [
 
 [[package]]
 name = "build_cpp_bindings"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "handlebars",
  "regex",

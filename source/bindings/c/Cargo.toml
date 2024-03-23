@@ -1,13 +1,13 @@
 [package]
 name = "build_c_shared_bindings"
-version = "0.1.0"
-rust-version = "1.63"
+version = "0.0.0"
 edition = "2021"
+publish = false
 
 [[bin]]
 name = "build_c_shared_bindings"
 path = "./build_c_shared_bindings.rs"
 
 [dependencies]
-handlebars = "^4.3.0"
-serde_json = "^1.0"
+handlebars = "4.3"
+serde_json = "1.0"

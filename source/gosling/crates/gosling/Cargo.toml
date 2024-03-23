@@ -2,7 +2,7 @@
 name = "gosling"
 authors = ["Richard Pospesel <richard@blueprintforfreespeech.net>"]
 version = "0.1.1"
-rust-version = "1.63"
+rust-version = "1.70"
 edition = "2021"
 license = "BSD-3-Clause"
 description = "A library for developing fully anonymous, peer-to-peer, metadata-resistant applications using tor onion services"
@@ -10,30 +10,18 @@ homepage = "https://blueprint-freespeech.github.io/gosling/index.xhtml"
 repository = "https://github.com/blueprint-freespeech/gosling"
 
 [dependencies]
-bson = ">= 2.0, <= 2.4.0"
-data-encoding = "^2"
-data-encoding-macro = "^0.1"
-honk-rpc = { version = "0.1.0", path = "../honk-rpc" }
-num_enum = "^0.6"
-paste = "^1.0"
-rand = "^0.8"
-rand_core = "^0.6"
-regex = ">= 1.9, <= 1.9.6"
-signature = "^1.5"
-socks = "^0.3"
-static_assertions = "^1.1"
-thiserror = "^1"
-toml_datetime = ">= 0.6, <= 0.6.1"
-tor-interface = { version = "^0.2.0", path = "../tor-interface" }
-url = "^2.3"
-winnow = ">=0.4, <= 0.4.1"
-zeroize = "^1"
+bson = "2.0"
+data-encoding = "2.0"
+honk-rpc = { version = "0.1", path = "../honk-rpc" }
+num_enum = "0.6"
+rand = "0.8"
+thiserror = "1.0"
+tor-interface = { version = "0.2", path = "../tor-interface" }
 
 [dev-dependencies]
-anyhow = "^1"
-dashmap = ">= 5, <= 5.4.0"
-serial_test = "0.9.*"
-which = ">= 4.4.2, <= 5.0.0"
+anyhow = "1.0"
+serial_test = "0.9"
+which = "4.4"
 
 [features]
 offline-test = ["tor-interface/offline-test"]

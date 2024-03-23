@@ -4,26 +4,25 @@ build = "build.rs"
 authors = ["Richard Pospesel <richard@blueprintforfreespeech.net>"]
 # see CMakeLists.txt for this variable's definition
 version = "@CGOSLING_VERSION@"
-rust-version = "1.63"
+rust-version = "1.70"
 edition = "2021"
+publish = false
 
 [build-dependencies]
-cbindgen = { version = "0.24.0", default-features = false }
-regex = "<= 1.9.6"
-serde = "1.0.193"
+cbindgen = { version = "0.26", default-features = false }
+regex = "1.9"
+serde = "1.0"
 serde_json = "1.0"
 
 [dependencies]
-anyhow = "^1"
-backtrace = ">= 0.3, <= 0.3.67"
-bson = ">= 2.0, <= 2.4.0"
-cgosling-proc-macros = { version = "0.1.0", path = "../cgosling-proc-macros" }
-gosling = { version = "^0.1.0", path = "../gosling" }
-home = ">= 0.5, <= 0.5.5"
-paste = "^1.0"
-static_assertions = "^1.1"
-tor-interface = { version = "^0.2.0", path = "../tor-interface" }
-which = ">= 4.4.2, <= 5.0.0"
+anyhow = "1.0"
+bson = "2.0"
+cgosling-proc-macros = { path = "../cgosling-proc-macros" }
+gosling = { path = "../gosling" }
+paste = "1.0"
+static_assertions = "1.1"
+tor-interface = { path = "../tor-interface" }
+which = "4.4"
 
 [lib]
 name = "cgosling"

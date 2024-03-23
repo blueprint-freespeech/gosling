@@ -1,8 +1,9 @@
 [package]
 name = "cgosling-proc-macros"
-version = "0.1.0"
-rust-version = "1.63"
+version = "0.0.0"
+rust-version = "1.70"
 edition = "2021"
+publish = false
 
 [lib]
 proc-macro = true

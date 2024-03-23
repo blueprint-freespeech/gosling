@@ -1,15 +1,15 @@
 [package]
 name = "build_cpp_bindings"
-version = "0.1.0"
-rust-version = "1.63"
+version = "0.0.0"
 edition = "2021"
+publish = false
 
 [[bin]]
 name = "build_cpp_bindings"
 path = "./build_cpp_bindings.rs"
 
 [dependencies]
-handlebars = "^4.3.0"
-regex = ">= 1.9, <= 1.9.6"
-serde =  { version = "^1.0", features = ["derive"] }
-serde_json = "^1.0"
+handlebars = "4.3"
+regex = "1.9"
+serde =  { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
