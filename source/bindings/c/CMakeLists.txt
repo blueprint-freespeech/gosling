@@ -1,11 +1,5 @@
 include(CheckLinkerFlag)
 
-find_program(PATCHELF_EXECUTABLE NAMES patchelf)
-
-if (NOT PATCHELF_EXECUTABLE AND LINUX)
-    message(FATAL_ERROR "Could not find patchelf executable; required for linux shared library generation")
-endif()
-
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
 
