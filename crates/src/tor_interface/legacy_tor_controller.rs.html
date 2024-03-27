@@ -1352,7 +1352,7 @@
                         }
                         index += <span class="string">"PrivateKey="</span>.len();
                         <span class="kw">let </span>key_blob_string = <span class="kw-2">&amp;</span>line[index..];
-                        private_key = <span class="kw">match </span>Ed25519PrivateKey::from_key_blob(key_blob_string) {
+                        private_key = <span class="kw">match </span>Ed25519PrivateKey::from_key_blob_legacy(key_blob_string) {
                             <span class="prelude-val">Ok</span>(private_key) =&gt; <span class="prelude-val">Some</span>(private_key),
                             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::CommandReplyParseFailed(<span class="macro">format!</span>(
