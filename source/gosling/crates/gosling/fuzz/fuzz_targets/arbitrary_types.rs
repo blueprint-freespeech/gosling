@@ -1,6 +1,7 @@
 // extern
 use bson::Document;
 use bson::spec::BinarySubtype::Generic;
+use curve25519_dalek::Scalar;
 use tor_interface::tor_crypto::*;
 
 // fuzzing
@@ -17,12 +18,21 @@ pub(crate) struct ArbitraryEd25519PrivateKey {
 
 impl<'a> Arbitrary<'a> for ArbitraryEd25519PrivateKey {
     fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self, Error> {
+        // expanded secret key raw bytes
         let mut raw: [u8; 64] = [0u8; 64];
-        u.fill_buffer(&mut raw)?;
 
-        raw[0] &= 248;
-        raw[31] &= 63;
-        raw[31] |= 64;
+        // construct a valid Scalar
+        let mut scalar: [u8; 32] = [0u8; 32];
+        u.fill_buffer(&mut scalar)?;
+
+        scalar = curve25519_dalek::scalar::clamp_integer(scalar.clone());
+        scalar = Scalar::from_bytes_mod_order(scalar).to_bytes();
+        raw[00..32].copy_from_slice(&scalar);
+
+        let mut hash: [u8; 32] = [0u8; 32];
+        u.fill_buffer(&mut hash)?;
+
+        raw[32..64].copy_from_slice(&hash);
 
         let value = Ed25519PrivateKey::from_raw(&raw).unwrap();
 

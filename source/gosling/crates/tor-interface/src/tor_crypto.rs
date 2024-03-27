@@ -193,7 +193,7 @@ impl Ed25519PrivateKey {
                 if scalar.iter().all(|&x| x == 0x00u8) {
                     return Err(Error::KeyInvalid);
                 }
-                let reduced_scalar = Scalar::from_bytes_mod_order(scalar).to_bytes();
+                let reduced_scalar = Scalar::from_bytes_mod_order(scalar.clone()).to_bytes();
                 if scalar != reduced_scalar {
                     return Err(Error::KeyInvalid);
                 }

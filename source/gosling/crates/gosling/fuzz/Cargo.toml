@@ -9,6 +9,7 @@ cargo-fuzz = true
 
 [dependencies]
 bson = "2.0"
+curve25519-dalek = "4.1"
 data-encoding = "2.0"
 honk-rpc = { path = "../../honk-rpc" }
 libfuzzer-sys = { version = "0.4", features = ["arbitrary-derive"] }
