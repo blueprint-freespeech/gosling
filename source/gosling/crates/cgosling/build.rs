@@ -57,6 +57,13 @@ fn preprocess_header(source: &str) -> String {
 
     let source = platform_pattern.replace_all(source, "").to_string();
 
+    #[cfg(not(feature = "legacy-tor-provider"))]
+    let source = {
+        let feature_pattern =
+            Regex::new(r"(?m)#if defined\(GOSLING_FEATURE_LEGACY_TOR_PROVIDER\)([^#].*\n)+#endif").unwrap();
+        feature_pattern.replace_all(source.as_str(), "").to_string()
+    };
+
     source
 }
 

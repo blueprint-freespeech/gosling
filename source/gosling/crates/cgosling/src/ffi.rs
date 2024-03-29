@@ -22,6 +22,7 @@ use anyhow::bail;
 #[cfg(feature = "impl-lib")]
 use cgosling_proc_macros::*;
 use gosling::context::*;
+#[cfg(feature = "legacy-tor-provider")]
 use tor_interface::legacy_tor_client::*;
 use tor_interface::mock_tor_client::*;
 use tor_interface::tor_crypto::*;
@@ -972,6 +973,7 @@ pub extern "C" fn gosling_string_is_valid_v3_onion_service_id(
 ///  null-terminator
 /// @param error: filled on error
 #[no_mangle]
+#[cfg(feature = "legacy-tor-provider")]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_tor_provider_new_legacy_client(
     out_tor_provider: *mut *mut GoslingTorProvider,

@@ -34,35 +34,37 @@ set(cgosling_impl_outputs
 )
 
 #
-# build targets
+# cgosling crate feature flags
+#
+set(CGOSLING_FEATURES_LIST)
+if (ENABLE_LEGACY_TOR_PROVIDER)
+    list(APPEND CGOSLING_FEATURES_LIST "legacy-tor-provider")
+endif()
+
+list(JOIN CGOSLING_FEATURES_LIST "," CGOSLING_FEATURES)
+if (CGOSLING_FEATURES)
+    set(CGOSLING_FEATURES "--features" "${CGOSLING_FEATURES}")
+endif()
+
+#
+# build cgosling static lib target
 #
 add_custom_command(
     DEPENDS ${cgosling_sources}
     OUTPUT ${cgosling_static_outputs}
-    COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo build ${CARGO_FLAGS}
+    COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo build ${CARGO_FLAGS} ${CGOSLING_FEATURES}
     COMMAND ${CMAKE_COMMAND} -E rename ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SRC_STATIC} ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_STATIC}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
-
-add_custom_command(
-    DEPENDS ${cgosling_sources}
-    OUTPUT ${cgosling_impl_outputs}
-    COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo build ${CARGO_FLAGS} --features impl-lib
-    COMMAND ${CMAKE_COMMAND} -E rename ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SRC_STATIC} ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_IMPL_STATIC}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-add_custom_target(cgosling_target
-    DEPENDS ${cgosling_static_outputs} ${cgosling_impl_outputs})
-add_dependencies(cgosling_target gosling_target)
 
 #
 # cargo test target
 #
 if (ENABLE_TESTS)
     add_test(NAME cgosling_cargo_test
-        COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo test ${CARGO_FLAGS}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+        COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo test ${CARGO_FLAGS} ${CGOSLING_FEATURES}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
 endif()
 
 #
@@ -71,5 +73,25 @@ endif()
 if (ENABLE_FUZZ_TESTS)
     add_test(NAME cgosling_cargo_fuzz_test
         COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo fuzz run fuzz_cgosling -- -max_total_time=${FUZZ_TEST_MAX_TOTAL_TIME}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
 endif()
+
+#
+# build cgosling impl lib target
+#
+list(APPEND CGOSLING_FEATURES_LIST "impl-lib")
+list(JOIN CGOSLING_FEATURES_LIST "," CGOSLING_FEATURES)
+set(CGOSLING_FEATURES "--features" "\"${CGOSLING_FEATURES}\"")
+
+add_custom_command(
+    DEPENDS ${cgosling_sources}
+    OUTPUT ${cgosling_impl_outputs}
+    COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo build ${CARGO_FLAGS} ${CGOSLING_FEATURES}
+    COMMAND ${CMAKE_COMMAND} -E rename ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SRC_STATIC} ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_IMPL_STATIC}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_custom_target(cgosling_target
+    DEPENDS ${cgosling_static_outputs} ${cgosling_impl_outputs})
+add_dependencies(cgosling_target gosling_target)

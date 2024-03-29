@@ -30,3 +30,4 @@ crate-type = ["staticlib" ,"rlib"]
 
 [features]
 impl-lib = []
+legacy-tor-provider = ["gosling/legacy-tor-provider"]

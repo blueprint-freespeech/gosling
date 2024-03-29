@@ -58,9 +58,21 @@ Cargo will automatically download and build the required Rust crates. The list o
 - [gosling](./source/gosling/crates/gosling/Cargo.toml)
 - [cgosling](./source/gosling/crates/cgosling/Cargo.toml.in)
 
+## Configuration Options
+
+Build-time configuration options for features which may be conditionally enabled or disabled.
+
+### ENABLE_LEGACY_TOR_PROVIDER
+
+```shell
+cmake -DENABLE_LEGACY_TOR_PROVIDER=ON
+```
+
+Enable the (for now, default) c-tor daemon TorProvider implementation. This allows Gosling to connect to the Tor Network using the legacy c-tor daemon. This option is **ON** by default.
+
 ## Additional Configuration Options and Optional Dependencies
 
-Additional bindings, tests, and documentation can be enabeld with the following cmake options. Each of these options are **OFF** by default.
+Additional optional bindings, tests, and documentation can be enabled with the following cmake options. Each of these options are **OFF** by default.
 
 ### ENABLE_TESTS
 

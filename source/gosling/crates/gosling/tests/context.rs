@@ -6,6 +6,7 @@ use std::net::TcpStream;
 use anyhow::bail;
 use bson::doc;
 use serial_test::serial;
+#[cfg(feature = "legacy-tor-provider")]
 use tor_interface::legacy_tor_client::*;
 use tor_interface::mock_tor_client::*;
 use tor_interface::tor_crypto::*;
@@ -23,6 +24,7 @@ fn test_mock_client_gosling_context() -> anyhow::Result<()> {
 
 #[test]
 #[serial]
+#[cfg(feature = "legacy-tor-provider")]
 fn test_legacy_client_gosling_context() -> anyhow::Result<()> {
     let tor_path = which::which("tor")?;
 

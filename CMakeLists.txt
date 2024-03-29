@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.17)
 
 project(gosling)
 
+# Feature flags
+option(ENABLE_LEGACY_TOR_PROVIDER "Enable legacy c-tor daemon support" ON)
+
 # Test options
 option(ENABLE_TESTS "Enable tests" OFF)
 option(ENABLE_FUZZ_TESTS "Enable fuzz tests" OFF)

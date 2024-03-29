@@ -22,11 +22,26 @@ if (BUILD_PAGES)
     endif()
 
     #
+    # code-coverage feature flags
+    #
+    set(TARPAULIN_FEATURES_LIST)
+    if (ENABLE_LEGACY_TOR_PROVIDER)
+        list(APPEND TARPAULIN_FEATURES_LIST "tor-interface/legacy-tor-provider")
+        list(APPEND TARPAULIN_FEATURES_LIST "gosling/legacy-tor-provider")
+        list(APPEND TARPAULIN_FEATURES_LIST "cgosling/legacy-tor-provider")
+    endif()
+
+    list(JOIN TARPAULIN_FEATURES_LIST "," TARPAULIN_FEATURES)
+    if (TARPAULIN_FEATURES)
+        set(TARPAULIN_FEATURES "--features" "\"${TARPAULIN_FEATURES}\"")
+    endif()
+
+    #
     # Code coverage
     #
     add_custom_command(
         OUTPUT ${CARGO_TARGET_DIR}/tarpaulin/coverage.html
-        COMMAND CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo tarpaulin --out html --output-dir ${CARGO_TARGET_DIR}/tarpaulin --timeout 600
+        COMMAND CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo tarpaulin --out html --output-dir ${CARGO_TARGET_DIR}/tarpaulin --timeout 600 ${TARPAULIN_FEATURES}
         COMMAND mv ${CARGO_TARGET_DIR}/tarpaulin/tarpaulin-report.html ${CARGO_TARGET_DIR}/tarpaulin/coverage.html
         COMMAND ${CMAKE_COMMAND} -E echo "Test Coverage Report: ${CARGO_TARGET_DIR}/tarpaulin/coverage.html"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
