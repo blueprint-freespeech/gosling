@@ -5,8 +5,8 @@ edition = "2021"
 publish = false
 
 [[bin]]
-name = "build_c_shared_bindings"
-path = "./build_c_shared_bindings.rs"
+name = "build_c_bindings"
+path = "./build_c_bindings.rs"
 
 [dependencies]
 handlebars = "4.3"

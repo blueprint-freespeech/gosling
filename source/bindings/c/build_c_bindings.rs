@@ -1,5 +1,9 @@
-use handlebars::Handlebars;
+use handlebars::{handlebars_helper, Handlebars};
 use serde_json::Value;
+
+handlebars_helper!(to_uppercase: |str: String| {
+    str.to_uppercase()
+});
 
 fn main() {
 
@@ -14,6 +18,7 @@ fn main() {
     let source: Value = serde_json::from_str(source.as_str()).unwrap();
 
     let mut handlebars = Handlebars::new();
+    handlebars.register_helper("to_uppercase", Box::new(to_uppercase));
 
     handlebars.register_template_file("source", template).unwrap();
     handlebars.register_escape_fn(|val| val.to_string());

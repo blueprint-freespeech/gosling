@@ -1,26 +1,22 @@
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include)
+#
+# Generate cgosling.hpp
+#
 
-set(gosling_cpp_bindings_sources
+set(gosling_cpp_header_sources
     build_cpp_bindings.rs
     Cargo.toml
     cgosling.hpp.handlebars)
 
-set(gosling_cpp_bindings_outputs
-    ${CMAKE_CURRENT_BINARY_DIR}/include/cgosling.hpp)
-
-#
-# generate cgosling.hpp using handlebars
-#
 add_custom_command(
-    DEPENDS ${gosling_cpp_bindings_sources} cgosling_target
-    OUTPUT ${gosling_cpp_bindings_outputs}
-    COMMAND  env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo run ${CARGO_FLAGS} --bin build_cpp_bindings ${CARGO_TARGET_DIR}/cgosling.json cgosling.hpp.handlebars ${CMAKE_CURRENT_BINARY_DIR}/include/cgosling.hpp
+    DEPENDS ${gosling_cpp_header_sources} cgosling_target
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cgosling.hpp
+    COMMAND  env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo run ${CARGO_FLAGS} --bin build_cpp_bindings ${CARGO_TARGET_DIR}/cgosling.json cgosling.hpp.handlebars ${CMAKE_CURRENT_BINARY_DIR}/cgosling.hpp
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
-add_custom_target(gosling_cpp_bindings_target
-    DEPENDS ${gosling_cpp_bindings_outputs})
+add_custom_target(gosling_cpp_header_target
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/cgosling.hpp)
 if (ENABLE_LINTING)
-    add_dependencies(linting gosling_cpp_bindings_target)
+    add_dependencies(cppcheck_target gosling_cpp_header_target)
 endif()
 
 #
@@ -28,9 +24,9 @@ endif()
 #
 
 add_library(gosling_cpp_static_bindings INTERFACE)
-add_dependencies(gosling_cpp_static_bindings gosling_cpp_bindings_target)
+add_dependencies(gosling_cpp_static_bindings gosling_cpp_header_target)
 
-target_include_directories(gosling_cpp_static_bindings INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/include)
+target_include_directories(gosling_cpp_static_bindings INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(gosling_cpp_static_bindings INTERFACE gosling_c_static_bindings)
 
 add_custom_target(gosling_cpp_static_bindings_target ALL)
@@ -41,9 +37,9 @@ add_dependencies(gosling_cpp_static_bindings_target gosling_cpp_static_bindings)
 #
 
 add_library(gosling_cpp_shared_bindings INTERFACE)
-add_dependencies(gosling_cpp_shared_bindings gosling_cpp_bindings_target)
+add_dependencies(gosling_cpp_shared_bindings gosling_cpp_header_target)
 
-target_include_directories(gosling_cpp_shared_bindings INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/include)
+target_include_directories(gosling_cpp_shared_bindings INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(gosling_cpp_shared_bindings INTERFACE gosling_c_shared_bindings)
 
 add_custom_target(gosling_cpp_shared_bindings_target ALL)
@@ -53,7 +49,7 @@ add_dependencies(gosling_cpp_shared_bindings_target gosling_cpp_shared_bindings)
 # Install C++ Header
 #
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/cgosling.hpp
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cgosling.hpp
     TYPE INCLUDE)
 
 if (BUILD_PAGES)
@@ -70,8 +66,8 @@ if (BUILD_PAGES)
         configure_file(${DOXYFILE_IN} ${DOXYFILE} @ONLY)
         set(doxygen_depends
             ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
-            ${CMAKE_CURRENT_BINARY_DIR}/../c/include/cgosling.h
-            ${CMAKE_CURRENT_BINARY_DIR}/include/cgosling.hpp)
+            ${CMAKE_CURRENT_BINARY_DIR}/../c/cgosling.h
+            ${CMAKE_CURRENT_BINARY_DIR}/cgosling.hpp)
         set(doxygen_output
             ${CMAKE_CURRENT_BINARY_DIR}/cgosling)
 
@@ -84,7 +80,7 @@ if (BUILD_PAGES)
         # make target
         add_custom_target(gosling_cpp_doxygen_target ALL
             DEPENDS ${doxygen_output})
-        add_dependencies(gosling_cpp_doxygen_target gosling_cpp_bindings_target)
+        add_dependencies(gosling_cpp_doxygen_target gosling_cpp_header_target)
 
         #
         # Install

@@ -1,47 +1,47 @@
 include(CheckLinkerFlag)
 
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
-
-set(gosling_c_bindings_sources
-    ${CARGO_TARGET_DIR}/include/cgosling.h
-    ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_STATIC}
-    ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_IMPL_STATIC}
-)
-
-set(gosling_c_bindings_outputs
-    ${CMAKE_CURRENT_BINARY_DIR}/include/cgosling.h
-    ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_STATIC}
-    ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_IMPL_STATIC}
-)
-
 #
-# Just copy header and libs from the cgosling crate build outputs
+# Generate cgosling.h
 #
-foreach(src dest IN ZIP_LISTS gosling_c_bindings_sources gosling_c_bindings_outputs)
-    add_custom_command(
-        DEPENDS ${src} cgosling_target
-        OUTPUT ${dest}
-        COMMAND  cp -P ${src} ${dest})
-endforeach()
 
-add_custom_target(gosling_c_bindings_target
-    DEPENDS ${gosling_c_bindings_outputs})
-add_dependencies(gosling_c_bindings_target cgosling_target)
+set(gosling_c_header_sources
+    build_c_bindings.rs
+    Cargo.toml
+    cgosling.h.handlebars)
+
+add_custom_command(
+    DEPENDS ${gosling_c_header_sources} cgosling_target
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cgosling.h
+    # generate c header
+    COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo run ${CARGO_FLAGS} --bin build_c_bindings ${CARGO_TARGET_DIR}/cgosling.json cgosling.h.handlebars ${CMAKE_CURRENT_BINARY_DIR}/cgosling.h
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+add_custom_target(gosling_c_header_target
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/cgosling.h)
 if (ENABLE_LINTING)
-    add_dependencies(linting gosling_c_bindings_target)
+    add_dependencies(cppcheck_target gosling_c_header_target)
 endif()
 
 #
 # Static Library
 #
 
-add_library(gosling_c_static_bindings STATIC IMPORTED GLOBAL)
-add_dependencies(gosling_c_static_bindings gosling_c_bindings_target)
+add_custom_command(
+    DEPENDS ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_STATIC} cgosling_target
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CGOSLING_STATIC}
+    # copy cargo-built static lib to current directory
+    COMMAND ${CMAKE_COMMAND} -E copy ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_STATIC} ${CMAKE_CURRENT_BINARY_DIR}/${CGOSLING_STATIC}
+)
+add_custom_target(gosling_c_static_lib_target
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CGOSLING_STATIC})
 
-target_include_directories(gosling_c_static_bindings INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/include)
+add_library(gosling_c_static_bindings STATIC IMPORTED GLOBAL)
+add_dependencies(gosling_c_static_bindings gosling_c_header_target)
+add_dependencies(gosling_c_static_bindings gosling_c_static_lib_target)
+
+target_include_directories(gosling_c_static_bindings INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
 set_target_properties(gosling_c_static_bindings PROPERTIES
-    IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_STATIC}
+    IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/${CGOSLING_STATIC}
 )
 
 if(WINDOWS)
@@ -51,7 +51,8 @@ if(WINDOWS)
     target_link_libraries(gosling_c_static_bindings INTERFACE ntdll)
 endif()
 
-add_custom_target(gosling_c_static_bindings_target ALL)
+add_custom_target(gosling_c_static_bindings_target ALL
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/cgosling.h ${CMAKE_CURRENT_BINARY_DIR}/${CGOSLING_STATIC})
 add_dependencies(gosling_c_static_bindings_target gosling_c_static_bindings)
 
 #
@@ -60,29 +61,28 @@ add_dependencies(gosling_c_static_bindings_target gosling_c_static_bindings)
 
 # generate cgosling.c
 set(gosling_c_shared_bindings_sources
-    build_c_shared_bindings.rs
+    build_c_bindings.rs
     Cargo.toml
     cgosling.c.handlebars)
 
-# cgosling.c basically forwards the various gosling calls in the public header
-# to the _impl methods
+# cgosling.c forwards the various public gosling calls to the _impl versions
 add_custom_command(
-    DEPENDS ${gosling_c_shared_bindings_sources} gosling_c_bindings_target
+    DEPENDS ${gosling_c_shared_bindings_sources}
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cgosling.c
     # generate c source
-    COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo run ${CARGO_FLAGS} --bin build_c_shared_bindings ${CARGO_TARGET_DIR}/cgosling.json cgosling.c.handlebars ${CMAKE_CURRENT_BINARY_DIR}/cgosling.c
+    COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo run ${CARGO_FLAGS} --bin build_c_bindings ${CARGO_TARGET_DIR}/cgosling.json cgosling.c.handlebars ${CMAKE_CURRENT_BINARY_DIR}/cgosling.c
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 # build our shared library
 add_library(gosling_c_shared_bindings SHARED ${CMAKE_CURRENT_BINARY_DIR}/cgosling.c)
+add_dependencies(gosling_c_shared_bindings gosling_c_header_target)
 set_target_properties(gosling_c_shared_bindings
     PROPERTIES
     OUTPUT_NAME cgosling
     VERSION ${CGOSLING_VERSION}
     SOVERSION ${CGOSLING_MAJOR_VERSION})
-target_include_directories(gosling_c_shared_bindings PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/include)
-target_link_libraries(gosling_c_shared_bindings PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_IMPL_STATIC})
+target_link_libraries(gosling_c_shared_bindings PRIVATE ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_IMPL_STATIC})
 if(WINDOWS)
     target_link_libraries(gosling_c_shared_bindings PRIVATE ws2_32)
     target_link_libraries(gosling_c_shared_bindings PRIVATE userenv)
@@ -94,22 +94,26 @@ endif()
 check_linker_flag(C "-Wl,--exclude-libs,ALL" LINKER_SUPPORTS_EXCLUDE_LIBS)
 
 if(LINKER_SUPPORTS_EXCLUDE_LIBS)
-    # prevents the result so from re-exporting all of the static libs symbols out of the shared library
+    # prevents the result .so from re-exporting all of the static libs symbols out of the shared library
     target_link_options(gosling_c_shared_bindings PRIVATE "-Wl,--exclude-libs,ALL")
 endif()
 
-target_include_directories(gosling_c_shared_bindings PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/include)
+target_include_directories(gosling_c_shared_bindings PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
 add_custom_target(gosling_c_shared_bindings_target ALL)
 add_dependencies(gosling_c_shared_bindings_target gosling_c_shared_bindings)
+
+if (ENABLE_LINTING)
+    add_dependencies(cppcheck_target gosling_c_shared_bindings_target)
+endif()
 
 #
 # Install
 #
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/cgosling.h
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cgosling.h
     TYPE INCLUDE)
 install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/lib/${CGOSLING_STATIC}
+    ${CMAKE_CURRENT_BINARY_DIR}/${CGOSLING_STATIC}
     TYPE LIB)
 install(TARGETS gosling_c_shared_bindings)
