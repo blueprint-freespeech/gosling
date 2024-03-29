@@ -78,11 +78,9 @@ fn parse_header(mut file: File, source: &str) {
     let source = platform_pattern.replace_all(source, "").to_string();
     let source = source.as_str();
 
-    // enum pattern
-    let enum_pattern = Regex::new(r"(?m)enum \{(?P<constants>[\w\n ,=]*)}").unwrap();
     // constant pattern
     let constant_pattern =
-        Regex::new(r"(?m)(?P<name>gosling_\w*) = (?P<value>[1-9][0-9]+),").unwrap();
+        Regex::new(r"(?m)^\#define (?P<name>[A-Z0-9_]+) (?P<value>[0-9]+)$").unwrap();
     // primitive types
     let typedef_pattern =
         Regex::new(r"(?m)typedef (?P<type>[\w \*]+) (?P<name>gosling_[\w]+);").unwrap();
@@ -100,19 +98,13 @@ fn parse_header(mut file: File, source: &str) {
     let mut functions: Vec<Function> = Default::default();
 
     // parse constants
-    match enum_pattern.captures(source) {
-        Some(cap) => {
-            let c = &cap["constants"];
-            for constant in constant_pattern.captures_iter(c) {
-                let n = &constant["name"];
-                let v = constant["value"].parse::<usize>().unwrap();
-                constants.push(Constant {
-                    name: n.to_string(),
-                    value: v,
-                });
-            }
-        }
-        None => panic!("missing constants enum"),
+    for constant in constant_pattern.captures_iter(source) {
+        let n = constant["name"].to_lowercase();
+        let v = constant["value"].parse::<usize>().unwrap();
+        constants.push(Constant {
+            name: n,
+            value: v,
+        });
     }
 
     // parse aliases
