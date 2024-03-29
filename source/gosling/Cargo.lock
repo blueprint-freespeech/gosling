@@ -1343,6 +1343,7 @@ dependencies = [
  "sha3",
  "signature 1.6.4",
  "socks",
+ "static_assertions",
  "thiserror",
  "tor-llcrypto",
  "which",
