@@ -174,6 +174,8 @@ pub extern "C" fn gosling_error_free(error: *mut GoslingFFIError) {
     impl_registry_free!(error, Error);
 }
 
+/// A handle for the gosling library
+pub struct GoslingLibrary;
 /// An ed25519 private key used to create a v3 onion service
 pub struct GoslingEd25519PrivateKey;
 /// An x25519 private key used to decrypt v3 onion service descriptors
@@ -291,7 +293,6 @@ where
     }
 }
 
-pub struct GoslingLibrary;
 static GOSLING_LIBRARY_INITED: AtomicBool = AtomicBool::new(false);
 const GOSLING_LIBRARY_HANDLE: usize = {
     // integer constant in the form 0x6000..5E (GOOOOOSE)
