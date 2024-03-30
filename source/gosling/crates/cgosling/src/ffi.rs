@@ -439,7 +439,7 @@ pub unsafe extern "C" fn gosling_ed25519_private_key_from_keyblob(
 }
 
 /// Conversion method for converting an ed25519 private key to a null-
-///  terminated KeyBlob string for use with ADD_ONION command
+/// terminated KeyBlob string for use with ADD_ONION command
 ///
 /// @param private_key: the private key to encode
 /// @param out_key_blob: buffer to be filled with ed25519 KeyBlob in
@@ -567,7 +567,7 @@ pub unsafe extern "C" fn gosling_x25519_private_key_from_base64(
 }
 
 /// Conversion method for converting an x25519 private key to a null-
-///  terminated base64 string for use with ONION_CLIENT_AUTH_ADD command
+/// terminated base64 string for use with ONION_CLIENT_AUTH_ADD command
 ///
 /// @param private_key: the private key to encode
 /// @param out_base64: buffer to be filled with x25519 key encoded as base64
@@ -2088,10 +2088,6 @@ pub extern "C" fn gosling_context_poll_events(
         Ok(())
     });
 }
-
-///
-/// Event Callbacks
-///
 
 /// The function pointer type for the tor bootstrap status received callback. This
 /// callback is called when context's tor daemon's bootstrap status has progressed.
