@@ -46,6 +46,20 @@ struct Data {
     functions: Vec<Function>,
 }
 
+fn preprocess_header(source: &str) -> String {
+
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    let platform_pattern = Regex::new(r"(?m)#if \(defined\(GOSLING_PLATFORM_LINUX\) \|\| defined\(GOSLING_PLATFORM_MACOS\)\)([^#].*\n)+#endif").unwrap();
+
+    #[cfg(not(target_os = "windows"))]
+    let platform_pattern =
+        Regex::new(r"(?m)#if defined\(GOSLING_PLATFORM_WINDOWS\)([^#].*\n)+#endif").unwrap();
+
+    let source = platform_pattern.replace_all(source, "").to_string();
+
+    source
+}
+
 fn parse_param(params_raw: &str) -> Vec<Param> {
     // function param
     let param_pattern = Regex::new(r"(?m)(?P<type>(\w+ \**)+)(?P<name>\w+)").unwrap();
@@ -70,17 +84,7 @@ fn parse_param(params_raw: &str) -> Vec<Param> {
     params
 }
 
-fn parse_header(mut file: File, source: &str) {
-    // hacky-preprocess to exclude relevant platform-specific declarations
-    #[cfg(any(target_os = "linux", target_os = "macos"))]
-    let platform_pattern =
-        Regex::new(r"(?m)#if defined\(GOSLING_PLATFORM_WINDOWS\)([^#].*\n)+#endif").unwrap();
-    #[cfg(target_os = "windows")]
-    let platform_pattern = Regex::new(r"(?m)#if \(defined\(GOSLING_PLATFORM_LINUX\) \|\| defined\(GOSLING_PLATFORM_MACOS\)\)([^#].*\n)+#endif").unwrap();
-
-    let source = platform_pattern.replace_all(source, "").to_string();
-    let source = source.as_str();
-
+fn parse_header(source: &str) -> Data {
     // all of the lines we cre about have this general form of muliple // style comments,
     // followed by a single source line we care about
     let commented_source_pattern =
@@ -176,13 +180,12 @@ fn parse_header(mut file: File, source: &str) {
         }
     }
 
-    let data = Data {
+    Data {
         constants,
         aliases,
         callbacks,
         functions,
-    };
-    writeln!(file, "{}", serde_json::to_string_pretty(&data).unwrap()).unwrap();
+    }
 }
 
 fn main() {
@@ -206,15 +209,21 @@ fn main() {
             Err(err) => panic!("{:?}", err),
         };
 
+        // pre-process and re-write header
+        let source = std::fs::read_to_string(header_file_path.clone()).unwrap();
+        let source = preprocess_header(&source);
+        std::fs::write(header_file_path, source.clone()).unwrap();
+
         // convert generated header to json IDL
+        let idl = parse_header(source.as_str());
+
+        // and write json IDL to disk
         let json_file_path = target_dir.join("cgosling.json");
         println!("cargo:rerun-if-changed={}",json_file_path.display());
-        let json_file = match File::create(json_file_path) {
+        let mut json_file = match File::create(json_file_path) {
             Ok(file) => file,
             Err(err) => panic!("{:?}", err),
         };
-        let source = std::fs::read_to_string(header_file_path).unwrap();
-
-        parse_header(json_file, source.as_str());
+        writeln!(json_file, "{}", serde_json::to_string_pretty(&idl).unwrap()).unwrap();
     }
 }
