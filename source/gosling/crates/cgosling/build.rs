@@ -12,12 +12,14 @@ use serde::Serialize;
 
 #[derive(Serialize)]
 struct Constant {
+    comments: Vec<String>,
     name: String,
     value: usize,
 }
 
 #[derive(Serialize)]
 struct Alias {
+    comments: Vec<String>,
     name: String,
     typename: String,
 }
@@ -30,6 +32,7 @@ struct Param {
 
 #[derive(Serialize)]
 struct Function {
+    comments: Vec<String>,
     name: String,
     return_param: String,
     input_params: Vec<Param>,
@@ -78,85 +81,99 @@ fn parse_header(mut file: File, source: &str) {
     let source = platform_pattern.replace_all(source, "").to_string();
     let source = source.as_str();
 
+    // all of the lines we cre about have this general form of muliple // style comments,
+    // followed by a single source line we care about
+    let commented_source_pattern =
+        Regex::new(r"(?m)(?<comments>(?:\/\/.*\n)+)(?<source>.+)").unwrap();
+    let comment_pattern =
+        Regex::new(r"(?m)^\/\/[ ]?").unwrap();
+
     // constant pattern
     let constant_pattern =
-        Regex::new(r"(?m)^\#define (?P<name>[A-Z0-9_]+) (?P<value>[0-9]+)$").unwrap();
+        Regex::new(r"^#define (?P<name>[A-Z0-9_]+) (?P<value>[0-9]+)$").unwrap();
     // primitive types
     let typedef_pattern =
-        Regex::new(r"(?m)typedef (?P<type>[\w \*]+) (?P<name>gosling_[\w]+);").unwrap();
+        Regex::new(r"^typedef (?P<type>[\w \*]+) (?P<name>gosling_[\w]+);$").unwrap();
     // callback types
-    let callback_pattern = Regex::new(r"(?m)typedef (?P<return>[\w \*]+) \(\*(?P<name>gosling_[\w]+_t)\)\((?P<params>[\w ,\*]*)\);").unwrap();
+    let callback_pattern =
+        Regex::new(r"^typedef (?P<return>[\w \*]+) \(\*(?P<name>gosling_[\w]+_t)\)\((?P<params>[\w ,\*]*)\);$").unwrap();
     // function declaration
-    let function_pattern = Regex::new(
-        r"(?m)(?P<return>[\w \*]+( | \*))(?P<name>gosling_[\w]+)\((?P<params>[\w ,\*]*)\);",
-    )
-    .unwrap();
+    let function_pattern =
+        Regex::new(r"^(?P<return>[\w \*]+( | \*))(?P<name>gosling_[\w]+)\((?P<params>[\w ,\*]*)\);$").unwrap();
 
     let mut constants: Vec<Constant> = Default::default();
     let mut aliases: Vec<Alias> = Default::default();
     let mut callbacks: Vec<Function> = Default::default();
     let mut functions: Vec<Function> = Default::default();
 
-    // parse constants
-    for constant in constant_pattern.captures_iter(source) {
-        let n = constant["name"].to_lowercase();
-        let v = constant["value"].parse::<usize>().unwrap();
-        constants.push(Constant {
-            name: n,
-            value: v,
-        });
-    }
+    for commmented_source in commented_source_pattern.captures_iter(source) {
+        let comments = &commmented_source["comments"];
+        let comments = comment_pattern.replace_all(comments, "");
+        let comments = comments.trim();
+        let comments = comments.split('\n').map(|s| s.to_string()).collect();
 
-    // parse aliases
-    for alias in typedef_pattern.captures_iter(source) {
-        let t = &alias["type"];
-        let n = &alias["name"];
+        let source = &commmented_source["source"];
 
-        if t == format!("struct {}", n) {
-            aliases.push(Alias {
-                name: n.to_string(),
-                typename: "uintptr_t".to_string(),
+        // try parse constant
+        if let Some(constant) = constant_pattern.captures(source) {
+            let name = constant["name"].to_lowercase();
+            let value = constant["value"].parse::<usize>().unwrap();
+            constants.push(Constant {
+                name,
+                value,
+                comments,
             });
-        } else {
-            aliases.push(Alias {
+        // try parse alias
+        } else if let Some(alias) = typedef_pattern.captures(source) {
+            let t = &alias["type"];
+            let n = &alias["name"];
+
+            if t == format!("struct {}", n) {
+                aliases.push(Alias {
+                    name: n.to_string(),
+                    typename: "uintptr_t".to_string(),
+                    comments,
+                });
+            } else {
+                aliases.push(Alias {
+                    name: n.to_string(),
+                    typename: t.trim().to_string(),
+                    comments,
+                });
+            }
+        // try parse callback declaration
+        } else if let Some(callback) = callback_pattern.captures(source) {
+            let r = &callback["return"];
+            let n = &callback["name"];
+            let p = &callback["params"];
+
+            // move the pointer char next to the type
+            let r = r.trim().replace(" *", "*");
+
+            let params = parse_param(p);
+            callbacks.push(Function {
                 name: n.to_string(),
-                typename: t.trim().to_string(),
+                return_param: r,
+                input_params: params,
+                comments,
+            });
+        // try parse function declaration
+        } else if let Some(function) = function_pattern.captures(source) {
+            let r = &function["return"];
+            let n = &function["name"];
+            let p = &function["params"];
+
+            // move the pointer char next to the type
+            let r = r.trim().replace(" *", "*");
+
+            let params = parse_param(p);
+            functions.push(Function {
+                name: n.to_string(),
+                return_param: r,
+                input_params: params,
+                comments,
             });
         }
-    }
-
-    // parse callback defenitions
-    for callback in callback_pattern.captures_iter(source) {
-        let r = &callback["return"];
-        let n = &callback["name"];
-        let p = &callback["params"];
-
-        // move the pointer char next to the type
-        let r = r.trim().replace(" *", "*");
-
-        let params = parse_param(p);
-        callbacks.push(Function {
-            name: n.to_string(),
-            return_param: r,
-            input_params: params,
-        });
-    }
-
-    // parse function declaration
-    for function in function_pattern.captures_iter(source) {
-        let r = &function["return"];
-        let n = &function["name"];
-        let p = &function["params"];
-
-        // move the pointer char next to the type
-        let r = r.trim().replace(" *", "*");
-
-        let params = parse_param(p);
-        functions.push(Function {
-            name: n.to_string(),
-            return_param: r,
-            input_params: params,
-        });
     }
 
     let data = Data {

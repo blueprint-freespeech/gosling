@@ -35,7 +35,7 @@ cpp_compat = true
 sys_includes = ["assert.h"]
 usize_is_size_t = true
 documentation = true
-documentation_style = "doxy"
+documentation_style = "c99"
 line_length = 80
 only_target_dependencies = true
 
