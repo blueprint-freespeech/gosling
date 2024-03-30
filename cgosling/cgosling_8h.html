@@ -347,6 +347,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The number of bytes needed to store the keyblob header </p>
 
 </div>
 </div>
@@ -361,6 +362,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The number of bytes needed to store ed25519 private keyblob as an ASCII c-string (not including a null terminator) </p>
 
 </div>
 </div>
@@ -375,6 +377,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The number of bytes needed to store ed25519 private keyblob as an ASCII c-string (including a null terminator) </p>
 
 </div>
 </div>
@@ -389,6 +392,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The number of bytes needed to store base64 encoded ed25519 private key as an ASCII c-string (not including null-terminator) </p>
 
 </div>
 </div>
@@ -403,6 +407,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The number of bytes needed to store onion service id as an ASCII c-string (not including null-terminator) </p>
 
 </div>
 </div>
@@ -417,6 +422,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The number of bytes needed to store onion service id as an ASCII c-string (including null-terminator) </p>
 
 </div>
 </div>
@@ -431,6 +437,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The number of bytes needed to store base64 encoded x25519 private key as an ASCII c-string (not including null-terminator) </p>
 
 </div>
 </div>
@@ -445,6 +452,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The number of bytes needed to store base64 encoded x25519 private key as an ASCII c-string (including a null terminator) </p>
 
 </div>
 </div>
@@ -459,6 +467,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The number of bytes needed to store base32 encoded x25519 public key as an ASCII c-string (not including null-terminator) </p>
 
 </div>
 </div>
@@ -473,6 +482,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The number of bytes needed to store base32 encoded x25519 public key as an ASCII c-string (including a null terminator) </p>
 
 </div>
 </div>
@@ -488,6 +498,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>A context object associated with a single peer identity </p>
 
 </div>
 </div>
@@ -502,6 +513,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>An ed25519 private key used to create a v3 onion service </p>
 
 </div>
 </div>
@@ -516,6 +528,18 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function pointer type for the endpoint client handshake completed callback. This callback is called when the client successfully connects to an endpoint server.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+    <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
+    <tr><td class="paramname">endpoint_service_id</td><td>the onion service id of the endpoint server the client has connected to </td></tr>
+    <tr><td class="paramname">channel_name</td><td>the null-terminated name of the channel name requested by the the client </td></tr>
+    <tr><td class="paramname">channel_name_length</td><td>the number of chars in channel_name not including the null-terminator </td></tr>
+    <tr><td class="paramname">stream</td><td>the tcp socket file descriptor associated with the connection to the endpoint server </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -530,6 +554,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function pointer type for the endpoint client handshake handshake failed callback. This callback is called when a client's endpoint handshake fails.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+    <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
+    <tr><td class="paramname">error</td><td>error associated with this failure </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -544,6 +577,18 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function pointer type of the endpoint server channel supported callback. This callback is called when the server needs to determine if the client's requested channel is supported. The result of this callback partially determines if an incoming endpoint client handshake request is possible to complete.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+    <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
+    <tr><td class="paramname">client_service_id</td><td>the onion service id of the connected endpoint client </td></tr>
+    <tr><td class="paramname">channel_name</td><td>a null-terminated ASCII string containing the name of the endpoint being requested </td></tr>
+    <tr><td class="paramname">channel_name_length</td><td>the number of chars in endpoint_name, not including the null-terminator </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if the server can handle requests for the requested channel, false otherwise </dd></dl>
 
 </div>
 </div>
@@ -558,6 +603,19 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function pointer type for the endpoint server handshake completed callback. This callback is called when an endpoint server completes a handshake with an endpoint client.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+    <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
+    <tr><td class="paramname">endpoint_service_id</td><td>the onion service id of the endpoint server the endpoint client has connected to </td></tr>
+    <tr><td class="paramname">client_service_id</td><td>the onion service id of the connected endpoint client </td></tr>
+    <tr><td class="paramname">channel_name</td><td>the null-terminated name of the channel requested by the client </td></tr>
+    <tr><td class="paramname">channel_name_length</td><td>the number of chars in channel_name not including the null-terminator </td></tr>
+    <tr><td class="paramname">stream</td><td>the tcp socket file descriptor associated with the connection to the endpoint client </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -572,6 +630,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function pointer type for the endpoint server handshake handshake failed callback. This callback is called when a server's endpoint handshake fails.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+    <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
+    <tr><td class="paramname">error</td><td>error associated with this failure </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -586,6 +653,17 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function pointer type of the endpoint server handshake rejected callback. This callback is called whenever the endpoint server has rejected an endpoint client's handshake.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+    <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
+    <tr><td class="paramname">client_allowed</td><td>true if requesting client is allowed, false otherwies </td></tr>
+    <tr><td class="paramname">client_requested_channel_valid</td><td>true if requesting client requested a valid endpoint, false otherwise </td></tr>
+    <tr><td class="paramname">client_proof_signature_valid</td><td>true if the requesting client properly signed the endpoint proof, false otherwise </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -600,6 +678,14 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function pointer type of the endpoint server handshake started callback. This callback is called whenever the endpoint server is initially connected to.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+    <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -614,6 +700,16 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function pointer type for the endpoint server published callback. This callbcak is called whenever the onion service of the indicated endpoint server associted with the given context is published and should be reachable by clients.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+    <tr><td class="paramname">endpoint_service_id</td><td>the onion service id of the published endpoint server </td></tr>
+    <tr><td class="paramname">endpoint_name</td><td>the null-terminated name of the endpoint server published </td></tr>
+    <tr><td class="paramname">endpoint_name_length</td><td>the number of chars in endpoint_name string not including the null-terminator </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -628,6 +724,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>A wrapper object containing an error message </p>
 
 </div>
 </div>
@@ -642,6 +739,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>A handle for an in-progress identity handhskae </p>
 
 </div>
 </div>
@@ -656,6 +754,20 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function pointer type for the identity client handshake build challlenge response callback. This callback is called when a client is ready to build a challenge response object.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+    <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
+    <tr><td class="paramname">endpoint_name</td><td>a null-terminated ASCII string containing the name of the endpoint being requested </td></tr>
+    <tr><td class="paramname">endpoint_name_length</td><td>the number of chars in endpoint_name, not including the null-terminator </td></tr>
+    <tr><td class="paramname">challenge_buffer</td><td>the source buffer containing a BSON document received from the identity server to serve as an endpoint request challenge </td></tr>
+    <tr><td class="paramname">challenge_buffer_size</td><td>the number of bytes in challenge_buffer </td></tr>
+    <tr><td class="paramname">out_challenge_response_buffer</td><td>the destination buffer for the callback to write a BSON document representing the endpoint request challenge response object </td></tr>
+    <tr><td class="paramname">out_challenge_response_buffer_size</td><td>the number of bytes allocated in out_challenge_response_buffer </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -670,6 +782,17 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function pointer type for the client handshake challenge response size callback. This callback is called when a client needs to know how much memory to allocate for a challenge response.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+    <tr><td class="paramname">handshake_handle</td><td>pointer to the client handshake handle this callback invocation is associated with; null if no client handshake init callback was provided </td></tr>
+    <tr><td class="paramname">challenge_buffer</td><td>the source buffer containing a BSON document received from the identity server to serve as an endpoint request challenge </td></tr>
+    <tr><td class="paramname">challenge_buffer_size</td><td>the number of bytes in challenge_buffer </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>the number of bytes required to store the challenge response object </dd></dl>
 
 </div>
 </div>
@@ -684,6 +807,19 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function pointer type for the identity client handshake completed callback. This callback is called whenever the client successfully completes a handshake with an identity server and is granted access to an endpoint server.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+    <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
+    <tr><td class="paramname">identity_service_id</td><td>the onion service id of the identity server the client has successfully completed a hadshake with </td></tr>
+    <tr><td class="paramname">endpoint_service_id</td><td>the onion service id of the endpoint server the client now has access to </td></tr>
+    <tr><td class="paramname">endpoint_name</td><td>the null-terminated name of the provided endpoint server </td></tr>
+    <tr><td class="paramname">endpoint_name_length</td><td>the number of chars in endpoint_name string not including the null-terminator </td></tr>
+    <tr><td class="paramname">client_auth_private_key</td><td>the client's x25519 private required to connect to the provided endpoint server </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -698,6 +834,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function pointer type for the identity client handshake handshake failed callback. This callback is called when a client's identity handshake fails.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+    <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
+    <tr><td class="paramname">error</td><td>error associated with this failure </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -712,6 +857,17 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function pointer type of the identity server endpoint supported callback. This callback is called when the server needs to determine if the client's requested endpoint is supported. The result of this callback partially determines if an incoming client handshake request is possible to complete.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+    <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
+    <tr><td class="paramname">endpoint_name</td><td>a null-terminated ASCII string containing the name of the endpoint being requested </td></tr>
+    <tr><td class="paramname">endpoint_name_length</td><td>the number of chars in endpoint_name, not including the null-terminator </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if the server can handle requests for the requested endpoint, false otherwise </dd></dl>
 
 </div>
 </div>
@@ -726,6 +882,16 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function pointer type for the server handshake build challenge callback. This callback is called when a server needs to build a challenge object.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+    <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
+    <tr><td class="paramname">out_challenge_buffer</td><td>the destination buffer for the callback to write a BSON document representing the endpoint request challenge object </td></tr>
+    <tr><td class="paramname">out_challenge_buffer_size</td><td>the number of bytes allocated in out_challenge_buffer </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -740,6 +906,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function pointer type for the server handshake challenge size callback. This callback is called when a server needs to know how much memory to allocate for a challenge.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+    <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>the number of bytes required to store the challenge object </dd></dl>
 
 </div>
 </div>
@@ -754,6 +929,16 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function pointer type of the identity server handshake client allowed callback. The result of this callback partially determines if an incoming client handshake request is possible to complete. For instance an implementation of this function completed.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+    <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
+    <tr><td class="paramname">client_service_id</td><td>the v3 onion service id of the connected client </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if the server wants to allow the requesting client to connect client may complete the handshake, false otherwise </dd></dl>
 
 </div>
 </div>
@@ -768,6 +953,19 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function pointer type for the identity server handshake completed callback. This callback is called whenever the identity server has successfully completed a handshake with and granted to a connecting identity client.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+    <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
+    <tr><td class="paramname">endpoint_private_key</td><td>the ed25519 private key of the endpoint server to host for the client </td></tr>
+    <tr><td class="paramname">endoint_name</td><td>the null-terminated name of the new endpoint server </td></tr>
+    <tr><td class="paramname">endpoint_name_length</td><td>the length of the endpoint_name string not including the null-terminator </td></tr>
+    <tr><td class="paramname">client_service_id</td><td>the onion service id of the client we have granted access to </td></tr>
+    <tr><td class="paramname">client_auth_public_key</td><td>the x25519 public key to use to encrypt the endpoint server's service descriptor as provided by the connecting client </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -782,6 +980,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function pointer type for the identity server handshake handshake failed callback. This callback is called when a server's identity handshake fails.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+    <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
+    <tr><td class="paramname">error</td><td>error associated with this failure </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -796,6 +1003,19 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function pointer type of the identity server handshake rejected callback. This callback is called whenever the identity server has rejected an identity client's handshake.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+    <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
+    <tr><td class="paramname">client_allowed</td><td>true if requesting client is allowed, false otherwies </td></tr>
+    <tr><td class="paramname">client_requested_endpoint_valid</td><td>true if requesting client requested a valid endpoint, false otherwise </td></tr>
+    <tr><td class="paramname">client_proof_signature_valid</td><td>true if the requesting client properly signed the identity proof, false otherwise </td></tr>
+    <tr><td class="paramname">client_auth_signature_valid</td><td>true if the requesting client properly signed the authorization proof, false othewise </td></tr>
+    <tr><td class="paramname">challenge_response_valid</td><td>true if the requesting client's challenge response was accepted by the server, false otherwise </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -810,6 +1030,14 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function pointer type of the identity server handshake started callback. This callback is called whenever the identity server is initially connected to.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+    <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -824,6 +1052,17 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function poointer type for the server handshake verify challenge response callback. This callback is called when a server needs to verify a challenge response object.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+    <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
+    <tr><td class="paramname">challenge_response_buffer</td><td>a buffer containing the BSON document representing the endpoint request challenge response object </td></tr>
+    <tr><td class="paramname">challenge_response_buffer_size</td><td>the number of bytes in challenge_response_buffer </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>the result of the challenge response verification </dd></dl>
 
 </div>
 </div>
@@ -838,6 +1077,13 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function pointer type for the identity server published callback. This callback is called whenever the onion service of the identity server associated with the given context is published and should be reachable by clients.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -852,6 +1098,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>A handle for the gosling library </p>
 
 </div>
 </div>
@@ -866,6 +1113,13 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function pointer type for the tor boootstrap completed callback. This callback is called when the context's tor daemon's bootstrap process has completed.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -880,6 +1134,18 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function pointer type for the tor bootstrap status received callback. This callback is called when context's tor daemon's bootstrap status has progressed.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+    <tr><td class="paramname">progress</td><td>an unsigned integer from 0 to 100 indicating the current completion perentage of the context's bootstrap process </td></tr>
+    <tr><td class="paramname">tag</td><td>the null-terminated short name of the current bootstrap stage </td></tr>
+    <tr><td class="paramname">tag_length</td><td>the number of chrs in tag not including any null-terminator </td></tr>
+    <tr><td class="paramname">summary</td><td>the null-terminated description of the current bootstra stage </td></tr>
+    <tr><td class="paramname">summmary_length</td><td>the number of chars in summary not including the null-terminator </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -894,6 +1160,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>The function pointer type for the tor log received callback. This callback is called whenever the context's tor daemon prints new log lines.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
+    <tr><td class="paramname">line</td><td>the null-terminated received log line </td></tr>
+    <tr><td class="paramname">line_length</td><td>the number of chars in line not including the null-terminator </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -908,6 +1183,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>A tor provider object used by a context to connect to the tor network </p>
 
 </div>
 </div>
@@ -922,6 +1198,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>A v3 onion service id </p>
 
 </div>
 </div>
@@ -936,6 +1213,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>An x25519 private key used to decrypt v3 onion service descriptors </p>
 
 </div>
 </div>
@@ -950,6 +1228,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>An x25519 public key used to encrypt v3 onoin service descriptors </p>
 
 </div>
 </div>
@@ -965,17 +1244,28 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>All of the gosling-related constants defined as an enum </p>
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55ba8b2b086ddd4bf39b46691865b3ae46d5"></a>v3_onion_service_id_string_length&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55baa48794c57511a5aeb25531e8dbb32aac"></a>v3_onion_service_id_string_size&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55bac028fb5e6398b3952cc0b620f06577c4"></a>ed25519_private_keyblob_base64_length&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55ba2bdeef9132e41a40c205a660b3c45fa6"></a>ed25519_private_key_keyblob_header_length&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55ba72b94a6c7bcbcd29921e4f4e09ad3354"></a>ed25519_private_key_keyblob_length&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55bafa9fc8c28adb484dc30f815245d88822"></a>ed25519_private_key_keyblob_size&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55ba9b8a9fd3f522f217801a1f4129490930"></a>x25519_private_key_base64_length&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55bad39aea2d1abbef598ff5d3f065871ee5"></a>x25519_private_key_base64_size&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55badae2d9e5eb236bc93a1f8f60bd93ab8d"></a>x25519_public_key_base32_length&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55ba9f1c66b6955c5643bd032e659c9b709a"></a>x25519_public_key_base32_size&#160;</td><td class="fielddoc"></td></tr>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55ba8b2b086ddd4bf39b46691865b3ae46d5"></a>v3_onion_service_id_string_length&#160;</td><td class="fielddoc"><p>The number of bytes needed to store onion service id as an ASCII c-string (not including null-terminator) </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55baa48794c57511a5aeb25531e8dbb32aac"></a>v3_onion_service_id_string_size&#160;</td><td class="fielddoc"><p>The number of bytes needed to store onion service id as an ASCII c-string (including null-terminator) </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55bac028fb5e6398b3952cc0b620f06577c4"></a>ed25519_private_keyblob_base64_length&#160;</td><td class="fielddoc"><p>The number of bytes needed to store base64 encoded ed25519 private key as an ASCII c-string (not including null-terminator) </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55ba2bdeef9132e41a40c205a660b3c45fa6"></a>ed25519_private_key_keyblob_header_length&#160;</td><td class="fielddoc"><p>The number of bytes needed to store the keyblob header </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55ba72b94a6c7bcbcd29921e4f4e09ad3354"></a>ed25519_private_key_keyblob_length&#160;</td><td class="fielddoc"><p>The number of bytes needed to store ed25519 private keyblob as an ASCII c-string (not including a null terminator) </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55bafa9fc8c28adb484dc30f815245d88822"></a>ed25519_private_key_keyblob_size&#160;</td><td class="fielddoc"><p>The number of bytes needed to store ed25519 private keyblob as an ASCII c-string (including a null terminator) </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55ba9b8a9fd3f522f217801a1f4129490930"></a>x25519_private_key_base64_length&#160;</td><td class="fielddoc"><p>The number of bytes needed to store base64 encoded x25519 private key as an ASCII c-string (not including null-terminator) </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55bad39aea2d1abbef598ff5d3f065871ee5"></a>x25519_private_key_base64_size&#160;</td><td class="fielddoc"><p>The number of bytes needed to store base64 encoded x25519 private key as an ASCII c-string (including a null terminator) </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55badae2d9e5eb236bc93a1f8f60bd93ab8d"></a>x25519_public_key_base32_length&#160;</td><td class="fielddoc"><p>The number of bytes needed to store base32 encoded x25519 public key as an ASCII c-string (not including null-terminator) </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a06fc87d81c62e9abb8790b6e5713c55ba9f1c66b6955c5643bd032e659c9b709a"></a>x25519_public_key_base32_size&#160;</td><td class="fielddoc"><p>The number of bytes needed to store base32 encoded x25519 public key as an ASCII c-string (including a null terminator) </p>
+</td></tr>
 </table>
 
 </div>
@@ -1012,6 +1302,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Abort an in-progress endpoint client handshake</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with the endpoint client handshake handle </td></tr>
+    <tr><td class="paramname">handshake_handle</td><td>the handle associated with the identity client handshake </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1046,6 +1345,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Abort an in-progress identity client handshake</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context associated with the identity client handshake handle </td></tr>
+    <tr><td class="paramname">handshake_handle</td><td>the handle associated with the identity client handshake </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1098,6 +1406,17 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Connect to and begin a handshake to request a channel from the given endpoint server</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context which will be opening the channel </td></tr>
+    <tr><td class="paramname">endpoint_service_id</td><td>the endpoint server to open a channel to </td></tr>
+    <tr><td class="paramname">client_auth_private_key</td><td>the x25519 clienth authorization key needed to decrypt the endpoint server's onion service descriptor </td></tr>
+    <tr><td class="paramname">channel_name</td><td>the ascii-encoded name of the channel to open </td></tr>
+    <tr><td class="paramname">channel_name_length</td><td>the number of chars in channel name not including any null-terminator </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1144,6 +1463,17 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Connect to and begin a handshake to request an endpoint from the given identity server</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to request an endpoint server for </td></tr>
+    <tr><td class="paramname">identity_service_id</td><td>the service id of the identity server we want to request an endpoint server from </td></tr>
+    <tr><td class="paramname">endpoint_name</td><td>the name of the endpoint server to request </td></tr>
+    <tr><td class="paramname">endpoint_name_length</td><td>the number of chars in endpoin_name not including any null-terminator </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1172,6 +1502,14 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Connect a gosling_context to the tor network</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the gosling context object to connect to the tor network </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1190,6 +1528,13 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Frees a gosling_context object</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">in_context</td><td>the context object to free </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1242,6 +1587,18 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Initialize a gosling context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">out_context</td><td>returned initialied gosling context </td></tr>
+    <tr><td class="paramname">in_tor_provider</td><td>the tor client implementation to use; this function consumes the tor_provider and it may not be re-used in subsequent gosling_* calls, and it does not need to be freed </td></tr>
+    <tr><td class="paramname">identity_port</td><td>the tor virtual port the identity server listens on </td></tr>
+    <tr><td class="paramname">endpoint_port</td><td>the tor virtual port endpoint servers listen on </td></tr>
+    <tr><td class="paramname">identity_private_key</td><td>the e25519 private key used to start th identity server's onion service </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1270,6 +1627,14 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Update the internal gosling context state and process event callbacks</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context object we are updating </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1304,6 +1669,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Set the endpoint client handshake completed callback for the specified context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1338,6 +1712,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Set the endpoint client handshake failed callback for the specified context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1372,6 +1755,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Set the endpoint server handshake started callback for the specified context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1406,6 +1798,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Set the endpoint server channel request completed callback for the specified context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1440,6 +1841,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Set the endpoint server channel request completed callback for the specified context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1474,6 +1884,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Set the endpoint server channel request completed callback for the specified context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1508,6 +1927,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Set the endpoint server handshake started callback for the specified context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1542,6 +1970,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Set the endpoint server published callback for the specified context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1576,6 +2013,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Sets the identity client build challenge response callback for the specified context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1610,6 +2056,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Sets the identity challenge challenge response size callback for the specified context</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1644,6 +2099,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Set the identity client handshake completed callback for the specified context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1678,6 +2142,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Set the identity client handshake failed callback for the specified context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1712,6 +2185,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Sets the identity server build challenge callback for the specified context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on erro </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1746,6 +2228,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Sets the identity server challenge size callback for the specified context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on erro </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1780,6 +2271,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Sets the identity server client allowed callback for the specified context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1814,6 +2314,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Sets the identity server endpoint supported callback for the specified context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1848,6 +2357,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Set the identity server request completed callback for the specified context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1882,6 +2400,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Set the identity server request failed callback for the specified context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1916,6 +2443,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Set the identity server request rejeced callback for the specified context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1950,6 +2486,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Set the identity server handshake started callback for the specified context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1984,6 +2529,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Set the identity server published callback for the specified context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2018,6 +2572,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Sets the identity server verify challenge response callback for the specified context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on erro </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2052,6 +2615,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Set the tor bootstrap completed callback for the specified context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2086,6 +2658,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Set the tor bootstrap status received callback for the specified context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2120,6 +2701,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Sets the tor log received callback for the specified context.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
+    <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2178,6 +2768,19 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Start an endpoint server so the confirmed contact may connect</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the gosling context with the given endpoint to start </td></tr>
+    <tr><td class="paramname">endpoint_private_key</td><td>the ed25519 private key needed to start the endpoint onion service </td></tr>
+    <tr><td class="paramname">endpoint_name</td><td>the ascii-encoded name of the endpoint server </td></tr>
+    <tr><td class="paramname">endpoint_name_length</td><td>the number of chars in endpoint name not including any null-terminator </td></tr>
+    <tr><td class="paramname">client_identity</td><td>the v3 onion service id of the gosling client associated with this endpoint </td></tr>
+    <tr><td class="paramname">client_auth_public_key</td><td>the x25519 public key used to encrypt the onion service descriptor </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2206,6 +2809,14 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Start the identity server so that clients may request endpoints</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the gosling context whose identity server to start </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2240,6 +2851,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Stops an endpoint server</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the gosling context associated with the endpoint server </td></tr>
+    <tr><td class="paramname">endpoint_private_key</td><td>the ed25519 private key associated with the endpoint server to stop </td></tr>
+    <tr><td class="paramname">error</td><td>filled on erro </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2268,6 +2888,14 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Stop the identity server so clients can no longer request endpoints</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">context</td><td>the gosling context whose identity server to stop </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2302,6 +2930,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Copy method for gosling_ed25519_private_key</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">out_private_key</td><td>returned copy </td></tr>
+    <tr><td class="paramname">private_key</td><td>original to copy </td></tr>
+    <tr><td class="paramname">error</td><td>fliled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2320,6 +2957,13 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Frees a gosling_ed25519_private_key object</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">in_private_key</td><td>the private key to free </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2360,6 +3004,16 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Conversion method for converting the KeyBlob string returned by ADD_ONION command into a gosling_ed25519_private_key</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">out_private_key</td><td>returned ed25519 private key </td></tr>
+    <tr><td class="paramname">key_blob</td><td>an ed25519 KeyBlob string in the form "ED25519-V3:abcd1234..." </td></tr>
+    <tr><td class="paramname">key_blob_length</td><td>number of chars in key_blob not including any null-terminator </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2388,6 +3042,14 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Creation method for securely generating a new gosling_ed25510_private_key</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">out_private_key</td><td>returned generated ed25519 private key </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2428,6 +3090,16 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Conversion method for converting an ed25519 private key to a null- terminated KeyBlob string for use with ADD_ONION command</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">private_key</td><td>the private key to encode </td></tr>
+    <tr><td class="paramname">out_key_blob</td><td>buffer to be filled with ed25519 KeyBlob in the form "ED25519-V3:abcd1234...\0" </td></tr>
+    <tr><td class="paramname">key_blob_size</td><td>size of out_key_blob buffer in bytes, must be at least 100 characters (99 for string + 1 for null-terminator) </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2462,6 +3134,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Copy method for gosling_error</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">out_error</td><td>returned copy </td></tr>
+    <tr><td class="paramname">orig_error</td><td>original to copy </td></tr>
+    <tr><td class="paramname">error</td><td>fliled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2480,6 +3161,13 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Frees gosling_error and invalidates any message strings returned by <a class="el" href="cgosling_8h.html#a1b8d14c0bc4dfc293157875fd0d55d78">gosling_error_get_message()</a> from the given error object.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">error</td><td>the error object to free </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2498,6 +3186,14 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Get error message from gosling_error</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">error</td><td>the error object to get the message from </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>null-terminated string with error message whose lifetime is tied to the source </dd></dl>
 
 </div>
 </div>
@@ -2516,6 +3212,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Frees all resources associated with the Gosling library. No-op if the library is not initialized or if it has already been freed </p>
 
 </div>
 </div>
@@ -2544,6 +3241,8 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Initializes the Gosling library. This function must be called before using any of the other Gosling functions.</p>
+<dl class="section return"><dt>Returns</dt><dd>: returns 0 on success </dd></dl>
 
 </div>
 </div>
@@ -2578,6 +3277,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Checks if a service id string is valid per tor rend spec: <a href="https://gitweb.torproject.org/torspec.git/tree/rend-spec-v3.txt">https://gitweb.torproject.org/torspec.git/tree/rend-spec-v3.txt</a></p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">service_id_string</td><td>string containing the v3 service id to be validated </td></tr>
+    <tr><td class="paramname">service_id_string_length</td><td>the number of chars in service_id_string not including any null-terminator; must be V3_ONION_SERVICE_ID_STRING_LENGTH (56) </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2596,6 +3304,13 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Frees a gosling_tor_provider object</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">in_tor_provider</td><td>the tor provider object to free </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2648,6 +3363,18 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Create a new tor provider which uses the legacy tor daemon client.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">out_tor_provider</td><td>returned tor provider </td></tr>
+    <tr><td class="paramname">tor_bin_path</td><td>the file system path to the tor binary; if this is null the tor executable found in the system PATH variable is used </td></tr>
+    <tr><td class="paramname">tor_bin_path_length</td><td>the number of chars in tor_bin_path not including any null terminator </td></tr>
+    <tr><td class="paramname">tor_working_directory</td><td>the file system path to store tor's data </td></tr>
+    <tr><td class="paramname">tor_working_directory_length</td><td>the number of chars in tor_working_directory not including any null-terminator </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2676,6 +3403,14 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Create a mock tor provider for no-internet required in-process testing.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">out_tor_provider</td><td>returned tor provider </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2710,6 +3445,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Copy method for gosling_v3_onion_service_id</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">out_service_id</td><td>returned copy </td></tr>
+    <tr><td class="paramname">service_id</td><td>original to copy </td></tr>
+    <tr><td class="paramname">error</td><td>fliled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2728,6 +3472,13 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Frees a gosling_v3_onion_service_id object</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">in_service_id</td><td>the service id object to free </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2762,6 +3513,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Conversion method for converting an ed25519 private key into a gosling_v3_onion_service_id object</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">out_service_id</td><td>returned service id object </td></tr>
+    <tr><td class="paramname">ed25519_private_key</td><td>an e25519 private key </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2802,6 +3562,16 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Conversion method for converting a v3 onion service string into a gosling_v3_onion_service_id object</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">out_service_id</td><td>returned service id object </td></tr>
+    <tr><td class="paramname">service_id_string</td><td>a v3 onion service id string </td></tr>
+    <tr><td class="paramname">service_id_string_length</td><td>the number of chars in service_id_string not including any null-terminator </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2842,6 +3612,16 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Conversion method for converting v3 onion service id to a null-terminated string</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">service_id</td><td>the service id to encode </td></tr>
+    <tr><td class="paramname">out_service_id_string</td><td>buffer to be filled with x25519 key encoded as base32 </td></tr>
+    <tr><td class="paramname">service_id_string_size</td><td>size of out_service_id_string buffer in bytes, must be at least 57 characters (56 for string + 1 for null-terminator) </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2876,6 +3656,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Copy method for gosling_x25519_private_key</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">out_private_key</td><td>returned copy </td></tr>
+    <tr><td class="paramname">private_key</td><td>original to copy </td></tr>
+    <tr><td class="paramname">error</td><td>fliled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2894,6 +3683,13 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Frees a gosling_x25519_private_key object</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">in_private_key</td><td>the private key to free </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2934,6 +3730,16 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Conversion method for converting a base64-encoded string used by the ONION_CLIENT_AUTH_ADD command into a gosling_x25519_private_key</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">out_private_key</td><td>returned x25519 private key </td></tr>
+    <tr><td class="paramname">base64</td><td>an x25519 private key encoded as a base64 string </td></tr>
+    <tr><td class="paramname">base64_length</td><td>the number of chars in base64 not including any null-terminator </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2974,6 +3780,16 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Conversion method for converting an x25519 private key to a null- terminated base64 string for use with ONION_CLIENT_AUTH_ADD command</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">private_key</td><td>the private key to encode </td></tr>
+    <tr><td class="paramname">out_base64</td><td>buffer to be filled with x25519 key encoded as base64 </td></tr>
+    <tr><td class="paramname">base64_size</td><td>size of out_base64 buffer in bytes, must be at least 45 characters (44 for string + 1 for null-terminator) </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -3008,6 +3824,15 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Copy method for gosling_x25519_public_key</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">out_public_key</td><td>returned copy </td></tr>
+    <tr><td class="paramname">public_key</td><td>original to copy </td></tr>
+    <tr><td class="paramname">error</td><td>fliled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -3026,6 +3851,13 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Frees a gosling_x25519_public_key object</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">public_key</td><td>the public key to free </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -3066,6 +3898,16 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Conversion method for converting a base32-encoded string used by the ADD_ONION command into a gosling_x25519_public_key</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">out_public_key</td><td>returned x25519 public key </td></tr>
+    <tr><td class="paramname">base32</td><td>an x25519 public key encoded as a base32 string </td></tr>
+    <tr><td class="paramname">base32_length</td><td>the number of chars in base32 not including any null-terminator </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -3106,6 +3948,16 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Conversion method for converting an x25519 public key to a null- terminated base64 string for use with ADD_ONION command</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">public_key</td><td>the public key to encode </td></tr>
+    <tr><td class="paramname">out_base32</td><td>buffer to be filled with x25519 key encoded as base32 </td></tr>
+    <tr><td class="paramname">base32_size</td><td>size of out_base32 buffer in bytes, must be at least 53 characters (52 for string + 1 for null-terminator) </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
