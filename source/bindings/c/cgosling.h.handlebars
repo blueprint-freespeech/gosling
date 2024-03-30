@@ -25,7 +25,6 @@
 #   include <sys/socket.h>
 #endif
 
-// constant defines
 {{#each constants}}
 /**
 {{#each comments}} * {{this}}
@@ -34,14 +33,12 @@
 #define {{to_uppercase name}} {{value}}
 {{/each}}
 
-// constants enum
 enum {
 {{#each constants}}
     {{name}} = {{value}},
 {{/each}}
 };
 
-// typedefs
 {{#each aliases}}
 /**
 {{#each comments}} * {{this}}
@@ -54,7 +51,6 @@ typedef {{typename}} {{name}};
 {{/if}}
 {{/each}}
 
-// callbacks
 {{#each callbacks}}
 /**
 {{#each comments}} * {{this}}
@@ -63,7 +59,6 @@ typedef {{typename}} {{name}};
 typedef {{return_param}}(*{{name}})({{#each input_params}}{{#unless (eq @index 0)}}, {{/unless}}{{typename}} {{name}}{{/each}});
 {{/each}}
 
-// functions
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
