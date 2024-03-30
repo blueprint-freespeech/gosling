@@ -33,8 +33,15 @@
 #define {{to_uppercase name}} {{value}}
 {{/each}}
 
+/**
+ * All of the gosling-related constants defined as an enum
+ */
 enum {
 {{#each constants}}
+    /**
+{{#each comments}}    * {{this}}
+{{/each}}
+    */
     {{name}} = {{value}},
 {{/each}}
 };
