@@ -190,6 +190,12 @@ pub struct GoslingTorProvider;
 pub struct GoslingContext;
 /// A handle for an in-progress identity handhskae
 pub type GoslingHandshakeHandle = usize;
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+/// A native TCP socket handle
+pub type GoslingTcpSocket = RawFd;
+#[cfg(any(target_os = "windows"))]
+/// A native TCP socket handle
+pub type GoslingTcpSocket = RawSocket;
 
 define_registry! {Ed25519PrivateKey}
 define_registry! {X25519PrivateKey}
@@ -2403,9 +2409,8 @@ pub type GoslingIdentityServerHandshakeFailedCallback = Option<
 ///  the client
 /// @param channel_name_length: the number of chars in channel_name not including the
 ///  null-terminator
-/// @param stream: the tcp socket file descriptor associated with the connection to the
+/// @param stream: os-specific tcp socket handle associated with the connection to the
 ///  endpoint server
-#[cfg(any(target_os = "linux", target_os = "macos"))]
 pub type GoslingEndpointClientHandshakeCompletedCallback = Option<
     extern "C" fn(
         context: *mut GoslingContext,
@@ -2413,32 +2418,7 @@ pub type GoslingEndpointClientHandshakeCompletedCallback = Option<
         endpoint_service_id: *const GoslingV3OnionServiceId,
         channel_name: *const c_char,
         channel_name_length: usize,
-        stream: RawFd,
-    ),
->;
-
-/// The function pointer type for the endpoint client channel request complete callback.
-/// This callback is called when the client successfully connects to an endpoint server.
-///
-/// @param context: the context associated with this event
-/// @param handshake_handle: the handshake handle this callback is associated with
-/// @param endpoint_service_id: the onion service id of the endpoint server the client
-///  has connected to
-/// @param channel_name: the null-terminated name of the channel name requested by the
-///  the client
-/// @param channel_name_length: the number of chars in channel_name not including the
-///  null-terminator
-/// @param stream: the tcp SOCKET object associated with the connection to the endpoint
-///  server
-#[cfg(target_os = "windows")]
-pub type GoslingEndpointClientHandshakeCompletedCallback = Option<
-    extern "C" fn(
-        context: *mut GoslingContext,
-        handshake_handle: GoslingHandshakeHandle,
-        endpoint_service_id: *const GoslingV3OnionServiceId,
-        channel_name: *const c_char,
-        channel_name_length: usize,
-        stream: RawSocket,
+        stream: GoslingTcpSocket,
     ),
 >;
 
@@ -2519,9 +2499,8 @@ pub type GoslingEndpointServerChannelSupportedCallback = Option<
 /// @param channel_name: the null-terminated name of the channel requested by the client
 /// @param channel_name_length: the number of chars in channel_name not including the
 ///  null-terminator
-/// @param stream: the tcp socket file descriptor associated with the connection to the
+/// @param stream:os-specific tcp socket handle associated with the connection to the
 ///  endpoint client
-#[cfg(any(target_os = "linux", target_os = "macos"))]
 pub type GoslingEndpointServerHandshakeCompletedCallback = Option<
     extern "C" fn(
         context: *mut GoslingContext,
@@ -2530,35 +2509,8 @@ pub type GoslingEndpointServerHandshakeCompletedCallback = Option<
         client_service_id: *const GoslingV3OnionServiceId,
         channel_name: *const c_char,
         channel_name_length: usize,
-        stream: RawFd,
+        stream: GoslingTcpSocket,
     ),
->;
-
-/// The function pointer type for the endpoint server handshake completed callback.
-/// This callback is called when an endpoint server completes a handshake with an
-/// endpoint client.
-///
-/// @param context: the context associated with this event
-/// @param handshake_handle: the handshake handle this callback is associated with
-/// @param endpoint_service_id: the onion service id of the endpoint server the
-///  endpoint client has connected to
-/// @param client_service_id: the onion service id of the connected endpoint client
-/// @param channel_name: the null-terminated name of the channel requested by the client
-/// @param channel_name_length: the number of chars in channel_name not including the
-///  null-terminator
-/// @param stream: the tcp SOCKET object associated with the connection to the endpoint
-///  client
-#[cfg(target_os = "windows")]
-pub type GoslingEndpointServerHandshakeCompletedCallback = Option<
-    extern "C" fn(
-        context: *mut GoslingContext,
-        handshake_handle: GoslingHandshakeHandle,
-        endpoint_service_id: *const GoslingV3OnionServiceId,
-        client_service_id: *const GoslingV3OnionServiceId,
-        channel_name: *const c_char,
-        channel_name_length: usize,
-        stream: RawSocket,
-    ) -> (),
 >;
 
 /// The function pointer type of the endpoint server handshake rejected callback. This

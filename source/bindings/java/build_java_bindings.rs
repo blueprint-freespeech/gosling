@@ -73,7 +73,6 @@ handlebars_helper!(inputParamsToJavaParams: |params: Vec<Param>| {
     for param in params {
         let java_typename = match param.typename.as_ref() {
             "bool" => "boolean".to_string(),
-            "int" | "SOCKET" => "java.net.Socket".to_string(),
             "uint8_t" => "byte".to_string(),
             "uint16_t" => "int".to_string(),
             "uint32_t" => "long".to_string(),
@@ -93,6 +92,7 @@ handlebars_helper!(inputParamsToJavaParams: |params: Vec<Param>| {
             "const uint8_t*" => "byte[]".to_string(),
             "uint8_t*" => "byte[]".to_string(),
             "gosling_handshake_handle_t" => "long".to_string(),
+            "gosling_tcp_socket_t" => "java.net.Socket".to_string(),
             other => {
                 let other = if other.starts_with("const ") {
                     &other[6..]
@@ -413,10 +413,10 @@ handlebars_helper!(marshallNativeParams: |input_params: Vec<Param>| {
                 cpp_src!("std::fill({name}_jni_buffer, {name}_jni_buffer + {name}_size, jbyte(0));");
                 cpp_src!("env->ReleaseByteArrayElements({name}_jni, {name}_jni_buffer, 0);");
             },
-            "int" | "SOCKET" => {
+            "gosling_handshake_handle_t" => cpp_src!("const jlong {name}_jni = static_cast<jlong>({name});"),
+            "gosling_tcp_socket_t" => {
                 cpp_src!("jobject {name}_jni = g_jni_glue->tcp_stream_to_java_socket(env, {name});");
             },
-            "gosling_handshake_handle_t" => cpp_src!("const jlong {name}_jni = static_cast<jlong>({name});"),
             _ => {
                 assert!(typename.starts_with("gosling_") || typename.starts_with("const gosling_"));
                 assert!(!typename.ends_with("**"));
@@ -484,7 +484,7 @@ handlebars_helper!(callJavaCallback: |name: String, return_type: String, input_p
             "uint32_t" | "gosling_handshake_handle_t" => "J".to_string(),
             "const char*" => "Ljava/lang/String;".to_string(),
             "const uint8_t*" | "uint8_t*" => "[B".to_string(),
-            "int" | "SOCKET" => "Ljava/net/Socket;".to_string(),
+            "gosling_tcp_socket_t" => "Ljava/net/Socket;".to_string(),
             "size_t" => {
                 if name.ends_with("_size") || name.ends_with("_length") {
                     continue;
@@ -571,7 +571,7 @@ handlebars_helper!(marshallJNIResults: |return_type: String, input_params: Vec<P
                 cpp_src!("env->ReleaseByteArrayElements({name}_jni, {name}_jni_buffer, JNI_ABORT);");
                 cpp_src!("env->DeleteLocalRef({name}_jni);");
             }
-            "int" | "SOCKET" => cpp_src!("env->DeleteLocalRef({name}_jni);"),
+            "gosling_tcp_socket_t" => cpp_src!("env->DeleteLocalRef({name}_jni);"),
             _ => {
                 assert!(typename.starts_with("gosling_") || typename.starts_with("const gosling_"));
                 assert!(!typename.ends_with("**"));

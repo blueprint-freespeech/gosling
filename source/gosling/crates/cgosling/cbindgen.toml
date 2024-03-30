@@ -33,6 +33,7 @@ prefix_with_name = true
 
 # typedefs
 GoslingHandshakeHandle = "gosling_handshake_handle_t"
+GoslingTcpSocket = "gosling_tcp_socket_t"
 
 # structs
 
