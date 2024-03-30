@@ -80,7 +80,7 @@ if (BUILD_PAGES)
         # make target
         add_custom_target(gosling_cpp_doxygen_target ALL
             DEPENDS ${doxygen_output})
-        add_dependencies(gosling_cpp_doxygen_target gosling_cpp_header_target)
+        add_dependencies(gosling_cpp_doxygen_target gosling_c_header_target gosling_cpp_header_target)
 
         #
         # Install
