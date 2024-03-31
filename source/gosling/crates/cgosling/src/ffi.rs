@@ -2499,7 +2499,7 @@ pub type GoslingEndpointServerChannelSupportedCallback = Option<
 /// @param channel_name: the null-terminated name of the channel requested by the client
 /// @param channel_name_length: the number of chars in channel_name not including the
 ///  null-terminator
-/// @param stream:os-specific tcp socket handle associated with the connection to the
+/// @param stream: os-specific tcp socket handle associated with the connection to the
 ///  endpoint client
 pub type GoslingEndpointServerHandshakeCompletedCallback = Option<
     extern "C" fn(
