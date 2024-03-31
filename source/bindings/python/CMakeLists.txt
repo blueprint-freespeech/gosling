@@ -14,7 +14,7 @@ if (BUILD_PYTHON_BINDINGS)
     add_custom_command(
         DEPENDS ${gosling_python_bindings_sources} cgosling_target
         OUTPUT ${gosling_python_bindings_outputs}
-        COMMAND  env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo run ${CARGO_FLAGS} --bin build_python_bindings ${CARGO_TARGET_DIR}/cgosling.json cgosling.py.handlebars ${CMAKE_CURRENT_BINARY_DIR}/cgosling.py
+        COMMAND  env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo run ${CARGO_FLAGS} --bin build_python_bindings ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/cgosling.json cgosling.py.handlebars ${CMAKE_CURRENT_BINARY_DIR}/cgosling.py
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
     add_custom_target(gosling_python_bindings_target ALL

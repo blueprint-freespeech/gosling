@@ -193,13 +193,18 @@ fn main() {
     if cfg! (not(feature = "impl-lib")) {
         // set by cargo
         let crate_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-        // Set by the user or by cmake.
+        // set by cargo
+        let profile = match std::env::var("PROFILE") {
+            Ok(target) => target,
+            Err(_) => panic!("PROFILE not set"),
+        };
+        // set by cmake
         let target_dir = match std::env::var("CARGO_TARGET_DIR") {
-            Ok(target) => PathBuf::from(target),
-            Err(_) => Path::new(&crate_dir).join("target"),
+            Ok(target) => PathBuf::from(target).join(profile),
+            Err(_) => panic!("CARGO_TARGET_DIR not set"),
         };
 
-        let header_file_path = target_dir.join("include").join("cgosling.h");
+        let header_file_path = target_dir.join("cgosling.h");
         println!("cargo:rerun-if-changed={}",header_file_path.display());
 
         // generate libgosling.h C header

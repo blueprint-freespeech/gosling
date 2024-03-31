@@ -24,8 +24,8 @@ set(CGOSLING_STATIC "${CMAKE_STATIC_LIBRARY_PREFIX}cgosling_static${CMAKE_STATIC
 set(CGOSLING_IMPL_STATIC "${CMAKE_STATIC_LIBRARY_PREFIX}cgosling_impl${CMAKE_STATIC_LIBRARY_SUFFIX}" CACHE STRING "cgosling static impl library filename" FORCE)
 
 set(cgosling_outputs
-    ${CARGO_TARGET_DIR}/include/cgosling.h
-    ${CARGO_TARGET_DIR}/cgosling.json
+    ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/cgosling.h
+    ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/cgosling.json
     ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_STATIC}
     ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_IMPL_STATIC}
 )
