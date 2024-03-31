@@ -23,28 +23,37 @@ set(CGOSLING_STATIC "${CMAKE_STATIC_LIBRARY_PREFIX}cgosling_static${CMAKE_STATIC
 # The naem we use for the _impl suffixed version of the static cgosling bindings
 set(CGOSLING_IMPL_STATIC "${CMAKE_STATIC_LIBRARY_PREFIX}cgosling_impl${CMAKE_STATIC_LIBRARY_SUFFIX}" CACHE STRING "cgosling static impl library filename" FORCE)
 
-set(cgosling_outputs
+set(cgosling_static_outputs
     ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/cgosling.h
     ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/cgosling.json
     ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_STATIC}
+)
+
+set(cgosling_impl_outputs
     ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_IMPL_STATIC}
 )
 
 #
-# build target
+# build targets
 #
 add_custom_command(
     DEPENDS ${cgosling_sources}
-    OUTPUT ${cgosling_outputs}
-    COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo build ${CARGO_FLAGS} --features impl-lib
-    COMMAND ${CMAKE_COMMAND} -E rename ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SRC_STATIC} ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_IMPL_STATIC}
+    OUTPUT ${cgosling_static_outputs}
     COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo build ${CARGO_FLAGS}
     COMMAND ${CMAKE_COMMAND} -E rename ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SRC_STATIC} ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_STATIC}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+add_custom_command(
+    DEPENDS ${cgosling_sources}
+    OUTPUT ${cgosling_impl_outputs}
+    COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo build ${CARGO_FLAGS} --features impl-lib
+    COMMAND ${CMAKE_COMMAND} -E rename ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SRC_STATIC} ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_IMPL_STATIC}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 add_custom_target(cgosling_target
-    DEPENDS ${cgosling_outputs})
+    DEPENDS ${cgosling_static_outputs} ${cgosling_impl_outputs})
 add_dependencies(cgosling_target gosling_target)
 
 #
