@@ -56,7 +56,7 @@ Cargo will automatically download and build the required Rust crates. The list o
 - [honk-rpc](./source/gosling/crates/honk-rpc/Cargo.toml)
 - [tor-interface](./source/gosling/crates/tor-interface/Cargo.toml)
 - [gosling](./source/gosling/crates/gosling/Cargo.toml)
-- [cgosling](./source/gosling/crates/cgosling/Cargo.toml)
+- [cgosling](./source/gosling/crates/cgosling/Cargo.toml.in)
 
 ## Additional Configuration Options and Optional Dependencies
 
