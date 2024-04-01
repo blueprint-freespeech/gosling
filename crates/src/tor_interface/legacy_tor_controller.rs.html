@@ -812,7 +812,6 @@
 <a href="#810" id="810">810</a>
 <a href="#811" id="811">811</a>
 <a href="#812" id="812">812</a>
-<a href="#813" id="813">813</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::default::Default;
 <span class="kw">use </span>std::net::SocketAddr;
@@ -1487,7 +1486,6 @@
 
 <span class="attr">#[test]
 #[serial]
-#[cfg(not(feature = <span class="string">"offline-test"</span>))]
 </span><span class="kw">fn </span>test_tor_controller() -&gt; anyhow::Result&lt;()&gt; {
     <span class="kw">let </span>tor_path = which::which(<span class="macro">format!</span>(<span class="string">"tor{}"</span>, std::env::consts::EXE_SUFFIX))<span class="question-mark">?</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>data_path = std::env::temp_dir();
