@@ -8,6 +8,7 @@ use bson::doc;
 use serial_test::serial;
 #[cfg(feature = "legacy-tor-provider")]
 use tor_interface::legacy_tor_client::*;
+#[cfg(feature = "mock-tor-provider")]
 use tor_interface::mock_tor_client::*;
 use tor_interface::tor_crypto::*;
 use tor_interface::tor_provider::*;
@@ -16,6 +17,7 @@ use tor_interface::tor_provider::*;
 use gosling::context::*;
 
 #[test]
+#[cfg(feature = "mock-tor-provider")]
 fn test_mock_client_gosling_context() -> anyhow::Result<()> {
     let alice_tor_client = Box::new(MockTorClient::new());
     let pat_tor_client = Box::new(MockTorClient::new());

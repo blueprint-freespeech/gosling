@@ -147,6 +147,7 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
+ "serial_test",
  "static_assertions",
  "tor-interface",
  "which",

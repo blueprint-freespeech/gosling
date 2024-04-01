@@ -24,6 +24,7 @@ use cgosling_proc_macros::*;
 use gosling::context::*;
 #[cfg(feature = "legacy-tor-provider")]
 use tor_interface::legacy_tor_client::*;
+#[cfg(feature = "mock-tor-provider")]
 use tor_interface::mock_tor_client::*;
 use tor_interface::tor_crypto::*;
 use tor_interface::*;
@@ -1033,6 +1034,7 @@ pub unsafe extern "C" fn gosling_tor_provider_new_legacy_client(
 /// @param out_tor_provider: returned tor provider
 /// @param error: filled on error
 #[no_mangle]
+#[cfg(feature = "mock-tor-provider")]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_tor_provider_new_mock_client(
     out_tor_provider: *mut *mut GoslingTorProvider,

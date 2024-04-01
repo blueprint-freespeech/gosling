@@ -13,7 +13,7 @@ curve25519-dalek = "4.1"
 data-encoding = "2.0"
 honk-rpc = { path = "../../honk-rpc" }
 libfuzzer-sys = { version = "0.4", features = ["arbitrary-derive"] }
-tor-interface = { path = "../../tor-interface" }
+tor-interface = { path = "../../tor-interface", features = ["mock-tor-provider"] }
 
 [dependencies.gosling]
 path = ".."

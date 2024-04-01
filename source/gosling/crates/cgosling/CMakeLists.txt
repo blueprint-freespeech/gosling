@@ -37,6 +37,9 @@ set(cgosling_impl_outputs
 # cgosling crate feature flags
 #
 set(CGOSLING_FEATURES_LIST)
+if (ENABLE_MOCK_TOR_PROVIDER)
+    list(APPEND CGOSLING_FEATURES_LIST "mock-tor-provider")
+endif()
 if (ENABLE_LEGACY_TOR_PROVIDER)
     list(APPEND CGOSLING_FEATURES_LIST "legacy-tor-provider")
 endif()

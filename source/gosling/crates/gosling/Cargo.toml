@@ -24,4 +24,5 @@ serial_test = "0.9"
 which = "4.4"
 
 [features]
+mock-tor-provider = ["tor-interface/mock-tor-provider"]
 legacy-tor-provider = ["tor-interface/legacy-tor-provider"]

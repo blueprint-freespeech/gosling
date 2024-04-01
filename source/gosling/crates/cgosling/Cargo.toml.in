@@ -24,10 +24,14 @@ static_assertions = "1.1"
 tor-interface = { path = "../tor-interface" }
 which = "4.4"
 
+[dev-dependencies]
+serial_test = "0.9"
+
 [lib]
 name = "cgosling"
 crate-type = ["staticlib" ,"rlib"]
 
 [features]
 impl-lib = []
+mock-tor-provider = ["gosling/mock-tor-provider"]
 legacy-tor-provider = ["gosling/legacy-tor-provider"]

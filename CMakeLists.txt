@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.17)
 project(gosling)
 
 # Feature flags
+option(ENABLE_MOCK_TOR_PROVIDER "Enable mocked tor support for tests" ON)
 option(ENABLE_LEGACY_TOR_PROVIDER "Enable legacy c-tor daemon support" ON)
 
 # Test options

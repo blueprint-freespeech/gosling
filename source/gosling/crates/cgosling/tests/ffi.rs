@@ -12,6 +12,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 // external crates
 use anyhow::bail;
+#[cfg(test)]
+use serial_test::serial;
 
 // internal crates
 use cgosling::ffi::*;
@@ -234,26 +236,29 @@ fn create_server_endpoint_handshake(context: *mut GoslingContext) -> anyhow::Res
 }
 
 #[test]
-fn test_gosling_ffi_handshake() -> anyhow::Result<()> {
-    // init libary
+#[serial]
+#[cfg(feature = "mock-tor-provider")]
+fn test_gosling_ffi_handshake_mock_client() -> anyhow::Result<()> {
+    let library = test_gosling_ffi_handshake_preamble()?;
 
-    println!("--- init gosling library");
-    let mut library: *mut GoslingLibrary = ptr::null_mut();
-    require_noerror!(gosling_library_init(&mut library));
+    // construct tor providers
+    let mut alice_tor_provider: *mut GoslingTorProvider = ptr::null_mut();
+    require_noerror!(gosling_tor_provider_new_mock_client(&mut alice_tor_provider));
 
-    println!("--- library: {:?}", library);
+    let mut pat_tor_provider: *mut GoslingTorProvider = ptr::null_mut();
+    require_noerror!(gosling_tor_provider_new_mock_client(&mut pat_tor_provider));
 
-    // init alice
+    // do test
+    test_gosling_ffi_handshake_impl(library, alice_tor_provider, pat_tor_provider)
+}
 
-    println!("--- init alice");
-    let mut alice_private_key: *mut GoslingEd25519PrivateKey = ptr::null_mut();
-    require_noerror!(gosling_ed25519_private_key_generate(&mut alice_private_key));
+#[test]
+#[serial]
+#[cfg(feature = "legacy-tor-provider")]
+fn test_gosling_ffi_handshake_legacy_client() -> anyhow::Result<()> {
+    let library = test_gosling_ffi_handshake_preamble()?;
 
-    let mut alice_identity: *mut GoslingV3OnionServiceId = ptr::null_mut();
-    require_noerror!(gosling_v3_onion_service_id_from_ed25519_private_key(
-        &mut alice_identity,
-        alice_private_key
-    ));
+    // construct tor providers
 
     let mut alice_working_dir = std::env::temp_dir();
     alice_working_dir.push("gosling_context_test_alice");
@@ -266,6 +271,50 @@ fn test_gosling_ffi_handshake() -> anyhow::Result<()> {
         0usize,
         alice_working_dir.as_ptr(),
         alice_working_dir.as_bytes().len()
+    ));
+
+    let mut pat_working_dir = std::env::temp_dir();
+    pat_working_dir.push("gosling_context_test_pat");
+    let pat_working_dir: CString = CString::new(pat_working_dir.to_str().unwrap())?;
+
+    let mut pat_tor_provider: *mut GoslingTorProvider = ptr::null_mut();
+    require_noerror!(gosling_tor_provider_new_legacy_client(
+        &mut pat_tor_provider,
+        ptr::null(),
+        0usize,
+        pat_working_dir.as_ptr(),
+        pat_working_dir.as_bytes().len()
+    ));
+
+    // do test
+    test_gosling_ffi_handshake_impl(library, alice_tor_provider, pat_tor_provider)
+}
+
+fn test_gosling_ffi_handshake_preamble() -> anyhow::Result<*mut GoslingLibrary> {
+   // init libary
+
+    println!("--- init gosling library");
+    let mut library: *mut GoslingLibrary = ptr::null_mut();
+    require_noerror!(gosling_library_init(&mut library));
+
+    println!("--- library: {:?}", library);
+
+    Ok(library)
+}
+
+fn test_gosling_ffi_handshake_impl(library: *mut GoslingLibrary, alice_tor_provider: *mut GoslingTorProvider, pat_tor_provider: *mut GoslingTorProvider) -> anyhow::Result<()> {
+
+
+    // init alice
+
+    println!("--- init alice");
+    let mut alice_private_key: *mut GoslingEd25519PrivateKey = ptr::null_mut();
+    require_noerror!(gosling_ed25519_private_key_generate(&mut alice_private_key));
+
+    let mut alice_identity: *mut GoslingV3OnionServiceId = ptr::null_mut();
+    require_noerror!(gosling_v3_onion_service_id_from_ed25519_private_key(
+        &mut alice_identity,
+        alice_private_key
     ));
 
     let mut alice_context: *mut GoslingContext = ptr::null_mut();
@@ -291,19 +340,6 @@ fn test_gosling_ffi_handshake() -> anyhow::Result<()> {
         pat_private_key
     ));
 
-    let mut pat_working_dir = std::env::temp_dir();
-    pat_working_dir.push("gosling_context_test_pat");
-    let pat_working_dir: CString = CString::new(pat_working_dir.to_str().unwrap())?;
-
-    let mut pat_tor_provider: *mut GoslingTorProvider = ptr::null_mut();
-    require_noerror!(gosling_tor_provider_new_legacy_client(
-        &mut pat_tor_provider,
-        ptr::null(),
-        0usize,
-        pat_working_dir.as_ptr(),
-        pat_working_dir.as_bytes().len()
-    ));
-
     let mut pat_context: *mut GoslingContext = ptr::null_mut();
     require_noerror!(gosling_context_init(
         &mut pat_context,
@@ -318,6 +354,8 @@ fn test_gosling_ffi_handshake() -> anyhow::Result<()> {
     // bootstrap alice
 
     static ALICE_BOOTSTRAP_COMPLETE: AtomicBool = AtomicBool::new(false);
+    ALICE_BOOTSTRAP_COMPLETE.store(false, Ordering::Relaxed);
+
     extern "C" fn alice_bootstrap_complete_callback(context: *mut GoslingContext) -> () {
         assert!(!context.is_null());
         ALICE_BOOTSTRAP_COMPLETE.store(true, Ordering::Relaxed);
@@ -336,6 +374,8 @@ fn test_gosling_ffi_handshake() -> anyhow::Result<()> {
 
     // init alice's identity server
     static ALICE_IDENTITY_SERVER_READY: AtomicBool = AtomicBool::new(false);
+    ALICE_IDENTITY_SERVER_READY.store(false, Ordering::Relaxed);
+
     extern "C" fn alice_identity_server_published_callback(context: *mut GoslingContext) -> () {
         assert!(!context.is_null());
         println!("--- alice identity server published");
@@ -357,6 +397,8 @@ fn test_gosling_ffi_handshake() -> anyhow::Result<()> {
     // bootstrap pat
 
     static PAT_BOOTSTRAP_COMPLETE: AtomicBool = AtomicBool::new(false);
+    PAT_BOOTSTRAP_COMPLETE.store(false, Ordering::Relaxed);
+
     extern "C" fn pat_bootstrap_complete_callback(context: *mut GoslingContext) -> () {
         assert!(!context.is_null());
 
@@ -380,6 +422,12 @@ fn test_gosling_ffi_handshake() -> anyhow::Result<()> {
     static mut PAT_ENDPOINT_REQUEST_COMPLETE: bool = false;
     static mut ALICE_ENDPOINT_SERVICE_ID: *mut GoslingV3OnionServiceId = ptr::null_mut();
     static mut PAT_ONION_AUTH_PRIVATE_KEY: *mut GoslingX25519PrivateKey = ptr::null_mut();
+    unsafe {
+        PAT_ENDPOINT_REQUEST_COMPLETE = false;
+        ALICE_ENDPOINT_SERVICE_ID = ptr::null_mut();
+        PAT_ONION_AUTH_PRIVATE_KEY = ptr::null_mut();
+    }
+
     extern "C" fn pat_identity_client_handshake_completed_callback(
         context: *mut GoslingContext,
         _handshake_handle: usize,
@@ -467,6 +515,12 @@ fn test_gosling_ffi_handshake() -> anyhow::Result<()> {
     static mut ALICE_ENDPOINT_PRIVATE_KEY: *mut GoslingEd25519PrivateKey = ptr::null_mut();
     static mut PAT_IDENTITY_SERVICE_ID: *mut GoslingV3OnionServiceId = ptr::null_mut();
     static mut PAT_ONION_AUTH_PUBLIC_KEY: *mut GoslingX25519PublicKey = ptr::null_mut();
+    unsafe {
+        ALICE_ENDPOINT_REQUEST_COMPLETE = false;
+        ALICE_ENDPOINT_PRIVATE_KEY = ptr::null_mut();
+        PAT_IDENTITY_SERVICE_ID = ptr::null_mut();
+        PAT_ONION_AUTH_PUBLIC_KEY = ptr::null_mut();
+    }
 
     extern "C" fn alice_identity_server_handshake_completed_callback(
         context: *mut GoslingContext,
@@ -601,6 +655,9 @@ fn test_gosling_ffi_handshake() -> anyhow::Result<()> {
     // start alice's enddpoint server
 
     static mut ALICE_ENDPOINT_PUBLISHED: bool = false;
+    unsafe {
+        ALICE_ENDPOINT_PUBLISHED = false;
+    }
 
     extern "C" fn alice_endpoint_server_published_callback(
         context: *mut GoslingContext,
@@ -646,6 +703,10 @@ fn test_gosling_ffi_handshake() -> anyhow::Result<()> {
 
     static mut PAT_SOCKET: Option<TcpSocket> = None;
     static mut ALICE_SOCKET: Option<TcpSocket> = None;
+    unsafe {
+        PAT_SOCKET = None;
+        ALICE_SOCKET = None;
+    }
 
     extern "C" fn pat_enpdoint_client_handshake_completed_callback(
         context: *mut GoslingContext,

@@ -17,6 +17,9 @@ set(gosling_outputs
 # gosling crate feature flags
 #
 set(GOSLING_FEATURES_LIST)
+if (ENABLE_MOCK_TOR_PROVIDER)
+    list(APPEND GOSLING_FEATURES_LIST "mock-tor-provider")
+endif()
 if (ENABLE_LEGACY_TOR_PROVIDER)
     list(APPEND GOSLING_FEATURES_LIST "legacy-tor-provider")
 endif()

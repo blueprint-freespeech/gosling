@@ -62,6 +62,14 @@ Cargo will automatically download and build the required Rust crates. The list o
 
 Build-time configuration options for features which may be conditionally enabled or disabled.
 
+### ENABLE_MOCK_TOR_PROVIDER
+
+```shell
+cmake -DENABLE_MOCK_TOR_PROVIDER=ON
+```
+
+Enable the mock TorProvider implementation. This TorProvider is in-process and local only; it does not connect to the internet or the real Tor Network. It is only useful for testing. This option is **ON** by default.
+
 ### ENABLE_LEGACY_TOR_PROVIDER
 
 ```shell
