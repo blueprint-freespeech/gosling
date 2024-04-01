@@ -70,28 +70,12 @@ cmake -DENABLE_TESTS=ON
 
 Enables the following ctest test targets (internet access is not required for these tests):
 
-- honk_rpc_cargo_fuzz_test
-- tor_interface_offline_cargo_test
-- cgosling_offline_cargo_test
-- gosling_offline_cargo_test
-- gosling_unit_test
-
-The following additional dependencies are required for this configure option:
-
-- [Catch2 >= 3.0](https://github.com/catchorg/Catch2)
-
-### ENABLE_ONLINE_TESTS
-
-```shell
-cmake -DENABLE_ONLINE_TESTS=ON
-```
-
-Enables the following ctest test targets which require internet access and connect to the Tor Network (enabling this option also enables the **ENABLE_TESTS** option):
-
+- honk_rpc_cargo_test
 - tor_interface_cargo_test
 - gosling_cargo_test
 - cgosling_cargo_test
 - gosling_functional_test
+- gosling_unit_test
 
 The following additional dependencies are required for this configure option:
 

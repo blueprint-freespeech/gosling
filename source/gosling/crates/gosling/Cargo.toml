@@ -22,6 +22,3 @@ tor-interface = { version = "0.2", path = "../tor-interface" }
 anyhow = "1.0"
 serial_test = "0.9"
 which = "4.4"
-
-[features]
-offline-test = ["tor-interface/offline-test"]

@@ -29,5 +29,4 @@ name = "cgosling"
 crate-type = ["staticlib" ,"rlib"]
 
 [features]
-offline-test = ["gosling/offline-test"]
 impl-lib = []

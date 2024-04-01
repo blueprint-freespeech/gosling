@@ -36,24 +36,9 @@ if (BUILD_PAGES)
     )
 
     #
-    # Code coverage (offline)
-    #
-    add_custom_command(
-        OUTPUT ${CARGO_TARGET_DIR}/tarpaulin/coverage-offline.html
-        COMMAND CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo tarpaulin --out html --output-dir ${CARGO_TARGET_DIR}/tarpaulin --features tor-interface/offline-test gosling/offline-test cgosling/offline-test
-        COMMAND mv ${CARGO_TARGET_DIR}/tarpaulin/tarpaulin-report.html ${CARGO_TARGET_DIR}/tarpaulin/coverage-offline.html
-        COMMAND ${CMAKE_COMMAND} -E echo "Test Coverage Report: ${CARGO_TARGET_DIR}/tarpaulin/coverage-offline.html"
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-    add_custom_target(gosling_cargo_tarpaulin_offline ALL
-        DEPENDS ${CARGO_TARGET_DIR}/tarpaulin/coverage-offline.html
-    )
-
-    #
     # Install code coverage pages
     #
     install(FILES
-        ${CARGO_TARGET_DIR}/tarpaulin/coverage-offline.html
         ${CARGO_TARGET_DIR}/tarpaulin/coverage.html
         DESTINATION ${CMAKE_INSTALL_DOCDIR})
 

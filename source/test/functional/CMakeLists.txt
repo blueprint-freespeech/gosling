@@ -1,4 +1,4 @@
-if (ENABLE_TESTS AND ENABLE_ONLINE_TESTS)
+if (ENABLE_TESTS)
     find_package(Boost 1.66.0)
 
     if (NOT TARGET Catch2::Catch2WithMain)

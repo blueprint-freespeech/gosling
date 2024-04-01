@@ -23,7 +23,6 @@ fn test_mock_client_gosling_context() -> anyhow::Result<()> {
 
 #[test]
 #[serial]
-#[cfg(not(feature = "offline-test"))]
 fn test_legacy_client_gosling_context() -> anyhow::Result<()> {
     let tor_path = which::which("tor")?;
 

@@ -21,51 +21,42 @@ add_custom_command(
     OUTPUT ${gosling_outputs}
     COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo build ${CARGO_FLAGS}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
 add_custom_target(gosling_target
     DEPENDS ${gosling_outputs})
 add_dependencies(gosling_target honk_rpc_target tor_interface_target)
 
+#
+# cargo test target
+#
 if (ENABLE_TESTS)
-    if (ENABLE_ONLINE_TESTS)
-        #
-        # cargo test target
-        #
-        add_test(NAME gosling_cargo_test
-            COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo test ${CARGO_FLAGS}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        )
-    endif()
-
-    #
-    # cargo test (offline) target
-    #
     add_test(NAME gosling_offline_cargo_test
-        COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo test ${CARGO_FLAGS} --features offline-test
+        COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo test ${CARGO_FLAGS}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+endif()
+
+#
+# fuzz targets
+#
+if (ENABLE_FUZZ_TESTS)
+    add_test(NAME gosling_identity_server_cargo_fuzz_test
+        COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo fuzz run fuzz_identity_server -- -max_total_time=${FUZZ_TEST_MAX_TOTAL_TIME}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
-    #
-    # fuzz targets
-    #
-    if (ENABLE_FUZZ_TESTS)
-        add_test(NAME gosling_identity_server_cargo_fuzz_test
-            COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo fuzz run fuzz_identity_server -- -max_total_time=${FUZZ_TEST_MAX_TOTAL_TIME}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        )
+    add_test(NAME gosling_identity_client_cargo_fuzz_test
+        COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo fuzz run fuzz_identity_client -- -max_total_time=${FUZZ_TEST_MAX_TOTAL_TIME}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
 
-        add_test(NAME gosling_identity_client_cargo_fuzz_test
-            COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo fuzz run fuzz_identity_client -- -max_total_time=${FUZZ_TEST_MAX_TOTAL_TIME}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        )
+    add_test(NAME gosling_endpoint_server_cargo_fuzz_test
+        COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo fuzz run fuzz_endpoint_server -- -max_total_time=${FUZZ_TEST_MAX_TOTAL_TIME}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
 
-        add_test(NAME gosling_endpoint_server_cargo_fuzz_test
-            COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo fuzz run fuzz_endpoint_server -- -max_total_time=${FUZZ_TEST_MAX_TOTAL_TIME}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        )
-
-        add_test(NAME gosling_endpoint_client_cargo_fuzz_test
-            COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo fuzz run fuzz_endpoint_client -- -max_total_time=${FUZZ_TEST_MAX_TOTAL_TIME}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        )
-    endif()
+    add_test(NAME gosling_endpoint_client_cargo_fuzz_test
+        COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo fuzz run fuzz_endpoint_client -- -max_total_time=${FUZZ_TEST_MAX_TOTAL_TIME}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
 endif()

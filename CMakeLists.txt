@@ -4,21 +4,15 @@ project(gosling)
 
 # Test options
 option(ENABLE_TESTS "Enable tests" OFF)
-
-option(ENABLE_ONLINE_TESTS "Enable tests which require internet access" OFF)
-if (ENABLE_ONLINE_TESTS)
-    set(ENABLE_TESTS ON)
-endif()
-
 option(ENABLE_FUZZ_TESTS "Enable fuzz tests" OFF)
+
 if (ENABLE_FUZZ_TESTS)
-    set(ENABLE_TESTS ON)
     if (NOT FUZZ_TEST_MAX_TOTAL_TIME)
         set(FUZZ_TEST_MAX_TOTAL_TIME 600)
     endif()
 endif()
 
-if (ENABLE_TESTS)
+if (ENABLE_TESTS OR ENABLE_FUZZ_TESTS)
     enable_testing()
 endif()
 
