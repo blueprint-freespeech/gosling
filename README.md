@@ -88,7 +88,7 @@ Additional optional bindings, tests, and documentation can be enabled with the f
 cmake -DENABLE_TESTS=ON
 ```
 
-Enables the following ctest test targets (internet access is not required for these tests):
+Enables the following ctest test targets (internet access is only required when a non-mock tor provider is enabled):
 
 - honk_rpc_cargo_test
 - tor_interface_cargo_test
