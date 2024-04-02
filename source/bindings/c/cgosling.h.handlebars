@@ -25,6 +25,14 @@
 #   include <sys/socket.h>
 #endif
 
+{{#each config_flags}}
+/**
+{{#each comments}} * {{this}}
+{{/each}}
+ */
+ {{#if (eq enabled true)}}#define {{name}} 1{{else}}#undef {{name}}{{/if}}
+{{/each}}
+
 {{#each constants}}
 /**
 {{#each comments}} * {{this}}
