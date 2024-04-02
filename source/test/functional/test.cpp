@@ -188,12 +188,21 @@ static void create_server_endpoint_handshake(unique_ptr<gosling_context> &ctx) {
           ctx.get(), channel_supported_callback, throw_on_error()));
 }
 
-// gosling demo
-TEST_CASE("gosling_cpp_demo") {
-  // init gosling library statically so gosling objects with static lifetime
-  // destruct in the right order
-  static unique_ptr<gosling_library> library;
-  REQUIRE_NOTHROW(::gosling_library_init(out(library), throw_on_error()));
+enum gosling_tor_provider_type {
+  mock_tor_provider,
+  legacy_tor_provider,
+};
+
+// we template this function to ensure the static symbols defined here are different, since
+// we can repeatedly call this function with different gosling_tor_providers, and we want each invocation to start fresh
+template<gosling_tor_provider_type TP>
+void gosling_cpp_demo_impl(unique_ptr<gosling_tor_provider>&& alice_tor_provider, unique_ptr<gosling_tor_provider>&& pat_tor_provider) {
+
+
+  // and ensure at runtime we haven't accidentally called this function twice
+  static bool never_been_called = true;
+  REQUIRE(never_been_called);
+  never_been_called = false;
 
   // generate private keys
   unique_ptr<gosling_ed25519_private_key> alice_private_key;
@@ -221,23 +230,9 @@ TEST_CASE("gosling_cpp_demo") {
 
   cout << "pat service id: " << pat_identity.get() << endl;
 
-  const std::filesystem::path tmp = std::filesystem::temp_directory_path();
-  cout << "tmp: " << tmp.string() << endl;
 
   // init contexts
   unique_ptr<gosling_context> alice_context;
-  const auto alice_working_dir = (tmp / "gosling_context_test_alice").string();
-  cout << "alice working dir: " << alice_working_dir << endl;
-
-  unique_ptr<gosling_tor_provider> alice_tor_provider;
-  REQUIRE_NOTHROW(::gosling_tor_provider_new_legacy_client(
-      out(alice_tor_provider),  // out tor_provider
-      nullptr,                  // tor bin path
-      0,                        // tor bin path len
-      alice_working_dir.data(), // tor working dirctory
-      alice_working_dir.size(), // tor working directory len
-      throw_on_error()));
-
   REQUIRE_NOTHROW(
       ::gosling_context_init(out(alice_context),           // out_context
                              alice_tor_provider.release(), // tor_provider
@@ -251,18 +246,6 @@ TEST_CASE("gosling_cpp_demo") {
   create_server_endpoint_handshake(alice_context);
 
   unique_ptr<gosling_context> pat_context;
-  const auto pat_working_dir = (tmp / "gosling_context_test_pat").string();
-  cout << "pat working dir: " << pat_working_dir << endl;
-
-  unique_ptr<gosling_tor_provider> pat_tor_provider;
-  REQUIRE_NOTHROW(::gosling_tor_provider_new_legacy_client(
-      out(pat_tor_provider),  // out tor_provider
-      nullptr,                // tor bin path
-      0,                      // tor bin path len
-      pat_working_dir.data(), // tor working dirctory
-      pat_working_dir.size(), // tor working directory len
-      throw_on_error()));
-
   REQUIRE_NOTHROW(
       ::gosling_context_init(out(pat_context),           // out_context
                              pat_tor_provider.release(), // tor_provider
@@ -565,4 +548,70 @@ TEST_CASE("gosling_cpp_demo") {
   alice_read_buffer.pop_back();
 
   cout << "--- alice received '" << alice_read_buffer << "'" << endl;
+}
+
+#ifdef GOSLING_HAVE_MOCK_TOR_PROVIDER
+void gosling_cpp_demo_mock_tor_provider() {
+  unique_ptr<gosling_tor_provider> alice_tor_provider;
+  unique_ptr<gosling_tor_provider> pat_tor_provider;
+
+  REQUIRE_NOTHROW(::gosling_tor_provider_new_mock_client(out(alice_tor_provider), throw_on_error()));
+
+  REQUIRE_NOTHROW(::gosling_tor_provider_new_mock_client(out(pat_tor_provider), throw_on_error()));
+
+  gosling_cpp_demo_impl<mock_tor_provider>(std::move(alice_tor_provider), std::move(pat_tor_provider));
+}
+
+#endif // GOSLING_HAVE_MOCK_TOR_PROVIDER
+
+#ifdef GOSLING_HAVE_LEGACY_TOR_PROVIDER
+void gosling_cpp_demo_legacy_tor_provider() {
+
+  const std::filesystem::path tmp = std::filesystem::temp_directory_path();
+  cout << "tmp: " << tmp.string() << endl;
+
+  // init alice tor provider
+  const auto alice_working_dir = (tmp / "gosling_context_test_alice").string();
+  cout << "alice working dir: " << alice_working_dir << endl;
+
+  unique_ptr<gosling_tor_provider> alice_tor_provider;
+  REQUIRE_NOTHROW(::gosling_tor_provider_new_legacy_client(
+      out(alice_tor_provider),  // out tor_provider
+      nullptr,                  // tor bin path
+      0,                        // tor bin path len
+      alice_working_dir.data(), // tor working dirctory
+      alice_working_dir.size(), // tor working directory len
+      throw_on_error()));
+
+  //init pat tor provider
+  const auto pat_working_dir = (tmp / "gosling_context_test_pat").string();
+  cout << "pat working dir: " << pat_working_dir << endl;
+
+  unique_ptr<gosling_tor_provider> pat_tor_provider;
+  REQUIRE_NOTHROW(::gosling_tor_provider_new_legacy_client(
+      out(pat_tor_provider),  // out tor_provider
+      nullptr,                // tor bin path
+      0,                      // tor bin path len
+      pat_working_dir.data(), // tor working dirctory
+      pat_working_dir.size(), // tor working directory len
+      throw_on_error()));
+
+  gosling_cpp_demo_impl<legacy_tor_provider>(std::move(alice_tor_provider), std::move(pat_tor_provider));
+}
+#endif // GOSLING_HAVE_LEGACY_TOR_PROVIDER
+
+TEST_CASE("gosling_cpp_demo") {
+  // init gosling library statically so gosling objects with static lifetime
+  // destruct in the right order
+  static unique_ptr<gosling_library> library;
+  REQUIRE_NOTHROW(::gosling_library_init(out(library), throw_on_error()));
+
+#ifdef GOSLING_HAVE_MOCK_TOR_PROVIDER
+  gosling_cpp_demo_mock_tor_provider();
+#endif // GOSLING_HAVE_MOCK_TOR_PROVIDER
+
+#ifdef GOSLING_HAVE_LEGACY_TOR_PROVIDER
+  gosling_cpp_demo_legacy_tor_provider();
+#endif // GOSLING_HAVE_LEGACY_TOR_PROVIDER
+
 }
