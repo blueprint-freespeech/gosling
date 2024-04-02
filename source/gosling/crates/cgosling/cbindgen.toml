@@ -18,7 +18,8 @@ extra_bindings = ["tor-interface"]
 "target_os = windows" = "GOSLING_PLATFORM_WINDOWS"
 "target_os = linux" = "GOSLING_PLATFORM_LINUX"
 "target_os = macos" = "GOSLING_PLATFORM_MACOS"
-"feature = legacy-tor-provider" = "GOSLING_FEATURE_LEGACY_TOR_PROVIDER"
+"feature = mock-tor-provider" = "GOSLING_HAVE_MOCK_TOR_PROVIDER"
+"feature = legacy-tor-provider" = "GOSLING_HAVE_LEGACY_TOR_PROVIDER"
 
 [fn]
 args = "horizontal"

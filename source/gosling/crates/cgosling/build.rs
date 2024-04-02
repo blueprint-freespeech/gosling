@@ -11,6 +11,13 @@ use regex::Regex;
 use serde::Serialize;
 
 #[derive(Serialize)]
+struct ConfigFlag {
+    comments: Vec<String>,
+    name: String,
+    enabled: bool,
+}
+
+#[derive(Serialize)]
 struct Constant {
     comments: Vec<String>,
     name: String,
@@ -40,6 +47,7 @@ struct Function {
 
 #[derive(Serialize)]
 struct Data {
+    config_flags: Vec<ConfigFlag>,
     constants: Vec<Constant>,
     aliases: Vec<Alias>,
     callbacks: Vec<Function>,
@@ -57,10 +65,16 @@ fn preprocess_header(source: &str) -> String {
 
     let source = platform_pattern.replace_all(source, "").to_string();
 
+    #[cfg(not(feature = "mock-tor-provider"))]
+    let source = {
+        let feature_pattern =
+            Regex::new(r"(?m)#if defined\(GOSLING_HAVE_MOCK_TOR_PROVIDER\)([^#].*\n)+#endif").unwrap();
+        feature_pattern.replace_all(source.as_str(), "").to_string()
+    };
     #[cfg(not(feature = "legacy-tor-provider"))]
     let source = {
         let feature_pattern =
-            Regex::new(r"(?m)#if defined\(GOSLING_FEATURE_LEGACY_TOR_PROVIDER\)([^#].*\n)+#endif").unwrap();
+            Regex::new(r"(?m)#if defined\(GOSLING_HAVE_LEGACY_TOR_PROVIDER\)([^#].*\n)+#endif").unwrap();
         feature_pattern.replace_all(source.as_str(), "").to_string()
     };
 
@@ -112,10 +126,22 @@ fn parse_header(source: &str) -> Data {
     let function_pattern =
         Regex::new(r"^(?P<return>[\w \*]+( | \*))(?P<name>gosling_[\w]+)\((?P<params>[\w ,\*]*)\);$").unwrap();
 
+    let mut config_flags: Vec<ConfigFlag> = Default::default();
     let mut constants: Vec<Constant> = Default::default();
     let mut aliases: Vec<Alias> = Default::default();
     let mut callbacks: Vec<Function> = Default::default();
     let mut functions: Vec<Function> = Default::default();
+
+    config_flags.push(ConfigFlag{
+        comments: vec!("Defined if cgosling is built with mock tor-provider support".to_string()),
+        name: "GOSLING_HAVE_MOCK_TOR_PROVIDER".to_string(),
+        enabled: cfg!(feature = "mock-tor-provider"),
+    });
+    config_flags.push(ConfigFlag{
+        comments: vec!("Defined if cgosling is built with legacy tor-provider support".to_string()),
+        name: "GOSLING_HAVE_LEGACY_TOR_PROVIDER".to_string(),
+        enabled: cfg!(feature = "legacy-tor-provider"),
+    });
 
     for commmented_source in commented_source_pattern.captures_iter(source) {
         let comments = &commmented_source["comments"];
@@ -188,6 +214,7 @@ fn parse_header(source: &str) -> Data {
     }
 
     Data {
+        config_flags,
         constants,
         aliases,
         callbacks,
