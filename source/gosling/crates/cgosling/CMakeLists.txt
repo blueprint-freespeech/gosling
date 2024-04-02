@@ -88,7 +88,7 @@ list(JOIN CGOSLING_FEATURES_LIST "," CGOSLING_FEATURES)
 set(CGOSLING_FEATURES "--features" "\"${CGOSLING_FEATURES}\"")
 
 add_custom_command(
-    DEPENDS ${cgosling_sources}
+    DEPENDS ${cgosling_static_outputs} ${cgosling_sources}
     OUTPUT ${cgosling_impl_outputs}
     COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo build ${CARGO_FLAGS} ${CGOSLING_FEATURES}
     COMMAND ${CMAKE_COMMAND} -E rename ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_SRC_STATIC} ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_IMPL_STATIC}
