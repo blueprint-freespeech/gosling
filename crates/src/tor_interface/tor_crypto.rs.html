@@ -721,18 +721,24 @@
 <a href="#719" id="719">719</a>
 <a href="#720" id="720">720</a>
 <a href="#721" id="721">721</a>
+<a href="#722" id="722">722</a>
+<a href="#723" id="723">723</a>
+<a href="#724" id="724">724</a>
+<a href="#725" id="725">725</a>
+<a href="#726" id="726">726</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::convert::TryInto;
-<span class="kw">use </span>std::iter;
 <span class="kw">use </span>std::str;
 
 <span class="comment">// extern crates
 </span><span class="kw">use </span>curve25519_dalek::Scalar;
 <span class="kw">use </span>data_encoding::{BASE32, BASE32_NOPAD, BASE64};
 <span class="kw">use </span>data_encoding_macro::new_encoding;
-<span class="kw">use </span>rand::distributions::Alphanumeric;
+<span class="attr">#[cfg(feature = <span class="string">"legacy-tor-provider"</span>)]
+</span><span class="kw">use </span>rand::distributions::Alphanumeric;
 <span class="kw">use </span>rand::rngs::OsRng;
-<span class="kw">use </span>rand::Rng;
+<span class="attr">#[cfg(feature = <span class="string">"legacy-tor-provider"</span>)]
+</span><span class="kw">use </span>rand::Rng;
 <span class="kw">use </span>sha3::{Digest, Sha3_256};
 <span class="kw">use </span>static_assertions::const_assert_eq;
 <span class="kw">use </span>tor_llcrypto::pk::keymanip::<span class="kw-2">*</span>;
@@ -808,8 +814,9 @@
 <span class="comment">// Free functions
 
 // securely generate password using OsRng
+</span><span class="attr">#[cfg(feature = <span class="string">"legacy-tor-provider"</span>)]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>generate_password(length: usize) -&gt; String {
-    <span class="kw">let </span>password: String = iter::repeat(())
+    <span class="kw">let </span>password: String = std::iter::repeat(())
         .map(|()| OsRng.sample(Alphanumeric))
         .map(char::from)
         .take(length)
@@ -888,6 +895,7 @@
 </span><span class="kw">enum </span>FromRawValidationMethod {
     <span class="comment">// expanded ed25519 keys coming from legacy c-tor daemon; the scalar portion
     // is clamped, but not reduced
+    </span><span class="attr">#[cfg(feature = <span class="string">"legacy-tor-provider"</span>)]
     </span>LegacyCTor,
     <span class="comment">// expanded ed25519 keys coming from ed25519-dalek crate; the scalar portion
     // has been clamped AND reduced
@@ -909,7 +917,8 @@
     <span class="kw">fn </span>from_raw_impl(raw: <span class="kw-2">&amp;</span>[u8; ED25519_PRIVATE_KEY_SIZE], method: FromRawValidationMethod) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519PrivateKey, Error&gt; {
         <span class="comment">// see: https://gitlab.torproject.org/tpo/core/arti/-/issues/1343
         </span><span class="kw">match </span>method {
-            FromRawValidationMethod::LegacyCTor =&gt; {
+            <span class="attr">#[cfg(feature = <span class="string">"legacy-tor-provider"</span>)]
+            </span>FromRawValidationMethod::LegacyCTor =&gt; {
                 <span class="comment">// Verify the scalar portion of the expanded key has been clamped
                 // see: https://gitlab.torproject.org/tpo/core/arti/-/issues/1021
                 </span><span class="kw">if </span>!(raw[<span class="number">0</span>] == raw[<span class="number">0</span>] &amp; <span class="number">248 </span>&amp;&amp; raw[<span class="number">31</span>] == (raw[<span class="number">31</span>] &amp; <span class="number">63</span>) | <span class="number">64</span>) {
@@ -981,7 +990,8 @@
         Ed25519PrivateKey::from_raw_impl(<span class="kw-2">&amp;</span>private_key_data_raw, method)
     }
 
-    <span class="kw">pub </span>(<span class="kw">crate</span>) <span class="kw">fn </span>from_key_blob_legacy(key_blob: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519PrivateKey, Error&gt; {
+    <span class="attr">#[cfg(feature = <span class="string">"legacy-tor-provider"</span>)]
+    </span><span class="kw">pub </span>(<span class="kw">crate</span>) <span class="kw">fn </span>from_key_blob_legacy(key_blob: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519PrivateKey, Error&gt; {
         <span class="self">Self</span>::from_key_blob_impl(key_blob, FromRawValidationMethod::LegacyCTor)
     }
 

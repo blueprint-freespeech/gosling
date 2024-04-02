@@ -8,12 +8,24 @@
 <a href="#6" id="6">6</a>
 <a href="#7" id="7">7</a>
 <a href="#8" id="8">8</a>
-</pre></div><pre class="rust"><code><span class="kw">pub mod </span>legacy_tor_client;
-<span class="kw">mod </span>legacy_tor_control_stream;
-<span class="kw">mod </span>legacy_tor_controller;
-<span class="kw">mod </span>legacy_tor_process;
-<span class="kw">mod </span>legacy_tor_version;
-<span class="kw">pub mod </span>mock_tor_client;
+<a href="#9" id="9">9</a>
+<a href="#10" id="10">10</a>
+<a href="#11" id="11">11</a>
+<a href="#12" id="12">12</a>
+<a href="#13" id="13">13</a>
+<a href="#14" id="14">14</a>
+</pre></div><pre class="rust"><code><span class="attr">#[cfg(feature = <span class="string">"legacy-tor-provider"</span>)]
+</span><span class="kw">pub mod </span>legacy_tor_client;
+<span class="attr">#[cfg(feature = <span class="string">"legacy-tor-provider"</span>)]
+</span><span class="kw">mod </span>legacy_tor_control_stream;
+<span class="attr">#[cfg(feature = <span class="string">"legacy-tor-provider"</span>)]
+</span><span class="kw">mod </span>legacy_tor_controller;
+<span class="attr">#[cfg(feature = <span class="string">"legacy-tor-provider"</span>)]
+</span><span class="kw">mod </span>legacy_tor_process;
+<span class="attr">#[cfg(feature = <span class="string">"legacy-tor-provider"</span>)]
+</span><span class="kw">mod </span>legacy_tor_version;
+<span class="attr">#[cfg(feature = <span class="string">"mock-tor-provider"</span>)]
+</span><span class="kw">pub mod </span>mock_tor_client;
 <span class="kw">pub mod </span>tor_crypto;
 <span class="kw">pub mod </span>tor_provider;
 </code></pre></div></section></main></body></html>
