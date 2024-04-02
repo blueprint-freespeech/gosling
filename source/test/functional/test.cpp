@@ -3,9 +3,9 @@ using namespace gosling;
 
 // platform specific wrappers for tcp stream stuffs
 #if defined(GOSLING_PLATFORM_WINDOWS)
-typedef SOCKET tcp_stream_t;
+typedef SOCKET gosling_tcp_socket_t;
 #elif (defined(GOSLING_PLATFORM_MACOS) || defined(GOSLING_PLATFORM_LINUX))
-typedef int tcp_stream_t;
+typedef int gosling_tcp_socket_t;
 #endif
 
 // simple bson document: { msg : "hello world" }
@@ -447,8 +447,8 @@ void gosling_cpp_demo_impl(unique_ptr<gosling_tor_provider>&& alice_tor_provider
   // pat connects to alice's endpoint
   static bool pat_channel_request_complete = false;
   static bool alice_channel_request_complete = false;
-  static tcp_stream_t pat_stream = tcp_stream_t();
-  static tcp_stream_t alice_stream = tcp_stream_t();
+  static gosling_tcp_socket_t pat_stream = gosling_tcp_socket_t();
+  static gosling_tcp_socket_t alice_stream = gosling_tcp_socket_t();
 
   static boost::asio::io_service io_service;
   static boost::asio::ip::tcp::socket pat_socket(io_service);
@@ -460,7 +460,7 @@ void gosling_cpp_demo_impl(unique_ptr<gosling_tor_provider>&& alice_tor_provider
           [](gosling_context *context, size_t handshake_handle,
              const gosling_v3_onion_service_id *endpoint_service_id,
              const char *channel_name, size_t channel_name_length,
-             tcp_stream_t stream) -> void {
+             gosling_tcp_socket_t stream) -> void {
             REQUIRE(string(channel_name, channel_name_length) == channelName);
 
             cout << "--- pat endpoint handshake complete" << endl;
@@ -486,7 +486,7 @@ void gosling_cpp_demo_impl(unique_ptr<gosling_tor_provider>&& alice_tor_provider
              const gosling_v3_onion_service_id *endpoint_service_id,
              const gosling_v3_onion_service_id *client_service_id,
              const char *channel_name, size_t channel_name_length,
-             tcp_stream_t stream) -> void {
+             gosling_tcp_socket_t stream) -> void {
             REQUIRE(string(channel_name, channel_name_length) == channelName);
             cout << "--- alice channel request complete" << endl;
             alice_channel_request_complete = true;
