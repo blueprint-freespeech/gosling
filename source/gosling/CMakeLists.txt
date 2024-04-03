@@ -25,6 +25,11 @@ if (BUILD_PAGES)
     # code-coverage feature flags
     #
     set(TARPAULIN_FEATURES_LIST)
+    if (ENABLE_MOCK_TOR_PROVIDER)
+        list(APPEND TARPAULIN_FEATURES_LIST "tor-interface/mock-tor-provider")
+        list(APPEND TARPAULIN_FEATURES_LIST "gosling/mock-tor-provider")
+        list(APPEND TARPAULIN_FEATURES_LIST "cgosling/mock-tor-provider")
+    endif()
     if (ENABLE_LEGACY_TOR_PROVIDER)
         list(APPEND TARPAULIN_FEATURES_LIST "tor-interface/legacy-tor-provider")
         list(APPEND TARPAULIN_FEATURES_LIST "gosling/legacy-tor-provider")
@@ -62,7 +67,7 @@ if (BUILD_PAGES)
     #
     add_custom_command(
         OUTPUT ${CARGO_TARGET_DIR}/doc
-        COMMAND CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo doc --no-deps --workspace --exclude cgosling
+        COMMAND CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo doc --no-deps --package honk-rpc --package tor-interface --package gosling --all-features
         COMMAND ${CMAKE_COMMAND} -E echo "Rust Crate Documentation: ${CARGO_TARGET_DIR}/doc/gosling/index.html"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/crates)
     add_custom_target(gosling_cargo_doc_target ALL
