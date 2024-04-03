@@ -86,6 +86,10 @@ cmake -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON
 
 Enable the arti-client TorProvider implementation. This allows Gosling to connect to the Tor Network using the experimental [Rust arti-client crate](https://crates.io/crates/arti-client). This option is **OFF** by default and is not for production use.
 
+The following additional dependencies are required for this configure option:
+
+- [SQLite >= 3.0](https://www.sqlite.org/index.html)
+
 ## Additional Configuration Options and Optional Dependencies
 
 Additional optional bindings, tests, and documentation can be enabled with the following cmake options. Each of these options are **OFF** by default.

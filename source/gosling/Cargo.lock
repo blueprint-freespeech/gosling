@@ -3547,7 +3547,9 @@ dependencies = [
  "socks",
  "static_assertions",
  "thiserror",
+ "tokio",
  "tor-llcrypto",
+ "tor-rtcompat",
  "which",
 ]
 
