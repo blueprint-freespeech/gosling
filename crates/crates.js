@@ -1,1 +1,1 @@
-window.ALL_CRATES = ["cgosling_proc_macros","gosling","honk_rpc","tor_interface"];
+window.ALL_CRATES = ["gosling","honk_rpc","tor_interface"];

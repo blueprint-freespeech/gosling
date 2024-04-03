@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["tor_crypto","tor_provider"]};
+window.SIDEBAR_ITEMS = {"mod":["legacy_tor_client","mock_tor_client","tor_crypto","tor_provider"]};
