@@ -47,7 +47,7 @@ add_dependencies(gosling_target honk_rpc_target tor_interface_target)
 #
 if (ENABLE_TESTS)
     add_test(NAME gosling_cargo_test
-        COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo test ${CARGO_FLAGS} ${GOSLING_FEATURES}
+        COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo test ${CARGO_FLAGS} ${GOSLING_FEATURES} -- --nocapture
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
 endif()
