@@ -13,11 +13,11 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libboost-all-dev tor
+          sudo apt-get install -y libboost-all-dev tor libsqlite3-dev
       - name: Test Release
         run: |
           mkdir build
-          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON
+          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON
           cd build
           make
           ctest --verbose
@@ -43,10 +43,13 @@ jobs:
             mingw-w64-clang-x86_64-rust
             mingw-w64-clang-x86_64-boost
             mingw-w64-clang-x86_64-tor
+            mingw-w64-clang-x86_64-sqlite3
       - name: Test Release
+        env:
+          CC: clang
         run: |
           mkdir build
-          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON
+          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON
           cd build
           make
           ctest --verbose
@@ -59,11 +62,11 @@ jobs:
           submodules: true
       - name: Install Dependencies
         run: |
-          brew install boost tor
+          brew install boost tor sqlite3
       - name: Test Release
         run: |
           mkdir build
-          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON
+          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON
           cd build
           make
           ctest --verbose
