@@ -4,6 +4,16 @@ on: [push, pull_request]
 
 jobs:
   linux:
+    strategy:
+      matrix:
+        fuzz-test:
+          - honk_rpc_cargo_fuzz_test
+          - tor_interface_crypto_cargo_fuzz_test
+          - gosling_identity_server_cargo_fuzz_test
+          - gosling_identity_client_cargo_fuzz_test
+          - gosling_endpoint_server_cargo_fuzz_test
+          - gosling_endpoint_client_cargo_fuzz_test
+          - cgosling_cargo_fuzz_test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Gosling
@@ -23,31 +33,7 @@ jobs:
           mkdir build
           cd build
           cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DENABLE_FUZZ_TESTS=On -DFUZZ_TEST_MAX_TOTAL_TIME=1200
-      - name: Fuzz HonkRPC
+      - name: Fuzz Test
         run: |
           cd build
-          ctest -R honk_rpc_cargo_fuzz_test --verbose
-      - name: Fuzz Tor Crypto
-        run: |
-          cd build
-          ctest -R tor_interface_crypto_cargo_fuzz_test --verbose
-      - name: Fuzz Identity Server
-        run: |
-          cd build
-          ctest -R gosling_identity_server_cargo_fuzz_test --verbose
-      - name: Fuzz Identity Client
-        run: |
-          cd build
-          ctest -R gosling_identity_client_cargo_fuzz_test --verbose
-      - name: Fuzz Endpoint Server
-        run: |
-          cd build
-          ctest -R gosling_endpoint_server_cargo_fuzz_test --verbose
-      - name: Fuzz Endpoint Client
-        run: |
-          cd build
-          ctest -R gosling_endpoint_client_cargo_fuzz_test --verbose
-      - name: Fuzz C-Gosling
-        run: |
-          cd build
-          ctest -R cgosling_cargo_fuzz_test --verbose
+          ctest -R ${{ matrix.fuzz-test }} --verbose
