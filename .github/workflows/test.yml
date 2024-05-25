@@ -19,7 +19,6 @@ jobs:
           mkdir build
           cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON
           cd build
-          make
           ctest --verbose
   windows:
     runs-on: windows-latest
@@ -51,7 +50,6 @@ jobs:
           mkdir build
           cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON
           cd build
-          make
           ctest --verbose
   macos:
     runs-on: macos-latest
@@ -68,5 +66,4 @@ jobs:
           mkdir build
           cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON
           cd build
-          make
           ctest --verbose

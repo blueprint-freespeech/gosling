@@ -31,10 +31,16 @@ if (ENABLE_TESTS)
         )
     endif()
 
+    add_test(NAME gosling_functional_build
+        COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --config $<CONFIG> --target gosling_functional
+    )
+    set_tests_properties(gosling_functional_build PROPERTIES FIXTURES_SETUP
+        gosling_functional_fixture)
     add_test(NAME gosling_functional_test
         COMMAND gosling_functional
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     )
+    set_tests_properties(gosling_functional_test PROPERTIES FIXTURES_REQUIRED gosling_functional_fixture)
 
     if (ENABLE_FORMATTING)
         add_format_target(format_functional_target ${CMAKE_CURRENT_SOURCE_DIR})

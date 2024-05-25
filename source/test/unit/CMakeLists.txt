@@ -18,10 +18,15 @@ if (ENABLE_TESTS)
         )
     endif()
 
+    add_test(NAME gosling_unit_build
+        COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --config $<CONFIG> --target gosling_unit
+    )
+    set_tests_properties(gosling_unit_build PROPERTIES FIXTURES_SETUP gosling_unit_fixture)
     add_test(NAME gosling_unit_test
         COMMAND gosling_unit
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     )
+    set_tests_properties(gosling_unit_test PROPERTIES FIXTURES_REQUIRED gosling_unit_fixture)
 
     if (ENABLE_FORMATTING)
         add_format_target(format_unit_target ${CMAKE_CURRENT_SOURCE_DIR})
