@@ -4,6 +4,15 @@ on: [push, pull_request]
 
 jobs:
   linux:
+    strategy:
+      matrix:
+        test:
+          - honk_rpc_cargo_test
+          - tor_interface_cargo_test
+          - ^gosling_cargo_test
+          - cgosling_cargo_test
+          - gosling_functional_test
+          - gosling_unit_test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Gosling
@@ -19,8 +28,17 @@ jobs:
           mkdir build
           cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON
           cd build
-          ctest --verbose
+          ctest --verbose -R ${{matrix.test}}
   windows:
+    strategy:
+      matrix:
+        test:
+          - honk_rpc_cargo_test
+          - tor_interface_cargo_test
+          - ^gosling_cargo_test
+          - cgosling_cargo_test
+          - gosling_functional_test
+          - gosling_unit_test
     runs-on: windows-latest
     defaults:
       run:
@@ -50,8 +68,17 @@ jobs:
           mkdir build
           cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON
           cd build
-          ctest --verbose
+          ctest --verbose -R ${{matrix.test}}
   macos:
+    strategy:
+      matrix:
+        test:
+          - honk_rpc_cargo_test
+          - tor_interface_cargo_test
+          - ^gosling_cargo_test
+          - cgosling_cargo_test
+          - gosling_functional_test
+          - gosling_unit_test
     runs-on: macos-latest
     steps:
       - name: Checkout Gosling
@@ -66,4 +93,4 @@ jobs:
           mkdir build
           cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON
           cd build
-          ctest --verbose
+          ctest --verbose -R ${{matrix.test}}
