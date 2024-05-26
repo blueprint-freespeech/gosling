@@ -529,6 +529,10 @@
 <a href="#527" id="527">527</a>
 <a href="#528" id="528">528</a>
 <a href="#529" id="529">529</a>
+<a href="#530" id="530">530</a>
+<a href="#531" id="531">531</a>
+<a href="#532" id="532">532</a>
+<a href="#533" id="533">533</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::io::ErrorKind;
 <span class="kw">use </span>std::net::{SocketAddr};
@@ -538,7 +542,7 @@
 <span class="kw">use </span>std::sync::atomic::{AtomicBool, Ordering};
 
 <span class="comment">//extern
-</span><span class="kw">use </span>arti_client::{BootstrapBehavior, TorClient};
+</span><span class="kw">use </span>arti_client::{BootstrapBehavior, DangerouslyIntoTorAddr, IntoTorAddr, TorClient};
 <span class="kw">use </span>arti_client::config::{CfgPath, TorClientConfigBuilder};
 <span class="kw">use </span>fs_mistrust::Mistrust;
 <span class="kw">use </span>tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -585,6 +589,9 @@
 
     <span class="attr">#[error(<span class="string">"arti-client error: {0}"</span>)]
     </span>ArtiClientError(<span class="attr">#[source] </span>arti_client::Error),
+
+    <span class="attr">#[error(<span class="string">"arti-client tor-addr error: {0}"</span>)]
+    </span>ArtiClientTorAddrError(<span class="attr">#[source] </span>arti_client::TorAddrError),
 
     <span class="attr">#[error(<span class="string">"tor-keymgr error: {0}"</span>)]
     </span>TorKeyMgrError(<span class="attr">#[source] </span>tor_keymgr::Error),
@@ -829,8 +836,7 @@
 
     <span class="kw">fn </span>connect(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        service_id: <span class="kw-2">&amp;</span>V3OnionServiceId,
-        virt_port: u16,
+        target: TargetAddr,
         circuit: <span class="prelude-ty">Option</span>&lt;CircuitToken&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;OnionStream, tor_provider::Error&gt; {
 
@@ -840,10 +846,15 @@
         }
 
         <span class="comment">// connect to onion service
-        </span><span class="kw">let </span>target = (<span class="macro">format!</span>(<span class="string">"{}.onion"</span>, service_id),  virt_port);
+        </span><span class="kw">let </span>arti_target = <span class="kw">match </span>target.clone() {
+            TargetAddr::Ip(socket_addr) =&gt; socket_addr.into_tor_addr_dangerously(),
+            TargetAddr::Domain(domain, port) =&gt; (domain, port).into_tor_addr(),
+            TargetAddr::OnionService(OnionAddr::V3(OnionAddrV3{service_id, virt_port})) =&gt; (<span class="macro">format!</span>(<span class="string">"{}.onion"</span>, service_id), virt_port).into_tor_addr(),
+        }.map_err(Error::ArtiClientTorAddrError)<span class="question-mark">?</span>;
+
         <span class="kw">let </span>arti_client = <span class="self">self</span>.arti_client.clone();
         <span class="kw">let </span>data_stream = <span class="self">self</span>.tokio_runtime.block_on(<span class="kw">async move </span>{
-            arti_client.connect(target).<span class="kw">await
+            arti_client.connect(arti_target).<span class="kw">await
         </span>}).map_err(Error::ArtiClientError)<span class="question-mark">?</span>;
 
         <span class="comment">// start a task to forward traffic from returned data stream
@@ -884,10 +895,7 @@
         <span class="prelude-val">Ok</span>(OnionStream {
             stream,
             local_addr: <span class="prelude-val">None</span>,
-            peer_addr: <span class="prelude-val">Some</span>(TargetAddr::OnionService(OnionAddr::V3(OnionAddrV3::new(
-                service_id.clone(),
-                virt_port,
-            )))),
+            peer_addr: <span class="prelude-val">Some</span>(target),
         })
     }
 

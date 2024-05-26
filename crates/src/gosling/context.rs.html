@@ -1160,7 +1160,7 @@
         <span class="comment">// open tcp stream to remove ident server
         </span><span class="kw">let </span>stream: TcpStream = <span class="self">self
             </span>.tor_provider
-            .connect(<span class="kw-2">&amp;</span>identity_server_id, <span class="self">self</span>.identity_port, <span class="prelude-val">None</span>)<span class="question-mark">?
+            .connect((identity_server_id.clone(), <span class="self">self</span>.identity_port).into(), <span class="prelude-val">None</span>)<span class="question-mark">?
             </span>.into();
         stream.set_nonblocking(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>client_rpc = Session::new(stream);
@@ -1301,7 +1301,7 @@
             .add_client_auth(<span class="kw-2">&amp;</span>endpoint_server_id, <span class="kw-2">&amp;</span>client_auth_key)<span class="question-mark">?</span>;
         <span class="kw">let </span>stream: TcpStream = <span class="self">self
             </span>.tor_provider
-            .connect(<span class="kw-2">&amp;</span>endpoint_server_id, <span class="self">self</span>.endpoint_port, <span class="prelude-val">None</span>)<span class="question-mark">?
+            .connect((endpoint_server_id.clone(), <span class="self">self</span>.endpoint_port).into(), <span class="prelude-val">None</span>)<span class="question-mark">?
             </span>.into();
         stream.set_nonblocking(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
 

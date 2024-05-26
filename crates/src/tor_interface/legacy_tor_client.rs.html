@@ -452,6 +452,7 @@
 <a href="#450" id="450">450</a>
 <a href="#451" id="451">451</a>
 <a href="#452" id="452">452</a>
+<a href="#453" id="453">453</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::boxed::Box;
 <span class="kw">use </span>std::collections::BTreeMap;
@@ -789,8 +790,7 @@
     <span class="comment">// connect to an onion service and returns OnionStream
     </span><span class="kw">fn </span>connect(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        service_id: <span class="kw-2">&amp;</span>V3OnionServiceId,
-        virt_port: u16,
+        target: TargetAddr,
         circuit: <span class="prelude-ty">Option</span>&lt;CircuitToken&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;OnionStream, tor_provider::Error&gt; {
         <span class="kw">if </span><span class="self">self</span>.socks_listener.is_none() {
@@ -809,16 +809,21 @@
             <span class="prelude-val">None </span>=&gt; <span class="macro">unreachable!</span>(),
         };
 
-        <span class="comment">// our onion domain
-        </span><span class="kw">let </span>target = socks::TargetAddr::Domain(<span class="macro">format!</span>(<span class="string">"{}.onion"</span>, service_id), virt_port);
+        <span class="comment">// our target
+        </span><span class="kw">let </span>socks_target = <span class="kw">match </span>target.clone() {
+            TargetAddr::Ip(socket_addr) =&gt; socks::TargetAddr::Ip(socket_addr),
+            TargetAddr::Domain(domain, port) =&gt; socks::TargetAddr::Domain(domain, port),
+            TargetAddr::OnionService(OnionAddr::V3(OnionAddrV3{service_id, virt_port})) =&gt; socks::TargetAddr::Domain(<span class="macro">format!</span>(<span class="string">"{}.onion"</span>, service_id), virt_port),
+        };
+
         <span class="comment">// readwrite stream
         </span><span class="kw">let </span>stream = <span class="kw">match </span><span class="kw-2">&amp;</span>circuit {
-            <span class="prelude-val">None </span>=&gt; Socks5Stream::connect(socks_listener, target),
+            <span class="prelude-val">None </span>=&gt; Socks5Stream::connect(socks_listener, socks_target),
             <span class="prelude-val">Some</span>(circuit) =&gt; {
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(circuit) = <span class="self">self</span>.circuit_tokens.get(circuit) {
                     Socks5Stream::connect_with_password(
                         socks_listener,
-                        target,
+                        socks_target,
                         <span class="kw-2">&amp;</span>circuit.username,
                         <span class="kw-2">&amp;</span>circuit.password,
                     )
@@ -832,10 +837,7 @@
         <span class="prelude-val">Ok</span>(OnionStream {
             stream: stream.into_inner(),
             local_addr: <span class="prelude-val">None</span>,
-            peer_addr: <span class="prelude-val">Some</span>(TargetAddr::OnionService(OnionAddr::V3(OnionAddrV3::new(
-                service_id.clone(),
-                virt_port,
-            )))),
+            peer_addr: <span class="prelude-val">Some</span>(target),
         })
     }
 
