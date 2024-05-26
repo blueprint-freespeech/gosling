@@ -5,6 +5,7 @@ on: [push, pull_request]
 jobs:
   linux:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - debian-arch: i386
@@ -64,6 +65,7 @@ jobs:
 
   windows-msys2:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - msystem: ucrt64
@@ -147,6 +149,7 @@ jobs:
 
   windows-msvc:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - java-arch: x64
@@ -205,6 +208,7 @@ jobs:
 
   macos:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - runs-on: macos-12

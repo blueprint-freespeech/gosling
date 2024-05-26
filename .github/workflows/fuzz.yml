@@ -5,6 +5,7 @@ on: [push, pull_request]
 jobs:
   linux:
     strategy:
+      fail-fast: false
       matrix:
         fuzz-test:
           - honk_rpc_cargo_fuzz_test
