@@ -515,6 +515,20 @@
 <a href="#513" id="513">513</a>
 <a href="#514" id="514">514</a>
 <a href="#515" id="515">515</a>
+<a href="#516" id="516">516</a>
+<a href="#517" id="517">517</a>
+<a href="#518" id="518">518</a>
+<a href="#519" id="519">519</a>
+<a href="#520" id="520">520</a>
+<a href="#521" id="521">521</a>
+<a href="#522" id="522">522</a>
+<a href="#523" id="523">523</a>
+<a href="#524" id="524">524</a>
+<a href="#525" id="525">525</a>
+<a href="#526" id="526">526</a>
+<a href="#527" id="527">527</a>
+<a href="#528" id="528">528</a>
+<a href="#529" id="529">529</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::io::ErrorKind;
 <span class="kw">use </span>std::net::{SocketAddr};
@@ -643,10 +657,18 @@
     </span>R: tokio::io::AsyncRead + Unpin,
     W: tokio::io::AsyncWrite + Unpin,
 {
-    <span class="kw">let </span>read_timeout = std::time::Duration::from_millis(<span class="number">100</span>);
+    <span class="comment">// allow 100ms timeout on reads to verify writer is still good
+    </span><span class="kw">let </span>read_timeout = std::time::Duration::from_millis(<span class="number">100</span>);
+    <span class="comment">// allow additional retries in the event the other half of the pump
+    // dies; keep pumping data until our read times out 3 times
+    </span><span class="kw">let </span><span class="kw-2">mut </span>remaining_retries = <span class="number">3</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>buf = [<span class="number">0u8</span>; <span class="number">1024</span>];
 
-    <span class="kw">while </span>alive.load(Ordering::Relaxed) {
+    <span class="kw">loop </span>{
+        <span class="kw">if </span>!alive.load(Ordering::Relaxed) &amp;&amp; remaining_retries == <span class="number">0 </span>{
+            <span class="kw">break</span>;
+        }
+
         <span class="macro">tokio::select!</span> {
             count = reader.read(<span class="kw-2">&amp;mut </span>buf) =&gt; <span class="kw">match </span>count {
                 <span class="comment">// end of stream
@@ -667,7 +689,13 @@
                 </span><span class="prelude-val">Err</span>(_err) =&gt; <span class="kw">break</span>,
             },
             <span class="kw">_ </span>= tokio::time::sleep(read_timeout.clone()) =&gt; <span class="kw">match </span>writer.flush().<span class="kw">await </span>{
-                <span class="prelude-val">Ok</span>(()) =&gt; (),
+                <span class="prelude-val">Ok</span>(()) =&gt; {
+                    <span class="comment">// so long as our writer and reader are good, we should
+                    // allow a few additional data pump attempts
+                    </span><span class="kw">if </span>!alive.load(Ordering::Relaxed) {
+                        remaining_retries -= <span class="number">1</span>;
+                    }
+                },
                 <span class="prelude-val">Err</span>(_err) =&gt; <span class="kw">break</span>,
             }
         }
