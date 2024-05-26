@@ -5,7 +5,7 @@ extern crate serde_json;
 
 use std::fs::File;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use regex::Regex;
 use serde::Serialize;
