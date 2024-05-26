@@ -286,7 +286,7 @@ impl Context {
         // open tcp stream to remove ident server
         let stream: TcpStream = self
             .tor_provider
-            .connect(&identity_server_id, self.identity_port, None)?
+            .connect((identity_server_id.clone(), self.identity_port).into(), None)?
             .into();
         stream.set_nonblocking(true)?;
         let mut client_rpc = Session::new(stream);
@@ -427,7 +427,7 @@ impl Context {
             .add_client_auth(&endpoint_server_id, &client_auth_key)?;
         let stream: TcpStream = self
             .tor_provider
-            .connect(&endpoint_server_id, self.endpoint_port, None)?
+            .connect((endpoint_server_id.clone(), self.endpoint_port).into(), None)?
             .into();
         stream.set_nonblocking(true)?;
 

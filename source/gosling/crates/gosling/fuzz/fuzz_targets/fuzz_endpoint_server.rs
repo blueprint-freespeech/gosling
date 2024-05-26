@@ -152,7 +152,7 @@ fuzz_target!(|data: HandshakeData| {
     bob_tor.add_client_auth(&alice_endpoint_onion_service_id, &bob_private_x25519).unwrap();
 
     // bob connects to alice
-    let mut bob_stream = bob_tor.connect(&alice_endpoint_onion_service_id, 420, None).unwrap();
+    let mut bob_stream = bob_tor.connect((alice_endpoint_onion_service_id.clone(), 420).into(), None).unwrap();
     bob_stream.set_nonblocking(false).unwrap();
     bob_stream.set_read_timeout(Some(Duration::from_millis(100u64))).unwrap();
 
