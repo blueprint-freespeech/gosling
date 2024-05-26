@@ -504,7 +504,7 @@ fn gosling_context_test(
                         alice_endpoint_server_handshake_completed = true;
                     }
                     ContextEvent::TorLogReceived { line: _ } => (),
-                    _ => bail!("alice.upate() returned unexepcted event"),
+                    event => bail!("alice.update() returned unexepcted event: {:?}", event),
                 }
             }
             for event in pat.update()?.drain(..) {
@@ -522,7 +522,7 @@ fn gosling_context_test(
                         pat_endpoint_client_handshake_completed = true;
                     }
                     ContextEvent::TorLogReceived { line: _ } => (),
-                    _ => bail!("pat.upate() returned unexepcted event"),
+                    event => bail!("pat.update() returned unexepcted event: {:?}", event),
                 }
             }
         }
