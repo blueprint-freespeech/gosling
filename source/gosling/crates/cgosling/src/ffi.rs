@@ -346,6 +346,7 @@ pub extern "C" fn gosling_library_free(in_library: *mut GoslingLibrary) {
         clear_x25519_private_key_registry();
         clear_x25519_public_key_registry();
         clear_v3_onion_service_id_registry();
+        clear_tor_provider_registry();
 
         clear_context_tuple_registry();
 
