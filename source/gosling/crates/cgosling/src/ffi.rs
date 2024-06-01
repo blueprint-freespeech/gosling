@@ -8,12 +8,9 @@ use std::os::raw::c_char;
 use std::os::unix::io::{IntoRawFd, RawFd};
 #[cfg(windows)]
 use std::os::windows::io::{IntoRawSocket, RawSocket};
-use std::panic;
 use std::path::Path;
-use std::ptr;
 use std::str;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Mutex;
 use std::time::Duration;
 
 // extern crates
@@ -30,10 +27,11 @@ use tor_interface::tor_crypto::*;
 use tor_interface::*;
 
 // internal crates
-use crate::object_registry::*;
+use crate::error::Error;
+use crate::error::*;
 
 // tags used for types we put in ObjectRegistrys
-const ERROR_TAG: usize = 0x1;
+pub(crate) const ERROR_TAG: usize = 0x1;
 const ED25519_PRIVATE_KEY_TAG: usize = 0x2;
 const X25519_PRIVATE_KEY_TAG: usize = 0x3;
 const X25519_PUBLIC_KEY_TAG: usize = 0x4;
@@ -56,9 +54,9 @@ macro_rules! define_registry {
             // ensure tag fits in 3 bits
             static_assertions::const_assert!([<$type:snake:upper _TAG>] <= 0b111);
 
-            static [<$type:snake:upper _REGISTRY>]: Mutex<ObjectRegistry<$type, { [<$type:snake:upper _TAG>] }, 3>> = Mutex::new(ObjectRegistry::new());
+            static [<$type:snake:upper _REGISTRY>]: std::sync::Mutex<crate::object_registry::ObjectRegistry<$type, { [<$type:snake:upper _TAG>] }, 3>> = std::sync::Mutex::new(crate::object_registry::ObjectRegistry::new());
 
-            pub fn [<get_ $type:snake _registry>]<'a>() -> std::sync::MutexGuard<'a, ObjectRegistry<$type, { [<$type:snake:upper _TAG>] }, 3>> {
+            pub fn [<get_ $type:snake _registry>]<'a>() -> std::sync::MutexGuard<'a, crate::object_registry::ObjectRegistry<$type, { [<$type:snake:upper _TAG>] }, 3>> {
                 match [<$type:snake:upper _REGISTRY>].lock() {
                     Ok(registry) => registry,
                     Err(_) => unreachable!("another thread panicked while holding this registry's mutex"),
@@ -67,85 +65,14 @@ macro_rules! define_registry {
 
             pub fn [<clear_ $type:snake _registry>]() {
                 match [<$type:snake:upper _REGISTRY>].lock() {
-                    Ok(mut registry) => *registry = ObjectRegistry::new(),
+                    Ok(mut registry) => *registry = crate::object_registry::ObjectRegistry::new(),
                     Err(_) => unreachable!("another thread panicked while holding this registry's mutex"),
                 }
             }
         }
     }
 }
-
-/// Error Handling
-#[derive(Clone)]
-pub struct Error {
-    message: CString,
-}
-
-impl Error {
-    pub fn new(message: &str) -> Error {
-        Error {
-            message: CString::new(message).unwrap_or_default(),
-        }
-    }
-}
-
-define_registry! {Error}
-
-/// A wrapper object containing an error message
-pub struct GoslingError;
-
-/// Get error message from gosling_error
-///
-/// @param error: the error object to get the message from
-/// @return null-terminated string with error message whose
-///  lifetime is tied to the source
-#[no_mangle]
-#[cfg_attr(feature = "impl-lib", rename_impl)]
-pub extern "C" fn gosling_error_get_message(error: *const GoslingError) -> *const c_char {
-    if !error.is_null() {
-        let key = error as usize;
-
-        let registry = get_error_registry();
-        if registry.contains_key(key) {
-            if let Some(x) = registry.get(key) {
-                return x.message.as_ptr();
-            }
-        }
-    }
-
-    ptr::null()
-}
-
-/// Copy method for gosling_error
-///
-/// @param out_error: returned copy
-/// @param orig_error: original to copy
-/// @param error: fliled on error
-#[no_mangle]
-#[cfg_attr(feature = "impl-lib", rename_impl)]
-pub unsafe extern "C" fn gosling_error_clone(
-    out_error: *mut *mut GoslingError,
-    orig_error: *const GoslingError,
-    error: *mut *mut GoslingError,
-) {
-    translate_failures((), error, || -> anyhow::Result<()> {
-        if out_error.is_null() {
-            bail!("out_error must not be null");
-        }
-        if orig_error.is_null() {
-            bail!("orig_error must not be null");
-        }
-
-        let orig_error = match get_error_registry().get(orig_error as usize) {
-            Some(orig_error) => orig_error.clone(),
-            None => bail!("error is invalid"),
-        };
-        let handle = get_error_registry().insert(orig_error);
-        *out_error = handle as *mut GoslingError;
-
-        Ok(())
-    })
-}
+pub(crate) use define_registry;
 
 // macro for defining the implementation of freeing objects
 // owned by an ObjectRegistry
@@ -161,17 +88,7 @@ macro_rules! impl_registry_free {
         }
     };
 }
-
-/// Frees gosling_error and invalidates any message strings
-/// returned by gosling_error_get_message() from the given
-/// error object.
-///
-/// @param error: the error object to free
-#[no_mangle]
-#[cfg_attr(feature = "impl-lib", rename_impl)]
-pub extern "C" fn gosling_error_free(error: *mut GoslingError) {
-    impl_registry_free!(error, Error);
-}
+pub(crate) use impl_registry_free;
 
 /// A handle for the gosling library
 pub struct GoslingLibrary;
@@ -257,45 +174,6 @@ pub extern "C" fn gosling_tor_provider_free(in_tor_provider: *mut GoslingTorProv
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_free(in_context: *mut GoslingContext) {
     impl_registry_free!(in_context, ContextTuple);
-}
-
-/// Wrapper around rust code which may panic or return a failing Result to be used at FFI boundaries.
-/// Converts panics or error Results into GoslingErrors if a memory location is provided.
-///
-/// @param default: The default value to return in the event of failure
-/// @param out_error: A pointer to pointer to GoslingError 'struct' for the C FFI
-/// @param closure: The functionality we need to encapsulate behind the error handling logic
-/// @return The result of closure() on success, or the value of default on failure.
-fn translate_failures<R, F>(default: R, out_error: *mut *mut GoslingError, closure: F) -> R
-where
-    F: FnOnce() -> anyhow::Result<R> + panic::UnwindSafe,
-{
-    match panic::catch_unwind(closure) {
-        // handle success
-        Ok(Ok(retval)) => retval,
-        // handle runtime error
-        Ok(Err(err)) => {
-            if !out_error.is_null() {
-                // populate error with runtime error message
-                let key = get_error_registry().insert(Error::new(format!("{:?}", err).as_str()));
-                unsafe {
-                    *out_error = key as *mut GoslingError;
-                };
-            }
-            default
-        }
-        // handle panic
-        Err(_) => {
-            if !out_error.is_null() {
-                // populate error with panic message
-                let key = get_error_registry().insert(Error::new("panic occurred"));
-                unsafe {
-                    *out_error = key as *mut GoslingError;
-                };
-            }
-            default
-        }
-    }
 }
 
 static GOSLING_LIBRARY_INITED: AtomicBool = AtomicBool::new(false);

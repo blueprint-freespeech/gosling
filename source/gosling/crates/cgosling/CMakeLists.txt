@@ -12,6 +12,7 @@ set(cgosling_sources
     build.rs
     Cargo.toml
     cbindgen.toml
+    src/error.rs
     src/ffi.rs
     src/lib.rs
     src/object_registry.rs)

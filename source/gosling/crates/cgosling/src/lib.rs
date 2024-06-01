@@ -5,5 +5,6 @@
 // should consult the Doxygen generated docs
 #![allow(clippy::missing_safety_doc)]
 
+pub mod error;
 pub mod ffi;
 mod object_registry;
