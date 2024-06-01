@@ -8,6 +8,7 @@ use std::os::raw::c_char;
 use std::os::unix::io::{IntoRawFd, RawFd};
 #[cfg(windows)]
 use std::os::windows::io::{IntoRawSocket, RawSocket};
+#[cfg(feature = "legacy-tor-provider")]
 use std::path::Path;
 use std::str;
 use std::sync::atomic::{AtomicBool, Ordering};
