@@ -1,4 +1,4 @@
-if (BUILD_EXAMPLES)
+if (BUILD_EXAMPLES AND ENABLE_LEGACY_TOR_PROVIDER)
     set(CURSES_NEED_NCURSES TRUE)
     find_package(Curses)
     find_package(Boost 1.66.0)
