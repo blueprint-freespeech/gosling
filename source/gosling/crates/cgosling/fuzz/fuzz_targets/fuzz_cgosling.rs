@@ -7,7 +7,11 @@ use libfuzzer_sys::fuzz_target;
 use libfuzzer_sys::arbitrary;
 use libfuzzer_sys::arbitrary::Arbitrary;
 
+use cgosling::context::*;
+use cgosling::crypto::*;
+use cgosling::error::*;
 use cgosling::ffi::*;
+use cgosling::tor_provider::*;
 
 #[derive(Arbitrary, Debug)]
 enum Handle {
@@ -433,7 +437,7 @@ fn buffer_as_mut_pointer<T>(buffer: &mut Buffer<T>) -> *mut T {
 macro_rules! impl_set_callback {
     ($context:ident, $callback:ident, $out_error:ident, $contexts:ident, $errors:ident,$setter:ident, $func:ident) => {
         let context = handle_as_pointer($context, &$contexts);
-        let mut error: *mut GoslingFFIError = ptr::null_mut();
+        let mut error: *mut GoslingError = ptr::null_mut();
         let out_error = phandle_to_out_pointer($out_error, &mut error);
         match $callback {
             Callback::Null => $setter(context, None, out_error),
@@ -471,7 +475,7 @@ extern "C" fn identity_client_handshake_completed(_context: *mut GoslingContext,
 
 }
 
-extern "C" fn identity_client_handshake_failed(_context: *mut GoslingContext, _handshake_handle: usize, _error: *const GoslingFFIError) {
+extern "C" fn identity_client_handshake_failed(_context: *mut GoslingContext, _handshake_handle: usize, _error: *const GoslingError) {
 
 }
 
@@ -511,7 +515,7 @@ extern "C" fn identity_server_handshake_rejected(_context: *mut GoslingContext, 
 
 }
 
-extern "C" fn identity_server_handshake_failed(_cntext: *mut GoslingContext, _handshake_handle: usize, _error: *const GoslingFFIError) {
+extern "C" fn identity_server_handshake_failed(_cntext: *mut GoslingContext, _handshake_handle: usize, _error: *const GoslingError) {
 
 }
 
@@ -520,7 +524,7 @@ extern "C" fn endpoint_client_handhsake_completed(_context: *mut GoslingContext,
 }
 
 extern "C" fn endpoint_client_handshake_failed(_context: *mut GoslingContext,
-    _handshake_handle: usize, _error: *const GoslingFFIError) {
+    _handshake_handle: usize, _error: *const GoslingError) {
 
 }
 
@@ -546,7 +550,7 @@ extern "C" fn endpoint_server_handshake_rejected(_context: *mut GoslingContext, 
 }
 
 extern "C" fn endpoint_server_handshake_failed(_context: *mut GoslingContext,
-    _handshake_handle: usize, _error: *const GoslingFFIError) {
+    _handshake_handle: usize, _error: *const GoslingError) {
 
 }
 
@@ -557,7 +561,7 @@ struct Data {
 
 fuzz_target!(|data: Data| {
     let mut libraries: Vec<*mut GoslingLibrary> = Default::default();
-    let mut errors: Vec<*mut GoslingFFIError> = Default::default();
+    let mut errors: Vec<*mut GoslingError> = Default::default();
     let mut contexts: Vec<*mut GoslingContext> = Default::default();
     let mut ed25519_private_keys: Vec<*mut GoslingEd25519PrivateKey> = Default::default();
     let mut v3_onion_service_ids: Vec<*mut GoslingV3OnionServiceId> = Default::default();
@@ -574,10 +578,10 @@ fuzz_target!(|data: Data| {
                 gosling_error_get_message(error);
             },
             Function::ErrorClone{error_copy, orig_error, out_error} => {
-                let mut dest: *mut GoslingFFIError = ptr::null_mut();
+                let mut dest: *mut GoslingError = ptr::null_mut();
                 let error_copy = phandle_to_out_pointer(error_copy, &mut dest);
                 let orig_error = handle_as_pointer(orig_error, &errors);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
                 unsafe { gosling_error_clone(error_copy, orig_error, out_error) };
                 if !dest.is_null() {
@@ -618,7 +622,7 @@ fuzz_target!(|data: Data| {
             Function::LibraryInit{out_library, out_error} => {
                 let mut library: *mut GoslingLibrary = ptr::null_mut();
                 let out_library = phandle_to_out_pointer(out_library, &mut library);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
                 unsafe { gosling_library_init(out_library, out_error) };
                 if !library.is_null() {
@@ -635,7 +639,7 @@ fuzz_target!(|data: Data| {
             Function::Ed25519PrivateKeyGenerate{out_private_key, out_error} => {
                 let mut private_key: *mut GoslingEd25519PrivateKey = ptr::null_mut();
                 let out_private_key = phandle_to_out_pointer(out_private_key, &mut private_key);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
                 unsafe { gosling_ed25519_private_key_generate(out_private_key, out_error) };
                 if !private_key.is_null() {
@@ -649,7 +653,7 @@ fuzz_target!(|data: Data| {
                 let mut dest: *mut GoslingEd25519PrivateKey = ptr::null_mut();
                 let out_private_key = phandle_to_out_pointer(out_private_key, &mut dest);
                 let private_key = handle_as_pointer(private_key, &ed25519_private_keys);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
                 unsafe { gosling_ed25519_private_key_clone(out_private_key, private_key, out_error) };
                 if !dest.is_null() {
@@ -664,7 +668,7 @@ fuzz_target!(|data: Data| {
                 let out_private_key = phandle_to_out_pointer(out_private_key, &mut private_key);
                 let key_blob_length = buffer_to_size(&key_blob, &key_blob_length);
                 let key_blob = buffer_as_pointer(&key_blob);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
                 unsafe { gosling_ed25519_private_key_from_keyblob(out_private_key, key_blob, key_blob_length, out_error) };
                 if !private_key.is_null() {
@@ -678,7 +682,7 @@ fuzz_target!(|data: Data| {
                 let private_key = handle_as_pointer(private_key, &ed25519_private_keys);
                 let key_blob_size = buffer_to_size(&out_key_blob, &key_blob_size);
                 let out_key_blob = buffer_as_mut_pointer(&mut out_key_blob);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
                 gosling_ed25519_private_key_to_keyblob(private_key, out_key_blob, key_blob_size, out_error);
                 if !error.is_null() {
@@ -689,7 +693,7 @@ fuzz_target!(|data: Data| {
                 let mut dest: *mut GoslingX25519PrivateKey = ptr::null_mut();
                 let out_private_key = phandle_to_out_pointer(out_private_key, &mut dest);
                 let private_key = handle_as_pointer(private_key, &x25519_private_keys);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
                 unsafe { gosling_x25519_private_key_clone(out_private_key, private_key, out_error) };
                 if !dest.is_null() {
@@ -704,7 +708,7 @@ fuzz_target!(|data: Data| {
                 let out_private_key = phandle_to_out_pointer(out_private_key, &mut private_key);
                 let base64_length = buffer_to_size(&base64, &base64_length);
                 let base64 = buffer_as_pointer(&base64);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
                 unsafe { gosling_x25519_private_key_from_base64(out_private_key, base64, base64_length, out_error) };
                 if !private_key.is_null() {
@@ -718,7 +722,7 @@ fuzz_target!(|data: Data| {
                 let private_key = handle_as_pointer(private_key, &x25519_private_keys);
                 let base64_size = buffer_to_size(&out_base64, &base64_size);
                 let out_base64 = buffer_as_mut_pointer(&mut out_base64);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
                 gosling_x25519_private_key_to_base64(private_key, out_base64, base64_size, out_error);
                 if !error.is_null() {
@@ -729,7 +733,7 @@ fuzz_target!(|data: Data| {
                 let mut dest: *mut GoslingX25519PublicKey = ptr::null_mut();
                 let out_public_key = phandle_to_out_pointer(out_public_key, &mut dest);
                 let public_key = handle_as_pointer(public_key, &x25519_public_keys);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
                 unsafe { gosling_x25519_public_key_clone(out_public_key, public_key, out_error) };
                 if !dest.is_null() {
@@ -744,7 +748,7 @@ fuzz_target!(|data: Data| {
                 let out_public_key = phandle_to_out_pointer(out_public_key, &mut public_key);
                 let base32_length = buffer_to_size(&base32, &base32_length);
                 let base32 = buffer_as_pointer(&base32);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
                 unsafe { gosling_x25519_public_key_from_base32(out_public_key, base32, base32_length, out_error) };
                 if !out_public_key.is_null() {
@@ -758,7 +762,7 @@ fuzz_target!(|data: Data| {
                 let public_key = handle_as_pointer(public_key, &x25519_public_keys);
                 let base32_size = buffer_to_size(&out_base32, &base32_size);
                 let out_base32 = buffer_as_mut_pointer(&mut out_base32);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
                 gosling_x25519_public_key_to_base32(public_key, out_base32, base32_size, out_error);
                 if !error.is_null() {
@@ -769,7 +773,7 @@ fuzz_target!(|data: Data| {
                 let mut dest: *mut GoslingV3OnionServiceId = ptr::null_mut();
                 let out_service_id = phandle_to_out_pointer(out_service_id, &mut dest);
                 let service_id = handle_as_pointer(service_id, &v3_onion_service_ids);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
                 unsafe { gosling_v3_onion_service_id_clone(out_service_id, service_id, out_error) };
                 if !dest.is_null() {
@@ -784,7 +788,7 @@ fuzz_target!(|data: Data| {
                 let out_service_id = phandle_to_out_pointer(out_service_id, &mut service_id);
                 let service_id_string_length = buffer_to_size(&service_id_string, &service_id_string_length);
                 let service_id_string = buffer_as_pointer(&service_id_string);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
                 unsafe { gosling_v3_onion_service_id_from_string(out_service_id, service_id_string, service_id_string_length, out_error) };
                 if !out_service_id.is_null() {
@@ -798,7 +802,7 @@ fuzz_target!(|data: Data| {
                 let mut service_id: *mut GoslingV3OnionServiceId = ptr::null_mut();
                 let out_service_id = phandle_to_out_pointer(out_service_id, &mut service_id);
                 let ed25519_private_key = handle_as_pointer(ed25519_private_key, &ed25519_private_keys);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
                 unsafe { gosling_v3_onion_service_id_from_ed25519_private_key(out_service_id, ed25519_private_key, out_error) };
                 if !out_service_id.is_null() {
@@ -812,7 +816,7 @@ fuzz_target!(|data: Data| {
                 let service_id = handle_as_pointer(service_id, &v3_onion_service_ids);
                 let service_id_string_size = buffer_to_size(&out_service_id_string, &service_id_string_size);
                 let out_service_id_string = buffer_as_mut_pointer(&mut out_service_id_string);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
                 gosling_v3_onion_service_id_to_string(service_id, out_service_id_string, service_id_string_size, out_error);
                 if !error.is_null() {
@@ -822,7 +826,7 @@ fuzz_target!(|data: Data| {
             Function::StringIsValidV3OnionServiceId{service_id_string, service_id_string_length, out_error} => {
                 let service_id_string_length = buffer_to_size(&service_id_string, &service_id_string_length);
                 let service_id_string = buffer_as_pointer(&service_id_string);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
 
                 gosling_string_is_valid_v3_onion_service_id(service_id_string, service_id_string_length, out_error);
@@ -833,7 +837,7 @@ fuzz_target!(|data: Data| {
             Function::TorProviderNewMockClient{out_tor_provider, out_error} => {
                 let mut tor_provider: *mut GoslingTorProvider = ptr::null_mut();
                 let out_tor_provider = phandle_to_out_pointer(out_tor_provider, &mut tor_provider);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
 
                 unsafe { gosling_tor_provider_new_mock_client(out_tor_provider, out_error) };
@@ -849,7 +853,7 @@ fuzz_target!(|data: Data| {
                 let out_context = phandle_to_out_pointer(out_context, &mut context);
                 let tor_provider = handle_as_pointer(tor_provider, &tor_providers);
                 let identity_private_key = handle_as_pointer(identity_private_key, &ed25519_private_keys);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
 
                 unsafe { gosling_context_init(out_context, tor_provider, identity_port, endpoint_port, identity_private_key, out_error) };
@@ -862,7 +866,7 @@ fuzz_target!(|data: Data| {
             },
             Function::ContextBootstrapTor{context, out_error} => {
                 let context = handle_as_pointer(context, &contexts);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
 
                 gosling_context_bootstrap_tor(context, out_error);
@@ -872,7 +876,7 @@ fuzz_target!(|data: Data| {
             },
             Function::ContextStartIdentityServer{context, out_error} => {
                 let context = handle_as_pointer(context, &contexts);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
 
                 gosling_context_start_identity_server(context, out_error);
@@ -882,7 +886,7 @@ fuzz_target!(|data: Data| {
             },
             Function::ContextStopIdentityServer{context, out_error} => {
                 let context = handle_as_pointer(context, &contexts);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
 
                 gosling_context_stop_identity_server(context, out_error);
@@ -897,7 +901,7 @@ fuzz_target!(|data: Data| {
                 let endpoint_name = buffer_as_pointer(&endpoint_name);
                 let client_identity = handle_as_pointer(client_identity, &v3_onion_service_ids);
                 let client_auth_public_key = handle_as_pointer(client_auth_public_key, &x25519_public_keys);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
 
                 gosling_context_start_endpoint_server(context, endpoint_private_key, endpoint_name, endpoint_name_length, client_identity, client_auth_public_key, out_error);
@@ -908,7 +912,7 @@ fuzz_target!(|data: Data| {
             Function::ContextStopEndpointServer{context, endpoint_private_key, out_error} => {
                 let context = handle_as_pointer(context, &contexts);
                 let endpoint_private_key = handle_as_pointer(endpoint_private_key, &ed25519_private_keys);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
 
                 gosling_context_stop_endpoint_server(context, endpoint_private_key, out_error);
@@ -921,7 +925,7 @@ fuzz_target!(|data: Data| {
                 let identity_service_id = handle_as_pointer(identity_service_id, &v3_onion_service_ids);
                 let endpoint_name_length = buffer_to_size(&endpoint_name, &endpoint_name_length);
                 let endpoint_name = buffer_as_pointer(&endpoint_name);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
 
                 let handshake_handle = gosling_context_begin_identity_handshake(context, identity_service_id, endpoint_name, endpoint_name_length, out_error);
@@ -947,7 +951,7 @@ fuzz_target!(|data: Data| {
                         !0usize
                     }
                 };
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
 
                 gosling_context_abort_identity_client_handshake(context, handshake_handle, out_error);
@@ -961,7 +965,7 @@ fuzz_target!(|data: Data| {
                 let client_auth_private_key = handle_as_pointer(client_auth_private_key, &x25519_private_keys);
                 let channel_name_length = buffer_to_size(&channel_name, &channel_name_length);
                 let channel_name = buffer_as_pointer(&channel_name);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
 
                 let handshake_handle = gosling_context_begin_endpoint_handshake(context, endpoint_service_id, client_auth_private_key, channel_name, channel_name_length, out_error);
@@ -987,7 +991,7 @@ fuzz_target!(|data: Data| {
                         !0usize
                     }
                 };
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
 
                 gosling_context_abort_endpoint_client_handshake(context, handshake_handle, out_error);
@@ -997,7 +1001,7 @@ fuzz_target!(|data: Data| {
             },
             Function::ContextPollEvents{context, out_error} => {
                 let context = handle_as_pointer(context, &contexts);
-                let mut error: *mut GoslingFFIError = ptr::null_mut();
+                let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
 
                 gosling_context_poll_events(context, out_error);

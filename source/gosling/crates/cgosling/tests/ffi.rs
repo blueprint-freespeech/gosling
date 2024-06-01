@@ -16,13 +16,17 @@ use anyhow::bail;
 use serial_test::serial;
 
 // internal crates
+use cgosling::context::*;
+use cgosling::crypto::*;
+use cgosling::error::*;
 use cgosling::ffi::*;
+use cgosling::tor_provider::*;
 
 macro_rules! require_noerror {
     ($func:ident($($arg:tt)*)) => {
         // println!("--- {}{}", stringify!($func), stringify!(($($arg)*)));
         unsafe {
-            let mut error: *mut GoslingFFIError = ptr::null_mut();
+            let mut error: *mut GoslingError = ptr::null_mut();
             $func($($arg)*, &mut error);
             if !error.is_null() {
                 let msg = gosling_error_get_message(error);
@@ -450,7 +454,7 @@ fn test_gosling_ffi_handshake_impl(
         assert_eq!(endpoint_name, ENDPOINT_NAME);
         assert!(!client_auth_private_key.is_null());
 
-        let mut error: *mut GoslingFFIError = ptr::null_mut();
+        let mut error: *mut GoslingError = ptr::null_mut();
 
         let mut alice_endpoint_service_id: *mut GoslingV3OnionServiceId = ptr::null_mut();
         unsafe {
@@ -496,7 +500,7 @@ fn test_gosling_ffi_handshake_impl(
     extern "C" fn pat_identity_client_handshake_failed_callback(
         context: *mut GoslingContext,
         _handshake_handle: usize,
-        error: *const GoslingFFIError,
+        error: *const GoslingError,
     ) -> () {
         assert!(!context.is_null());
         assert!(!error.is_null());
@@ -544,7 +548,7 @@ fn test_gosling_ffi_handshake_impl(
         assert!(!client_service_id.is_null());
         assert!(!client_auth_public_key.is_null());
 
-        let mut error: *mut GoslingFFIError = ptr::null_mut();
+        let mut error: *mut GoslingError = ptr::null_mut();
 
         let mut alice_endpoint_private_key: *mut GoslingEd25519PrivateKey = ptr::null_mut();
         unsafe {
@@ -604,7 +608,7 @@ fn test_gosling_ffi_handshake_impl(
     extern "C" fn alice_identity_server_handshake_failed_callback(
         context: *mut GoslingContext,
         _handshake_handle: usize,
-        error: *const GoslingFFIError,
+        error: *const GoslingError,
     ) -> () {
         assert!(!context.is_null());
         assert!(!error.is_null());
@@ -627,7 +631,7 @@ fn test_gosling_ffi_handshake_impl(
     for k in 1..=3 {
         println!("--- pat begin identity handshake attempt {}", k);
 
-        let mut error: *mut GoslingFFIError = ptr::null_mut();
+        let mut error: *mut GoslingError = ptr::null_mut();
         gosling_context_begin_identity_handshake(
             pat_context,
             alice_identity,
@@ -742,7 +746,7 @@ fn test_gosling_ffi_handshake_impl(
     extern "C" fn pat_endpoint_client_handshake_failed_callback(
         context: *mut GoslingContext,
         _handshake_handle: usize,
-        error: *const GoslingFFIError,
+        error: *const GoslingError,
     ) -> () {
         assert!(!context.is_null());
         assert!(!error.is_null());
@@ -791,7 +795,7 @@ fn test_gosling_ffi_handshake_impl(
     extern "C" fn alice_endpoint_server_handshake_failed_callback(
         context: *mut GoslingContext,
         _handshake_handle: usize,
-        error: *const GoslingFFIError,
+        error: *const GoslingError,
     ) -> () {
         assert!(!context.is_null());
         assert!(!error.is_null());
@@ -814,7 +818,7 @@ fn test_gosling_ffi_handshake_impl(
     for k in 1..=3 {
         println!("--- pat begin endpoint handshake attempt {}", k);
 
-        let mut error: *mut GoslingFFIError = ptr::null_mut();
+        let mut error: *mut GoslingError = ptr::null_mut();
         unsafe {
             gosling_context_begin_endpoint_handshake(
                 pat_context,
