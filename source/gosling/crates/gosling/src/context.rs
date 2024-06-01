@@ -286,7 +286,10 @@ impl Context {
         // open tcp stream to remove ident server
         let stream: TcpStream = self
             .tor_provider
-            .connect((identity_server_id.clone(), self.identity_port).into(), None)?
+            .connect(
+                (identity_server_id.clone(), self.identity_port).into(),
+                None,
+            )?
             .into();
         stream.set_nonblocking(true)?;
         let mut client_rpc = Session::new(stream);
@@ -427,7 +430,10 @@ impl Context {
             .add_client_auth(&endpoint_server_id, &client_auth_key)?;
         let stream: TcpStream = self
             .tor_provider
-            .connect((endpoint_server_id.clone(), self.endpoint_port).into(), None)?
+            .connect(
+                (endpoint_server_id.clone(), self.endpoint_port).into(),
+                None,
+            )?
             .into();
         stream.set_nonblocking(true)?;
 
@@ -585,7 +591,8 @@ impl Context {
     pub fn connect(
         &mut self,
         target_addr: TargetAddr,
-        circuit_token: Option<CircuitToken>) -> Result<OnionStream, Error> {
+        circuit_token: Option<CircuitToken>,
+    ) -> Result<OnionStream, Error> {
         Ok(self.tor_provider.connect(target_addr, circuit_token)?)
     }
 

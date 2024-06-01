@@ -66,9 +66,11 @@ impl<T, const TAG: usize, const TAG_BITS: u32> ObjectRegistry<T, TAG, TAG_BITS> 
     pub fn insert(&mut self, val: T) -> usize {
         let key = self.next_key();
         match &mut self.map {
-            Some(map) => if map.insert(key, val).is_some() {
-                panic!();
-            },
+            Some(map) => {
+                if map.insert(key, val).is_some() {
+                    panic!();
+                }
+            }
             None => {
                 let mut map = BTreeMap::new();
                 map.insert(key, val);

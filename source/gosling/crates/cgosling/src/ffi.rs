@@ -41,7 +41,6 @@ const V3_ONION_SERVICE_ID_TAG: usize = 0x5;
 const TOR_PROVIDER_TAG: usize = 0x6;
 const CONTEXT_TUPLE_TAG: usize = 0x7;
 
-
 // empty bson document layout:
 // {
 //     // document length 5 == 0x00000005
@@ -50,7 +49,6 @@ const CONTEXT_TUPLE_TAG: usize = 0x7;
 //     0x00
 // };
 const SMALLEST_BSON_DOC_SIZE: usize = 5;
-
 
 macro_rules! define_registry {
     ($type:ty) => {
@@ -95,7 +93,6 @@ define_registry! {Error}
 
 /// A wrapper object containing an error message
 pub struct GoslingFFIError;
-
 
 /// Get error message from gosling_error
 ///
@@ -688,7 +685,11 @@ pub unsafe extern "C" fn gosling_x25519_public_key_from_base32(
         }
 
         if base32_length != X25519_PUBLIC_KEY_BASE32_LENGTH {
-            bail!("base32_length must be exactly X25519_PUBLIC_KEY_BASE32_LENGTH ({}); received '{}'", X25519_PUBLIC_KEY_BASE32_LENGTH, base32_length);
+            bail!(
+                "base32_length must be exactly X25519_PUBLIC_KEY_BASE32_LENGTH ({}); received '{}'",
+                X25519_PUBLIC_KEY_BASE32_LENGTH,
+                base32_length
+            );
         }
 
         let base32_view = std::slice::from_raw_parts(base32 as *const u8, base32_length);
@@ -1581,7 +1582,6 @@ fn handle_context_event(
                     endpoint_challenge_buffer.as_ptr(),
                     endpoint_challenge_buffer.len(),
                 );
-
 
                 if challenge_response_size < SMALLEST_BSON_DOC_SIZE {
                     bail!("identity_client_challenge_response_size_callback returned an impossibly small size '{}', smallest possible is {}", challenge_response_size, SMALLEST_BSON_DOC_SIZE);

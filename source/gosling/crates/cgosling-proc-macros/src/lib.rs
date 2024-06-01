@@ -44,8 +44,8 @@ pub fn rename_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
     // append "_impl" to the original function name for the _impl function
     impl_fn.sig.ident = syn::Ident::new(
-      &format!("{}_impl", impl_fn.sig.ident),
-      impl_fn.sig.ident.span(),
+        &format!("{}_impl", impl_fn.sig.ident),
+        impl_fn.sig.ident.span(),
     );
 
     let expanded = quote! {

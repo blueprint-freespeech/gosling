@@ -243,7 +243,9 @@ fn test_gosling_ffi_handshake_mock_client() -> anyhow::Result<()> {
 
     // construct tor providers
     let mut alice_tor_provider: *mut GoslingTorProvider = ptr::null_mut();
-    require_noerror!(gosling_tor_provider_new_mock_client(&mut alice_tor_provider));
+    require_noerror!(gosling_tor_provider_new_mock_client(
+        &mut alice_tor_provider
+    ));
 
     let mut pat_tor_provider: *mut GoslingTorProvider = ptr::null_mut();
     require_noerror!(gosling_tor_provider_new_mock_client(&mut pat_tor_provider));
@@ -291,7 +293,7 @@ fn test_gosling_ffi_handshake_legacy_client() -> anyhow::Result<()> {
 }
 
 fn test_gosling_ffi_handshake_preamble() -> anyhow::Result<*mut GoslingLibrary> {
-   // init libary
+    // init libary
 
     println!("--- init gosling library");
     let mut library: *mut GoslingLibrary = ptr::null_mut();
@@ -302,9 +304,11 @@ fn test_gosling_ffi_handshake_preamble() -> anyhow::Result<*mut GoslingLibrary> 
     Ok(library)
 }
 
-fn test_gosling_ffi_handshake_impl(library: *mut GoslingLibrary, alice_tor_provider: *mut GoslingTorProvider, pat_tor_provider: *mut GoslingTorProvider) -> anyhow::Result<()> {
-
-
+fn test_gosling_ffi_handshake_impl(
+    library: *mut GoslingLibrary,
+    alice_tor_provider: *mut GoslingTorProvider,
+    pat_tor_provider: *mut GoslingTorProvider,
+) -> anyhow::Result<()> {
     // init alice
 
     println!("--- init alice");

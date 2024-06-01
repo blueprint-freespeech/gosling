@@ -229,8 +229,7 @@ TEST_CASE("gosling_x25519_private_key_to_base64") {
   REQUIRE_THROWS(::gosling_x25519_private_key_to_base64(nullptr, nullptr, 1,
                                                         throw_on_error()));
   REQUIRE_THROWS(::gosling_x25519_private_key_to_base64(
-      nullptr, nullptr, X25519_PRIVATE_KEY_BASE64_LENGTH,
-      throw_on_error()));
+      nullptr, nullptr, X25519_PRIVATE_KEY_BASE64_LENGTH, throw_on_error()));
 
   // valid key, invalid out base64, invalid base64 size
   REQUIRE_THROWS(::gosling_x25519_private_key_to_base64(
@@ -392,7 +391,8 @@ TEST_CASE("gosling_v3_onion_service_id_from_string") {
   REQUIRE_THROWS(::gosling_v3_onion_service_id_from_string(
       out(serviceId), nullptr, 1, throw_on_error()));
   REQUIRE_THROWS(::gosling_v3_onion_service_id_from_string(
-      out(serviceId), nullptr, V3_ONION_SERVICE_ID_STRING_SIZE, throw_on_error()));
+      out(serviceId), nullptr, V3_ONION_SERVICE_ID_STRING_SIZE,
+      throw_on_error()));
 
   // valid dest, valid serviceIdString, invalid serviceIdString len
   REQUIRE_THROWS(::gosling_v3_onion_service_id_from_string(
@@ -493,7 +493,8 @@ TEST_CASE("gosling_v3_onion_service_id_to_string") {
   REQUIRE_THROWS(::gosling_v3_onion_service_id_to_string(
       serviceId.get(), nullptr, 1, throw_on_error()));
   REQUIRE_THROWS(::gosling_v3_onion_service_id_to_string(
-      serviceId.get(), nullptr, V3_ONION_SERVICE_ID_STRING_LENGTH, throw_on_error()));
+      serviceId.get(), nullptr, V3_ONION_SERVICE_ID_STRING_LENGTH,
+      throw_on_error()));
 
   // valid serviceId, valid out serviceIdStringRaw, invalid serviceIdStringRaw
   // size

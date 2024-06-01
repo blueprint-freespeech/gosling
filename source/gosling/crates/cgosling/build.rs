@@ -55,7 +55,6 @@ struct Data {
 }
 
 fn preprocess_header(source: &str) -> String {
-
     #[cfg(not(any(target_os = "linux", target_os = "macos")))]
     let platform_pattern = Regex::new(r"(?m)#if \(defined\(GOSLING_PLATFORM_LINUX\) \|\| defined\(GOSLING_PLATFORM_MACOS\)\)([^#].*\n)+#endif").unwrap();
 
@@ -68,13 +67,15 @@ fn preprocess_header(source: &str) -> String {
     #[cfg(not(feature = "mock-tor-provider"))]
     let source = {
         let feature_pattern =
-            Regex::new(r"(?m)#if defined\(GOSLING_HAVE_MOCK_TOR_PROVIDER\)([^#].*\n)+#endif").unwrap();
+            Regex::new(r"(?m)#if defined\(GOSLING_HAVE_MOCK_TOR_PROVIDER\)([^#].*\n)+#endif")
+                .unwrap();
         feature_pattern.replace_all(source.as_str(), "").to_string()
     };
     #[cfg(not(feature = "legacy-tor-provider"))]
     let source = {
         let feature_pattern =
-            Regex::new(r"(?m)#if defined\(GOSLING_HAVE_LEGACY_TOR_PROVIDER\)([^#].*\n)+#endif").unwrap();
+            Regex::new(r"(?m)#if defined\(GOSLING_HAVE_LEGACY_TOR_PROVIDER\)([^#].*\n)+#endif")
+                .unwrap();
         feature_pattern.replace_all(source.as_str(), "").to_string()
     };
 
@@ -110,21 +111,23 @@ fn parse_header(source: &str) -> Data {
     // followed by a single source line we care about
     let commented_source_pattern =
         Regex::new(r"(?m)(?<comments>(?:\/\/.*\n)+)(?<source>.+)").unwrap();
-    let comment_pattern =
-        Regex::new(r"(?m)^\/\/[ ]?").unwrap();
+    let comment_pattern = Regex::new(r"(?m)^\/\/[ ]?").unwrap();
 
     // constant pattern
-    let constant_pattern =
-        Regex::new(r"^#define (?P<name>[A-Z0-9_]+) (?P<value>[0-9]+)$").unwrap();
+    let constant_pattern = Regex::new(r"^#define (?P<name>[A-Z0-9_]+) (?P<value>[0-9]+)$").unwrap();
     // primitive types
     let typedef_pattern =
         Regex::new(r"^typedef (?P<type>[\w \*]+) (?P<name>gosling_[\w]+);$").unwrap();
     // callback types
-    let callback_pattern =
-        Regex::new(r"^typedef (?P<return>[\w \*]+) \(\*(?P<name>gosling_[\w]+_t)\)\((?P<params>[\w ,\*]*)\);$").unwrap();
+    let callback_pattern = Regex::new(
+        r"^typedef (?P<return>[\w \*]+) \(\*(?P<name>gosling_[\w]+_t)\)\((?P<params>[\w ,\*]*)\);$",
+    )
+    .unwrap();
     // function declaration
-    let function_pattern =
-        Regex::new(r"^(?P<return>[\w \*]+( | \*))(?P<name>gosling_[\w]+)\((?P<params>[\w ,\*]*)\);$").unwrap();
+    let function_pattern = Regex::new(
+        r"^(?P<return>[\w \*]+( | \*))(?P<name>gosling_[\w]+)\((?P<params>[\w ,\*]*)\);$",
+    )
+    .unwrap();
 
     let mut config_flags: Vec<ConfigFlag> = Default::default();
     let mut constants: Vec<Constant> = Default::default();
@@ -132,13 +135,13 @@ fn parse_header(source: &str) -> Data {
     let mut callbacks: Vec<Function> = Default::default();
     let mut functions: Vec<Function> = Default::default();
 
-    config_flags.push(ConfigFlag{
-        comments: vec!("Defined if cgosling is built with mock tor-provider support".to_string()),
+    config_flags.push(ConfigFlag {
+        comments: vec!["Defined if cgosling is built with mock tor-provider support".to_string()],
         name: "GOSLING_HAVE_MOCK_TOR_PROVIDER".to_string(),
         enabled: cfg!(feature = "mock-tor-provider"),
     });
-    config_flags.push(ConfigFlag{
-        comments: vec!("Defined if cgosling is built with legacy tor-provider support".to_string()),
+    config_flags.push(ConfigFlag {
+        comments: vec!["Defined if cgosling is built with legacy tor-provider support".to_string()],
         name: "GOSLING_HAVE_LEGACY_TOR_PROVIDER".to_string(),
         enabled: cfg!(feature = "legacy-tor-provider"),
     });
@@ -223,8 +226,7 @@ fn parse_header(source: &str) -> Data {
 }
 
 fn main() {
-
-    if cfg! (not(feature = "impl-lib")) {
+    if cfg!(not(feature = "impl-lib")) {
         // set by cargo
         let crate_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
         // set by cargo
@@ -239,7 +241,7 @@ fn main() {
         };
 
         let header_file_path = target_dir.join("cgosling.h");
-        println!("cargo:rerun-if-changed={}",header_file_path.display());
+        println!("cargo:rerun-if-changed={}", header_file_path.display());
 
         // generate libgosling.h C header
         match cbindgen::generate(&crate_dir) {
@@ -258,7 +260,7 @@ fn main() {
 
         // and write json IDL to disk
         let json_file_path = target_dir.join("cgosling.json");
-        println!("cargo:rerun-if-changed={}",json_file_path.display());
+        println!("cargo:rerun-if-changed={}", json_file_path.display());
         let mut json_file = match File::create(json_file_path) {
             Ok(file) => file,
             Err(err) => panic!("{:?}", err),

@@ -193,11 +193,13 @@ enum gosling_tor_provider_type {
   legacy_tor_provider,
 };
 
-// we template this function to ensure the static symbols defined here are different, since
-// we can repeatedly call this function with different gosling_tor_providers, and we want each invocation to start fresh
-template<gosling_tor_provider_type TP>
-void gosling_cpp_demo_impl(unique_ptr<gosling_tor_provider>&& alice_tor_provider, unique_ptr<gosling_tor_provider>&& pat_tor_provider) {
-
+// we template this function to ensure the static symbols defined here are
+// different, since we can repeatedly call this function with different
+// gosling_tor_providers, and we want each invocation to start fresh
+template <gosling_tor_provider_type TP>
+void gosling_cpp_demo_impl(
+    unique_ptr<gosling_tor_provider> &&alice_tor_provider,
+    unique_ptr<gosling_tor_provider> &&pat_tor_provider) {
 
   // and ensure at runtime we haven't accidentally called this function twice
   static bool never_been_called = true;
@@ -229,7 +231,6 @@ void gosling_cpp_demo_impl(unique_ptr<gosling_tor_provider>&& alice_tor_provider
       out(pat_identity), pat_private_key.get(), throw_on_error()));
 
   cout << "pat service id: " << pat_identity.get() << endl;
-
 
   // init contexts
   unique_ptr<gosling_context> alice_context;
@@ -555,11 +556,14 @@ void gosling_cpp_demo_mock_tor_provider() {
   unique_ptr<gosling_tor_provider> alice_tor_provider;
   unique_ptr<gosling_tor_provider> pat_tor_provider;
 
-  REQUIRE_NOTHROW(::gosling_tor_provider_new_mock_client(out(alice_tor_provider), throw_on_error()));
+  REQUIRE_NOTHROW(::gosling_tor_provider_new_mock_client(
+      out(alice_tor_provider), throw_on_error()));
 
-  REQUIRE_NOTHROW(::gosling_tor_provider_new_mock_client(out(pat_tor_provider), throw_on_error()));
+  REQUIRE_NOTHROW(::gosling_tor_provider_new_mock_client(out(pat_tor_provider),
+                                                         throw_on_error()));
 
-  gosling_cpp_demo_impl<mock_tor_provider>(std::move(alice_tor_provider), std::move(pat_tor_provider));
+  gosling_cpp_demo_impl<mock_tor_provider>(std::move(alice_tor_provider),
+                                           std::move(pat_tor_provider));
 }
 
 #endif // GOSLING_HAVE_MOCK_TOR_PROVIDER
@@ -583,7 +587,7 @@ void gosling_cpp_demo_legacy_tor_provider() {
       alice_working_dir.size(), // tor working directory len
       throw_on_error()));
 
-  //init pat tor provider
+  // init pat tor provider
   const auto pat_working_dir = (tmp / "gosling_context_test_pat").string();
   cout << "pat working dir: " << pat_working_dir << endl;
 
@@ -596,7 +600,8 @@ void gosling_cpp_demo_legacy_tor_provider() {
       pat_working_dir.size(), // tor working directory len
       throw_on_error()));
 
-  gosling_cpp_demo_impl<legacy_tor_provider>(std::move(alice_tor_provider), std::move(pat_tor_provider));
+  gosling_cpp_demo_impl<legacy_tor_provider>(std::move(alice_tor_provider),
+                                             std::move(pat_tor_provider));
 }
 #endif // GOSLING_HAVE_LEGACY_TOR_PROVIDER
 
@@ -613,5 +618,4 @@ TEST_CASE("gosling_cpp_demo") {
 #ifdef GOSLING_HAVE_LEGACY_TOR_PROVIDER
   gosling_cpp_demo_legacy_tor_provider();
 #endif // GOSLING_HAVE_LEGACY_TOR_PROVIDER
-
 }
