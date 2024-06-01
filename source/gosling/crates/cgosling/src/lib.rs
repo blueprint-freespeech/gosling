@@ -9,3 +9,4 @@ pub mod crypto;
 pub mod error;
 pub mod ffi;
 mod object_registry;
+pub mod tor_provider;
