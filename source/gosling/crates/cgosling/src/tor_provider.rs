@@ -1,4 +1,8 @@
 // standard
+#[cfg(feature = "legacy-tor-provider")]
+use std::os::raw::c_char;
+#[cfg(feature = "legacy-tor-provider")]
+use std::path::Path;
 
 // extern crates
 use anyhow::bail;
@@ -26,7 +30,7 @@ define_registry! {TorProvider}
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_tor_provider_free(in_tor_provider: *mut GoslingTorProvider) {
-    impl_registry_free!(in_tor_provider, ContextTuple);
+    impl_registry_free!(in_tor_provider, TorProvider);
 }
 
 /// Create a new tor provider which uses the legacy tor daemon client.

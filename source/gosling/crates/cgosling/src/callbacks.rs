@@ -4,9 +4,9 @@ use std::os::raw::c_char;
 // extern crates
 
 // internal crates
+use crate::context::*;
 use crate::crypto::*;
 use crate::error::*;
-use crate::ffi::*;
 
 #[derive(Default, Clone)]
 pub(crate) struct EventCallbacks {

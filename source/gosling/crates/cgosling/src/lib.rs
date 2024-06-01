@@ -6,6 +6,7 @@
 #![allow(clippy::missing_safety_doc)]
 
 pub mod callbacks;
+pub mod context;
 pub mod crypto;
 pub mod error;
 pub mod ffi;

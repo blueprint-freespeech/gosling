@@ -13,6 +13,7 @@ set(cgosling_sources
     Cargo.toml
     cbindgen.toml
     src/callbacks.rs
+    src/context.rs
     src/crypto.rs
     src/error.rs
     src/ffi.rs
