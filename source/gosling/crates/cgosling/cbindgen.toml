@@ -40,7 +40,7 @@ GoslingTcpSocket = "gosling_tcp_socket_t"
 # structs
 
 GoslingLibrary = "gosling_library"
-GoslingFFIError = "gosling_error"
+GoslingError = "gosling_error"
 GoslingContext = "gosling_context"
 GoslingEd25519PrivateKey = "gosling_ed25519_private_key"
 GoslingV3OnionServiceId = "gosling_v3_onion_service_id"

@@ -92,7 +92,7 @@ impl Error {
 define_registry! {Error}
 
 /// A wrapper object containing an error message
-pub struct GoslingFFIError;
+pub struct GoslingError;
 
 /// Get error message from gosling_error
 ///
@@ -101,7 +101,7 @@ pub struct GoslingFFIError;
 ///  lifetime is tied to the source
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
-pub extern "C" fn gosling_error_get_message(error: *const GoslingFFIError) -> *const c_char {
+pub extern "C" fn gosling_error_get_message(error: *const GoslingError) -> *const c_char {
     if !error.is_null() {
         let key = error as usize;
 
@@ -124,9 +124,9 @@ pub extern "C" fn gosling_error_get_message(error: *const GoslingFFIError) -> *c
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_error_clone(
-    out_error: *mut *mut GoslingFFIError,
-    orig_error: *const GoslingFFIError,
-    error: *mut *mut GoslingFFIError,
+    out_error: *mut *mut GoslingError,
+    orig_error: *const GoslingError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if out_error.is_null() {
@@ -141,7 +141,7 @@ pub unsafe extern "C" fn gosling_error_clone(
             None => bail!("error is invalid"),
         };
         let handle = get_error_registry().insert(orig_error);
-        *out_error = handle as *mut GoslingFFIError;
+        *out_error = handle as *mut GoslingError;
 
         Ok(())
     })
@@ -169,7 +169,7 @@ macro_rules! impl_registry_free {
 /// @param error: the error object to free
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
-pub extern "C" fn gosling_error_free(error: *mut GoslingFFIError) {
+pub extern "C" fn gosling_error_free(error: *mut GoslingError) {
     impl_registry_free!(error, Error);
 }
 
@@ -266,7 +266,7 @@ pub extern "C" fn gosling_context_free(in_context: *mut GoslingContext) {
 /// @param out_error: A pointer to pointer to GoslingError 'struct' for the C FFI
 /// @param closure: The functionality we need to encapsulate behind the error handling logic
 /// @return The result of closure() on success, or the value of default on failure.
-fn translate_failures<R, F>(default: R, out_error: *mut *mut GoslingFFIError, closure: F) -> R
+fn translate_failures<R, F>(default: R, out_error: *mut *mut GoslingError, closure: F) -> R
 where
     F: FnOnce() -> anyhow::Result<R> + panic::UnwindSafe,
 {
@@ -279,7 +279,7 @@ where
                 // populate error with runtime error message
                 let key = get_error_registry().insert(Error::new(format!("{:?}", err).as_str()));
                 unsafe {
-                    *out_error = key as *mut GoslingFFIError;
+                    *out_error = key as *mut GoslingError;
                 };
             }
             default
@@ -290,7 +290,7 @@ where
                 // populate error with panic message
                 let key = get_error_registry().insert(Error::new("panic occurred"));
                 unsafe {
-                    *out_error = key as *mut GoslingFFIError;
+                    *out_error = key as *mut GoslingError;
                 };
             }
             default
@@ -312,7 +312,7 @@ const GOSLING_LIBRARY_HANDLE: usize = {
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_library_init(
     out_library: *mut *mut GoslingLibrary,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if out_library.is_null() {
@@ -359,7 +359,7 @@ pub extern "C" fn gosling_library_free(in_library: *mut GoslingLibrary) {
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_ed25519_private_key_generate(
     out_private_key: *mut *mut GoslingEd25519PrivateKey,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if out_private_key.is_null() {
@@ -384,7 +384,7 @@ pub unsafe extern "C" fn gosling_ed25519_private_key_generate(
 pub unsafe extern "C" fn gosling_ed25519_private_key_clone(
     out_private_key: *mut *mut GoslingEd25519PrivateKey,
     private_key: *const GoslingEd25519PrivateKey,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if out_private_key.is_null() {
@@ -419,7 +419,7 @@ pub unsafe extern "C" fn gosling_ed25519_private_key_from_keyblob(
     out_private_key: *mut *mut GoslingEd25519PrivateKey,
     key_blob: *const c_char,
     key_blob_length: usize,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if out_private_key.is_null() {
@@ -459,7 +459,7 @@ pub extern "C" fn gosling_ed25519_private_key_to_keyblob(
     private_key: *const GoslingEd25519PrivateKey,
     out_key_blob: *mut c_char,
     key_blob_size: usize,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if private_key.is_null() {
@@ -513,7 +513,7 @@ pub extern "C" fn gosling_ed25519_private_key_to_keyblob(
 pub unsafe extern "C" fn gosling_x25519_private_key_clone(
     out_private_key: *mut *mut GoslingX25519PrivateKey,
     private_key: *const GoslingX25519PrivateKey,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if out_private_key.is_null() {
@@ -547,7 +547,7 @@ pub unsafe extern "C" fn gosling_x25519_private_key_from_base64(
     out_private_key: *mut *mut GoslingX25519PrivateKey,
     base64: *const c_char,
     base64_length: usize,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if out_private_key.is_null() {
@@ -586,7 +586,7 @@ pub extern "C" fn gosling_x25519_private_key_to_base64(
     private_key: *const GoslingX25519PrivateKey,
     out_base64: *mut c_char,
     base64_size: usize,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if private_key.is_null() {
@@ -640,7 +640,7 @@ pub extern "C" fn gosling_x25519_private_key_to_base64(
 pub unsafe extern "C" fn gosling_x25519_public_key_clone(
     out_public_key: *mut *mut GoslingX25519PublicKey,
     public_key: *const GoslingX25519PublicKey,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if out_public_key.is_null() {
@@ -674,7 +674,7 @@ pub unsafe extern "C" fn gosling_x25519_public_key_from_base32(
     out_public_key: *mut *mut GoslingX25519PublicKey,
     base32: *const c_char,
     base32_length: usize,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if out_public_key.is_null() {
@@ -717,7 +717,7 @@ pub extern "C" fn gosling_x25519_public_key_to_base32(
     public_key: *const GoslingX25519PublicKey,
     out_base32: *mut c_char,
     base32_size: usize,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if public_key.is_null() {
@@ -771,7 +771,7 @@ pub extern "C" fn gosling_x25519_public_key_to_base32(
 pub unsafe extern "C" fn gosling_v3_onion_service_id_clone(
     out_service_id: *mut *mut GoslingV3OnionServiceId,
     service_id: *const GoslingV3OnionServiceId,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if out_service_id.is_null() {
@@ -806,7 +806,7 @@ pub unsafe extern "C" fn gosling_v3_onion_service_id_from_string(
     out_service_id: *mut *mut GoslingV3OnionServiceId,
     service_id_string: *const c_char,
     service_id_string_length: usize,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if out_service_id.is_null() {
@@ -843,7 +843,7 @@ pub unsafe extern "C" fn gosling_v3_onion_service_id_from_string(
 pub unsafe extern "C" fn gosling_v3_onion_service_id_from_ed25519_private_key(
     out_service_id: *mut *mut GoslingV3OnionServiceId,
     ed25519_private_key: *const GoslingEd25519PrivateKey,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if out_service_id.is_null() {
@@ -884,7 +884,7 @@ pub extern "C" fn gosling_v3_onion_service_id_to_string(
     service_id: *const GoslingV3OnionServiceId,
     out_service_id_string: *mut c_char,
     service_id_string_size: usize,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if service_id.is_null() {
@@ -942,7 +942,7 @@ pub extern "C" fn gosling_v3_onion_service_id_to_string(
 pub extern "C" fn gosling_string_is_valid_v3_onion_service_id(
     service_id_string: *const c_char,
     service_id_string_length: usize,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) -> bool {
     translate_failures(false, error, || -> anyhow::Result<bool> {
         if service_id_string.is_null() {
@@ -984,7 +984,7 @@ pub unsafe extern "C" fn gosling_tor_provider_new_legacy_client(
     tor_bin_path_length: usize,
     tor_working_directory: *const c_char,
     tor_working_directory_length: usize,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if out_tor_provider.is_null() {
@@ -1040,7 +1040,7 @@ pub unsafe extern "C" fn gosling_tor_provider_new_legacy_client(
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_tor_provider_new_mock_client(
     out_tor_provider: *mut *mut GoslingTorProvider,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if out_tor_provider.is_null() {
@@ -1075,7 +1075,7 @@ pub unsafe extern "C" fn gosling_context_init(
     identity_port: u16,
     endpoint_port: u16,
     identity_private_key: *const GoslingEd25519PrivateKey,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if out_context.is_null() {
@@ -1134,7 +1134,7 @@ pub unsafe extern "C" fn gosling_context_init(
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_bootstrap_tor(
     context: *mut GoslingContext,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if context.is_null() {
@@ -1158,7 +1158,7 @@ pub extern "C" fn gosling_context_bootstrap_tor(
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_start_identity_server(
     context: *mut GoslingContext,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if context.is_null() {
@@ -1182,7 +1182,7 @@ pub extern "C" fn gosling_context_start_identity_server(
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_stop_identity_server(
     context: *mut GoslingContext,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if context.is_null() {
@@ -1217,7 +1217,7 @@ pub extern "C" fn gosling_context_start_endpoint_server(
     endpoint_name_length: usize,
     client_identity: *const GoslingV3OnionServiceId,
     client_auth_public_key: *const GoslingX25519PublicKey,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if context.is_null() {
@@ -1291,7 +1291,7 @@ pub extern "C" fn gosling_context_start_endpoint_server(
 pub extern "C" fn gosling_context_stop_endpoint_server(
     context: *mut GoslingContext,
     endpoint_private_key: *const GoslingEd25519PrivateKey,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if context.is_null() {
@@ -1334,7 +1334,7 @@ pub extern "C" fn gosling_context_begin_identity_handshake(
     identity_service_id: *const GoslingV3OnionServiceId,
     endpoint_name: *const c_char,
     endpoint_name_length: usize,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) -> GoslingHandshakeHandle {
     translate_failures(
         !0usize,
@@ -1391,7 +1391,7 @@ pub extern "C" fn gosling_context_begin_identity_handshake(
 pub extern "C" fn gosling_context_abort_identity_client_handshake(
     context: *mut GoslingContext,
     handshake_handle: GoslingHandshakeHandle,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if context.is_null() {
@@ -1426,7 +1426,7 @@ pub extern "C" fn gosling_context_begin_endpoint_handshake(
     client_auth_private_key: *const GoslingX25519PrivateKey,
     channel_name: *const c_char,
     channel_name_length: usize,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) -> GoslingHandshakeHandle {
     translate_failures(
         !0usize,
@@ -1495,7 +1495,7 @@ pub extern "C" fn gosling_context_begin_endpoint_handshake(
 pub extern "C" fn gosling_context_abort_endpoint_client_handshake(
     context: *mut GoslingContext,
     handshake_handle: GoslingHandshakeHandle,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         if context.is_null() {
@@ -1662,7 +1662,7 @@ fn handle_context_event(
         ContextEvent::IdentityClientHandshakeFailed { handle, reason } => {
             if let Some(callback) = callbacks.identity_client_handshake_failed_callback {
                 let key = get_error_registry().insert(Error::new(format!("{:?}", reason).as_str()));
-                callback(context, handle, key as *const GoslingFFIError);
+                callback(context, handle, key as *const GoslingError);
                 get_error_registry().remove(key);
             }
         }
@@ -1855,7 +1855,7 @@ fn handle_context_event(
         ContextEvent::IdentityServerHandshakeFailed { handle, reason } => {
             if let Some(callback) = callbacks.identity_server_handshake_failed_callback {
                 let key = get_error_registry().insert(Error::new(format!("{:?}", reason).as_str()));
-                callback(context, handle, key as *const GoslingFFIError);
+                callback(context, handle, key as *const GoslingError);
                 get_error_registry().remove(key);
             }
         }
@@ -1899,7 +1899,7 @@ fn handle_context_event(
         ContextEvent::EndpointClientHandshakeFailed { handle, reason } => {
             if let Some(callback) = callbacks.endpoint_client_handshake_failed_callback {
                 let key = get_error_registry().insert(Error::new(format!("{:?}", reason).as_str()));
-                callback(context, handle, key as *const GoslingFFIError);
+                callback(context, handle, key as *const GoslingError);
                 get_error_registry().remove(key);
             }
         }
@@ -2033,7 +2033,7 @@ fn handle_context_event(
         ContextEvent::EndpointServerHandshakeFailed { handle, reason } => {
             if let Some(callback) = callbacks.endpoint_server_handshake_failed_callback {
                 let key = get_error_registry().insert(Error::new(format!("{:?}", reason).as_str()));
-                callback(context, handle, key as *const GoslingFFIError);
+                callback(context, handle, key as *const GoslingError);
                 get_error_registry().remove(key);
             }
         }
@@ -2049,7 +2049,7 @@ fn handle_context_event(
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_poll_events(
     context: *mut GoslingContext,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
         // we need to scope the context registry explicitly here
@@ -2225,7 +2225,7 @@ pub type GoslingIdentityClientHandshakeFailedCallback = Option<
     extern "C" fn(
         context: *mut GoslingContext,
         handshake_handle: GoslingHandshakeHandle,
-        error: *const GoslingFFIError,
+        error: *const GoslingError,
     ) -> (),
 >;
 
@@ -2399,7 +2399,7 @@ pub type GoslingIdentityServerHandshakeFailedCallback = Option<
     extern "C" fn(
         context: *mut GoslingContext,
         handshake_handle: GoslingHandshakeHandle,
-        error: *const GoslingFFIError,
+        error: *const GoslingError,
     ) -> (),
 >;
 
@@ -2437,7 +2437,7 @@ pub type GoslingEndpointClientHandshakeFailedCallback = Option<
     extern "C" fn(
         context: *mut GoslingContext,
         handshake_handle: GoslingHandshakeHandle,
-        error: *const GoslingFFIError,
+        error: *const GoslingError,
     ) -> (),
 >;
 
@@ -2549,7 +2549,7 @@ pub type GoslingEndpointServerHandshakeFailedCallback = Option<
     extern "C" fn(
         context: *mut GoslingContext,
         handshake_handle: GoslingHandshakeHandle,
-        error: *const GoslingFFIError,
+        error: *const GoslingError,
     ) -> (),
 >;
 
@@ -2622,7 +2622,7 @@ macro_rules! impl_callback_setter {
 pub extern "C" fn gosling_context_set_tor_bootstrap_status_received_callback(
     context: *mut GoslingContext,
     callback: GoslingTorBootstrapStatusReceivedCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
         tor_bootstrap_status_received_callback,
@@ -2642,7 +2642,7 @@ pub extern "C" fn gosling_context_set_tor_bootstrap_status_received_callback(
 pub extern "C" fn gosling_context_set_tor_bootstrap_completed_callback(
     context: *mut GoslingContext,
     callback: GoslingTorBootstrapCompletedCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(tor_bootstrap_completed_callback, context, callback, error);
 }
@@ -2657,7 +2657,7 @@ pub extern "C" fn gosling_context_set_tor_bootstrap_completed_callback(
 pub extern "C" fn gosling_context_set_tor_log_received_callback(
     context: *mut GoslingContext,
     callback: GoslingTorLogReceivedCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(tor_log_received_callback, context, callback, error);
 }
@@ -2673,7 +2673,7 @@ pub extern "C" fn gosling_context_set_tor_log_received_callback(
 pub extern "C" fn gosling_context_set_identity_client_challenge_response_size_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityClientHandshakeChallengeResponseSizeCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
         identity_client_challenge_response_size_callback,
@@ -2693,7 +2693,7 @@ pub extern "C" fn gosling_context_set_identity_client_challenge_response_size_ca
 pub extern "C" fn gosling_context_set_identity_client_build_challenge_response_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityClientHandshakeBuildChallengeResponseCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
         identity_client_build_challenge_response_callback,
@@ -2713,7 +2713,7 @@ pub extern "C" fn gosling_context_set_identity_client_build_challenge_response_c
 pub extern "C" fn gosling_context_set_identity_client_handshake_completed_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityClientHandshakeCompletedCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
         identity_client_handshake_completed_callback,
@@ -2733,7 +2733,7 @@ pub extern "C" fn gosling_context_set_identity_client_handshake_completed_callba
 pub extern "C" fn gosling_context_set_identity_client_handshake_failed_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityClientHandshakeFailedCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
         identity_client_handshake_failed_callback,
@@ -2753,7 +2753,7 @@ pub extern "C" fn gosling_context_set_identity_client_handshake_failed_callback(
 pub extern "C" fn gosling_context_set_identity_server_published_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerPublishedCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(identity_server_published_callback, context, callback, error);
 }
@@ -2768,7 +2768,7 @@ pub extern "C" fn gosling_context_set_identity_server_published_callback(
 pub extern "C" fn gosling_context_set_identity_server_handshake_started_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeStartedCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
         identity_server_handshake_started_callback,
@@ -2788,7 +2788,7 @@ pub extern "C" fn gosling_context_set_identity_server_handshake_started_callback
 pub extern "C" fn gosling_context_set_identity_server_client_allowed_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeClientAllowedCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
         identity_server_client_allowed_callback,
@@ -2808,7 +2808,7 @@ pub extern "C" fn gosling_context_set_identity_server_client_allowed_callback(
 pub extern "C" fn gosling_context_set_identity_server_endpoint_supported_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerEndpointSupportedCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
         identity_server_endpoint_supported_callback,
@@ -2828,7 +2828,7 @@ pub extern "C" fn gosling_context_set_identity_server_endpoint_supported_callbac
 pub extern "C" fn gosling_context_set_identity_server_challenge_size_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeChallengeSizeCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
         identity_server_challenge_size_callback,
@@ -2848,7 +2848,7 @@ pub extern "C" fn gosling_context_set_identity_server_challenge_size_callback(
 pub extern "C" fn gosling_context_set_identity_server_build_challenge_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeBuildChallengeCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
         identity_server_build_challenge_callback,
@@ -2868,7 +2868,7 @@ pub extern "C" fn gosling_context_set_identity_server_build_challenge_callback(
 pub extern "C" fn gosling_context_set_identity_server_verify_challenge_response_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeVerifyChallengeResponseCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
         identity_server_verify_challenge_response_callback,
@@ -2888,7 +2888,7 @@ pub extern "C" fn gosling_context_set_identity_server_verify_challenge_response_
 pub extern "C" fn gosling_context_set_identity_server_handshake_completed_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeCompletedCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
         identity_server_handshake_completed_callback,
@@ -2908,7 +2908,7 @@ pub extern "C" fn gosling_context_set_identity_server_handshake_completed_callba
 pub extern "C" fn gosling_context_set_identity_server_handshake_rejected_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeRejectedCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
         identity_server_handshake_rejected_callback,
@@ -2928,7 +2928,7 @@ pub extern "C" fn gosling_context_set_identity_server_handshake_rejected_callbac
 pub extern "C" fn gosling_context_set_identity_server_handshake_failed_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeFailedCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
         identity_server_handshake_failed_callback,
@@ -2948,7 +2948,7 @@ pub extern "C" fn gosling_context_set_identity_server_handshake_failed_callback(
 pub extern "C" fn gosling_context_set_endpoint_client_handshake_completed_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointClientHandshakeCompletedCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
         endpoint_client_handshake_completed_callback,
@@ -2968,7 +2968,7 @@ pub extern "C" fn gosling_context_set_endpoint_client_handshake_completed_callba
 pub extern "C" fn gosling_context_set_endpoint_client_handshake_failed_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointClientHandshakeFailedCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
         endpoint_client_handshake_failed_callback,
@@ -2988,7 +2988,7 @@ pub extern "C" fn gosling_context_set_endpoint_client_handshake_failed_callback(
 pub extern "C" fn gosling_context_set_endpoint_server_published_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointServerPublishedCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(endpoint_server_published_callback, context, callback, error);
 }
@@ -3003,7 +3003,7 @@ pub extern "C" fn gosling_context_set_endpoint_server_published_callback(
 pub extern "C" fn gosling_context_set_endpoint_server_handshake_started_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointServerHandshakeStartedCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
         endpoint_server_handshake_started_callback,
@@ -3023,7 +3023,7 @@ pub extern "C" fn gosling_context_set_endpoint_server_handshake_started_callback
 pub extern "C" fn gosling_context_set_endpoint_server_channel_supported_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointServerChannelSupportedCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
         endpoint_server_channel_supported_callback,
@@ -3043,7 +3043,7 @@ pub extern "C" fn gosling_context_set_endpoint_server_channel_supported_callback
 pub extern "C" fn gosling_context_set_endpoint_server_handshake_completed_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointServerHandshakeCompletedCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
         endpoint_server_handshake_completed_callback,
@@ -3063,7 +3063,7 @@ pub extern "C" fn gosling_context_set_endpoint_server_handshake_completed_callba
 pub extern "C" fn gosling_context_set_endpoint_server_handshake_rejected_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointServerHandshakeRejectedCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
         endpoint_server_handshake_rejected_callback,
@@ -3083,7 +3083,7 @@ pub extern "C" fn gosling_context_set_endpoint_server_handshake_rejected_callbac
 pub extern "C" fn gosling_context_set_endpoint_server_handshake_failed_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointServerHandshakeFailedCallback,
-    error: *mut *mut GoslingFFIError,
+    error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
         endpoint_server_handshake_failed_callback,
