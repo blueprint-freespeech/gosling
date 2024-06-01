@@ -582,6 +582,21 @@ impl Context {
         }
     }
 
+    pub fn connect(
+        &mut self,
+        target_addr: TargetAddr,
+        circuit_token: Option<CircuitToken>) -> Result<OnionStream, Error> {
+        Ok(self.tor_provider.connect(target_addr, circuit_token)?)
+    }
+
+    pub fn generate_circuit_token(&mut self) -> CircuitToken {
+        self.tor_provider.generate_token()
+    }
+
+    pub fn release_circuit_token(&mut self, circuit_token: CircuitToken) {
+        self.tor_provider.release_token(circuit_token)
+    }
+
     pub fn update(&mut self) -> Result<VecDeque<ContextEvent>, Error> {
         // events to return
         let mut events: VecDeque<ContextEvent> = Default::default();
