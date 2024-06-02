@@ -8,6 +8,7 @@ if (BUILD_JAVA_BINDINGS)
         message(FATAL_ERROR "Java JNI not found; will not generate Java bindings")
     endif()
     set(gosling_java_bindings_sources
+        ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/cgosling.json
         build_java_bindings.rs
         Cargo.toml
         Gosling.java.handlebars
@@ -22,7 +23,7 @@ if (BUILD_JAVA_BINDINGS)
     # Generate Gosling.java, Gosling.jar, GoslingJNI.h, and GoslingJNI.cpp
     #
     add_custom_command(
-        DEPENDS ${gosling_java_bindings_sources} cgosling_target
+        DEPENDS ${gosling_java_bindings_sources}
         OUTPUT ${gosling_java_bindings_outputs}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/src/net/blueprintforfreespeech/gosling
         # generate java source
@@ -44,6 +45,7 @@ if (BUILD_JAVA_BINDINGS)
 
     # Create the JNI library
     add_library(goslingjni SHARED ${gosling_jni_sources})
+    add_dependencies(goslingjni cgosling_target)
     target_include_directories(goslingjni PRIVATE ${JNI_INCLUDE_DIRS})
     target_include_directories(goslingjni PRIVATE ${Boost_INCLUDE_DIRS})
     target_link_libraries(goslingjni PRIVATE ${Java_JVM_LIBRARY})

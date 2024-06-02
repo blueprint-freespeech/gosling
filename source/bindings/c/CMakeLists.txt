@@ -5,12 +5,13 @@ include(CheckLinkerFlag)
 #
 
 set(gosling_c_header_sources
+    ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/cgosling.json
     build_c_bindings.rs
     Cargo.toml
     cgosling.h.handlebars)
 
 add_custom_command(
-    DEPENDS ${gosling_c_header_sources} cgosling_target
+    DEPENDS ${gosling_c_header_sources}
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cgosling.h
     # generate c header
     COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo run ${CARGO_FLAGS} --bin build_c_bindings ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/cgosling.json cgosling.h.handlebars ${CMAKE_CURRENT_BINARY_DIR}/cgosling.h
@@ -18,6 +19,7 @@ add_custom_command(
 )
 add_custom_target(gosling_c_header_target
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/cgosling.h)
+add_dependencies(gosling_c_header_target cgosling_target)
 if (ENABLE_LINTING)
     add_dependencies(cppcheck_target gosling_c_header_target)
 endif()
@@ -27,7 +29,7 @@ endif()
 #
 
 add_custom_command(
-    DEPENDS ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_STATIC} cgosling_target
+    DEPENDS ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_STATIC}
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CGOSLING_STATIC}
     # copy cargo-built static lib to current directory
     COMMAND ${CMAKE_COMMAND} -E copy ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_STATIC} ${CMAKE_CURRENT_BINARY_DIR}/${CGOSLING_STATIC}
