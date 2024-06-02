@@ -812,6 +812,7 @@
 <a href="#810" id="810">810</a>
 <a href="#811" id="811">811</a>
 <a href="#812" id="812">812</a>
+<a href="#813" id="813">813</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::default::Default;
 <span class="kw">use </span>std::net::SocketAddr;
@@ -1351,7 +1352,8 @@
                         }
                         index += <span class="string">"PrivateKey="</span>.len();
                         <span class="kw">let </span>key_blob_string = <span class="kw-2">&amp;</span>line[index..];
-                        private_key = <span class="kw">match </span>Ed25519PrivateKey::from_key_blob_legacy(key_blob_string) {
+                        private_key = <span class="kw">match </span>Ed25519PrivateKey::from_key_blob_legacy(key_blob_string)
+                        {
                             <span class="prelude-val">Ok</span>(private_key) =&gt; <span class="prelude-val">Some</span>(private_key),
                             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::CommandReplyParseFailed(<span class="macro">format!</span>(

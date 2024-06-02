@@ -731,6 +731,31 @@
 <a href="#729" id="729">729</a>
 <a href="#730" id="730">730</a>
 <a href="#731" id="731">731</a>
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a>
+<a href="#734" id="734">734</a>
+<a href="#735" id="735">735</a>
+<a href="#736" id="736">736</a>
+<a href="#737" id="737">737</a>
+<a href="#738" id="738">738</a>
+<a href="#739" id="739">739</a>
+<a href="#740" id="740">740</a>
+<a href="#741" id="741">741</a>
+<a href="#742" id="742">742</a>
+<a href="#743" id="743">743</a>
+<a href="#744" id="744">744</a>
+<a href="#745" id="745">745</a>
+<a href="#746" id="746">746</a>
+<a href="#747" id="747">747</a>
+<a href="#748" id="748">748</a>
+<a href="#749" id="749">749</a>
+<a href="#750" id="750">750</a>
+<a href="#751" id="751">751</a>
+<a href="#752" id="752">752</a>
+<a href="#753" id="753">753</a>
+<a href="#754" id="754">754</a>
+<a href="#755" id="755">755</a>
+<a href="#756" id="756">756</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::convert::TryInto;
 <span class="kw">use </span>std::str;
@@ -772,20 +797,32 @@
 </span><span class="kw">pub const </span>V3_ONION_SERVICE_ID_STRING_LENGTH: usize = <span class="number">56</span>;
 <span class="doccomment">/// The number of bytes needed to store onion service id as an ASCII c-string (including null-terminator)
 </span><span class="kw">pub const </span>V3_ONION_SERVICE_ID_STRING_SIZE: usize = <span class="number">57</span>;
-<span class="macro">const_assert_eq!</span>(V3_ONION_SERVICE_ID_STRING_SIZE, V3_ONION_SERVICE_ID_STRING_LENGTH + <span class="number">1</span>);
+<span class="macro">const_assert_eq!</span>(
+    V3_ONION_SERVICE_ID_STRING_SIZE,
+    V3_ONION_SERVICE_ID_STRING_LENGTH + <span class="number">1
+</span>);
 <span class="doccomment">/// The number of bytes needed to store base64 encoded ed25519 private key as an ASCII c-string (not including null-terminator)
 </span><span class="kw">pub const </span>ED25519_PRIVATE_KEYBLOB_BASE64_LENGTH: usize = <span class="number">88</span>;
 <span class="doccomment">/// key klob header string
 </span><span class="kw">const </span>ED25519_PRIVATE_KEY_KEYBLOB_HEADER: <span class="kw-2">&amp;</span>str = <span class="string">"ED25519-V3:"</span>;
 <span class="doccomment">/// The number of bytes needed to store the keyblob header
 </span><span class="kw">pub const </span>ED25519_PRIVATE_KEY_KEYBLOB_HEADER_LENGTH: usize = <span class="number">11</span>;
-<span class="macro">const_assert_eq!</span>(ED25519_PRIVATE_KEY_KEYBLOB_HEADER_LENGTH, ED25519_PRIVATE_KEY_KEYBLOB_HEADER.len());
+<span class="macro">const_assert_eq!</span>(
+    ED25519_PRIVATE_KEY_KEYBLOB_HEADER_LENGTH,
+    ED25519_PRIVATE_KEY_KEYBLOB_HEADER.len()
+);
 <span class="doccomment">/// The number of bytes needed to store ed25519 private keyblob as an ASCII c-string (not including a null terminator)
 </span><span class="kw">pub const </span>ED25519_PRIVATE_KEY_KEYBLOB_LENGTH: usize = <span class="number">99</span>;
-<span class="macro">const_assert_eq!</span>(ED25519_PRIVATE_KEY_KEYBLOB_LENGTH, ED25519_PRIVATE_KEY_KEYBLOB_HEADER_LENGTH + ED25519_PRIVATE_KEYBLOB_BASE64_LENGTH);
+<span class="macro">const_assert_eq!</span>(
+    ED25519_PRIVATE_KEY_KEYBLOB_LENGTH,
+    ED25519_PRIVATE_KEY_KEYBLOB_HEADER_LENGTH + ED25519_PRIVATE_KEYBLOB_BASE64_LENGTH
+);
 <span class="doccomment">/// The number of bytes needed to store ed25519 private keyblob as an ASCII c-string (including a null terminator)
 </span><span class="kw">pub const </span>ED25519_PRIVATE_KEY_KEYBLOB_SIZE: usize = <span class="number">100</span>;
-<span class="macro">const_assert_eq!</span>(ED25519_PRIVATE_KEY_KEYBLOB_SIZE, ED25519_PRIVATE_KEY_KEYBLOB_LENGTH + <span class="number">1</span>);
+<span class="macro">const_assert_eq!</span>(
+    ED25519_PRIVATE_KEY_KEYBLOB_SIZE,
+    ED25519_PRIVATE_KEY_KEYBLOB_LENGTH + <span class="number">1
+</span>);
 <span class="comment">// number of bytes in an onion service id after base32 decode
 </span><span class="kw">const </span>V3_ONION_SERVICE_ID_RAW_SIZE: usize = <span class="number">35</span>;
 <span class="comment">// byte index of the start of the public key checksum
@@ -804,12 +841,18 @@
 </span><span class="kw">pub const </span>X25519_PRIVATE_KEY_BASE64_LENGTH: usize = <span class="number">44</span>;
 <span class="doccomment">/// The number of bytes needed to store base64 encoded x25519 private key as an ASCII c-string (including a null terminator)
 </span><span class="kw">pub const </span>X25519_PRIVATE_KEY_BASE64_SIZE: usize = <span class="number">45</span>;
-<span class="macro">const_assert_eq!</span>(X25519_PRIVATE_KEY_BASE64_SIZE, X25519_PRIVATE_KEY_BASE64_LENGTH + <span class="number">1</span>);
+<span class="macro">const_assert_eq!</span>(
+    X25519_PRIVATE_KEY_BASE64_SIZE,
+    X25519_PRIVATE_KEY_BASE64_LENGTH + <span class="number">1
+</span>);
 <span class="doccomment">/// The number of bytes needed to store base32 encoded x25519 public key as an ASCII c-string (not including null-terminator)
 </span><span class="kw">pub const </span>X25519_PUBLIC_KEY_BASE32_LENGTH: usize = <span class="number">52</span>;
 <span class="doccomment">/// The number of bytes needed to store base32 encoded x25519 public key as an ASCII c-string (including a null terminator)
 </span><span class="kw">pub const </span>X25519_PUBLIC_KEY_BASE32_SIZE: usize = <span class="number">53</span>;
-<span class="macro">const_assert_eq!</span>(X25519_PUBLIC_KEY_BASE32_SIZE, X25519_PUBLIC_KEY_BASE32_LENGTH + <span class="number">1</span>);
+<span class="macro">const_assert_eq!</span>(
+    X25519_PUBLIC_KEY_BASE32_SIZE,
+    X25519_PUBLIC_KEY_BASE32_LENGTH + <span class="number">1
+</span>);
 
 <span class="kw">const </span>ONION_BASE32: data_encoding::Encoding = <span class="macro">new_encoding!</span> {
     symbols: <span class="string">"abcdefghijklmnopqrstuvwxyz234567"</span>,
@@ -919,7 +962,10 @@
         }
     }
 
-    <span class="kw">fn </span>from_raw_impl(raw: <span class="kw-2">&amp;</span>[u8; ED25519_PRIVATE_KEY_SIZE], method: FromRawValidationMethod) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519PrivateKey, Error&gt; {
+    <span class="kw">fn </span>from_raw_impl(
+        raw: <span class="kw-2">&amp;</span>[u8; ED25519_PRIVATE_KEY_SIZE],
+        method: FromRawValidationMethod,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519PrivateKey, Error&gt; {
         <span class="comment">// see: https://gitlab.torproject.org/tpo/core/arti/-/issues/1343
         </span><span class="kw">match </span>method {
             <span class="attr">#[cfg(feature = <span class="string">"legacy-tor-provider"</span>)]
@@ -929,7 +975,7 @@
                 </span><span class="kw">if </span>!(raw[<span class="number">0</span>] == raw[<span class="number">0</span>] &amp; <span class="number">248 </span>&amp;&amp; raw[<span class="number">31</span>] == (raw[<span class="number">31</span>] &amp; <span class="number">63</span>) | <span class="number">64</span>) {
                     <span class="kw">return </span><span class="prelude-val">Err</span>(Error::KeyInvalid);
                 }
-            },
+            }
             FromRawValidationMethod::Ed25519Dalek =&gt; {
                 <span class="comment">// Verify the scalar is non-zero and it has been reduced
                 </span><span class="kw">let </span>scalar: [u8; <span class="number">32</span>] = raw[..<span class="number">32</span>].try_into().unwrap();
@@ -944,7 +990,7 @@
         }
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>(expanded_keypair) = pk::ed25519::ExpandedKeypair::from_secret_key_bytes(<span class="kw-2">*</span>raw) {
-            <span class="prelude-val">Ok</span>(Ed25519PrivateKey{expanded_keypair})
+            <span class="prelude-val">Ok</span>(Ed25519PrivateKey { expanded_keypair })
         } <span class="kw">else </span>{
             <span class="prelude-val">Err</span>(Error::KeyInvalid)
         }
@@ -954,7 +1000,10 @@
         <span class="self">Self</span>::from_raw_impl(raw, FromRawValidationMethod::Ed25519Dalek)
     }
 
-    <span class="kw">fn </span>from_key_blob_impl(key_blob: <span class="kw-2">&amp;</span>str, method: FromRawValidationMethod) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519PrivateKey, Error&gt; {
+    <span class="kw">fn </span>from_key_blob_impl(
+        key_blob: <span class="kw-2">&amp;</span>str,
+        method: FromRawValidationMethod,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519PrivateKey, Error&gt; {
         <span class="kw">if </span>key_blob.len() != ED25519_PRIVATE_KEY_KEYBLOB_LENGTH {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ParseError(<span class="macro">format!</span>(
                 <span class="string">"expects string of length '{}'; received string with length '{}'"</span>,
@@ -996,7 +1045,7 @@
     }
 
     <span class="attr">#[cfg(feature = <span class="string">"legacy-tor-provider"</span>)]
-    </span><span class="kw">pub </span>(<span class="kw">crate</span>) <span class="kw">fn </span>from_key_blob_legacy(key_blob: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519PrivateKey, Error&gt; {
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>from_key_blob_legacy(key_blob: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519PrivateKey, Error&gt; {
         <span class="self">Self</span>::from_key_blob_impl(key_blob, FromRawValidationMethod::LegacyCTor)
     }
 
@@ -1044,9 +1093,7 @@
         _public_key: <span class="kw-2">&amp;</span>Ed25519PublicKey,
         message: <span class="kw-2">&amp;</span>[u8],
     ) -&gt; Ed25519Signature {
-        <span class="kw">let </span>signature = <span class="self">self
-            </span>.expanded_keypair
-            .sign(message);
+        <span class="kw">let </span>signature = <span class="self">self</span>.expanded_keypair.sign(message);
         Ed25519Signature { signature }
     }
 
@@ -1131,7 +1178,7 @@
 
     <span class="kw">pub fn </span>from_private_key(private_key: <span class="kw-2">&amp;</span>Ed25519PrivateKey) -&gt; Ed25519PublicKey {
         Ed25519PublicKey {
-            public_key: <span class="kw-2">*</span>private_key.expanded_keypair.public()
+            public_key: <span class="kw-2">*</span>private_key.expanded_keypair.public(),
         }
     }
 
@@ -1174,12 +1221,15 @@
 </span><span class="kw">impl </span>Ed25519Signature {
     <span class="kw">pub fn </span>from_raw(raw: <span class="kw-2">&amp;</span>[u8; ED25519_SIGNATURE_SIZE]) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519Signature, Error&gt; {
         <span class="prelude-val">Ok</span>(Ed25519Signature {
-            signature: pk::ed25519::Signature::from_bytes(raw)
+            signature: pk::ed25519::Signature::from_bytes(raw),
         })
     }
 
     <span class="kw">pub fn </span>verify(<span class="kw-2">&amp;</span><span class="self">self</span>, message: <span class="kw-2">&amp;</span>[u8], public_key: <span class="kw-2">&amp;</span>Ed25519PublicKey) -&gt; bool {
-        <span class="kw">if let </span><span class="prelude-val">Ok</span>(()) = public_key.public_key.verify_strict(message, <span class="kw-2">&amp;</span><span class="self">self</span>.signature) {
+        <span class="kw">if let </span><span class="prelude-val">Ok</span>(()) = public_key
+            .public_key
+            .verify_strict(message, <span class="kw-2">&amp;</span><span class="self">self</span>.signature)
+        {
             <span class="kw">return </span><span class="bool-val">true</span>;
         }
         <span class="bool-val">false

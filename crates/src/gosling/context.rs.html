@@ -872,6 +872,28 @@
 <a href="#870" id="870">870</a>
 <a href="#871" id="871">871</a>
 <a href="#872" id="872">872</a>
+<a href="#873" id="873">873</a>
+<a href="#874" id="874">874</a>
+<a href="#875" id="875">875</a>
+<a href="#876" id="876">876</a>
+<a href="#877" id="877">877</a>
+<a href="#878" id="878">878</a>
+<a href="#879" id="879">879</a>
+<a href="#880" id="880">880</a>
+<a href="#881" id="881">881</a>
+<a href="#882" id="882">882</a>
+<a href="#883" id="883">883</a>
+<a href="#884" id="884">884</a>
+<a href="#885" id="885">885</a>
+<a href="#886" id="886">886</a>
+<a href="#887" id="887">887</a>
+<a href="#888" id="888">888</a>
+<a href="#889" id="889">889</a>
+<a href="#890" id="890">890</a>
+<a href="#891" id="891">891</a>
+<a href="#892" id="892">892</a>
+<a href="#893" id="893">893</a>
+<a href="#894" id="894">894</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::clone::Clone;
 <span class="kw">use </span>std::collections::{BTreeMap, HashMap, VecDeque};
@@ -1160,7 +1182,10 @@
         <span class="comment">// open tcp stream to remove ident server
         </span><span class="kw">let </span>stream: TcpStream = <span class="self">self
             </span>.tor_provider
-            .connect((identity_server_id.clone(), <span class="self">self</span>.identity_port).into(), <span class="prelude-val">None</span>)<span class="question-mark">?
+            .connect(
+                (identity_server_id.clone(), <span class="self">self</span>.identity_port).into(),
+                <span class="prelude-val">None</span>,
+            )<span class="question-mark">?
             </span>.into();
         stream.set_nonblocking(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>client_rpc = Session::new(stream);
@@ -1301,7 +1326,10 @@
             .add_client_auth(<span class="kw-2">&amp;</span>endpoint_server_id, <span class="kw-2">&amp;</span>client_auth_key)<span class="question-mark">?</span>;
         <span class="kw">let </span>stream: TcpStream = <span class="self">self
             </span>.tor_provider
-            .connect((endpoint_server_id.clone(), <span class="self">self</span>.endpoint_port).into(), <span class="prelude-val">None</span>)<span class="question-mark">?
+            .connect(
+                (endpoint_server_id.clone(), <span class="self">self</span>.endpoint_port).into(),
+                <span class="prelude-val">None</span>,
+            )<span class="question-mark">?
             </span>.into();
         stream.set_nonblocking(<span class="bool-val">true</span>)<span class="question-mark">?</span>;
 
@@ -1454,6 +1482,22 @@
         } <span class="kw">else </span>{
             <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
         }
+    }
+
+    <span class="kw">pub fn </span>connect(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        target_addr: TargetAddr,
+        circuit_token: <span class="prelude-ty">Option</span>&lt;CircuitToken&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;OnionStream, Error&gt; {
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.tor_provider.connect(target_addr, circuit_token)<span class="question-mark">?</span>)
+    }
+
+    <span class="kw">pub fn </span>generate_circuit_token(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; CircuitToken {
+        <span class="self">self</span>.tor_provider.generate_token()
+    }
+
+    <span class="kw">pub fn </span>release_circuit_token(<span class="kw-2">&amp;mut </span><span class="self">self</span>, circuit_token: CircuitToken) {
+        <span class="self">self</span>.tor_provider.release_token(circuit_token)
     }
 
     <span class="kw">pub fn </span>update(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;VecDeque&lt;ContextEvent&gt;, Error&gt; {

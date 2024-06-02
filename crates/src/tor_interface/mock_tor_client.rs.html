@@ -348,6 +348,9 @@
 <a href="#346" id="346">346</a>
 <a href="#347" id="347">347</a>
 <a href="#348" id="348">348</a>
+<a href="#349" id="349">349</a>
+<a href="#350" id="350">350</a>
+<a href="#351" id="351">351</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::collections::BTreeMap;
 <span class="kw">use </span>std::io::ErrorKind;
@@ -474,8 +477,8 @@
                 } <span class="kw">else </span>{
                     <span class="prelude-val">Err</span>(Error::OnionServiceNotPublished(onion_addr))
                 }
-            },
-            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(Error::OnionServiceNotPublished(onion_addr))
+            }
+            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(Error::OnionServiceNotPublished(onion_addr)),
         }
     }
 
@@ -490,7 +493,7 @@
         <span class="kw">match </span><span class="kw-2">&amp;mut </span><span class="self">self</span>.onion_services {
             <span class="prelude-val">Some</span>(onion_services) =&gt; {
                 onion_services.insert(onion_addr, (client_auth_keys, address));
-            },
+            }
             <span class="prelude-val">None </span>=&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>onion_services = BTreeMap::new();
                 onion_services.insert(onion_addr, (client_auth_keys, address));
@@ -612,7 +615,10 @@
         _circuit: <span class="prelude-ty">Option</span>&lt;CircuitToken&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;OnionStream, tor_provider::Error&gt; {
         <span class="kw">let </span>(service_id, virt_port) = <span class="kw">match </span>target {
-            TargetAddr::OnionService(OnionAddr::V3(OnionAddrV3{service_id, virt_port})) =&gt; (service_id, virt_port),
+            TargetAddr::OnionService(OnionAddr::V3(OnionAddrV3 {
+                service_id,
+                virt_port,
+            })) =&gt; (service_id, virt_port),
             <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::NotImplemented().into()),
         };
         <span class="kw">let </span>client_auth = <span class="self">self</span>.client_auth_keys.get(<span class="kw-2">&amp;</span>service_id);

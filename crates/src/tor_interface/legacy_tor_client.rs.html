@@ -453,6 +453,9 @@
 <a href="#451" id="451">451</a>
 <a href="#452" id="452">452</a>
 <a href="#453" id="453">453</a>
+<a href="#454" id="454">454</a>
+<a href="#455" id="455">455</a>
+<a href="#456" id="456">456</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::boxed::Box;
 <span class="kw">use </span>std::collections::BTreeMap;
@@ -813,7 +816,10 @@
         </span><span class="kw">let </span>socks_target = <span class="kw">match </span>target.clone() {
             TargetAddr::Ip(socket_addr) =&gt; socks::TargetAddr::Ip(socket_addr),
             TargetAddr::Domain(domain, port) =&gt; socks::TargetAddr::Domain(domain, port),
-            TargetAddr::OnionService(OnionAddr::V3(OnionAddrV3{service_id, virt_port})) =&gt; socks::TargetAddr::Domain(<span class="macro">format!</span>(<span class="string">"{}.onion"</span>, service_id), virt_port),
+            TargetAddr::OnionService(OnionAddr::V3(OnionAddrV3 {
+                service_id,
+                virt_port,
+            })) =&gt; socks::TargetAddr::Domain(<span class="macro">format!</span>(<span class="string">"{}.onion"</span>, service_id), virt_port),
         };
 
         <span class="comment">// readwrite stream
