@@ -16,6 +16,7 @@ use anyhow::bail;
 use serial_test::serial;
 
 // internal crates
+use cgosling::callbacks::*;
 use cgosling::context::*;
 use cgosling::crypto::*;
 use cgosling::error::*;

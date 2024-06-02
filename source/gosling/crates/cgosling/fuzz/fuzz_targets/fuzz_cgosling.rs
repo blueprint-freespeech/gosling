@@ -7,6 +7,7 @@ use libfuzzer_sys::fuzz_target;
 use libfuzzer_sys::arbitrary;
 use libfuzzer_sys::arbitrary::Arbitrary;
 
+use cgosling::callbacks::*;
 use cgosling::context::*;
 use cgosling::crypto::*;
 use cgosling::error::*;
