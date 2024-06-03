@@ -36,6 +36,7 @@ add_custom_command(
 )
 add_custom_target(gosling_c_static_lib_target
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CGOSLING_STATIC})
+add_dependencies(gosling_c_static_lib_target cgosling_target)
 
 add_library(gosling_c_static_bindings STATIC IMPORTED GLOBAL)
 add_dependencies(gosling_c_static_bindings gosling_c_header_target)
