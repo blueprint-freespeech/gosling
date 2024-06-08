@@ -230,7 +230,24 @@ pub unsafe extern "C" fn gosling_target_address_from_domain(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
+        if out_target_address.is_null() {
+            bail!("out_target_address must not be null");
+        }
+        if domain.is_null() {
+            bail!("domain must not be null");
+        }
+        if domain_length == 0 {
+            bail!("domain_length must be greater than 0");
+        }
+
+        let domain_view = std::slice::from_raw_parts(domain as *const u8, domain_length);
+        let domain_str = std::str::from_utf8(domain_view)?;
+        let target_address = TargetAddr::Domain(domain_str.to_string(), port);
+
+        let handle = get_target_addr_registry().insert(target_address);
+        *out_target_address = handle as *mut GoslingTargetAddress;
+
+        Ok(())
     })
 }
 
