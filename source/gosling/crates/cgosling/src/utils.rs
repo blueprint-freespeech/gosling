@@ -197,7 +197,18 @@ pub unsafe extern "C" fn gosling_target_address_from_ipv6(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
+        if out_target_address.is_null() {
+            bail!("out_target_address must not be null");
+        }
+
+        const FLOWINFO: u32 = 0;
+        const SCOPE_ID: u32 = 0;
+        let target_address = TargetAddr::Ip(SocketAddr::V6(SocketAddrV6::new(Ipv6Addr::new(a, b, c, d, e, f, g, h), port, FLOWINFO, SCOPE_ID)));
+
+        let handle = get_target_addr_registry().insert(target_address);
+        *out_target_address = handle as *mut GoslingTargetAddress;
+
+        Ok(())
     })
 }
 
