@@ -26,7 +26,7 @@ endif()
 #
 
 add_library(gosling_cpp_static_bindings INTERFACE)
-add_dependencies(gosling_cpp_static_bindings gosling_cpp_header_target)
+add_dependencies(gosling_cpp_static_bindings gosling_c_static_bindings_target gosling_cpp_header_target)
 
 target_include_directories(gosling_cpp_static_bindings INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(gosling_cpp_static_bindings INTERFACE gosling_c_static_bindings)
@@ -39,7 +39,7 @@ add_dependencies(gosling_cpp_static_bindings_target gosling_cpp_static_bindings)
 #
 
 add_library(gosling_cpp_shared_bindings INTERFACE)
-add_dependencies(gosling_cpp_shared_bindings gosling_cpp_header_target)
+add_dependencies(gosling_cpp_shared_bindings gosling_c_shared_bindings_target gosling_cpp_header_target)
 
 target_include_directories(gosling_cpp_shared_bindings INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(gosling_cpp_shared_bindings INTERFACE gosling_c_shared_bindings)

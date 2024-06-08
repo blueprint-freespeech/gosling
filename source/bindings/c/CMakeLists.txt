@@ -64,6 +64,7 @@ add_dependencies(gosling_c_static_bindings_target gosling_c_static_bindings)
 
 # generate cgosling.c
 set(gosling_c_shared_bindings_sources
+    ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/cgosling.json
     build_c_bindings.rs
     Cargo.toml
     cgosling.c.handlebars)
@@ -76,10 +77,13 @@ add_custom_command(
     COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo run ${CARGO_FLAGS} --bin build_c_bindings ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/cgosling.json cgosling.c.handlebars ${CMAKE_CURRENT_BINARY_DIR}/cgosling.c
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
+add_custom_target(gosling_c_shared_sources_target ALL
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/cgosling.c)
+add_dependencies(gosling_c_shared_sources_target cgosling_target)
 
 # build our shared library
 add_library(gosling_c_shared_bindings SHARED ${CMAKE_CURRENT_BINARY_DIR}/cgosling.c)
-add_dependencies(gosling_c_shared_bindings gosling_c_header_target)
+add_dependencies(gosling_c_shared_bindings gosling_c_header_target gosling_c_shared_sources_target)
 set_target_properties(gosling_c_shared_bindings
     PROPERTIES
     OUTPUT_NAME cgosling
