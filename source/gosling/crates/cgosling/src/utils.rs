@@ -1,5 +1,10 @@
 // standard
+use std::net::TcpStream;
 use std::os::raw::c_char;
+#[cfg(unix)]
+use std::os::unix::io::{IntoRawFd, RawFd};
+#[cfg(windows)]
+use std::os::windows::io::{IntoRawSocket, RawSocket};
 
 // extern
 use anyhow::bail;
@@ -83,7 +88,7 @@ pub unsafe extern "C" fn gosling_target_address_clone(
 /// Connect to a target address using the provided gosling context's tor provider.
 ///
 /// @param context: the context to use to connect with
-/// @param target_addr: the destination address
+/// @param target_address: the destination address to connect to
 /// @param circuit_token: the circuit isolation token
 /// @param error: filled on error
 #[no_mangle]
@@ -91,12 +96,44 @@ pub unsafe extern "C" fn gosling_target_address_clone(
 pub extern "C" fn gosling_context_connect(
     context: *mut GoslingContext,
     out_tcp_socket: *mut GoslingTcpSocket,
-    target_addr: *const GoslingTargetAddress,
+    target_address: *const GoslingTargetAddress,
     circuit_token: GoslingCircuitToken,
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
+        if context.is_null() {
+            bail!("context must not be null");
+        }
+        if out_tcp_socket.is_null() {
+            bail!("out_tcp_socket must not be null");
+        }
+        if target_address.is_null() {
+            bail!("target_address must not be null");
+        }
+
+        let mut context_tuple_registry = get_context_tuple_registry();
+        let context = match context_tuple_registry.get_mut(context as usize) {
+            Some(context) => context,
+            None => bail!("context is invalid"),
+        };
+
+        let target_address = match get_target_addr_registry().get(target_address as usize) {
+            Some(target_address) => target_address.clone(),
+            None => bail!("target_address is invalid"),
+        };
+
+        let onion_stream = context.0.connect(target_address, Some(circuit_token))?;
+        let tcp_stream: TcpStream = onion_stream.into();
+
+        #[cfg(any(target_os = "linux", target_os = "macos"))]
+        let tcp_socket = tcp_stream.into_raw_fd();
+        #[cfg(target_os = "windows")]
+        let tcp_socket = tcp_stream.into_raw_socket();
+
+        unsafe {
+            *out_tcp_socket = tcp_socket;
+        }
+        Ok(())
     })
 }
 
