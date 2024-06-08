@@ -1,5 +1,5 @@
 // standard
-use std::net::TcpStream;
+use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6, TcpStream};
 use std::os::raw::c_char;
 #[cfg(unix)]
 use std::os::unix::io::{IntoRawFd, RawFd};
@@ -160,7 +160,16 @@ pub unsafe extern "C" fn gosling_target_address_from_ipv4(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
+        if out_target_address.is_null() {
+            bail!("out_target_address must not be null");
+        }
+
+        let target_address = TargetAddr::Ip(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(a, b, c, d), port)));
+
+        let handle = get_target_addr_registry().insert(target_address);
+        *out_target_address = handle as *mut GoslingTargetAddress;
+
+        Ok(())
     })
 }
 
