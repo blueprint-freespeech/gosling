@@ -10,7 +10,7 @@ use std::os::windows::io::{IntoRawSocket, RawSocket};
 use anyhow::bail;
 #[cfg(feature = "impl-lib")]
 use cgosling_proc_macros::*;
-use tor_interface::tor_provider::{CircuitToken, TargetAddr};
+use tor_interface::tor_provider::{CircuitToken, OnionAddr, OnionAddrV3, TargetAddr};
 
 // internal
 use crate::context::*;
@@ -266,7 +266,23 @@ pub unsafe extern "C" fn gosling_target_address_from_v3_onion_service_id(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
+        if out_target_address.is_null() {
+            bail!("out_target_address must not be null");
+        }
+        if service_id.is_null() {
+            bail!("service_id must not be null");
+        }
+
+        let service_id = match get_v3_onion_service_id_registry().get(service_id as usize) {
+            Some(service_id) => service_id.clone(),
+            None => bail!("service_id is invalid"),
+        };
+
+        let target_address = TargetAddr::OnionService(OnionAddr::V3(OnionAddrV3::new(service_id, port)));
+        let handle = get_target_addr_registry().insert(target_address);
+        *out_target_address = handle as *mut GoslingTargetAddress;
+
+        Ok(())
     })
 }
 
