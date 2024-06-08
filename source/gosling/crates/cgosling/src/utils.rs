@@ -58,7 +58,21 @@ pub unsafe extern "C" fn gosling_target_address_clone(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
+        if out_target_address.is_null() {
+            bail!("out_target_address must not be null");
+        }
+        if target_address.is_null() {
+            bail!("target_address must not be null");
+        }
+
+        let target_address = match get_target_addr_registry().get(target_address as usize) {
+            Some(target_address) => target_address.clone(),
+            None => bail!("target_address is invalid"),
+        };
+        let handle = get_target_addr_registry().insert(target_address);
+        *out_target_address = handle as *mut GoslingTargetAddress;
+
+        Ok(())
     })
 }
 
