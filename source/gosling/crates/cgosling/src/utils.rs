@@ -1,0 +1,258 @@
+// standard
+use std::os::raw::c_char;
+
+// extern
+use anyhow::bail;
+#[cfg(feature = "impl-lib")]
+use cgosling_proc_macros::*;
+use tor_interface::tor_provider::{CircuitToken, TargetAddr};
+
+// internal
+use crate::context::*;
+use crate::crypto::*;
+use crate::error::*;
+use crate::ffi::*;
+
+/// The maximum number of bytes needed to store a target address
+/// in the format domainname:port (including null-terminator)
+/// Maximum length of a domain name is 255 bytes (per RFC 5321)
+/// Maximum length of the :port section is 6 bytes
+/// null-terminator is 1 byte
+pub const TARGET_ADDRESS_STRING_SIZE: usize = 260;
+
+/// An endpoint to connect to over tor
+pub struct GoslingTargetAddress;
+define_registry!{TargetAddr}
+
+/// A stream isolation token
+pub type GoslingCircuitToken = usize;
+
+
+//
+// Free Functions
+//
+
+/// Frees a gosling_target_address object
+///
+/// @param in_target_address: the private key to free
+#[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub extern "C" fn gosling_target_address_free(in_target_address: *mut GoslingTargetAddress) {
+    impl_registry_free!(in_target_address, TargetAddr);
+}
+
+//
+// Clone Functions
+//
+
+/// Copy method for gosling_target_address
+///
+/// @param out_target_address: returned copy
+/// @param target_address: original to copy
+/// @param error: filled on error
+#[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub unsafe extern "C" fn gosling_target_address_clone(
+    out_target_address: *mut *mut GoslingTargetAddress,
+    target_address: *const GoslingTargetAddress,
+    error: *mut *mut GoslingError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        bail!("not implemented");
+    })
+}
+
+//
+// Connect Method
+//
+
+/// Connect to a target address using the provided gosling context's tor provider.
+///
+/// @param context: the context to use to connect with
+/// @param target_addr: the destination address
+/// @param circuit_token: the circuit isolation token
+/// @param error: filled on error
+#[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub extern "C" fn gosling_context_connect(
+    context: *mut GoslingContext,
+    out_tcp_socket: *mut GoslingTcpSocket,
+    target_addr: *const GoslingTargetAddress,
+    circuit_token: GoslingCircuitToken,
+    error: *mut *mut GoslingError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        bail!("not implemented");
+    })
+}
+
+//
+// Target Address Methods
+//
+
+/// Create target address from four ipv4 octets and a port. The resulting
+/// target address is in the format a.b.c.d:port
+///
+/// @param out_target_address: returned target address
+/// @param a: first octet
+/// @param b: second octet
+/// @param c: third octet
+/// @param d: fourth octet
+/// @param port: target port
+/// @param error: filled on error
+#[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub unsafe extern "C" fn gosling_target_address_from_ipv4(
+    out_target_address: *mut *mut GoslingTargetAddress,
+    a: u8, b: u8, c: u8, d: u8,
+    port: u16,
+    error: *mut *mut GoslingError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        bail!("not implemented");
+    })
+}
+
+/// Create target address from eight ipv6 16-bit sgements and a port.
+/// The resulting target address is in the format [a:b:c:d:e:f:g:h]:port
+///
+/// @param out_target_address: returned target address
+/// @param a: first segment
+/// @param b: second segment
+/// @param c: third segment
+/// @param d: fourth segment
+/// @param e: fifth segment
+/// @param f: sixth segment
+/// @param g: seventh segment
+/// @param h: eigth segment
+/// @param port: target port
+/// @param error: filled on error
+#[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub unsafe extern "C" fn gosling_target_address_from_ipv6(
+    out_target_address: *mut *mut GoslingTargetAddress,
+    a: u16, b: u16, c: u16, d: u16,
+    e: u16, f: u16, g: u16, h: u16,
+    port: u16,
+    error: *mut *mut GoslingError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        bail!("not implemented");
+    })
+}
+
+/// Create target address from domain and port.
+/// The resulting target address is in the format domain:port
+///
+/// @param out_target_address: returned target address
+/// @param domain: the target domain
+/// @param domain_length: the number of chars in domain not including any null-terminator
+/// @param port: the target port
+/// @param error: filled on error
+#[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub unsafe extern "C" fn gosling_target_address_from_domain(
+    out_target_address: *mut *mut GoslingTargetAddress,
+    domain: *const c_char,
+    domain_length: usize,
+    port: u16,
+    error: *mut *mut GoslingError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        bail!("not implemented");
+    })
+}
+
+/// Create target address from onion service id and port.
+///
+/// @param out_target_address: returned target address
+/// @param service_id: the target onion service id
+/// @param port: the target port
+/// @param error: filled on error
+#[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub unsafe extern "C" fn gosling_target_address_from_v3_onion_service_id(
+    out_target_address: *mut *mut GoslingTargetAddress,
+    service_id: *const GoslingV3OnionServiceId,
+    port: u16,
+    error: *mut *mut GoslingError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        bail!("not implemented");
+    })
+}
+
+/// Create target address from some string representation
+///
+/// @param out_target_address: returned target address
+/// @param target_string: serialised target address
+/// @param target_string_length: the number of chars in string not including any null-terminator
+/// @param error: filled on error
+#[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub unsafe extern "C" fn gosling_target_address_from_string(
+    out_target_address: *mut *mut GoslingTargetAddress,
+    target_string: *const c_char,
+    target_string_length: usize,
+    error: *mut *mut GoslingError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        bail!("not implemented");
+    })
+}
+
+/// Write target address to null-terminated string
+///
+/// @param target_address: the target address to write
+/// @param out_string: buffer to be filled with string
+/// @param string_size: size of the out_string buffer in bytes. The maximum
+///  required size is 262 bytes.
+/// @param error: filled on error
+#[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub unsafe extern "C" fn gosling_target_address_to_string(
+    target_address: *const GoslingTargetAddress,
+    out_string: *mut c_char,
+    string_size: usize,
+    error: *mut *mut GoslingError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        bail!("not implemented");
+    })
+}
+
+//
+// Circuit Token Methods
+//
+
+/// Generate a circuit token to isolate connect calls
+///
+/// @param context: the context to use to connect with
+/// @param error: filled on error
+#[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub unsafe extern "C" fn gosling_context_generate_circuit_token(
+    context: *mut GoslingContext,
+    error: *mut *mut GoslingError,
+) -> GoslingCircuitToken {
+    translate_failures(!0usize, error, || -> anyhow::Result<CircuitToken> {
+        bail!("not implemented");
+    })
+}
+
+/// Release a context's circuit token.
+///
+/// @param context: the context to use to connect with
+/// @param circuit_token: circuit token to destroy
+/// @param error: filled on error
+#[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub unsafe extern "C" fn gosling_context_release_circuit_token(
+    context: *mut GoslingContext,
+    circuit_token: GoslingCircuitToken,
+    error: *mut *mut GoslingError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        bail!("not implemented");
+    })
+}

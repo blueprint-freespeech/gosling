@@ -11,6 +11,7 @@ use crate::context::*;
 use crate::crypto::*;
 use crate::error::*;
 use crate::tor_provider::*;
+use crate::utils::*;
 
 // tags used for types we put in ObjectRegistrys
 pub(crate) const ERROR_TAG: usize = 0x1;
@@ -20,16 +21,17 @@ pub(crate) const X25519_PUBLIC_KEY_TAG: usize = 0x4;
 pub(crate) const V3_ONION_SERVICE_ID_TAG: usize = 0x5;
 pub(crate) const TOR_PROVIDER_TAG: usize = 0x6;
 pub(crate) const CONTEXT_TUPLE_TAG: usize = 0x7;
+pub(crate) const TARGET_ADDR_TAG: usize = 0x8;
 
 macro_rules! define_registry {
     ($type:ty) => {
         paste::paste! {
-            // ensure tag fits in 3 bits
-            static_assertions::const_assert!([<$type:snake:upper _TAG>] <= 0b111);
+            // ensure tag fits in 4 bits
+            static_assertions::const_assert!([<$type:snake:upper _TAG>] <= 0b1111);
 
-            static [<$type:snake:upper _REGISTRY>]: std::sync::Mutex<crate::object_registry::ObjectRegistry<$type, { [<$type:snake:upper _TAG>] }, 3>> = std::sync::Mutex::new(crate::object_registry::ObjectRegistry::new());
+            static [<$type:snake:upper _REGISTRY>]: std::sync::Mutex<crate::object_registry::ObjectRegistry<$type, { [<$type:snake:upper _TAG>] }, 4>> = std::sync::Mutex::new(crate::object_registry::ObjectRegistry::new());
 
-            pub(crate) fn [<get_ $type:snake _registry>]<'a>() -> std::sync::MutexGuard<'a, crate::object_registry::ObjectRegistry<$type, { [<$type:snake:upper _TAG>] }, 3>> {
+            pub(crate) fn [<get_ $type:snake _registry>]<'a>() -> std::sync::MutexGuard<'a, crate::object_registry::ObjectRegistry<$type, { [<$type:snake:upper _TAG>] }, 4>> {
                 match [<$type:snake:upper _REGISTRY>].lock() {
                     Ok(registry) => registry,
                     Err(_) => unreachable!("another thread panicked while holding this registry's mutex"),
@@ -113,8 +115,8 @@ pub extern "C" fn gosling_library_free(in_library: *mut GoslingLibrary) {
         clear_x25519_public_key_registry();
         clear_v3_onion_service_id_registry();
         clear_tor_provider_registry();
-
         clear_context_tuple_registry();
+        clear_target_addr_registry();
 
         GOSLING_LIBRARY_INITED.store(false, Ordering::Relaxed);
     }

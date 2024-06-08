@@ -19,7 +19,8 @@ set(cgosling_sources
     src/ffi.rs
     src/lib.rs
     src/object_registry.rs
-    src/tor_provider.rs)
+    src/tor_provider.rs
+    src/utils.rs)
 
 # The name of the static library built by rust
 set(CGOSLING_SRC_STATIC "${CMAKE_STATIC_LIBRARY_PREFIX}cgosling${CMAKE_STATIC_LIBRARY_SUFFIX}" CACHE STRING "cgosling static library filename" FORCE)

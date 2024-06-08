@@ -63,6 +63,7 @@ handlebars_helper!(returnTypeToJavaType: |typename: String| {
         "size_t" => "long".to_string(),
         "const char*" => "String".to_string(),
         "gosling_handshake_handle_t" => "long".to_string(),
+        "gosling_circuit_token_t" => "long".to_string(),
         other => panic!("unhandled typename: {}", other),
     }
 });
@@ -73,7 +74,7 @@ handlebars_helper!(inputParamsToJavaParams: |params: Vec<Param>| {
     for param in params {
         let java_typename = match param.typename.as_ref() {
             "bool" => "boolean".to_string(),
-            "uint8_t" => "byte".to_string(),
+            "uint8_t" => "short".to_string(),
             "uint16_t" => "int".to_string(),
             "uint32_t" => "long".to_string(),
             "size_t" => {
@@ -93,6 +94,8 @@ handlebars_helper!(inputParamsToJavaParams: |params: Vec<Param>| {
             "uint8_t*" => "byte[]".to_string(),
             "gosling_handshake_handle_t" => "long".to_string(),
             "gosling_tcp_socket_t" => "java.net.Socket".to_string(),
+            "gosling_tcp_socket_t*" => "Out<java.net.Socket>".to_string(),
+            "gosling_circuit_token_t" => "long".to_string(),
             other => {
                 let other = if other.starts_with("const ") {
                     &other[6..]
@@ -124,7 +127,7 @@ handlebars_helper!(returnTypeToJNIType: |typename: String| {
         "void" => "void".to_string(),
         "bool" => "jboolean".to_string(),
         "const char*" => "jstring".to_string(),
-        "gosling_handshake_handle_t" => "jlong".to_string(),
+        "gosling_handshake_handle_t" | "gosling_circuit_token_t" => "jlong".to_string(),
         other => panic!("unhandled typename: {}", other),
     }
 });
@@ -136,6 +139,7 @@ handlebars_helper!(inputParamsToJNIParams: |params: Vec<Param>| {
     jni_args.push("jclass".to_string());
     for param in params {
         let jni_typename = match param.typename.as_ref() {
+            "uint8_t" => "jshort".to_string(),
             "uint16_t" => "jint".to_string(),
             "uint32_t" => "jlong".to_string(),
             "size_t" => {
@@ -151,7 +155,7 @@ handlebars_helper!(inputParamsToJNIParams: |params: Vec<Param>| {
             }
             "char*" => "jobject".to_string(),
             "const char*" => "jstring".to_string(),
-            "gosling_handshake_handle_t" => "jlong".to_string(),
+            "gosling_handshake_handle_t" | "gosling_circuit_token_t" => "jlong".to_string(),
             other => {
                 let other = if other.starts_with("const ") {
                     &other[6..]
@@ -191,6 +195,8 @@ handlebars_helper!(marshallJNIParams: |function_name: String, params: Vec<Param>
         let typename: &str = param.typename.as_ref();
 
         match typename {
+            // TODO: ensure the passed in values are in valid range for native type
+            "uint8_t" => cpp_src!("const uint8_t {name}_native = static_cast<uint8_t>({name});"),
             "uint16_t" => cpp_src!("const uint16_t {name}_native = static_cast<uint16_t>({name});"),
             "const char*" => {
                 cpp_src!("const char* {name}_native = ({name} ? env->GetStringUTFChars({name}, nullptr) : nullptr);");
@@ -222,6 +228,11 @@ handlebars_helper!(marshallJNIParams: |function_name: String, params: Vec<Param>
                 }
             },
             "gosling_handshake_handle_t" => cpp_src!("const gosling_handshake_handle_t {name}_native = static_cast<gosling_handshake_handle_t>({name});"),
+            "gosling_circuit_token_t" => cpp_src!("const gosling_circuit_token_t {name}_native = static_cast<gosling_circuit_token_t>({name});"),
+            "gosling_tcp_socket_t*" => {
+                cpp_src!("gosling_tcp_socket_t {name}_dest = 0;");
+                cpp_src!("gosling_tcp_socket_t* {name}_native = &{name}_dest;");
+            },
             _ => {
                 let const_gosling_pointer_pattern = Regex::new(r"^const gosling_\w+\*$").unwrap();
                 let gosling_pointer_pattern = Regex::new(r"^gosling_\w+\*$").unwrap();
@@ -314,12 +325,18 @@ handlebars_helper!(marshallNativeResults: |return_type: String, params: Vec<Para
         let typename: &str = param.typename.as_ref();
 
         match typename {
-            "uint16_t" | "size_t" | "gosling_handshake_handle_t" => (),
+            "uint8_t" | "uint16_t" | "size_t" | "gosling_handshake_handle_t" | "gosling_circuit_token_t" => (),
             "const char*" => {
                 cpp_src!("env->ReleaseStringUTFChars({name}, {name}_native);");
             },
             "char*" => {
                 cpp_src!("g_jni_glue->set_out_jstring(env, {name}, {name}_native);");
+            },
+            "gosling_tcp_socket_t*" => {
+                cpp_src!("if ({name}_dest != 0) {{");
+                cpp_src!("    jobject {name}_jni = g_jni_glue->tcp_stream_to_java_socket(env, {name}_dest);");
+                cpp_src!("    g_jni_glue->set_out_jobject(env, {name}, {name}_jni);");
+                cpp_src!("}}");
             }
             _ => {
                 let const_gosling_pointer_pattern = Regex::new(r"^const gosling_\w+\*$").unwrap();
@@ -349,9 +366,9 @@ handlebars_helper!(marshallNativeResults: |return_type: String, params: Vec<Para
         marshall_lines.push("".to_string());
         match return_type.as_ref() {
             "bool" => cpp_src!("return result_native ? JNI_TRUE : JNI_FALSE;"),
-            "gosling_handshake_handle_t" => cpp_src!("return static_cast<jlong>(result_native);"),
+            "gosling_handshake_handle_t" | "gosling_circuit_token_t" => cpp_src!("return static_cast<jlong>(result_native);"),
             "const char*" => cpp_src!("return env->NewStringUTF(result_native);"),
-            _ => println!("unhandled return => {return_type}"),
+            _ => panic!("unhandled return => {return_type}"),
         }
     }
 
