@@ -13,6 +13,7 @@ use cgosling::crypto::*;
 use cgosling::error::*;
 use cgosling::ffi::*;
 use cgosling::tor_provider::*;
+use cgosling::utils::*;
 
 #[derive(Arbitrary, Debug)]
 enum Handle {
@@ -69,6 +70,9 @@ enum Function {
     },
     V3OnionServiceIdFree{
         service_id: Handle,
+    },
+    TargetAddressFree{
+        target_address: Handle,
     },
     ContextFree{
         context: Handle,
@@ -364,6 +368,63 @@ enum Function {
         callback: Callback,
         out_error: PHandle,
     },
+    // Context Utility Functions
+    ContextGenerateCircuitToken{
+        context: Handle,
+        out_error: PHandle,
+    },
+    ContextReleaseCircuitToken{
+        context: Handle,
+        circuit_token: Primitive<usize>,
+        out_error: PHandle,
+    },
+    // Target Function
+    TargetAddressClone{
+        out_target_address: PHandle,
+        target_address: Handle,
+        out_error: PHandle,
+    },
+    TargetAddressFromIpv4{
+        out_target_address: PHandle,
+        a: Primitive<u8>,
+        b: Primitive<u8>,
+        c: Primitive<u8>,
+        d: Primitive<u8>,
+        port: Primitive<u16>,
+        out_error: PHandle,
+    },
+    TargetAddressFromIpv6{
+        out_target_address: PHandle,
+        a: Primitive<u16>,
+        b: Primitive<u16>,
+        c: Primitive<u16>,
+        d: Primitive<u16>,
+        e: Primitive<u16>,
+        f: Primitive<u16>,
+        g: Primitive<u16>,
+        h: Primitive<u16>,
+        port: Primitive<u16>,
+        out_error: PHandle,
+    },
+    TargetAddressFromDomain{
+        out_target_address: PHandle,
+        domain: Buffer<c_char>,
+        domain_length: Primitive<usize>,
+        port: Primitive<u16>,
+        out_error: PHandle,
+    },
+    TargetAddressFromV3OnionServiceId{
+        out_target_address: PHandle,
+        service_id: Handle,
+        port: Primitive<u16>,
+        out_error: PHandle,
+    },
+    TargetAddressFromString{
+        out_target_address: PHandle,
+        target_address: Buffer<c_char>,
+        target_address_length: Primitive<usize>,
+        out_error: PHandle,
+    },
 }
 
 fn handle_as_pointer<T>(value: Handle, handles: &Vec<*mut T>) -> *mut T {
@@ -571,6 +632,7 @@ fuzz_target!(|data: Data| {
     let mut tor_providers: Vec<*mut GoslingTorProvider> = Default::default();
     let mut identity_handshakes: Vec<usize> = Default::default();
     let mut endpoint_handshakes: Vec<usize> = Default::default();
+    let mut target_addresses: Vec<*mut GoslingTargetAddress> = Default::default();
 
     for function in data.functions {
         match function {
@@ -1084,6 +1146,33 @@ fuzz_target!(|data: Data| {
             },
             Function::ContextSetEndpointServerHandshakeFailedCallback{context, callback, out_error} => {
                 impl_set_callback!(context, callback, out_error, contexts, errors, gosling_context_set_endpoint_server_handshake_failed_callback, endpoint_server_handshake_failed);
+            },
+            Function::TargetAddressFree{..} => {
+
+            },
+            Function::TargetAddressClone{..} => {
+
+            },
+            Function::ContextGenerateCircuitToken{..} => {
+
+            },
+            Function::ContextReleaseCircuitToken{..} => {
+
+            },
+            Function::TargetAddressFromIpv4{..} => {
+
+            },
+            Function::TargetAddressFromIpv6{..} => {
+
+            },
+            Function::TargetAddressFromDomain{..} => {
+
+            },
+            Function::TargetAddressFromV3OnionServiceId{..} => {
+
+            },
+            Function::TargetAddressFromString{..} => {
+
             },
         }
     }
