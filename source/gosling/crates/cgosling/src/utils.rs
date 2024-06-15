@@ -328,20 +328,52 @@ pub unsafe extern "C" fn gosling_target_address_from_string(
 /// Write target address to null-terminated string
 ///
 /// @param target_address: the target address to write
-/// @param out_string: buffer to be filled with string
-/// @param string_size: size of the out_string buffer in bytes. The maximum
+/// @param out_target_address_string: buffer to be filled with string
+/// @param target_address_string_size: size of the out_string buffer in bytes. The maximum
 ///  required size is 262 bytes.
 /// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_target_address_to_string(
     target_address: *const GoslingTargetAddress,
-    out_string: *mut c_char,
-    string_size: usize,
+    out_target_address_string: *mut c_char,
+    target_address_string_size: usize,
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
+        if target_address.is_null() {
+            bail!("target_address must not be null");
+        }
+        if out_target_address_string.is_null() {
+            bail!("out_string must not be null");
+        }
+
+        let target_address_string = match get_target_addr_registry().get(target_address as usize) {
+            Some(target_address) => target_address.to_string(),
+            None => bail!("target_address is invalid"),
+        };
+
+        let target_address_string_len = target_address_string.len();
+        if target_address_string_len >= target_address_string_size {
+            bail!("string_size must be at least '{}', received '{}'", target_address_string_len, target_address_string_size);
+        }
+
+        unsafe {
+            // copy target_address_string into output buffer
+            let target_address_string_view = std::slice::from_raw_parts_mut(
+                out_target_address_string as *mut u8,
+                target_address_string_size,
+            );
+            std::ptr::copy(
+                target_address_string.as_ptr(),
+                target_address_string_view.as_mut_ptr(),
+                target_address_string_len,
+            );
+            // add final null-terminator
+            target_address_string_view[target_address_string_len] = 0u8;
+        }
+
+        Ok(())
     })
 }
 

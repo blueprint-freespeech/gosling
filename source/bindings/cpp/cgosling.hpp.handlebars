@@ -1,6 +1,7 @@
 #pragma once
 
 // c++
+#include <cstring>
 #include <memory>
 #include <ostream>
 #include <stdexcept>
@@ -88,13 +89,13 @@ inline std::ostream &operator<<(std::ostream &stream, {{functionToObjectParam th
     char buffer[{{toStringFunctionToSizeConstant this}}];
     ::{{this.name}}(obj, buffer, sizeof(buffer), gosling::throw_on_error());
 
-    return stream.write(buffer, sizeof(buffer) - 1);
+    return stream.write(buffer, std::strlen(buffer));
 }
 inline std::string to_string({{functionToObjectParam this}}) {
     char buffer[{{toStringFunctionToSizeConstant this}}];
     ::{{this.name}}(obj, buffer, sizeof(buffer), gosling::throw_on_error());
 
-    return std::string(buffer, sizeof(buffer) - 1);
+    return std::string(buffer, std::strlen(buffer));
 }
     {{/if}}
 {{/each}}
