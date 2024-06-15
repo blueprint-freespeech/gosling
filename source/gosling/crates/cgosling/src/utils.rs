@@ -392,7 +392,16 @@ pub unsafe extern "C" fn gosling_context_generate_circuit_token(
     error: *mut *mut GoslingError,
 ) -> GoslingCircuitToken {
     translate_failures(!0usize, error, || -> anyhow::Result<CircuitToken> {
-        bail!("not implemented");
+        if context.is_null() {
+            bail!("context must not be null");
+        }
+
+        let mut context_tuple_registry = get_context_tuple_registry();
+        let token = match context_tuple_registry.get_mut(context as usize) {
+            Some(context) => context.0.generate_circuit_token(),
+            None => bail!("context is invalid"),
+        };
+        Ok(token)
     })
 }
 
@@ -409,6 +418,15 @@ pub unsafe extern "C" fn gosling_context_release_circuit_token(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
+        if context.is_null() {
+            bail!("context must not be null");
+        }
+
+        let mut context_tuple_registry = get_context_tuple_registry();
+        match context_tuple_registry.get_mut(context as usize) {
+            Some(context) => context.0.release_circuit_token(circuit_token),
+            None => bail!("context is invalid"),
+        };
+        Ok(())
     })
 }
