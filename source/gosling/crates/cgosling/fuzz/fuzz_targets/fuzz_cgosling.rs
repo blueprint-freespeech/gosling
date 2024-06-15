@@ -378,7 +378,7 @@ enum Function {
         circuit_token: Primitive<usize>,
         out_error: PHandle,
     },
-    // Target Function
+    // TargetAddress Functions
     TargetAddressClone{
         out_target_address: PHandle,
         target_address: Handle,
@@ -386,37 +386,37 @@ enum Function {
     },
     TargetAddressFromIpv4{
         out_target_address: PHandle,
-        a: Primitive<u8>,
-        b: Primitive<u8>,
-        c: Primitive<u8>,
-        d: Primitive<u8>,
-        port: Primitive<u16>,
+        a: u8,
+        b: u8,
+        c: u8,
+        d: u8,
+        port: u16,
         out_error: PHandle,
     },
     TargetAddressFromIpv6{
         out_target_address: PHandle,
-        a: Primitive<u16>,
-        b: Primitive<u16>,
-        c: Primitive<u16>,
-        d: Primitive<u16>,
-        e: Primitive<u16>,
-        f: Primitive<u16>,
-        g: Primitive<u16>,
-        h: Primitive<u16>,
-        port: Primitive<u16>,
+        a: u16,
+        b: u16,
+        c: u16,
+        d: u16,
+        e: u16,
+        f: u16,
+        g: u16,
+        h: u16,
+        port: u16,
         out_error: PHandle,
     },
     TargetAddressFromDomain{
         out_target_address: PHandle,
         domain: Buffer<c_char>,
         domain_length: Primitive<usize>,
-        port: Primitive<u16>,
+        port: u16,
         out_error: PHandle,
     },
     TargetAddressFromV3OnionServiceId{
         out_target_address: PHandle,
         service_id: Handle,
-        port: Primitive<u16>,
+        port: u16,
         out_error: PHandle,
     },
     TargetAddressFromString{
@@ -467,6 +467,23 @@ fn phandle_to_out_pointer<T>(value: PHandle, out_pointer: *mut *mut T) -> *mut *
     match value {
         PHandle::Null => ptr::null_mut(),
         PHandle::Valid => out_pointer,
+    }
+}
+
+fn primitive_to_value<T: Default + std::cmp::PartialEq>(value: Primitive<T>, values: &mut Vec<T>) -> T where usize: From<T>{
+    match value {
+        Primitive::Valid(value) => if !values.is_empty() {
+            let index: usize = value.into();
+            let index = index % values.len();
+            values.remove(index)
+        } else {
+            Default::default()
+        },
+        Primitive::Invalid(value) => if !values.contains(&value) {
+            value
+        } else {
+            Default::default()
+        }
     }
 }
 
@@ -633,6 +650,7 @@ fuzz_target!(|data: Data| {
     let mut identity_handshakes: Vec<usize> = Default::default();
     let mut endpoint_handshakes: Vec<usize> = Default::default();
     let mut target_addresses: Vec<*mut GoslingTargetAddress> = Default::default();
+    let mut circuit_tokens: Vec<GoslingCircuitToken> = Default::default();
 
     for function in data.functions {
         match function {
@@ -1147,32 +1165,121 @@ fuzz_target!(|data: Data| {
             Function::ContextSetEndpointServerHandshakeFailedCallback{context, callback, out_error} => {
                 impl_set_callback!(context, callback, out_error, contexts, errors, gosling_context_set_endpoint_server_handshake_failed_callback, endpoint_server_handshake_failed);
             },
-            Function::TargetAddressFree{..} => {
+            Function::ContextGenerateCircuitToken{context, out_error} => {
+                let context = handle_as_pointer(context, &contexts);
+                let mut error: *mut GoslingError = ptr::null_mut();
+                let out_error = phandle_to_out_pointer(out_error, &mut error);
 
+                let circuit_token = unsafe { gosling_context_generate_circuit_token(context, out_error) };
+                if !error.is_null() {
+                    errors.push(error);
+                } else {
+                    circuit_tokens.push(circuit_token);
+                }
             },
-            Function::TargetAddressClone{..} => {
+            Function::ContextReleaseCircuitToken{context, circuit_token, out_error} => {
+                let context = handle_as_pointer(context, &contexts);
+                let mut error: *mut GoslingError = ptr::null_mut();
+                let out_error = phandle_to_out_pointer(out_error, &mut error);
 
+                let circuit_token = primitive_to_value(circuit_token, &mut circuit_tokens);
+                unsafe { gosling_context_release_circuit_token(context, circuit_token, out_error) };
+                if !error.is_null() {
+                    errors.push(error);
+                }
             },
-            Function::ContextGenerateCircuitToken{..} => {
-
+            Function::TargetAddressFree{target_address} => {
+                let target_address = handle_to_pointer(target_address, &mut target_addresses);
+                gosling_target_address_free(target_address);
             },
-            Function::ContextReleaseCircuitToken{..} => {
-
+            Function::TargetAddressClone{out_target_address, target_address, out_error} => {
+                let mut dest: *mut GoslingTargetAddress = ptr::null_mut();
+                let out_target_address = phandle_to_out_pointer(out_target_address, &mut dest);
+                let target_address = handle_as_pointer(target_address, &target_addresses);
+                let mut error: *mut GoslingError = ptr::null_mut();
+                let out_error = phandle_to_out_pointer(out_error, &mut error);
+                unsafe { gosling_target_address_clone(out_target_address, target_address, out_error) };
+                if !dest.is_null() {
+                    target_addresses.push(dest);
+                }
+                if !error.is_null() {
+                    errors.push(error);
+                }
             },
-            Function::TargetAddressFromIpv4{..} => {
+            Function::TargetAddressFromIpv4{out_target_address, a, b, c, d, port, out_error} => {
+                let mut dest: *mut GoslingTargetAddress = ptr::null_mut();
+                let out_target_address = phandle_to_out_pointer(out_target_address, &mut dest);
+                let mut error: *mut GoslingError = ptr::null_mut();
+                let out_error = phandle_to_out_pointer(out_error, &mut error);
 
+                unsafe { gosling_target_address_from_ipv4(out_target_address, a, b, c, d, port, out_error) };
+                if !dest.is_null() {
+                    target_addresses.push(dest);
+                }
+                if !error.is_null() {
+                    errors.push(error);
+                }
             },
-            Function::TargetAddressFromIpv6{..} => {
+            Function::TargetAddressFromIpv6{out_target_address, a, b, c, d, e, f, g, h, port, out_error} => {
+                let mut dest: *mut GoslingTargetAddress = ptr::null_mut();
+                let out_target_address = phandle_to_out_pointer(out_target_address, &mut dest);
+                let mut error: *mut GoslingError = ptr::null_mut();
+                let out_error = phandle_to_out_pointer(out_error, &mut error);
 
+                unsafe { gosling_target_address_from_ipv6(out_target_address, a, b, c, d, e, f, g, h, port, out_error) };
+                if !dest.is_null() {
+                    target_addresses.push(dest);
+                }
+                if !error.is_null() {
+                    errors.push(error);
+                }
             },
-            Function::TargetAddressFromDomain{..} => {
+            Function::TargetAddressFromDomain{out_target_address, domain, domain_length, port, out_error} => {
+                let mut dest: *mut GoslingTargetAddress = ptr::null_mut();
+                let out_target_address = phandle_to_out_pointer(out_target_address, &mut dest);
+                let domain_length = buffer_to_size(&domain, &domain_length);
+                let domain = buffer_as_pointer(&domain);
+                let mut error: *mut GoslingError = ptr::null_mut();
+                let out_error = phandle_to_out_pointer(out_error, &mut error);
 
+                unsafe { gosling_target_address_from_domain(out_target_address, domain, domain_length, port, out_error) };
+                if !dest.is_null() {
+                    target_addresses.push(dest);
+                }
+                if !error.is_null() {
+                    errors.push(error);
+                }
             },
-            Function::TargetAddressFromV3OnionServiceId{..} => {
+            Function::TargetAddressFromV3OnionServiceId{out_target_address, service_id, port, out_error} => {
+                let mut dest: *mut GoslingTargetAddress = ptr::null_mut();
+                let out_target_address = phandle_to_out_pointer(out_target_address, &mut dest);
+                let service_id = handle_as_pointer(service_id, &v3_onion_service_ids);
+                let mut error: *mut GoslingError = ptr::null_mut();
+                let out_error = phandle_to_out_pointer(out_error, &mut error);
 
+                unsafe { gosling_target_address_from_v3_onion_service_id(out_target_address, service_id, port, out_error) };
+                if !dest.is_null() {
+                    target_addresses.push(dest);
+                }
+                if !error.is_null() {
+                    errors.push(error);
+                }
             },
-            Function::TargetAddressFromString{..} => {
+            Function::TargetAddressFromString{out_target_address, target_address, target_address_length, out_error} => {
+                let mut dest: *mut GoslingTargetAddress = ptr::null_mut();
+                let out_target_address = phandle_to_out_pointer(out_target_address, &mut dest);
+                let target_address_length = buffer_to_size(&target_address, &target_address_length);
+                let target_address = buffer_as_pointer(&target_address);
+                let mut error: *mut GoslingError = ptr::null_mut();
+                let out_error = phandle_to_out_pointer(out_error, &mut error);
 
+                unsafe { gosling_target_address_from_string(out_target_address, target_address, target_address_length, out_error) };
+                if !dest.is_null() {
+                    target_addresses.push(dest);
+                }
+                if !error.is_null() {
+                    errors.push(error);
+                }
             },
         }
     }
