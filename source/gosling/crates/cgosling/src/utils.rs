@@ -1,16 +1,18 @@
 // standard
+use std::convert::TryFrom;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6, TcpStream};
 use std::os::raw::c_char;
 #[cfg(unix)]
-use std::os::unix::io::{IntoRawFd, RawFd};
+use std::os::unix::io::{IntoRawFd};
 #[cfg(windows)]
-use std::os::windows::io::{IntoRawSocket, RawSocket};
+use std::os::windows::io::{IntoRawSocket};
+use std::str::FromStr;
 
 // extern
 use anyhow::bail;
 #[cfg(feature = "impl-lib")]
 use cgosling_proc_macros::*;
-use tor_interface::tor_provider::{CircuitToken, OnionAddr, OnionAddrV3, TargetAddr};
+use tor_interface::tor_provider::{CircuitToken, DomainAddr, OnionAddr, OnionAddrV3, TargetAddr};
 
 // internal
 use crate::context::*;
@@ -20,7 +22,8 @@ use crate::ffi::*;
 
 /// The maximum number of bytes needed to store a target address
 /// in the format domainname:port (including null-terminator)
-/// Maximum length of a domain name is 255 bytes (per RFC 5321)
+/// Maximum length of a human-readbale domain name is 253 bytes (per RFC 1035)
+/// see: https://stackoverflow.com/a/32294443
 /// Maximum length of the :port section is 6 bytes
 /// null-terminator is 1 byte
 pub const TARGET_ADDRESS_STRING_SIZE: usize = 260;
@@ -242,8 +245,8 @@ pub unsafe extern "C" fn gosling_target_address_from_domain(
 
         let domain_view = std::slice::from_raw_parts(domain as *const u8, domain_length);
         let domain_str = std::str::from_utf8(domain_view)?;
-        let target_address = TargetAddr::Domain(domain_str.to_string(), port);
 
+        let target_address = TargetAddr::Domain(DomainAddr::try_from((domain_str.to_string(), port))?);
         let handle = get_target_addr_registry().insert(target_address);
         *out_target_address = handle as *mut GoslingTargetAddress;
 
@@ -289,19 +292,36 @@ pub unsafe extern "C" fn gosling_target_address_from_v3_onion_service_id(
 /// Create target address from some string representation
 ///
 /// @param out_target_address: returned target address
-/// @param target_string: serialised target address
-/// @param target_string_length: the number of chars in string not including any null-terminator
+/// @param target_address: serialised target address
+/// @param target_address_length: the number of chars in string not including any null-terminator
 /// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_target_address_from_string(
     out_target_address: *mut *mut GoslingTargetAddress,
-    target_string: *const c_char,
-    target_string_length: usize,
+    target_address: *const c_char,
+    target_address_length: usize,
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
+        if out_target_address.is_null() {
+            bail!("out_target_address must not be null");
+        }
+        if target_address.is_null() {
+            bail!("target_address must not be null");
+        }
+        if target_address_length == 0 {
+            bail!("target_address_length must be greater than 0");
+        }
+
+        let target_address_view = std::slice::from_raw_parts(target_address as *const u8, target_address_length);
+        let target_address_str = std::str::from_utf8(target_address_view)?;
+
+        let target_address = TargetAddr::from_str(target_address_str)?;
+        let handle = get_target_addr_registry().insert(target_address);
+        *out_target_address = handle as *mut GoslingTargetAddress;
+
+        Ok(())
     })
 }
 
