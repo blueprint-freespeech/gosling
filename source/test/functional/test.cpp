@@ -549,10 +549,67 @@ void gosling_cpp_demo_impl(
   alice_read_buffer.pop_back();
 
   cout << "--- alice received '" << alice_read_buffer << "'" << endl;
+
+  if constexpr (TP != mock_tor_provider) {
+
+    cout << "--- alice generates token" << endl;
+
+    const auto circuit_token = ::gosling_context_generate_circuit_token(alice_context.get(), throw_on_error());
+
+    // connect to example.com
+    unique_ptr<gosling_target_address> domain_target_address;
+    const std::string domain("www.example.com");
+
+    REQUIRE_NOTHROW(::gosling_target_address_from_domain(out(domain_target_address), domain.c_str(), domain.size(), 80, throw_on_error()));
+
+    cout << "--- alice connecting to '" << domain_target_address.get() << "'" << endl;
+
+    gosling_tcp_socket_t example_socket = 0;
+    REQUIRE_NOTHROW(::gosling_context_connect(alice_context.get(), &example_socket, domain_target_address.get(), circuit_token, throw_on_error()));
+    REQUIRE(example_socket != 0);
+
+    // google dns ipv4
+    unique_ptr<gosling_target_address> ipv4_target_address;
+    REQUIRE_NOTHROW(::gosling_target_address_from_ipv4(out(ipv4_target_address), 8,8,8,8,53, throw_on_error()));
+
+    cout << "--- alice connecting to '" << ipv4_target_address.get() << "'" << endl;
+
+    gosling_tcp_socket_t ipv4_socket = 0;
+    REQUIRE_NOTHROW(::gosling_context_connect(alice_context.get(), &ipv4_socket, ipv4_target_address.get(), circuit_token, throw_on_error()));
+    REQUIRE(ipv4_socket != 0);
+
+    // google dns ipv6
+    unique_ptr<gosling_target_address> ipv6_target_address;
+    REQUIRE_NOTHROW(::gosling_target_address_from_ipv6(out(ipv6_target_address), 0x2001,0x4860,0x4860,0,0,0,0,0x8888,53, throw_on_error()));
+
+    cout << "--- alice connecting to '" << ipv6_target_address.get() << "'" << endl;
+
+    gosling_tcp_socket_t ipv6_socket = 0;
+    REQUIRE_NOTHROW(::gosling_context_connect(alice_context.get(), &ipv6_socket, ipv6_target_address.get(), circuit_token, throw_on_error()));
+    REQUIRE(ipv6_socket != 0);
+
+    // riseup onion service
+    unique_ptr<gosling_v3_onion_service_id> riseup_service_id;
+    REQUIRE_NOTHROW(::gosling_v3_onion_service_id_from_string(out(riseup_service_id), "vww6ybal4bd7szmgncyruucpgfkqahzddi37ktceo3ah7ngmcopnpyyd", V3_ONION_SERVICE_ID_STRING_LENGTH, throw_on_error()));
+
+    unique_ptr<gosling_target_address> onion_service_address;
+    REQUIRE_NOTHROW(::gosling_target_address_from_v3_onion_service_id(out(onion_service_address), riseup_service_id.get(), 80, throw_on_error()));
+
+    cout << "--- alice connecting to '" << onion_service_address.get() << "'" << endl;
+
+    gosling_tcp_socket_t onion_service_socket = 0;
+    REQUIRE_NOTHROW(::gosling_context_connect(alice_context.get(), &onion_service_socket, onion_service_address.get(), circuit_token, throw_on_error()));
+    REQUIRE(onion_service_socket != 0);
+  }
 }
 
 #ifdef GOSLING_HAVE_MOCK_TOR_PROVIDER
 void gosling_cpp_demo_mock_tor_provider() {
+
+  cout << "#" << endl;
+  cout << "# Starting gosling_cpp_demo_mock_tor_provider()" << endl;
+  cout << "#" << endl;
+
   unique_ptr<gosling_tor_provider> alice_tor_provider;
   unique_ptr<gosling_tor_provider> pat_tor_provider;
 
@@ -570,6 +627,10 @@ void gosling_cpp_demo_mock_tor_provider() {
 
 #ifdef GOSLING_HAVE_LEGACY_TOR_PROVIDER
 void gosling_cpp_demo_legacy_tor_provider() {
+
+  cout << "#" << endl;
+  cout << "# Starting gosling_cpp_demo_legacy_tor_provider()" << endl;
+  cout << "#" << endl;
 
   const std::filesystem::path tmp = std::filesystem::temp_directory_path();
   cout << "tmp: " << tmp.string() << endl;
