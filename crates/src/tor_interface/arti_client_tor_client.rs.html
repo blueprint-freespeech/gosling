@@ -565,6 +565,8 @@
 <a href="#563" id="563">563</a>
 <a href="#564" id="564">564</a>
 <a href="#565" id="565">565</a>
+<a href="#566" id="566">566</a>
+<a href="#567" id="567">567</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::io::ErrorKind;
 <span class="kw">use </span>std::net::SocketAddr;
@@ -888,7 +890,9 @@
         <span class="comment">// connect to onion service
         </span><span class="kw">let </span>arti_target = <span class="kw">match </span>target.clone() {
             TargetAddr::Ip(socket_addr) =&gt; socket_addr.into_tor_addr_dangerously(),
-            TargetAddr::Domain(domain, port) =&gt; (domain, port).into_tor_addr(),
+            TargetAddr::Domain(domain_addr) =&gt; {
+                (domain_addr.domain(), domain_addr.port()).into_tor_addr()
+            }
             TargetAddr::OnionService(OnionAddr::V3(OnionAddrV3 {
                 service_id,
                 virt_port,

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Error","OnionAddr","TargetAddr","TorEvent"],"struct":["OnionAddrV3","OnionListener","OnionStream"],"trait":["OnionListenerImpl","TorProvider"],"type":["CircuitToken"]};
+window.SIDEBAR_ITEMS = {"enum":["DomainAddrParseError","Error","OnionAddr","OnionAddrParseError","TargetAddr","TargetAddrParseError","TorEvent"],"struct":["DomainAddr","OnionAddrV3","OnionListener","OnionStream"],"trait":["OnionListenerImpl","TorProvider"],"type":["CircuitToken"]};

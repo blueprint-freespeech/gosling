@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['v3_5fonion_5fservice_5fid_5fstring_5flength_283',['V3_ONION_SERVICE_ID_STRING_LENGTH',['../cgosling_8h.html#a0aaa1394f5ee32c3fbafe214aa8c8bac',1,'cgosling.h']]],
-  ['v3_5fonion_5fservice_5fid_5fstring_5fsize_284',['V3_ONION_SERVICE_ID_STRING_SIZE',['../cgosling_8h.html#a6abedca208342a4db35779303bfcd519',1,'cgosling.h']]]
+  ['target_5faddress_5fstring_5fsize_314',['TARGET_ADDRESS_STRING_SIZE',['../cgosling_8h.html#a60dfe3204dbd8bd5fbb0e17e1148e255',1,'cgosling.h']]]
 ];

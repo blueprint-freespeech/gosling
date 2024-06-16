@@ -579,11 +579,11 @@
         <span class="comment">// TODO: should we nuke the existing torrc between runs? Do we want
         // users setting custom nonsense in there?
         // construct default torrc
-        //  - daemon determines socks port and only allows clients to connect to onion services
+        //  - daemon determines socks port
         //  - minimize writes to disk
         //  - start with network disabled by default
         </span><span class="kw">if </span>!default_torrc.exists() {
-            <span class="kw">const </span>DEFAULT_TORRC_CONTENT: <span class="kw-2">&amp;</span>str = <span class="string">"SocksPort auto OnionTrafficOnly\n\
+            <span class="kw">const </span>DEFAULT_TORRC_CONTENT: <span class="kw-2">&amp;</span>str = <span class="string">"SocksPort auto\n\
             AvoidDiskWrites 1\n\
             DisableNetwork 1\n\n"</span>;
 
