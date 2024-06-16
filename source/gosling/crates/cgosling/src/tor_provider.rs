@@ -87,9 +87,13 @@ pub unsafe extern "C" fn gosling_tor_provider_new_legacy_client(
             tor_working_directory_length,
         );
         let tor_working_directory = std::str::from_utf8(tor_working_directory)?;
-        let tor_working_directory = Path::new(tor_working_directory);
+        let tor_working_directory = Path::new(tor_working_directory).to_path_buf();
+        let tor_config = LegacyTorClientConfig::BundledTor{
+            tor_bin_path: tor_bin_path,
+            data_directory: tor_working_directory,
+        };
 
-        let tor_client = LegacyTorClient::new(&tor_bin_path, tor_working_directory)?;
+        let tor_client = LegacyTorClient::new(tor_config)?;
         let tor_provider = Box::new(tor_client);
 
         let handle = get_tor_provider_registry().insert(tor_provider);
