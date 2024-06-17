@@ -1,6 +1,6 @@
 // standard
 use std::convert::TryFrom;
-use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6, TcpStream};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6, TcpStream};
 use std::os::raw::c_char;
 #[cfg(unix)]
 use std::os::unix::io::{IntoRawFd};
@@ -28,6 +28,10 @@ use crate::ffi::*;
 /// null-terminator is 1 byte
 pub const TARGET_ADDRESS_STRING_SIZE: usize = 260;
 
+/// An internet socket address, either IPv4 or IPv6
+pub struct GoslingIpAddress;
+define_registry!{IpAddr}
+
 /// An endpoint to connect to over tor
 pub struct GoslingTargetAddress;
 define_registry!{TargetAddr}
@@ -40,9 +44,18 @@ pub type GoslingCircuitToken = usize;
 // Free Functions
 //
 
+/// Frees a gosling_ip_address object
+///
+/// @param in_ip_address: the ip address to free
+#[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub extern "C" fn gosling_ip_address_free(in_ip_address: *mut GoslingIpAddress) {
+    impl_registry_free!(in_ip_address, IpAddr);
+}
+
 /// Frees a gosling_target_address object
 ///
-/// @param in_target_address: the private key to free
+/// @param in_target_address: the target address to free
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_target_address_free(in_target_address: *mut GoslingTargetAddress) {
@@ -52,6 +65,23 @@ pub extern "C" fn gosling_target_address_free(in_target_address: *mut GoslingTar
 //
 // Clone Functions
 //
+
+/// Copy method for gosling_ip_address
+///
+/// @param out_ip_address: returned copy
+/// @param ip_address: original to copy
+/// @param error: filled on error
+#[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub unsafe extern "C" fn gosling_ip_address_clone(
+    out_ip_address: *mut *mut GoslingIpAddress,
+    ip_address: *const GoslingIpAddress,
+    error: *mut *mut GoslingError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        Ok(())
+    })
+}
 
 /// Copy method for gosling_target_address
 ///
@@ -137,6 +167,55 @@ pub extern "C" fn gosling_context_connect(
             *out_tcp_socket = tcp_socket;
         }
         Ok(())
+    })
+}
+
+//
+// Ip Address Methods
+//
+
+/// Create ip address from four ipv4 octets.
+///
+/// @param out_ip_address: returned ip address
+/// @param a: first octet
+/// @param b: second octet
+/// @param c: third octet
+/// @param d: fourth octet
+/// @param error: filled on error
+#[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub unsafe extern "C" fn gosling_ip_address_from_ipv4(
+    out_ip_address: *mut *mut GoslingIpAddress,
+    a: u8, b: u8, c: u8, d: u8,
+    error: *mut *mut GoslingError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        bail!("not implemented");
+    })
+}
+
+/// Create target address from eight ipv6 16-bit sgements
+///
+/// @param out_ip_address: returned ip address
+/// @param a: first segment
+/// @param b: second segment
+/// @param c: third segment
+/// @param d: fourth segment
+/// @param e: fifth segment
+/// @param f: sixth segment
+/// @param g: seventh segment
+/// @param h: eigth segment
+/// @param error: filled on error
+#[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub unsafe extern "C" fn gosling_ip_address_from_ipv6(
+    out_ip_address: *mut *mut GoslingIpAddress,
+    a: u16, b: u16, c: u16, d: u16,
+    e: u16, f: u16, g: u16, h: u16,
+    error: *mut *mut GoslingError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        bail!("not implemented");
     })
 }
 

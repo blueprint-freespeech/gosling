@@ -20,8 +20,10 @@ pub(crate) const X25519_PRIVATE_KEY_TAG: usize = 0x3;
 pub(crate) const X25519_PUBLIC_KEY_TAG: usize = 0x4;
 pub(crate) const V3_ONION_SERVICE_ID_TAG: usize = 0x5;
 pub(crate) const TOR_PROVIDER_TAG: usize = 0x6;
-pub(crate) const CONTEXT_TUPLE_TAG: usize = 0x7;
-pub(crate) const TARGET_ADDR_TAG: usize = 0x8;
+pub(crate) const TOR_PROVIDER_CONFIG_TAG: usize = 0x7;
+pub(crate) const CONTEXT_TUPLE_TAG: usize = 0x8;
+pub(crate) const IP_ADDR_TAG: usize = 0x9;
+pub(crate) const TARGET_ADDR_TAG: usize = 0xA;
 
 macro_rules! define_registry {
     ($type:ty) => {
@@ -115,7 +117,9 @@ pub extern "C" fn gosling_library_free(in_library: *mut GoslingLibrary) {
         clear_x25519_public_key_registry();
         clear_v3_onion_service_id_registry();
         clear_tor_provider_registry();
+        clear_tor_provider_config_registry();
         clear_context_tuple_registry();
+        clear_ip_addr_registry();
         clear_target_addr_registry();
 
         GOSLING_LIBRARY_INITED.store(false, Ordering::Relaxed);

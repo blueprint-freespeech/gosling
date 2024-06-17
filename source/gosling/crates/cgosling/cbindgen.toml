@@ -48,6 +48,8 @@ GoslingV3OnionServiceId = "gosling_v3_onion_service_id"
 GoslingX25519PrivateKey = "gosling_x25519_private_key"
 GoslingX25519PublicKey = "gosling_x25519_public_key"
 GoslingTorProvider = "gosling_tor_provider"
+GoslingTorProviderConfig = "gosling_tor_provider_config"
+GoslingIpAddress = "gosling_ip_address"
 GoslingTargetAddress = "gosling_target_address"
 
 # callbacks
