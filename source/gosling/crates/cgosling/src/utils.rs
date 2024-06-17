@@ -1,6 +1,6 @@
 // standard
 use std::convert::TryFrom;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6, TcpStream};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, TcpStream};
 use std::os::raw::c_char;
 #[cfg(unix)]
 use std::os::unix::io::{IntoRawFd};
@@ -190,7 +190,15 @@ pub unsafe extern "C" fn gosling_ip_address_from_ipv4(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
+        if out_ip_address.is_null() {
+            bail!("out_ip_address must not be null");
+        }
+
+        let ip_addr = Ipv4Addr::new(a, b, c, d);
+        let handle = get_ip_addr_registry().insert(ip_addr.into());
+        *out_ip_address = handle as *mut GoslingIpAddress;
+
+        Ok(())
     })
 }
 
@@ -215,7 +223,14 @@ pub unsafe extern "C" fn gosling_ip_address_from_ipv6(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
+        if out_ip_address.is_null() {
+            bail!("out_ip_address must not be null");
+        }
+        let ip_addr = Ipv6Addr::new(a, b, c, d, e, f, g, h);
+        let handle = get_ip_addr_registry().insert(ip_addr.into());
+        *out_ip_address = handle as *mut GoslingIpAddress;
+
+        Ok(())
     })
 }
 
