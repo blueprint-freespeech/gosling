@@ -613,11 +613,18 @@ void gosling_cpp_demo_mock_tor_provider() {
   unique_ptr<gosling_tor_provider> alice_tor_provider;
   unique_ptr<gosling_tor_provider> pat_tor_provider;
 
-  REQUIRE_NOTHROW(::gosling_tor_provider_new_mock_client(
-      out(alice_tor_provider), throw_on_error()));
+  unique_ptr<gosling_tor_provider_config> mock_tor_provider_config;
+  REQUIRE_NOTHROW(::gosling_tor_provider_config_new_mock_client_config(out(mock_tor_provider_config), throw_on_error()));
 
-  REQUIRE_NOTHROW(::gosling_tor_provider_new_mock_client(out(pat_tor_provider),
-                                                         throw_on_error()));
+  REQUIRE_NOTHROW(::gosling_tor_provider_from_tor_provider_config(
+      out(alice_tor_provider),  // out tor_provider
+      mock_tor_provider_config.get(),
+      throw_on_error()));
+
+  REQUIRE_NOTHROW(::gosling_tor_provider_from_tor_provider_config(
+      out(pat_tor_provider),  // out tor_provider
+      mock_tor_provider_config.get(),
+      throw_on_error()));
 
   gosling_cpp_demo_impl<mock_tor_provider>(std::move(alice_tor_provider),
                                            std::move(pat_tor_provider));
@@ -639,26 +646,38 @@ void gosling_cpp_demo_legacy_tor_provider() {
   const auto alice_working_dir = (tmp / "gosling_context_test_alice").string();
   cout << "alice working dir: " << alice_working_dir << endl;
 
+  unique_ptr<gosling_tor_provider_config> alice_tor_provider_config;
+  REQUIRE_NOTHROW(::gosling_tor_provider_config_new_bundled_legacy_client_config(
+    out(alice_tor_provider_config),
+    nullptr,
+    0,
+    alice_working_dir.data(),
+    alice_working_dir.size(),
+    throw_on_error()));
+
   unique_ptr<gosling_tor_provider> alice_tor_provider;
-  REQUIRE_NOTHROW(::gosling_tor_provider_new_legacy_client(
+  REQUIRE_NOTHROW(::gosling_tor_provider_from_tor_provider_config(
       out(alice_tor_provider),  // out tor_provider
-      nullptr,                  // tor bin path
-      0,                        // tor bin path len
-      alice_working_dir.data(), // tor working dirctory
-      alice_working_dir.size(), // tor working directory len
+      alice_tor_provider_config.get(),
       throw_on_error()));
 
   // init pat tor provider
   const auto pat_working_dir = (tmp / "gosling_context_test_pat").string();
   cout << "pat working dir: " << pat_working_dir << endl;
 
+  unique_ptr<gosling_tor_provider_config> pat_tor_provider_config;
+  REQUIRE_NOTHROW(::gosling_tor_provider_config_new_bundled_legacy_client_config(
+    out(pat_tor_provider_config),
+    nullptr,
+    0,
+    pat_working_dir.data(),
+    pat_working_dir.size(),
+    throw_on_error()));
+
   unique_ptr<gosling_tor_provider> pat_tor_provider;
-  REQUIRE_NOTHROW(::gosling_tor_provider_new_legacy_client(
+  REQUIRE_NOTHROW(::gosling_tor_provider_from_tor_provider_config(
       out(pat_tor_provider),  // out tor_provider
-      nullptr,                // tor bin path
-      0,                      // tor bin path len
-      pat_working_dir.data(), // tor working dirctory
-      pat_working_dir.size(), // tor working directory len
+      pat_tor_provider_config.get(),
       throw_on_error()));
 
   gosling_cpp_demo_impl<legacy_tor_provider>(std::move(alice_tor_provider),
