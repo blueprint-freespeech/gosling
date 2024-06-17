@@ -27,7 +27,7 @@ define_registry! {TorProvider}
 
 /// A tor provider config object used to construct a tor provider
 pub struct GoslingTorProviderConfig;
-enum TorProviderConfig {
+pub(crate) enum TorProviderConfig {
     #[cfg(feature = "mock-tor-provider")]
     MockTorClientConfig,
     #[cfg(feature = "legacy-tor-provider")]
@@ -161,7 +161,14 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_mock_client_config(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
+        if out_tor_provider_config.is_null() {
+            bail!("out_tor_provider_config must not be null");
+        }
+
+        let handle = get_tor_provider_config_registry().insert(TorProviderConfig::MockTorClientConfig);
+        *out_tor_provider_config = handle as *mut GoslingTorProviderConfig;
+
+        Ok(())
     });
 }
 
@@ -187,7 +194,49 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_bundled_legacy_client_c
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
+        if out_tor_provider_config.is_null() {
+            bail!("out_tor_provider_config must not be null");
+        }
+        if tor_bin_path.is_null() && tor_bin_path_length != 0 {
+            bail!("tor_bin_path is null so tor_bin_path_length must be 0");
+        }
+        if !tor_bin_path.is_null() && tor_bin_path_length == 0 {
+            bail!("tor_bin_path is not null so tor_bin_path_length must be greater than 0");
+        }
+        if tor_working_directory.is_null() {
+            bail!("tor_working_directory must not be null");
+        }
+        if tor_working_directory_length == 0usize {
+            bail!("tor_working_directory_length must not be 0");
+        }
+
+        // tor bin
+        let tor_bin_path = if tor_bin_path.is_null() {
+            which::which(format!("tor{}", std::env::consts::EXE_SUFFIX))?
+        } else {
+            let tor_bin_path =
+                std::slice::from_raw_parts(tor_bin_path as *const u8, tor_bin_path_length);
+            let tor_bin_path = std::str::from_utf8(tor_bin_path)?;
+            let tor_bin_path = Path::new(tor_bin_path);
+            tor_bin_path.canonicalize()?
+        };
+
+        // tor working dir
+        let tor_working_directory = std::slice::from_raw_parts(
+            tor_working_directory as *const u8,
+            tor_working_directory_length,
+        );
+        let tor_working_directory = std::str::from_utf8(tor_working_directory)?;
+        let tor_working_directory = Path::new(tor_working_directory).to_path_buf();
+        let tor_config = LegacyTorClientConfig::BundledTor{
+            tor_bin_path: tor_bin_path,
+            data_directory: tor_working_directory,
+        };
+
+        let handle = get_tor_provider_config_registry().insert(TorProviderConfig::LegacyTorClientConfig(tor_config));
+        *out_tor_provider_config = handle as *mut GoslingTorProviderConfig;
+
+        Ok(())
     });
 }
 
@@ -198,8 +247,8 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_bundled_legacy_client_c
 /// @param tor_socks_port: tor daemon socks server port
 /// @param tor_control_host: tor daemon control host
 /// @param tor_control_port: tor daemon control port
-/// @param tor_control_password: authentication password
-/// @param tor_control_password_length: the number of chars in tor_control_password not
+/// @param tor_control_passwd: authentication password
+/// @param tor_control_passwd_length: the number of chars in tor_control_password not
 ///  including any null-terminator
 /// @param error: filled on error
 #[no_mangle]
@@ -211,12 +260,64 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_system_legacy_client_co
     tor_socks_port: u16,
     tor_control_host: *const GoslingIpAddress,
     tor_control_port: u16,
-    tor_control_password: *const c_char,
-    tor_control_password_length: usize,
+    tor_control_passwd: *const c_char,
+    tor_control_passwd_length: usize,
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
+        if out_tor_provider_config.is_null() {
+            bail!("out_tor_provider_config must not be null");
+        }
+        if tor_socks_host.is_null() {
+            bail!("tor_socks_host must not be null");
+        }
+        if tor_socks_port == 0 {
+            bail!("tor_socks_port must not be 0");
+        }
+        if tor_control_host.is_null() {
+            bail!("tor_control_host must not be null");
+        }
+        if tor_control_port == 0 {
+            bail!("tor_control_port must not be 0");
+        }
+        if tor_control_passwd.is_null() {
+            bail!("tor_control_passwd must not be null");
+        }
+        if tor_control_passwd_length == 0usize {
+            bail!("tor_control_passwd_length must not be 0");
+        }
+
+        // constructor tor_socks_addr
+        let tor_socks_host = match get_ip_addr_registry().get(tor_socks_host as usize) {
+            Some(tor_socks_host) => tor_socks_host.clone(),
+            None => bail!("tor_socks_host is invalid"),
+        };
+        let tor_socks_addr = std::net::SocketAddr::new(tor_socks_host, tor_socks_port);
+
+        // construct tor_control_addr
+        let tor_control_host = match get_ip_addr_registry().get(tor_control_host as usize) {
+            Some(tor_control_host) => tor_control_host.clone(),
+            None => bail!("tor_control_host is invalid"),
+        };
+        let tor_control_addr = std::net::SocketAddr::new(tor_control_host, tor_control_port);
+
+        // construct tor_control_password
+        let tor_control_passwd = std::slice::from_raw_parts(
+            tor_control_passwd as *const u8,
+            tor_control_passwd_length,
+        );
+        let tor_control_passwd = std::str::from_utf8(tor_control_passwd)?.to_string();
+
+        let tor_config = LegacyTorClientConfig::SystemTor{
+            tor_socks_addr,
+            tor_control_addr,
+            tor_control_passwd,
+        };
+
+        let handle = get_tor_provider_config_registry().insert(TorProviderConfig::LegacyTorClientConfig(tor_config));
+        *out_tor_provider_config = handle as *mut GoslingTorProviderConfig;
+
+        Ok(())
     });
 }
 
