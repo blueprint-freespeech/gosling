@@ -79,6 +79,20 @@ pub unsafe extern "C" fn gosling_ip_address_clone(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
+        if out_ip_address.is_null() {
+            bail!("out_ip_address must not be null");
+        }
+        if ip_address.is_null() {
+            bail!("ip_address must not be null");
+        }
+
+        let ip_address = match get_ip_addr_registry().get(ip_address as usize) {
+            Some(ip_address) => ip_address.clone(),
+            None => bail!("ip_address is invalid"),
+        };
+        let handle = get_ip_addr_registry().insert(ip_address);
+        *out_ip_address = handle as *mut GoslingIpAddress;
+
         Ok(())
     })
 }
