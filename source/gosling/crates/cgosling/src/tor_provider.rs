@@ -334,6 +334,32 @@ pub unsafe extern "C" fn gosling_tor_provider_from_tor_provider_config(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
+        if out_tor_provider.is_null() {
+            bail!("out_tor_provider must not be null");
+        }
+        if tor_provider_config.is_null() {
+            bail!("tor_provider_config must not be null");
+        }
+
+        let tor_provider: Box::<dyn tor_provider::TorProvider> = match get_tor_provider_config_registry().get(tor_provider_config as usize) {
+            Some(tor_provider_config) => match tor_provider_config {
+                #[cfg(feature = "mock-tor-provider")]
+                TorProviderConfig::MockTorClientConfig => {
+                    let tor_provider: MockTorClient = Default::default();
+                    Box::new(tor_provider)
+                },
+                #[cfg(feature = "legacy-tor-provider")]
+                TorProviderConfig::LegacyTorClientConfig(legacy_tor_config) => {
+                    let tor_provider: LegacyTorClient = LegacyTorClient::new(legacy_tor_config.clone())?;
+                    Box::new(tor_provider)
+                },
+            },
+            None => bail!("tor_provider_config is invalid"),
+        };
+
+        let handle = get_tor_provider_registry().insert(tor_provider);
+        *out_tor_provider = handle as *mut GoslingTorProvider;
+
+        Ok(())
     });
 }
