@@ -174,8 +174,13 @@ enum Function {
         out_error: PHandle,
     },
     // TorProvider Functions
-    TorProviderNewMockClient{
+    TorProviderConfigNewMockClientConfig{
+        out_tor_provider_config: PHandle,
+        out_error: PHandle,
+    },
+    TorProviderFromTorProviderConfig{
         out_tor_provider: PHandle,
+        tor_provider_config: Handle,
         out_error: PHandle,
     },
     // Context Functions
@@ -646,6 +651,7 @@ fuzz_target!(|data: Data| {
     let mut v3_onion_service_ids: Vec<*mut GoslingV3OnionServiceId> = Default::default();
     let mut x25519_private_keys: Vec<*mut GoslingX25519PrivateKey> = Default::default();
     let mut x25519_public_keys : Vec<*mut GoslingX25519PublicKey> = Default::default();
+    let mut tor_provider_configs: Vec<*mut GoslingTorProviderConfig> = Default::default();
     let mut tor_providers: Vec<*mut GoslingTorProvider> = Default::default();
     let mut identity_handshakes: Vec<usize> = Default::default();
     let mut endpoint_handshakes: Vec<usize> = Default::default();
@@ -915,13 +921,28 @@ fuzz_target!(|data: Data| {
                     errors.push(error);
                 }
             }
-            Function::TorProviderNewMockClient{out_tor_provider, out_error} => {
-                let mut tor_provider: *mut GoslingTorProvider = ptr::null_mut();
-                let out_tor_provider = phandle_to_out_pointer(out_tor_provider, &mut tor_provider);
+            Function::TorProviderConfigNewMockClientConfig{out_tor_provider_config, out_error} => {
+                let mut tor_provider_config: *mut GoslingTorProviderConfig = ptr::null_mut();
+                let out_tor_provider_config = phandle_to_out_pointer(out_tor_provider_config, &mut tor_provider_config);
                 let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
 
-                unsafe { gosling_tor_provider_new_mock_client(out_tor_provider, out_error) };
+                unsafe { gosling_tor_provider_config_new_mock_client_config(out_tor_provider_config, out_error) };
+                if !tor_provider_config.is_null() {
+                    tor_provider_configs.push(tor_provider_config);
+                }
+                if !error.is_null() {
+                    errors.push(error);
+                }
+            },
+            Function::TorProviderFromTorProviderConfig{out_tor_provider, tor_provider_config, out_error} => {
+                let mut tor_provider: *mut GoslingTorProvider = ptr::null_mut();
+                let out_tor_provider = phandle_to_out_pointer(out_tor_provider, &mut tor_provider);
+                let tor_provider_config = handle_as_pointer(tor_provider_config, &tor_provider_configs);
+                let mut error: *mut GoslingError = ptr::null_mut();
+                let out_error = phandle_to_out_pointer(out_error, &mut error);
+
+                unsafe { gosling_tor_provider_from_tor_provider_config(out_tor_provider, tor_provider_config, out_error) };
                 if !tor_provider.is_null() {
                     tor_providers.push(tor_provider);
                 }
