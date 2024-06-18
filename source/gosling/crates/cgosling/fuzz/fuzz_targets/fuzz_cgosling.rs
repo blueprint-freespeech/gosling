@@ -71,6 +71,9 @@ enum Function {
     V3OnionServiceIdFree{
         service_id: Handle,
     },
+    IpAddressFree{
+        ip_address: Handle,
+    },
     TargetAddressFree{
         target_address: Handle,
     },
@@ -381,6 +384,32 @@ enum Function {
     ContextReleaseCircuitToken{
         context: Handle,
         circuit_token: Primitive<usize>,
+        out_error: PHandle,
+    },
+    // IpAddress Functions
+    IpAddressClone{
+        out_ip_address: PHandle,
+        ip_address: Handle,
+        out_error: PHandle,
+    },
+    IpAddressFromIpv4{
+        out_ip_address: PHandle,
+        a: u8,
+        b: u8,
+        c: u8,
+        d: u8,
+        out_error: PHandle,
+    },
+    IpAddressFromIpv6{
+        out_ip_address: PHandle,
+        a: u16,
+        b: u16,
+        c: u16,
+        d: u16,
+        e: u16,
+        f: u16,
+        g: u16,
+        h: u16,
         out_error: PHandle,
     },
     // TargetAddress Functions
@@ -1208,6 +1237,18 @@ fuzz_target!(|data: Data| {
                 if !error.is_null() {
                     errors.push(error);
                 }
+            },
+            Function::IpAddressFree{ip_address} => {
+
+            },
+            Function::IpAddressClone{out_ip_address, ip_address, out_error} => {
+
+            },
+            Function::IpAddressFromIpv4{out_ip_address, a, b, c, d, out_error} => {
+
+            },
+            Function::IpAddressFromIpv6{out_ip_address, a, b, c, d, e, f, g, h, out_error} => {
+
             },
             Function::TargetAddressFree{target_address} => {
                 let target_address = handle_to_pointer(target_address, &mut target_addresses);
