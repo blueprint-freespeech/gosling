@@ -17,6 +17,7 @@ use cgosling_proc_macros::*;
 // internal crates
 use crate::error::*;
 use crate::ffi::*;
+#[cfg(feature = "legacy-tor-provider")]
 use crate::utils::*;
 
 /// A tor provider object used by a context to connect to the tor network
