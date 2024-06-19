@@ -95,8 +95,11 @@ namespace hw {
         const auto& tor_working_directory = args.front();
 
         // initialise a tor provider for our gosling context
+        unique_ptr<gosling_tor_provider_config> tor_provider_config;
+        ::gosling_tor_provider_config_new_bundled_legacy_client_config(out(tor_provider_config), nullptr, 0, tor_working_directory.data(), tor_working_directory.size(), throw_on_error());
+
         unique_ptr<gosling_tor_provider> tor_provider;
-        ::gosling_tor_provider_new_legacy_client(out(tor_provider), nullptr, 0, tor_working_directory.data(), tor_working_directory.size(), throw_on_error());
+        ::gosling_tor_provider_from_tor_provider_config(out(tor_provider), tor_provider_config.get(), throw_on_error());
 
         TERM.write_line("generating new identity key");
 
