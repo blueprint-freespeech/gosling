@@ -569,8 +569,11 @@ void gosling_cpp_demo_impl(
     REQUIRE(example_socket != 0);
 
     // google dns ipv4
+    unique_ptr<gosling_ip_address> ipv4_ip_address;
+    REQUIRE_NOTHROW(::gosling_ip_address_from_ipv4(out(ipv4_ip_address), 8,8,8,8, throw_on_error()));
+
     unique_ptr<gosling_target_address> ipv4_target_address;
-    REQUIRE_NOTHROW(::gosling_target_address_from_ipv4(out(ipv4_target_address), 8,8,8,8,53, throw_on_error()));
+    REQUIRE_NOTHROW(::gosling_target_address_from_ip_address(out(ipv4_target_address), ipv4_ip_address.get(), 53, throw_on_error()));
 
     cout << "--- alice connecting to '" << ipv4_target_address.get() << "'" << endl;
 
@@ -579,8 +582,11 @@ void gosling_cpp_demo_impl(
     REQUIRE(ipv4_socket != 0);
 
     // google dns ipv6
+    unique_ptr<gosling_ip_address> ipv6_ip_address;
+    REQUIRE_NOTHROW(::gosling_ip_address_from_ipv6(out(ipv6_ip_address), 0x2001,0x4860,0x4860,0,0,0,0,0x8888, throw_on_error()));
+
     unique_ptr<gosling_target_address> ipv6_target_address;
-    REQUIRE_NOTHROW(::gosling_target_address_from_ipv6(out(ipv6_target_address), 0x2001,0x4860,0x4860,0,0,0,0,0x8888,53, throw_on_error()));
+    REQUIRE_NOTHROW(::gosling_target_address_from_ip_address(out(ipv6_target_address), ipv6_ip_address.get(), 53, throw_on_error()));
 
     cout << "--- alice connecting to '" << ipv6_target_address.get() << "'" << endl;
 

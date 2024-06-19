@@ -418,25 +418,9 @@ enum Function {
         target_address: Handle,
         out_error: PHandle,
     },
-    TargetAddressFromIpv4{
+    TargetAddressFromIpAddress{
         out_target_address: PHandle,
-        a: u8,
-        b: u8,
-        c: u8,
-        d: u8,
-        port: u16,
-        out_error: PHandle,
-    },
-    TargetAddressFromIpv6{
-        out_target_address: PHandle,
-        a: u16,
-        b: u16,
-        c: u16,
-        d: u16,
-        e: u16,
-        f: u16,
-        g: u16,
-        h: u16,
+        ip_address: Handle,
         port: u16,
         out_error: PHandle,
     },
@@ -1304,27 +1288,14 @@ fuzz_target!(|data: Data| {
                     errors.push(error);
                 }
             },
-            Function::TargetAddressFromIpv4{out_target_address, a, b, c, d, port, out_error} => {
+            Function::TargetAddressFromIpAddress{out_target_address, ip_address, port, out_error} => {
                 let mut dest: *mut GoslingTargetAddress = ptr::null_mut();
                 let out_target_address = phandle_to_out_pointer(out_target_address, &mut dest);
+                let ip_address = handle_as_pointer(ip_address, &ip_addresses);
                 let mut error: *mut GoslingError = ptr::null_mut();
                 let out_error = phandle_to_out_pointer(out_error, &mut error);
 
-                unsafe { gosling_target_address_from_ipv4(out_target_address, a, b, c, d, port, out_error) };
-                if !dest.is_null() {
-                    target_addresses.push(dest);
-                }
-                if !error.is_null() {
-                    errors.push(error);
-                }
-            },
-            Function::TargetAddressFromIpv6{out_target_address, a, b, c, d, e, f, g, h, port, out_error} => {
-                let mut dest: *mut GoslingTargetAddress = ptr::null_mut();
-                let out_target_address = phandle_to_out_pointer(out_target_address, &mut dest);
-                let mut error: *mut GoslingError = ptr::null_mut();
-                let out_error = phandle_to_out_pointer(out_error, &mut error);
-
-                unsafe { gosling_target_address_from_ipv6(out_target_address, a, b, c, d, e, f, g, h, port, out_error) };
+                unsafe { gosling_target_address_from_ip_address(out_target_address, ip_address, port, out_error) };
                 if !dest.is_null() {
                     target_addresses.push(dest);
                 }

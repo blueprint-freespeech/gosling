@@ -252,21 +252,17 @@ pub unsafe extern "C" fn gosling_ip_address_from_ipv6(
 // Target Address Methods
 //
 
-/// Create target address from four ipv4 octets and a port. The resulting
-/// target address is in the format a.b.c.d:port
+/// Create target address from an ip address and a port.
 ///
 /// @param out_target_address: returned target address
-/// @param a: first octet
-/// @param b: second octet
-/// @param c: third octet
-/// @param d: fourth octet
+/// @param ip_address: target ip address
 /// @param port: target port
 /// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
-pub unsafe extern "C" fn gosling_target_address_from_ipv4(
+pub unsafe extern "C" fn gosling_target_address_from_ip_address(
     out_target_address: *mut *mut GoslingTargetAddress,
-    a: u8, b: u8, c: u8, d: u8,
+    ip_address: *const GoslingIpAddress,
     port: u16,
     error: *mut *mut GoslingError,
 ) {
@@ -274,47 +270,16 @@ pub unsafe extern "C" fn gosling_target_address_from_ipv4(
         if out_target_address.is_null() {
             bail!("out_target_address must not be null");
         }
-
-        let target_address = TargetAddr::Ip(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(a, b, c, d), port)));
-
-        let handle = get_target_addr_registry().insert(target_address);
-        *out_target_address = handle as *mut GoslingTargetAddress;
-
-        Ok(())
-    })
-}
-
-/// Create target address from eight ipv6 16-bit sgements and a port.
-/// The resulting target address is in the format [a:b:c:d:e:f:g:h]:port
-///
-/// @param out_target_address: returned target address
-/// @param a: first segment
-/// @param b: second segment
-/// @param c: third segment
-/// @param d: fourth segment
-/// @param e: fifth segment
-/// @param f: sixth segment
-/// @param g: seventh segment
-/// @param h: eigth segment
-/// @param port: target port
-/// @param error: filled on error
-#[no_mangle]
-#[cfg_attr(feature = "impl-lib", rename_impl)]
-pub unsafe extern "C" fn gosling_target_address_from_ipv6(
-    out_target_address: *mut *mut GoslingTargetAddress,
-    a: u16, b: u16, c: u16, d: u16,
-    e: u16, f: u16, g: u16, h: u16,
-    port: u16,
-    error: *mut *mut GoslingError,
-) {
-    translate_failures((), error, || -> anyhow::Result<()> {
-        if out_target_address.is_null() {
-            bail!("out_target_address must not be null");
+        if ip_address.is_null() {
+            bail!("ip_address must not be null");
         }
 
-        const FLOWINFO: u32 = 0;
-        const SCOPE_ID: u32 = 0;
-        let target_address = TargetAddr::Ip(SocketAddr::V6(SocketAddrV6::new(Ipv6Addr::new(a, b, c, d, e, f, g, h), port, FLOWINFO, SCOPE_ID)));
+        let ip_address = match get_ip_addr_registry().get(ip_address as usize) {
+            Some(ip_address) => ip_address.clone(),
+            None => bail!("ip_address is invalid"),
+        };
+
+        let target_address = TargetAddr::Ip(SocketAddr::new(ip_address, port));
 
         let handle = get_target_addr_registry().insert(target_address);
         *out_target_address = handle as *mut GoslingTargetAddress;
