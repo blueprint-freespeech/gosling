@@ -684,6 +684,7 @@ fuzz_target!(|data: Data| {
     let mut tor_providers: Vec<*mut GoslingTorProvider> = Default::default();
     let mut identity_handshakes: Vec<usize> = Default::default();
     let mut endpoint_handshakes: Vec<usize> = Default::default();
+    let mut ip_addresses: Vec<*mut GoslingIpAddress> = Default::default();
     let mut target_addresses: Vec<*mut GoslingTargetAddress> = Default::default();
     let mut circuit_tokens: Vec<GoslingCircuitToken> = Default::default();
 
@@ -1239,16 +1240,51 @@ fuzz_target!(|data: Data| {
                 }
             },
             Function::IpAddressFree{ip_address} => {
-
+                let ip_address = handle_to_pointer(ip_address, &mut ip_addresses);
+                gosling_ip_address_free(ip_address);
             },
             Function::IpAddressClone{out_ip_address, ip_address, out_error} => {
+                let mut dest: *mut GoslingIpAddress = ptr::null_mut();
+                let out_ip_address = phandle_to_out_pointer(out_ip_address, &mut dest);
+                let ip_address = handle_as_pointer(ip_address, &ip_addresses);
+                let mut error: *mut GoslingError = ptr::null_mut();
+                let out_error = phandle_to_out_pointer(out_error, &mut error);
 
+                unsafe { gosling_ip_address_clone(out_ip_address, ip_address, out_error) };
+                if !dest.is_null() {
+                    ip_addresses.push(dest);
+                }
+                if !error.is_null() {
+                    errors.push(error);
+                }
             },
             Function::IpAddressFromIpv4{out_ip_address, a, b, c, d, out_error} => {
+                let mut dest: *mut GoslingIpAddress = ptr::null_mut();
+                let out_ip_address = phandle_to_out_pointer(out_ip_address, &mut dest);
+                let mut error: *mut GoslingError = ptr::null_mut();
+                let out_error = phandle_to_out_pointer(out_error, &mut error);
 
+                unsafe { gosling_ip_address_from_ipv4(out_ip_address, a, b, c, d, out_error) };
+                if !dest.is_null() {
+                    ip_addresses.push(dest);
+                }
+                if !error.is_null() {
+                    errors.push(error);
+                }
             },
             Function::IpAddressFromIpv6{out_ip_address, a, b, c, d, e, f, g, h, out_error} => {
+                let mut dest: *mut GoslingIpAddress = ptr::null_mut();
+                let out_ip_address = phandle_to_out_pointer(out_ip_address, &mut dest);
+                let mut error: *mut GoslingError = ptr::null_mut();
+                let out_error = phandle_to_out_pointer(out_error, &mut error);
 
+                unsafe { gosling_ip_address_from_ipv6(out_ip_address, a, b, c, d, e, f, g, h, out_error) };
+                if !dest.is_null() {
+                    ip_addresses.push(dest);
+                }
+                if !error.is_null() {
+                    errors.push(error);
+                }
             },
             Function::TargetAddressFree{target_address} => {
                 let target_address = handle_to_pointer(target_address, &mut target_addresses);
