@@ -129,6 +129,10 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_bundled_legacy_client_c
         let tor_config = LegacyTorClientConfig::BundledTor{
             tor_bin_path: tor_bin_path,
             data_directory: tor_working_directory,
+            proxy_settings: None,
+            allowed_ports: None,
+            pluggable_transports: None,
+            bridge_lines: None,
         };
 
         let handle = get_tor_provider_config_registry().insert(TorProviderConfig::LegacyTorClientConfig(tor_config));
