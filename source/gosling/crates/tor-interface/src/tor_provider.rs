@@ -334,9 +334,30 @@ impl OnionListener {
 // ProxyConfig
 //
 
+#[derive(thiserror::Error, Debug)]
+pub enum ProxyConfigError {
+    #[error("{0}")]
+    Generic(String),
+}
+
 #[derive(Clone, Debug)]
 pub struct Socks4ProxyConfig {
     pub(crate) address: TargetAddr,
+}
+
+impl Socks4ProxyConfig {
+    pub fn new(address: TargetAddr) -> Result<Self, ProxyConfigError> {
+        let port = match &address {
+            TargetAddr::Ip(addr) => addr.port(),
+            TargetAddr::Domain(addr) => addr.port(),
+            TargetAddr::OnionService(_) => return Err(ProxyConfigError::Generic("proxy address may not be onion service".to_string())),
+        };
+        if port == 0 {
+            return Err(ProxyConfigError::Generic("proxy port not be 0".to_string()));
+        }
+
+        Ok(Self{address})
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -346,6 +367,15 @@ pub struct Socks5ProxyConfig {
     pub(crate) password: Option<String>,
 }
 
+impl Socks5ProxyConfig {
+    pub fn new(address: TargetAddr, username: Option<String>, password: Option<String>) -> Result<Self, ProxyConfigError> {
+        // TODO: username and password each must be <= 255 characters
+        // TODO: port may not be 0
+        // TODO: may not be onion service
+        Ok(Self{address, username, password})
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct HttpsProxyConfig {
     pub(crate) address: TargetAddr,
@@ -353,11 +383,38 @@ pub struct HttpsProxyConfig {
     pub(crate) password: Option<String>,
 }
 
+impl HttpsProxyConfig {
+    pub fn new(address: TargetAddr, username: Option<String>, password: Option<String>) -> Result<Self, ProxyConfigError> {
+        // TODO: username may not contain ':' character (per RFC 2617)
+        // TODO: port may not be 0
+        // TODO: may not be onion service
+        Ok(Self{address, username, password})
+    }
+}
+
 #[derive(Clone, Debug)]
 pub enum ProxyConfig {
     Socks4(Socks4ProxyConfig),
     Socks5(Socks5ProxyConfig),
     Https(HttpsProxyConfig),
+}
+
+impl From<Socks4ProxyConfig> for ProxyConfig {
+    fn from(config: Socks4ProxyConfig) -> Self {
+        ProxyConfig::Socks4(config)
+    }
+}
+
+impl From<Socks5ProxyConfig> for ProxyConfig {
+    fn from(config: Socks5ProxyConfig) -> Self {
+        ProxyConfig::Socks5(config)
+    }
+}
+
+impl From<HttpsProxyConfig> for ProxyConfig {
+    fn from(config: HttpsProxyConfig) -> Self {
+        ProxyConfig::Https(config)
+    }
 }
 
 //
