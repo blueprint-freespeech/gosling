@@ -35,6 +35,10 @@ fn test_legacy_client_gosling_context() -> anyhow::Result<()> {
     let tor_config = LegacyTorClientConfig::BundledTor{
         tor_bin_path: tor_path.clone(),
         data_directory: alice_path,
+        proxy_settings: None,
+        allowed_ports: None,
+        pluggable_transports: None,
+        bridge_lines: None,
     };
     let alice_tor_client = Box::new(LegacyTorClient::new(tor_config)?);
 
@@ -43,6 +47,10 @@ fn test_legacy_client_gosling_context() -> anyhow::Result<()> {
     let tor_config = LegacyTorClientConfig::BundledTor{
         tor_bin_path: tor_path,
         data_directory: pat_path,
+        proxy_settings: None,
+        allowed_ports: None,
+        pluggable_transports: None,
+        bridge_lines: None,
     };
     let pat_tor_client = Box::new(LegacyTorClient::new(tor_config)?);
 
