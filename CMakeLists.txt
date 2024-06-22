@@ -31,7 +31,11 @@ if (ENABLE_TESTS OR ENABLE_FUZZ_TESTS)
     enable_testing()
 endif()
 
+#
 # Addditional Tools
+#
+
+# Run rust's clippy for Rust targets and cppcheck for C++ targets
 option(ENABLE_LINTING "Enable lint make target" OFF)
 if (ENABLE_LINTING)
     find_program(JQ_EXECUTABLE NAMES jq)
@@ -59,6 +63,7 @@ if (ENABLE_LINTING)
     add_dependencies(linting cppcheck_target)
 endif()
 
+#
 option(ENABLE_FORMATTING "Enable format make target" OFF)
 if (ENABLE_FORMATTING)
     find_program(CLANG_FORMAT_EXECUTABLE NAMES clang-format)
@@ -74,6 +79,13 @@ if (ENABLE_FORMATTING)
         add_dependencies(format ${target_name})
     endfunction()
     add_custom_target(format)
+endif()
+
+
+option(ENABLE_TOR_EXPERT_BUNDLE "Enable and fetch tor-expert-bundle" OFF)
+if (ENABLE_TOR_EXPERT_BUNDLE)
+    cmake_path(CONVERT ${CMAKE_BINARY_DIR}/source/extern/tor-expert-bundle TO_NATIVE_PATH_LIST TEB_PATH NORMALIZE)
+    message("TEB_PATH: ${TEB_PATH}")
 endif()
 
 # Bindings options

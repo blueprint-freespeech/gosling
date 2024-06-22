@@ -13,10 +13,12 @@ jobs:
             cxxflags: -m32
             rust-target: i686-unknown-linux-gnu
             cmake-find-root-path: /usr/lib/i386-linux-gnu
+            teb-target: linux-i686
             arch: i386
           - debian-arch: amd64
             rust-target: x86_64-unknown-linux-gnu
             cmake-find-root-path: /usr/lib/x86_64-linux-gnu
+            teb-target: linux-x86_64
             arch: x86_64
     runs-on: ubuntu-latest
     steps:
@@ -36,7 +38,7 @@ jobs:
           rustup default stable-${{ matrix.rust-target }}
       - name: Build Debug
         run: |
-          cmake -S . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=dist/debug -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_DEBIAN_SOURCE_PACKAGE=ON -DCMAKE_C_FLAGS="${{ matrix.cflags }}" -DCMAKE_CXX_FLAGS="${{ matrix.cxxflags }}" -DCMAKE_FIND_ROOT_PATH=${{ matrix.cmake-find-root-path }}
+          cmake -S . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=dist/debug -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_DEBIAN_SOURCE_PACKAGE=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }} -DCMAKE_C_FLAGS="${{ matrix.cflags }}" -DCMAKE_CXX_FLAGS="${{ matrix.cxxflags }}" -DCMAKE_FIND_ROOT_PATH=${{ matrix.cmake-find-root-path }}
           cmake --build build
           cmake --install build
       - name: Archive Debug
@@ -50,7 +52,7 @@ jobs:
           path: dist/gosling-linux-gnu-${{ matrix.arch }}-debug.tar
       - name: Build Release
         run: |
-          cmake -S . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=dist/release -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_DEBIAN_SOURCE_PACKAGE=ON -DCMAKE_C_FLAGS="${{ matrix.cflags }}" -DCMAKE_CXX_FLAGS="${{ matrix.cxxflags }}" -DCMAKE_FIND_ROOT_PATH=${{ matrix.cmake-find-root-path }}
+          cmake -S . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=dist/release -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_DEBIAN_SOURCE_PACKAGE=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }} -DCMAKE_C_FLAGS="${{ matrix.cflags }}" -DCMAKE_CXX_FLAGS="${{ matrix.cxxflags }}" -DCMAKE_FIND_ROOT_PATH=${{ matrix.cmake-find-root-path }}
           cmake --build build
           cmake --install build
       - name: Archive Release
@@ -71,18 +73,23 @@ jobs:
           - msystem: ucrt64
             msys-env: ucrt-x86_64
             java-arch: x64
+            teb-target: windows-x86_64
           - msystem: clang64
             msys-env: clang-x86_64
             java-arch: x64
+            teb-target: windows-x86_64
           - msystem: clang32
             msys-env: clang-i686
             java-arch: x86
+            teb-target: windows-i686
           - msystem: mingw64
             msys-env: x86_64
             java-arch: x86_64
+            teb-target: windows-x86_64
           - msystem: mingw32
             msys-env: i686
             java-arch: x86
+            teb-target: windows-i686
     runs-on: windows-latest
     defaults:
       run:
@@ -116,7 +123,7 @@ jobs:
           export PATH=$(cygpath -u ${JAVA_HOME})/bin:$PATH
           mkdir -p build/debug
           cd build/debug
-          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../../dist/debug -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_MSYS2_PKGBUILD=ON
+          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../../dist/debug -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_MSYS2_PKGBUILD=ON  -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
           make
           make install
       - name: Archive Debug
@@ -134,7 +141,7 @@ jobs:
           export PATH=$(cygpath -u ${JAVA_HOME})/bin:$PATH
           mkdir -p build/release
           cd build/release
-          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist/release -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_MSYS2_PKGBUILD=ON
+          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist/release -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_MSYS2_PKGBUILD=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
           make
           make install
       - name: Archive Release
@@ -155,9 +162,11 @@ jobs:
           - java-arch: x64
             platform: x64
             rust-target: x86_64-pc-windows-msvc
+            teb-target: windows-x86_64
           - java-arch: x86
             platform: Win32
             rust-target: i686-pc-windows-msvc
+            teb-target: windows-x86_64
     runs-on: windows-latest
     steps:
       - name: Checkout Gosling
@@ -185,7 +194,7 @@ jobs:
         env:
           BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
         run: |
-          cmake -S . -B build/debug -DCMAKE_BUILD_TYPE=Debug -A ${{ matrix.platform }} -DCMAKE_INSTALL_PREFIX=dist/debug -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON
+          cmake -S . -B build/debug -DCMAKE_BUILD_TYPE=Debug -A ${{ matrix.platform }} -DCMAKE_INSTALL_PREFIX=dist/debug -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
           cmake --build build/debug --config Debug
           cmake --install build/debug --config Debug
       - name: Upload Debug
@@ -197,7 +206,7 @@ jobs:
         env:
           BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
         run: |
-          cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release -A ${{ matrix.platform }} -DCMAKE_INSTALL_PREFIX=dist/release -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON
+          cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release -A ${{ matrix.platform }} -DCMAKE_INSTALL_PREFIX=dist/release -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
           cmake --build build/release --config Release
           cmake --install build/release --config Release
       - name: Upload Release
@@ -213,8 +222,10 @@ jobs:
         include:
           - runs-on: macos-12
             arch: x86_64
+            teb-target: macos-x86_64
           - runs-on: macos-14
             arch: aarch64
+            teb-target: macos-aarch64
     runs-on: ${{ matrix.runs-on }}
     steps:
       - name: Checkout Gosling
@@ -228,7 +239,7 @@ jobs:
         run: |
           mkdir -p build/debug
           cd build/debug
-          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../../dist/debug -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_HOMEBREW_FORMULA=ON
+          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../../dist/debug -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_HOMEBREW_FORMULA=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
           make
           make install
       - name: Archive Debug
@@ -244,7 +255,7 @@ jobs:
         run: |
           mkdir -p build/release
           cd build/release
-          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist/release -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_HOMEBREW_FORMULA=ON
+          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist/release -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_HOMEBREW_FORMULA=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
           make
           make install
       - name: Archive Release
