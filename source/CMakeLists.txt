@@ -1,15 +1,5 @@
 include(GNUInstallDirs)
 
-# cmake variables reference: https://cmake.org/cmake/help/v3.17/manual/cmake-variables.7.html
-# define per-platform flags
-if(UNIX AND NOT APPLE)
-    set(LINUX TRUE)
-elseif(UNIX AND APPLE)
-    set(MACOS TRUE)
-elseif(WIN32)
-    set(WINDOWS TRUE)
-endif()
-
 # translate our cmake build type to a cargo profile and build flags
 if(CMAKE_BUILD_TYPE)
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")

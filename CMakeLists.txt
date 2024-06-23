@@ -2,6 +2,16 @@ cmake_minimum_required(VERSION 3.17)
 
 project(gosling)
 
+# cmake variables reference: https://cmake.org/cmake/help/v3.17/manual/cmake-variables.7.html
+# define per-platform flags
+if(UNIX AND NOT APPLE)
+    set(LINUX TRUE)
+elseif(UNIX AND APPLE)
+    set(MACOS TRUE)
+elseif(WIN32)
+    set(WINDOWS TRUE)
+endif()
+
 # Feature flags
 option(ENABLE_MOCK_TOR_PROVIDER "Enable mocked tor support for tests" ON)
 option(ENABLE_LEGACY_TOR_PROVIDER "Enable legacy c-tor daemon support" ON)
