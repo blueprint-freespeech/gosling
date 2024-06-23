@@ -15,6 +15,7 @@ jobs:
           - tor_interface_legacy_authenticated_onion_service_cargo_test
           - tor_interface_legacy_bootstrap_cargo_test
           - tor_interface_legacy_onion_service_cargo_test
+          - tor_interface_legacy_pluggable_transport_bootstrap_cargo_test
           - tor_interface_mixed_arti_client_legacy_bootstrap_cargo_test
           - tor_interface_mixed_legacy_arti_client_bootstrap_cargo_test
           - tor_interface_mock_authenticated_onion_service_cargo_test
@@ -40,7 +41,7 @@ jobs:
       - name: Test
         run: |
           mkdir build
-          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON
+          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_TOR_EXPERT_BUNDLE=ON
           cd build
           ctest --verbose -R ^${{matrix.test}}
   windows:
@@ -55,6 +56,7 @@ jobs:
           - tor_interface_legacy_authenticated_onion_service_cargo_test
           - tor_interface_legacy_bootstrap_cargo_test
           - tor_interface_legacy_onion_service_cargo_test
+          - tor_interface_legacy_pluggable_transport_bootstrap_cargo_test
           - tor_interface_mixed_arti_client_legacy_bootstrap_cargo_test
           - tor_interface_mixed_legacy_arti_client_bootstrap_cargo_test
           - tor_interface_mock_authenticated_onion_service_cargo_test
@@ -94,7 +96,7 @@ jobs:
           CC: clang
         run: |
           mkdir build
-          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON
+          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_TOR_EXPERT_BUNDLE=ON
           cd build
           ctest --verbose -R ^${{matrix.test}}
   macos:
@@ -109,6 +111,7 @@ jobs:
           - tor_interface_legacy_authenticated_onion_service_cargo_test
           - tor_interface_legacy_bootstrap_cargo_test
           - tor_interface_legacy_onion_service_cargo_test
+          - tor_interface_legacy_pluggable_transport_bootstrap_cargo_test
           - tor_interface_mixed_arti_client_legacy_bootstrap_cargo_test
           - tor_interface_mixed_legacy_arti_client_bootstrap_cargo_test
           - tor_interface_mock_authenticated_onion_service_cargo_test
@@ -133,6 +136,6 @@ jobs:
       - name: Test
         run: |
           mkdir build
-          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON
+          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_TOR_EXPERT_BUNDLE=ON
           cd build
           ctest --verbose -R ^${{matrix.test}}
