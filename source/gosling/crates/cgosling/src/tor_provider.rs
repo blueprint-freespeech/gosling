@@ -10,6 +10,7 @@ use anyhow::bail;
 use tor_interface::legacy_tor_client::*;
 #[cfg(feature = "mock-tor-provider")]
 use tor_interface::mock_tor_client::*;
+use tor_interface::tor_provider::{BridgeLine, PluggableTransportConfig, ProxyConfig};
 use tor_interface::*;
 #[cfg(feature = "impl-lib")]
 use cgosling_proc_macros::*;
@@ -21,11 +22,23 @@ use crate::ffi::*;
 use crate::utils::*;
 use crate::macros::*;
 
-/// A tor provider object used by a context to connect to the tor network
-pub struct GoslingTorProvider;
-/// cbindgen:ignore
-type TorProvider = Box<dyn tor_provider::TorProvider>;
-define_registry! {TorProvider}
+/// Proxy settings object used by tor provider to connect to the tor network
+#[cfg(feature = "legacy-tor-provider")]
+pub struct GoslingProxyConfig;
+#[cfg(feature = "legacy-tor-provider")]
+define_registry! {ProxyConfig}
+
+/// Pluggable transports settings object used by tor provider to launch pluggable transports
+#[cfg(feature = "legacy-tor-provider")]
+pub struct GoslingPluggableTransportConfig;
+#[cfg(feature = "legacy-tor-provider")]
+define_registry! {PluggableTransportConfig}
+
+/// Bridge line to use with particular pluggable transport when connecting to the tor network
+#[cfg(feature = "legacy-tor-provider")]
+pub struct GoslingBridgeLine;
+#[cfg(feature = "legacy-tor-provider")]
+define_registry! {BridgeLine}
 
 /// A tor provider config object used to construct a tor provider
 pub struct GoslingTorProviderConfig;
@@ -37,13 +50,44 @@ pub(crate) enum TorProviderConfig {
 }
 define_registry! {TorProviderConfig}
 
-/// Frees a gosling_tor_provider object
+/// A tor provider object used by a context to connect to the tor network
+pub struct GoslingTorProvider;
+/// cbindgen:ignore
+type TorProvider = Box<dyn tor_provider::TorProvider>;
+define_registry! {TorProvider}
+
+//
+// Memory freeing functions
+//
+
+/// Frees a gosling_proxy_config
 ///
-/// @param in_tor_provider: the tor provider object to free
+/// @param in_proxy: the proxy settings object to free
 #[no_mangle]
+#[cfg(feature = "legacy-tor-provider")]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
-pub extern "C" fn gosling_tor_provider_free(in_tor_provider: *mut GoslingTorProvider) {
-    impl_registry_free!(in_tor_provider, TorProvider);
+pub extern "C" fn gosling_proxy_config_free(in_proxy_config: *mut GoslingProxyConfig) {
+    impl_registry_free!(in_proxy_config, ProxyConfig);
+}
+
+/// Frees a gosling_pluggable_transport_config
+///
+/// @param in_pluggable_transport: the pluggable transport object to free
+#[no_mangle]
+#[cfg(feature = "legacy-tor-provider")]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub extern "C" fn gosling_pluggable_transport_config_free(in_pluggable_transport_config: *mut GoslingPluggableTransportConfig) {
+    impl_registry_free!(in_pluggable_transport_config, PluggableTransportConfig);
+}
+
+/// Frees a gosling_bridge_line
+///
+/// @param in_bridge_line: the bridge line object to free
+#[no_mangle]
+#[cfg(feature = "legacy-tor-provider")]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub extern "C" fn gosling_bridge_line_free(in_bridge_line: *mut GoslingBridgeLine) {
+    impl_registry_free!(in_bridge_line, BridgeLine);
 }
 
 /// Frees a gosling_tor_provider_config
@@ -55,7 +99,175 @@ pub extern "C" fn gosling_tor_provider_config_free(in_tor_provider_config: *mut 
     impl_registry_free!(in_tor_provider_config, TorProviderConfig);
 }
 
-/// Create a tor provider config to build a mock no-internet tor provider for testing..
+/// Frees a gosling_tor_provider object
+///
+/// @param in_tor_provider: the tor provider object to free
+#[no_mangle]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub extern "C" fn gosling_tor_provider_free(in_tor_provider: *mut GoslingTorProvider) {
+    impl_registry_free!(in_tor_provider, TorProvider);
+}
+
+//
+// Proxy
+//
+
+/// Create a socks4 proxy definition
+///
+/// @param out_proxy_config: returned proxy config object
+/// @param proxy_address: the host address of the proxy, must not be an onion service
+/// @param error: filled on error
+#[no_mangle]
+#[cfg(feature = "legacy-tor-provider")]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub extern "C" fn gosling_proxy_config_new_socks4(
+    out_proxy_config: *mut *mut GoslingProxyConfig,
+    proxy_address: *const GoslingTargetAddress,
+    error: *mut *mut GoslingError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        bail!("not implemented");
+    });
+}
+
+/// Create a socks5 proxy definition
+///
+/// @param out_proxy: returned proxy config object
+/// @param proxy_address: the host address of the proxy, must not be an onion service
+/// @param username: username to authenticate with socks5 proxy
+/// @param username_length: number of characters in username, not counting any null-
+///  terminator
+/// @param password: password to authenticate with socks5 proxy
+/// @param password_length: number of characters in username, not counting any null-
+///  terminator
+/// @param error: filled on error
+#[no_mangle]
+#[cfg(feature = "legacy-tor-provider")]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub extern "C" fn gosling_proxy_config_new_socks5(
+    out_proxy_config: *mut *mut GoslingProxyConfig,
+    proxy_address: *const GoslingTargetAddress,
+    username: *const c_char,
+    username_length: usize,
+    password: *const c_char,
+    password_length: usize,
+    error: *mut *mut GoslingError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        bail!("not implemented");
+    });
+}
+
+/// Create a https proxy definition
+///
+/// @param out_proxy_config: returned proxy config object
+/// @param proxy_address: the host address of the proxy, must not be an onion service
+/// @param username: username to authenticate with https proxy
+/// @param username_length: number of characters in username, not counting any null-
+///  terminator
+/// @param password: password to authenticate with https proxy
+/// @param password_length: number of characters in username, not counting any null-
+///  terminator
+/// @param error: filled on error
+#[no_mangle]
+#[cfg(feature = "legacy-tor-provider")]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub extern "C" fn gosling_proxy_config_new_https(
+    out_proxy_config: *mut *mut GoslingProxyConfig,
+    proxy_address: *const GoslingTargetAddress,
+    username: *const c_char,
+    username_length: usize,
+    password: *const c_char,
+    password_length: usize,
+    error: *mut *mut GoslingError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        bail!("not implemented");
+    });
+}
+
+//
+// Pluggable Transport
+//
+
+/// Create a new pluggable transport config object
+///
+/// @param out_pluggable_transport_config: returned pluggable transport object
+/// @param transports: comma-delimited list of transports this pluggable transport
+///  supports
+/// @param transports_length: number of characters in transports, not counting any
+///  null-terminator
+/// @param path_to_binary: path to the pluggable transport binary, either absolute or
+///  relative to the tor daemon process
+/// @param error: filled on error
+#[no_mangle]
+#[cfg(feature = "legacy-tor-provider")]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub unsafe extern "C" fn gosling_pluggable_transport_config_new(
+    out_pluggable_transport_config: *mut *mut GoslingPluggableTransportConfig,
+    transports: *const c_char,
+    transports_length: usize,
+    path_to_binary: *const c_char,
+    path_to_binary_length: usize,
+    error: *mut *mut GoslingError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        bail!("not implemented");
+    });
+}
+
+/// Add a command-line option to be used when launching the pluggable transport
+///
+/// @param pluggable_transport_config: the pluggable transport ocnfig object to update
+/// @param option: cmd-line option or flag to pass to the pluggable transport on launch
+/// @param option_length: number of characters in option, not counting any null-
+///  terminator
+/// @param error: filled on error
+#[no_mangle]
+#[cfg(feature = "legacy-tor-provider")]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub unsafe extern "C" fn gosling_pluggable_transport_config_add_cmdline_option(
+    pluggable_transport_config: *mut GoslingPluggableTransportConfig,
+    option: *const c_char,
+    option_length: usize,
+    error: *mut *mut GoslingError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        bail!("not implemented");
+    });
+}
+
+//
+// Bridge Line
+//
+
+/// Construct bridge line from string
+///
+/// @param out_bridge_line: returned bridge line object
+/// @param bridge_line: a bridge address to connect to using a pluggable transport. For
+///  more information, see: https://tb-manual.torproject.org/bridges/
+/// @param bridge_line_length: number of characters in bridge_line, not counting any
+///  null-terminator
+/// @param error: filled on error
+#[no_mangle]
+#[cfg(feature = "legacy-tor-provider")]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub unsafe extern "C" fn gosling_bridge_line_from_string(
+    out_bridge_line: *mut *mut GoslingBridgeLine,
+    bridge_line: *const c_char,
+    bridge_line_length: usize,
+    error: *mut *mut GoslingError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        bail!("not implemented");
+    });
+}
+
+//
+// Tor Provider Config Construction Functions
+//
+
+/// Create a tor provider config to build a mock no-internet tor provider for testing.
 ///
 /// @param out_tor_provider: returned tor provider
 /// @param error: filled on error
@@ -207,6 +419,104 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_system_legacy_client_co
 
         Ok(())
     });
+}
+
+//
+// Tor Provider Config Modification Functions
+//
+
+/// Set a tor provider config's proxy configuration. A tor provider config
+/// does not need to support proxy configuration, so this function may fail
+/// as a result. The currently supported tor provider configs are:
+/// - Legacy Bundled Client
+///
+/// @param tor_provider_config: the tor provider config to update
+/// @param proxy_config: the proxy configuration to use
+/// @param error: filled on error
+#[no_mangle]
+#[cfg(feature = "legacy-tor-provider")]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub unsafe extern "C" fn gosling_tor_provider_config_set_proxy_config(
+    tor_provider_config: *mut GoslingTorProviderConfig,
+    proxy_config: *const GoslingProxyConfig,
+    error: *mut *mut GoslingError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        bail!("not implemented");
+    })
+}
+
+/// Set a tor provider config's allowed ports list. A tor provider config does
+/// not need to support a port allow-list, so this function may fail as a result.
+/// The currently supported tor provider configs are:
+/// - Legacy Bundled Client
+///
+/// @param tor_provider_config: the tor provider config to update
+/// @param allowed_ports: an array of ports the local system's firewall allows
+///  connections to
+/// @param allowed_ports_count: the number of ports in the allowed_ports array
+/// @param error: filled on error
+#[no_mangle]
+#[cfg(feature = "legacy-tor-provider")]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub unsafe extern "C" fn gosling_tor_provider_config_set_allowed_ports(
+    tor_provider_config: *mut GoslingTorProviderConfig,
+    allowed_ports: *const u16,
+    allowed_ports_count: usize,
+    error: *mut *mut GoslingError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        bail!("not implemented");
+    })
+}
+/// Add a pluggable transport config to a tor provider config. A tor provider config
+/// does not need to support pluggable transport configuration, so this function may
+/// fail as a result. The currently supported tor provider configs are:
+/// - Legacy Bundled Client
+///
+/// This function may be called multiple times allowing a tor provider config to be
+/// configured with multiple pluggable-transports.
+///
+/// @param tor_provider_config: the tor provider config to update
+/// @param pluggable_transport_config: the pluggable transport config to add to the tor
+///  provider config
+/// @param error: filled on error
+#[no_mangle]
+#[cfg(feature = "legacy-tor-provider")]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub unsafe extern "C" fn gosling_tor_provider_config_add_pluggable_transport_config(
+    tor_provider_config: *mut GoslingTorProviderConfig,
+    pluggable_transport_config: *const GoslingPluggableTransportConfig,
+    error: *mut *mut GoslingError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        bail!("not implemented");
+    })
+}
+
+/// Add a pluggable transport config to a tor provider config. A tor provider config
+/// does not need to support pluggable transport configuration, so this function may
+/// fail as a result. The currently supported tor provider configs are:
+/// - Legacy Bundled Client
+///
+/// This function may be called multiple times allowing a tor provider config to be
+/// configured with multiple pluggable-transports.
+///
+/// @param tor_provider_config: the tor provider config to update
+/// @param pluggable_transport_config: the pluggabel transport config to add to the tor
+///  provider config
+/// @param error: filled on error
+#[no_mangle]
+#[cfg(feature = "legacy-tor-provider")]
+#[cfg_attr(feature = "impl-lib", rename_impl)]
+pub unsafe extern "C" fn gosling_tor_provider_config_add_bridge_line(
+    tor_provider_config: *mut GoslingTorProviderConfig,
+    bridge_line: *const GoslingBridgeLine,
+    error: *mut *mut GoslingError,
+) {
+    translate_failures((), error, || -> anyhow::Result<()> {
+        bail!("not implemented");
+    })
 }
 
 /// Create a tor provider from the provided tor provider config.

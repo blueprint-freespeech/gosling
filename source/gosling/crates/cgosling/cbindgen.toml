@@ -47,10 +47,13 @@ GoslingEd25519PrivateKey = "gosling_ed25519_private_key"
 GoslingV3OnionServiceId = "gosling_v3_onion_service_id"
 GoslingX25519PrivateKey = "gosling_x25519_private_key"
 GoslingX25519PublicKey = "gosling_x25519_public_key"
-GoslingTorProvider = "gosling_tor_provider"
-GoslingTorProviderConfig = "gosling_tor_provider_config"
 GoslingIpAddress = "gosling_ip_address"
 GoslingTargetAddress = "gosling_target_address"
+GoslingProxyConfig = "gosling_proxy_config"
+GoslingPluggableTransportConfig = "gosling_pluggable_transport_config"
+GoslingBridgeLine = "gosling_bridge_line"
+GoslingTorProviderConfig = "gosling_tor_provider_config"
+GoslingTorProvider = "gosling_tor_provider"
 
 # callbacks
 

@@ -20,11 +20,17 @@ pub(crate) const ED25519_PRIVATE_KEY_TAG: usize = 0x2;
 pub(crate) const X25519_PRIVATE_KEY_TAG: usize = 0x3;
 pub(crate) const X25519_PUBLIC_KEY_TAG: usize = 0x4;
 pub(crate) const V3_ONION_SERVICE_ID_TAG: usize = 0x5;
-pub(crate) const TOR_PROVIDER_TAG: usize = 0x6;
-pub(crate) const TOR_PROVIDER_CONFIG_TAG: usize = 0x7;
-pub(crate) const CONTEXT_TUPLE_TAG: usize = 0x8;
-pub(crate) const IP_ADDR_TAG: usize = 0x9;
-pub(crate) const TARGET_ADDR_TAG: usize = 0xA;
+pub(crate) const IP_ADDR_TAG: usize = 0x6;
+pub(crate) const TARGET_ADDR_TAG: usize = 0x7;
+#[cfg(feature = "legacy-tor-provider")]
+pub(crate) const PROXY_CONFIG_TAG: usize = 0x8;
+#[cfg(feature = "legacy-tor-provider")]
+pub(crate) const PLUGGABLE_TRANSPORT_CONFIG_TAG: usize = 0x9;
+#[cfg(feature = "legacy-tor-provider")]
+pub(crate) const BRIDGE_LINE_TAG: usize = 0xA;
+pub(crate) const TOR_PROVIDER_CONFIG_TAG: usize = 0xB;
+pub(crate) const TOR_PROVIDER_TAG: usize = 0xC;
+pub(crate) const CONTEXT_TUPLE_TAG: usize = 0xD;
 
 /// A handle for the gosling library
 pub struct GoslingLibrary;
