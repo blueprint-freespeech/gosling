@@ -79,7 +79,8 @@ handlebars_helper!(inputParamsToJavaParams: |params: Vec<Param>| {
             "uint32_t" => "long".to_string(),
             "size_t" => {
                 if param.name.ends_with("_size") ||
-                   param.name.ends_with("_length") {
+                   param.name.ends_with("_length") ||
+                   param.name.ends_with("_count") {
                     // we don't need size or length args because we'll use
                     // Strings or byte[]
                     continue;
@@ -92,6 +93,7 @@ handlebars_helper!(inputParamsToJavaParams: |params: Vec<Param>| {
             "const char*" => "String".to_string(),
             "const uint8_t*" => "byte[]".to_string(),
             "uint8_t*" => "byte[]".to_string(),
+            "const uint16_t*" => "int[]".to_string(),
             "gosling_handshake_handle_t" => "long".to_string(),
             "gosling_tcp_socket_t" => "java.net.Socket".to_string(),
             "gosling_tcp_socket_t*" => "Out<java.net.Socket>".to_string(),
@@ -141,12 +143,14 @@ handlebars_helper!(inputParamsToJNIParams: |params: Vec<Param>| {
         let jni_typename = match param.typename.as_ref() {
             "uint8_t" => "jshort".to_string(),
             "uint16_t" => "jint".to_string(),
+            "const uint16_t*" => "jintArray".to_string(),
             "uint32_t" => "jlong".to_string(),
             "size_t" => {
                 if param.name.ends_with("_size") ||
-                   param.name.ends_with("_length") {
+                   param.name.ends_with("_length") ||
+                   param.name.ends_with("_count") {
                     // we don't need size or length args because we'll use
-                    // Strings or byte[]
+                    // Strings, byte[], or int[]
                     continue;
                 } else {
                     // othewise we assume it is likely being used as a handle
@@ -197,6 +201,16 @@ handlebars_helper!(marshallJNIParams: |function_name: String, params: Vec<Param>
         match typename {
             // TODO: ensure the passed in values are in valid range for native type
             "uint8_t" => cpp_src!("const uint8_t {name}_native = static_cast<uint8_t>({name});"),
+            "const uint16_t*" => {
+                // copy over jints to uint16_ts
+                cpp_src!("const jint* {name}_wide_native = ({name} ? env->GetIntArrayElements({name}, nullptr) : nullptr);");
+                cpp_src!("const size_t {name}_count_native = ({name} ? static_cast<size_t>(env->GetArrayLength({name})) : 0);");
+                cpp_src!("auto {name}_unique = std::make_unique<uint16_t[]>({name}_count_native);");
+                cpp_src!("for(auto i = 0; i < {name}_count_native; i++) {{");
+                cpp_src!("    {name}_unique[i] = static_cast<uint16_t>({name}_wide_native[i]);");
+                cpp_src!("}}");
+                cpp_src!("const auto* {name}_native = {name}_count_native ? {name}_unique.get() : nullptr;");
+            },
             "uint16_t" => cpp_src!("const uint16_t {name}_native = static_cast<uint16_t>({name});"),
             "const char*" => {
                 cpp_src!("const char* {name}_native = ({name} ? env->GetStringUTFChars({name}, nullptr) : nullptr);");
@@ -223,6 +237,8 @@ handlebars_helper!(marshallJNIParams: |function_name: String, params: Vec<Param>
                     let (from, to) = (caps.name("from").unwrap().as_str(), caps.name("to").unwrap().as_str());
                     let buffer_size = format!("{}_{}_SIZE", from.to_uppercase(), to.to_uppercase());
                     cpp_src!("constexpr size_t {name}_native = {buffer_size};");
+                } else if name.ends_with("_count") {
+                    // no-op for arrays of primitives
                 } else {
                     panic!("unhandled argument => {name}: {typename}");
                 }
@@ -325,7 +341,7 @@ handlebars_helper!(marshallNativeResults: |return_type: String, params: Vec<Para
         let typename: &str = param.typename.as_ref();
 
         match typename {
-            "uint8_t" | "uint16_t" | "size_t" | "gosling_handshake_handle_t" | "gosling_circuit_token_t" => (),
+            "uint8_t" | "uint16_t" | "size_t" | "gosling_handshake_handle_t" | "gosling_circuit_token_t" | "const uint16_t*" => (),
             "const char*" => {
                 cpp_src!("env->ReleaseStringUTFChars({name}, {name}_native);");
             },
