@@ -36,7 +36,7 @@ jobs:
           rustup default stable-${{ matrix.rust-target }}
       - name: Build Debug
         run: |
-          cmake -S . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=dist/debug -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DCMAKE_C_FLAGS="${{ matrix.cflags }}" -DCMAKE_CXX_FLAGS="${{ matrix.cxxflags }}" -DCMAKE_FIND_ROOT_PATH=${{ matrix.cmake-find-root-path }}
+          cmake -S . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=dist/debug -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_DEBIAN_SOURCE_PACKAGE=ON -DCMAKE_C_FLAGS="${{ matrix.cflags }}" -DCMAKE_CXX_FLAGS="${{ matrix.cxxflags }}" -DCMAKE_FIND_ROOT_PATH=${{ matrix.cmake-find-root-path }}
           cmake --build build
           cmake --install build
       - name: Archive Debug
@@ -50,7 +50,7 @@ jobs:
           path: dist/gosling-linux-gnu-${{ matrix.arch }}-debug.tar
       - name: Build Release
         run: |
-          cmake -S . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=dist/release -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DCMAKE_C_FLAGS="${{ matrix.cflags }}"
+          cmake -S . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=dist/release -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_DEBIAN_SOURCE_PACKAGE=ON -DCMAKE_C_FLAGS="${{ matrix.cflags }}"
           cmake --build build
           cmake --install build
       - name: Archive Release
