@@ -235,7 +235,7 @@ cmake -DBUILD_MSYS2_PKGBUILD=ON
 
 Builds an MSYS2 PKGBUILD script which builds and installs libcgosling static libs, shared libs, and development headers.
 
-See [source/packages/msys2-pckbuild/README.md](source/packages/msys2-pckbuild/README.md) for more additional information.
+See [source/packages/msys2-pkgbuild/README.md](source/packages/msys2-pkgbuild/README.md) for more additional information.
 
 ### BUILD_PAGES
 
