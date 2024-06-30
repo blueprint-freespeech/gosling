@@ -10,7 +10,7 @@ use anyhow::bail;
 use tor_interface::legacy_tor_client::*;
 #[cfg(feature = "mock-tor-provider")]
 use tor_interface::mock_tor_client::*;
-use tor_interface::tor_provider::{BridgeLine, PluggableTransportConfig, ProxyConfig};
+use tor_interface::tor_provider::*;
 use tor_interface::*;
 #[cfg(feature = "impl-lib")]
 use cgosling_proc_macros::*;
@@ -120,13 +120,25 @@ pub extern "C" fn gosling_tor_provider_free(in_tor_provider: *mut GoslingTorProv
 #[no_mangle]
 #[cfg(feature = "legacy-tor-provider")]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
-pub extern "C" fn gosling_proxy_config_new_socks4(
+pub unsafe extern "C" fn gosling_proxy_config_new_socks4(
     out_proxy_config: *mut *mut GoslingProxyConfig,
     proxy_address: *const GoslingTargetAddress,
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
+        ensure_not_null!(out_proxy_config);
+        ensure_not_null!(proxy_address);
+
+        let proxy_address = match get_target_addr_registry().get(proxy_address as usize) {
+            Some(target_address) => target_address.clone(),
+            None => bail_invalid_handle!(proxy_address),
+        };
+        let proxy_config = Socks4ProxyConfig::new(proxy_address)?;
+
+        let handle = get_proxy_config_registry().insert(proxy_config.into());
+        *out_proxy_config = handle as *mut GoslingProxyConfig;
+
+        Ok(())
     });
 }
 
@@ -144,7 +156,7 @@ pub extern "C" fn gosling_proxy_config_new_socks4(
 #[no_mangle]
 #[cfg(feature = "legacy-tor-provider")]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
-pub extern "C" fn gosling_proxy_config_new_socks5(
+pub unsafe extern "C" fn gosling_proxy_config_new_socks5(
     out_proxy_config: *mut *mut GoslingProxyConfig,
     proxy_address: *const GoslingTargetAddress,
     username: *const c_char,
@@ -154,7 +166,38 @@ pub extern "C" fn gosling_proxy_config_new_socks5(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
+        ensure_not_null!(out_proxy_config);
+        ensure_not_null!(proxy_address);
+
+        let proxy_address = match get_target_addr_registry().get(proxy_address as usize) {
+            Some(target_address) => target_address.clone(),
+            None => bail_invalid_handle!(proxy_address),
+        };
+
+        let username = if username.is_null() || username_length == 0 {
+            None
+        } else {
+            let username =
+                std::slice::from_raw_parts(username as *const u8, username_length);
+            let username = std::str::from_utf8(username)?;
+            Some(username.to_string())
+        };
+
+        let password = if password.is_null() || password_length == 0 {
+            None
+        } else {
+            let password =
+                std::slice::from_raw_parts(password as *const u8, password_length);
+            let password = std::str::from_utf8(password)?;
+            Some(password.to_string())
+        };
+
+        let proxy_config = Socks5ProxyConfig::new(proxy_address, username, password)?;
+
+        let handle = get_proxy_config_registry().insert(proxy_config.into());
+        *out_proxy_config = handle as *mut GoslingProxyConfig;
+
+        Ok(())
     });
 }
 
@@ -172,7 +215,7 @@ pub extern "C" fn gosling_proxy_config_new_socks5(
 #[no_mangle]
 #[cfg(feature = "legacy-tor-provider")]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
-pub extern "C" fn gosling_proxy_config_new_https(
+pub unsafe extern "C" fn gosling_proxy_config_new_https(
     out_proxy_config: *mut *mut GoslingProxyConfig,
     proxy_address: *const GoslingTargetAddress,
     username: *const c_char,
@@ -182,7 +225,38 @@ pub extern "C" fn gosling_proxy_config_new_https(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
+        ensure_not_null!(out_proxy_config);
+        ensure_not_null!(proxy_address);
+
+        let proxy_address = match get_target_addr_registry().get(proxy_address as usize) {
+            Some(target_address) => target_address.clone(),
+            None => bail_invalid_handle!(proxy_address),
+        };
+
+        let username = if username.is_null() || username_length == 0 {
+            None
+        } else {
+            let username =
+                std::slice::from_raw_parts(username as *const u8, username_length);
+            let username = std::str::from_utf8(username)?;
+            Some(username.to_string())
+        };
+
+        let password = if password.is_null() || password_length == 0 {
+            None
+        } else {
+            let password =
+                std::slice::from_raw_parts(password as *const u8, password_length);
+            let password = std::str::from_utf8(password)?;
+            Some(password.to_string())
+        };
+
+        let proxy_config = HttpsProxyConfig::new(proxy_address, username, password)?;
+
+        let handle = get_proxy_config_registry().insert(proxy_config.into());
+        *out_proxy_config = handle as *mut GoslingProxyConfig;
+
+        Ok(())
     });
 }
 
