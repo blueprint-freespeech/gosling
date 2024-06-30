@@ -286,8 +286,29 @@ pub unsafe extern "C" fn gosling_pluggable_transport_config_new(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
-    });
+        ensure_not_null!(out_pluggable_transport_config);
+        ensure_not_null!(transports);
+        ensure_not_equal!(transports_length, 0);
+        ensure_not_null!(path_to_binary);
+        ensure_not_equal!(path_to_binary_length, 0);
+
+        let transports =
+            std::slice::from_raw_parts(transports as *const u8, transports_length);
+        let transports = std::str::from_utf8(transports)?;
+        let transports: Vec<String> = transports.split(',').map(|s| s.to_string()).collect();
+
+        let path_to_binary =
+            std::slice::from_raw_parts(path_to_binary as *const u8, path_to_binary_length);
+        let path_to_binary = std::str::from_utf8(path_to_binary)?;
+        let path_to_binary = Path::new(path_to_binary);
+        path_to_binary.canonicalize()?;
+
+        let pluggable_transport_config = PluggableTransportConfig::new(transports, path_to_binary.into())?;
+        let handle = get_pluggable_transport_config_registry().insert(pluggable_transport_config);
+        *out_pluggable_transport_config = handle as *mut GoslingPluggableTransportConfig;
+
+        Ok(())
+    })
 }
 
 /// Add a command-line option to be used when launching the pluggable transport
@@ -307,7 +328,20 @@ pub unsafe extern "C" fn gosling_pluggable_transport_config_add_cmdline_option(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
+        ensure_not_null!(pluggable_transport_config);
+        ensure_not_null!(option);
+        ensure_not_equal!(option_length, 0);
+
+        let option =
+            std::slice::from_raw_parts(option as *const u8, option_length);
+        let option = std::str::from_utf8(option)?;
+
+        match get_pluggable_transport_config_registry().get_mut(pluggable_transport_config as usize) {
+            Some(config) => config.add_option(option.to_string()),
+            None => bail_invalid_handle!(pluggable_transport_config),
+        }
+
+        Ok(())
     });
 }
 
