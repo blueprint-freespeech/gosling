@@ -23,6 +23,7 @@ use crate::crypto::*;
 use crate::error::Error;
 use crate::error::*;
 use crate::ffi::*;
+use crate::macros::*;
 use crate::tor_provider::*;
 
 // empty bson document layout:

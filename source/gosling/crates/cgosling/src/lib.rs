@@ -10,6 +10,7 @@ pub mod context;
 pub mod crypto;
 pub mod error;
 pub mod ffi;
+mod macros;
 mod object_registry;
 pub mod tor_provider;
 pub mod utils;

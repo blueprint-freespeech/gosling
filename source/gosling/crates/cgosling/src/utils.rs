@@ -19,6 +19,7 @@ use crate::context::*;
 use crate::crypto::*;
 use crate::error::*;
 use crate::ffi::*;
+use crate::macros::*;
 
 /// The maximum number of bytes needed to store a target address
 /// in the format domainname:port (including null-terminator)

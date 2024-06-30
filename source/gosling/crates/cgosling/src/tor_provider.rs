@@ -19,6 +19,7 @@ use crate::error::*;
 use crate::ffi::*;
 #[cfg(feature = "legacy-tor-provider")]
 use crate::utils::*;
+use crate::macros::*;
 
 /// A tor provider object used by a context to connect to the tor network
 pub struct GoslingTorProvider;

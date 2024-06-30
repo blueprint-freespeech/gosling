@@ -9,6 +9,7 @@ use cgosling_proc_macros::*;
 
 // internal crates
 use crate::ffi::*;
+use crate::macros::*;
 
 /// Error Handling
 #[derive(Clone)]

@@ -11,7 +11,7 @@ use tor_interface::tor_crypto::*;
 // internal crates
 use crate::error::*;
 use crate::ffi::*;
-
+use crate::macros::*;
 
 /// An ed25519 private key used to create a v3 onion service
 pub struct GoslingEd25519PrivateKey;
