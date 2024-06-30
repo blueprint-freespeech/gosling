@@ -106,9 +106,7 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_bundled_legacy_client_c
             bail!("tor_bin_path is not null so tor_bin_path_length must be greater than 0");
         }
         ensure_not_null!(tor_working_directory);
-        if tor_working_directory_length == 0usize {
-            bail!("tor_working_directory_length must not be 0");
-        }
+        ensure_not_equal!(tor_working_directory_length, 0);
 
         // tor bin
         let tor_bin_path = if tor_bin_path.is_null() {
@@ -167,17 +165,11 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_system_legacy_client_co
     translate_failures((), error, || -> anyhow::Result<()> {
         ensure_not_null!(out_tor_provider_config);
         ensure_not_null!(tor_socks_host);
-        if tor_socks_port == 0 {
-            bail!("tor_socks_port must not be 0");
-        }
+        ensure_not_equal!(tor_socks_port, 0);
         ensure_not_null!(tor_control_host);
-        if tor_control_port == 0 {
-            bail!("tor_control_port must not be 0");
-        }
+        ensure_not_equal!(tor_control_port, 0);
         ensure_not_null!(tor_control_passwd);
-        if tor_control_passwd_length == 0usize {
-            bail!("tor_control_passwd_length must not be 0");
-        }
+        ensure_not_equal!(tor_control_passwd_length, 0);
 
         // constructor tor_socks_addr
         let tor_socks_host = match get_ip_addr_registry().get(tor_socks_host as usize) {

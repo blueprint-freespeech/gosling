@@ -81,12 +81,8 @@ pub unsafe extern "C" fn gosling_context_init(
     translate_failures((), error, || -> anyhow::Result<()> {
         ensure_not_null!(out_context);
         ensure_not_null!(in_tor_provider);
-        if identity_port == 0u16 {
-            bail!("identity_port must not be 0");
-        }
-        if endpoint_port == 0u16 {
-            bail!("endpoint_port must not be 0");
-        }
+        ensure_not_equal!(identity_port, 0);
+        ensure_not_equal!(endpoint_port, 0);
         ensure_not_null!(identity_private_key);
 
         // get our tor provider
@@ -212,9 +208,7 @@ pub extern "C" fn gosling_context_start_endpoint_server(
         ensure_not_null!(context);
         ensure_not_null!(endpoint_private_key);
         ensure_not_null!(endpoint_name);
-        if endpoint_name_length == 0 {
-            bail!("endpoint_name_length must not be 0");
-        }
+        ensure_not_equal!(endpoint_name_length, 0);
         ensure_not_null!(client_identity);
         ensure_not_null!(client_auth_public_key);
 
@@ -318,9 +312,7 @@ pub extern "C" fn gosling_context_begin_identity_handshake(
             ensure_not_null!(context);
             ensure_not_null!(identity_service_id);
             ensure_not_null!(endpoint_name);
-            if endpoint_name_length == 0 {
-                bail!("endpoint_name_length must not be 0");
-            }
+            ensure_not_equal!(endpoint_name_length, 0);
 
             let mut context_tuple_registry = get_context_tuple_registry();
             let context = match context_tuple_registry.get_mut(context as usize) {
@@ -403,9 +395,7 @@ pub extern "C" fn gosling_context_begin_endpoint_handshake(
             ensure_not_null!(endpoint_service_id);
             ensure_not_null!(client_auth_private_key);
             ensure_not_null!(channel_name);
-            if channel_name_length == 0 {
-                bail!("channel_name_length must not be 0");
-            }
+            ensure_not_equal!(channel_name_length, 0);
 
             let mut context_tuple_registry = get_context_tuple_registry();
             let context = match context_tuple_registry.get_mut(context as usize) {

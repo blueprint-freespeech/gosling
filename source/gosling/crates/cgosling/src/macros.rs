@@ -58,6 +58,15 @@ macro_rules! ensure_not_null {
 }
 pub(crate) use ensure_not_null;
 
+macro_rules! ensure_not_equal {
+    ($value:ident, $constant:literal) => {
+        if $value == $constant {
+            bail!(stringify!([<$value> must not be <$constant>]));
+        }
+    }
+}
+pub(crate) use ensure_not_equal;
+
 // bail because handle invalid
 macro_rules! bail_invalid_handle {
     ($handle:ident) => {
