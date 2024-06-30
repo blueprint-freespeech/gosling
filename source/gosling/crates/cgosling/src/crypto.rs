@@ -86,12 +86,8 @@ pub unsafe extern "C" fn gosling_ed25519_private_key_clone(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_private_key.is_null() {
-            bail!("out_private_key must not be null");
-        }
-        if private_key.is_null() {
-            bail!("private_key must not be null");
-        }
+        ensure_not_null!(out_private_key);
+        ensure_not_null!(private_key);
 
         let private_key = match get_ed25519_private_key_registry().get(private_key as usize) {
             Some(private_key) => private_key.clone(),
@@ -117,12 +113,8 @@ pub unsafe extern "C" fn gosling_x25519_public_key_clone(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_public_key.is_null() {
-            bail!("out_public_key must not be null");
-        }
-        if public_key.is_null() {
-            bail!("public_key must not be null");
-        }
+        ensure_not_null!(out_public_key);
+        ensure_not_null!(public_key);
 
         let public_key = match get_x25519_public_key_registry().get(public_key as usize) {
             Some(public_key) => public_key.clone(),
@@ -149,12 +141,8 @@ pub unsafe extern "C" fn gosling_x25519_private_key_clone(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_private_key.is_null() {
-            bail!("out_private_key must not be null");
-        }
-        if private_key.is_null() {
-            bail!("private_key must not be null");
-        }
+        ensure_not_null!(out_private_key);
+        ensure_not_null!(private_key);
 
         let private_key = match get_x25519_private_key_registry().get(private_key as usize) {
             Some(private_key) => private_key.clone(),
@@ -180,12 +168,8 @@ pub unsafe extern "C" fn gosling_v3_onion_service_id_clone(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_service_id.is_null() {
-            bail!("out_service_id must not be null");
-        }
-        if service_id.is_null() {
-            bail!("service_id must not be null");
-        }
+        ensure_not_null!(out_service_id);
+        ensure_not_null!(service_id);
 
         let service_id = match get_v3_onion_service_id_registry().get(service_id as usize) {
             Some(service_id) => service_id.clone(),
@@ -213,9 +197,7 @@ pub unsafe extern "C" fn gosling_ed25519_private_key_generate(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_private_key.is_null() {
-            bail!("out_private_key must not be null");
-        }
+        ensure_not_null!(out_private_key);
 
         let private_key = Ed25519PrivateKey::generate();
         let handle = get_ed25519_private_key_registry().insert(private_key);
@@ -242,12 +224,8 @@ pub unsafe extern "C" fn gosling_ed25519_private_key_from_keyblob(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_private_key.is_null() {
-            bail!("out_private_key must not be null");
-        }
-        if key_blob.is_null() {
-            bail!("key_blob must not be null");
-        }
+        ensure_not_null!(out_private_key);
+        ensure_not_null!(key_blob);
 
         if key_blob_length != ED25519_PRIVATE_KEY_KEYBLOB_LENGTH {
             bail!("key_blob_length must be exactly ED25519_PRIVATE_KEY_KEYBLOB_LENGTH ({}); received '{}'", ED25519_PRIVATE_KEY_KEYBLOB_LENGTH, key_blob_length);
@@ -282,12 +260,8 @@ pub extern "C" fn gosling_ed25519_private_key_to_keyblob(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if private_key.is_null() {
-            bail!("private_key must not be null");
-        }
-        if out_key_blob.is_null() {
-            bail!("out_key_blob must not be null");
-        }
+        ensure_not_null!(private_key);
+        ensure_not_null!(out_key_blob);
 
         if key_blob_size < ED25519_PRIVATE_KEY_KEYBLOB_SIZE {
             bail!(
@@ -343,12 +317,8 @@ pub unsafe extern "C" fn gosling_x25519_private_key_from_base64(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_private_key.is_null() {
-            bail!("out_private_key must not be null");
-        }
-        if base64.is_null() {
-            bail!("base64 must not be null");
-        }
+        ensure_not_null!(out_private_key);
+        ensure_not_null!(base64);
 
         if base64_length != X25519_PRIVATE_KEY_BASE64_LENGTH {
             bail!("base64_length must be exactly X25519_PRIVATE_KEY_BASE64_LENGTH ({}); received '{}'", X25519_PRIVATE_KEY_BASE64_LENGTH, base64_length);
@@ -382,12 +352,8 @@ pub extern "C" fn gosling_x25519_private_key_to_base64(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if private_key.is_null() {
-            bail!("private_key must not be null");
-        }
-        if out_base64.is_null() {
-            bail!("out_base64 must not be null");
-        }
+        ensure_not_null!(private_key);
+        ensure_not_null!(out_base64);
 
         if base64_size < X25519_PRIVATE_KEY_BASE64_SIZE {
             bail!(
@@ -443,12 +409,8 @@ pub unsafe extern "C" fn gosling_x25519_public_key_from_base32(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_public_key.is_null() {
-            bail!("out_public_key must not be null");
-        }
-        if base32.is_null() {
-            bail!("bas32 must not be null");
-        }
+        ensure_not_null!(out_public_key);
+        ensure_not_null!(base32);
 
         if base32_length != X25519_PUBLIC_KEY_BASE32_LENGTH {
             bail!(
@@ -486,12 +448,8 @@ pub extern "C" fn gosling_x25519_public_key_to_base32(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if public_key.is_null() {
-            bail!("public_key must not be null");
-        }
-        if out_base32.is_null() {
-            bail!("out_base32 must not be null");
-        }
+        ensure_not_null!(public_key);
+        ensure_not_null!(out_base32);
 
         if base32_size < X25519_PUBLIC_KEY_BASE32_SIZE {
             bail!(
@@ -548,12 +506,8 @@ pub unsafe extern "C" fn gosling_v3_onion_service_id_from_string(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_service_id.is_null() {
-            bail!("out_service_id must not be null");
-        }
-        if service_id_string.is_null() {
-            bail!("service_id_string must not be null");
-        }
+        ensure_not_null!(out_service_id);
+        ensure_not_null!(service_id_string);
 
         if service_id_string_length != V3_ONION_SERVICE_ID_STRING_LENGTH {
             bail!("service_id_string_length must be exactly V3_ONION_SERVICE_ID_STRING_LENGTH ({}); received '{}'", V3_ONION_SERVICE_ID_STRING_LENGTH, service_id_string_length);
@@ -585,12 +539,8 @@ pub unsafe extern "C" fn gosling_v3_onion_service_id_from_ed25519_private_key(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_service_id.is_null() {
-            bail!("out_service_id must not be null");
-        }
-        if ed25519_private_key.is_null() {
-            bail!("ed25519_private_key must not be null");
-        }
+        ensure_not_null!(out_service_id);
+        ensure_not_null!(ed25519_private_key);
 
         let service_id = {
             let ed25519_private_key_registry = get_ed25519_private_key_registry();
@@ -626,12 +576,8 @@ pub extern "C" fn gosling_v3_onion_service_id_to_string(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if service_id.is_null() {
-            bail!("service_id must not be null");
-        }
-        if out_service_id_string.is_null() {
-            bail!("out_service_id_string must not be null");
-        }
+        ensure_not_null!(service_id);
+        ensure_not_null!(out_service_id_string);
 
         if service_id_string_size < V3_ONION_SERVICE_ID_STRING_SIZE {
             bail!(
@@ -684,9 +630,7 @@ pub extern "C" fn gosling_string_is_valid_v3_onion_service_id(
     error: *mut *mut GoslingError,
 ) -> bool {
     translate_failures(false, error, || -> anyhow::Result<bool> {
-        if service_id_string.is_null() {
-            bail!("service_id_string must not be null");
-        }
+        ensure_not_null!(service_id_string);
 
         if service_id_string_length != V3_ONION_SERVICE_ID_STRING_LENGTH {
             bail!(

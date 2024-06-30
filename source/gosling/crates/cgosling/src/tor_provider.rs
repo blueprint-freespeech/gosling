@@ -67,9 +67,7 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_mock_client_config(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_tor_provider_config.is_null() {
-            bail!("out_tor_provider_config must not be null");
-        }
+        ensure_not_null!(out_tor_provider_config);
 
         let handle = get_tor_provider_config_registry().insert(TorProviderConfig::MockTorClientConfig);
         *out_tor_provider_config = handle as *mut GoslingTorProviderConfig;
@@ -100,18 +98,14 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_bundled_legacy_client_c
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_tor_provider_config.is_null() {
-            bail!("out_tor_provider_config must not be null");
-        }
+        ensure_not_null!(out_tor_provider_config);
         if tor_bin_path.is_null() && tor_bin_path_length != 0 {
             bail!("tor_bin_path is null so tor_bin_path_length must be 0");
         }
         if !tor_bin_path.is_null() && tor_bin_path_length == 0 {
             bail!("tor_bin_path is not null so tor_bin_path_length must be greater than 0");
         }
-        if tor_working_directory.is_null() {
-            bail!("tor_working_directory must not be null");
-        }
+        ensure_not_null!(tor_working_directory);
         if tor_working_directory_length == 0usize {
             bail!("tor_working_directory_length must not be 0");
         }
@@ -171,24 +165,16 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_system_legacy_client_co
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_tor_provider_config.is_null() {
-            bail!("out_tor_provider_config must not be null");
-        }
-        if tor_socks_host.is_null() {
-            bail!("tor_socks_host must not be null");
-        }
+        ensure_not_null!(out_tor_provider_config);
+        ensure_not_null!(tor_socks_host);
         if tor_socks_port == 0 {
             bail!("tor_socks_port must not be 0");
         }
-        if tor_control_host.is_null() {
-            bail!("tor_control_host must not be null");
-        }
+        ensure_not_null!(tor_control_host);
         if tor_control_port == 0 {
             bail!("tor_control_port must not be 0");
         }
-        if tor_control_passwd.is_null() {
-            bail!("tor_control_passwd must not be null");
-        }
+        ensure_not_null!(tor_control_passwd);
         if tor_control_passwd_length == 0usize {
             bail!("tor_control_passwd_length must not be 0");
         }
@@ -240,12 +226,8 @@ pub unsafe extern "C" fn gosling_tor_provider_from_tor_provider_config(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_tor_provider.is_null() {
-            bail!("out_tor_provider must not be null");
-        }
-        if tor_provider_config.is_null() {
-            bail!("tor_provider_config must not be null");
-        }
+        ensure_not_null!(out_tor_provider);
+        ensure_not_null!(tor_provider_config);
 
         let tor_provider: Box::<dyn tor_provider::TorProvider> = match get_tor_provider_config_registry().get(tor_provider_config as usize) {
             Some(tor_provider_config) => match tor_provider_config {

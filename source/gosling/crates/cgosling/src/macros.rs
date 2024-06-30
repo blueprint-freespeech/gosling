@@ -41,3 +41,19 @@ macro_rules! impl_registry_free {
     };
 }
 pub(crate) use impl_registry_free;
+
+//
+// Argument validation macros
+//
+
+// ensure pointer is not null
+macro_rules! ensure_not_null {
+    ($ptr:ident) => {
+        paste::paste! {
+            if $ptr.is_null() {
+                bail!(stringify!([<$ptr>] must not be null));
+            }
+        }
+    }
+}
+pub(crate) use ensure_not_null;

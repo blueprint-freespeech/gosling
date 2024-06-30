@@ -79,21 +79,15 @@ pub unsafe extern "C" fn gosling_context_init(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_context.is_null() {
-            bail!("out_context must not be null");
-        }
-        if in_tor_provider.is_null() {
-            bail!("in_tor_provider must not be null");
-        }
+        ensure_not_null!(out_context);
+        ensure_not_null!(in_tor_provider);
         if identity_port == 0u16 {
             bail!("identity_port must not be 0");
         }
         if endpoint_port == 0u16 {
             bail!("endpoint_port must not be 0");
         }
-        if identity_private_key.is_null() {
-            bail!("identity_private_key must not be null");
-        }
+        ensure_not_null!(identity_private_key);
 
         // get our tor provider
         let tor_provider = match get_tor_provider_registry().remove(in_tor_provider as usize) {
@@ -138,9 +132,7 @@ pub extern "C" fn gosling_context_bootstrap_tor(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if context.is_null() {
-            bail!("context must not be null");
-        }
+        ensure_not_null!(context);
 
         let mut context_tuple_registry = get_context_tuple_registry();
         let context = match context_tuple_registry.get_mut(context as usize) {
@@ -162,9 +154,7 @@ pub extern "C" fn gosling_context_start_identity_server(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if context.is_null() {
-            bail!("context must not be null");
-        }
+        ensure_not_null!(context);
 
         let mut context_tuple_registry = get_context_tuple_registry();
         let context = match context_tuple_registry.get_mut(context as usize) {
@@ -186,9 +176,7 @@ pub extern "C" fn gosling_context_stop_identity_server(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if context.is_null() {
-            bail!("context must not be null");
-        }
+        ensure_not_null!(context);
 
         let mut context_tuple_registry = get_context_tuple_registry();
         let context = match context_tuple_registry.get_mut(context as usize) {
@@ -221,24 +209,14 @@ pub extern "C" fn gosling_context_start_endpoint_server(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if context.is_null() {
-            bail!("context must not be null");
-        }
-        if endpoint_private_key.is_null() {
-            bail!("endpoint_private_key mut not be null");
-        }
-        if endpoint_name.is_null() {
-            bail!("endpoint_name must not be null");
-        }
+        ensure_not_null!(context);
+        ensure_not_null!(endpoint_private_key);
+        ensure_not_null!(endpoint_name);
         if endpoint_name_length == 0 {
             bail!("endpoint_name_length must not be 0");
         }
-        if client_identity.is_null() {
-            bail!("client_identity must not be null");
-        }
-        if client_auth_public_key.is_null() {
-            bail!("client_auth_public_key must not be null");
-        }
+        ensure_not_null!(client_identity);
+        ensure_not_null!(client_auth_public_key);
 
         let mut context_tuple_registry = get_context_tuple_registry();
         let context = match context_tuple_registry.get_mut(context as usize) {
@@ -295,12 +273,8 @@ pub extern "C" fn gosling_context_stop_endpoint_server(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if context.is_null() {
-            bail!("context must not be null");
-        }
-        if endpoint_private_key.is_null() {
-            bail!("endpoint_private_key must not be null");
-        }
+        ensure_not_null!(context);
+        ensure_not_null!(endpoint_private_key);
 
         let mut context_tuple_registry = get_context_tuple_registry();
         let context = match context_tuple_registry.get_mut(context as usize) {
@@ -341,15 +315,9 @@ pub extern "C" fn gosling_context_begin_identity_handshake(
         !0usize,
         error,
         || -> anyhow::Result<GoslingHandshakeHandle> {
-            if context.is_null() {
-                bail!("context must not be null");
-            }
-            if identity_service_id.is_null() {
-                bail!("identity_service_id must not be null");
-            }
-            if endpoint_name.is_null() {
-                bail!("endpoint_name must not be null");
-            }
+            ensure_not_null!(context);
+            ensure_not_null!(identity_service_id);
+            ensure_not_null!(endpoint_name);
             if endpoint_name_length == 0 {
                 bail!("endpoint_name_length must not be 0");
             }
@@ -395,9 +363,7 @@ pub extern "C" fn gosling_context_abort_identity_client_handshake(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if context.is_null() {
-            bail!("context must not be null");
-        }
+        ensure_not_null!(context);
 
         let mut context_tuple_registry = get_context_tuple_registry();
         let context = match context_tuple_registry.get_mut(context as usize) {
@@ -433,18 +399,10 @@ pub extern "C" fn gosling_context_begin_endpoint_handshake(
         !0usize,
         error,
         || -> anyhow::Result<GoslingHandshakeHandle> {
-            if context.is_null() {
-                bail!("context must not be null");
-            }
-            if endpoint_service_id.is_null() {
-                bail!("endpoint_service_id must not be null");
-            }
-            if client_auth_private_key.is_null() {
-                bail!("client_auth_private_key must not be null");
-            }
-            if channel_name.is_null() {
-                bail!("channel_name must not be null");
-            }
+            ensure_not_null!(context);
+            ensure_not_null!(endpoint_service_id);
+            ensure_not_null!(client_auth_private_key);
+            ensure_not_null!(channel_name);
             if channel_name_length == 0 {
                 bail!("channel_name_length must not be 0");
             }
@@ -499,9 +457,7 @@ pub extern "C" fn gosling_context_abort_endpoint_client_handshake(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if context.is_null() {
-            bail!("context must not be null");
-        }
+        ensure_not_null!(context);
 
         let mut context_tuple_registry = get_context_tuple_registry();
         let context = match context_tuple_registry.get_mut(context as usize) {

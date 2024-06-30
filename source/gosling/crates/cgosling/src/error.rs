@@ -69,12 +69,8 @@ pub unsafe extern "C" fn gosling_error_clone(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_error.is_null() {
-            bail!("out_error must not be null");
-        }
-        if orig_error.is_null() {
-            bail!("orig_error must not be null");
-        }
+        ensure_not_null!(out_error);
+        ensure_not_null!(orig_error);
 
         let orig_error = match get_error_registry().get(orig_error as usize) {
             Some(orig_error) => orig_error.clone(),

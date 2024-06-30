@@ -80,12 +80,8 @@ pub unsafe extern "C" fn gosling_ip_address_clone(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_ip_address.is_null() {
-            bail!("out_ip_address must not be null");
-        }
-        if ip_address.is_null() {
-            bail!("ip_address must not be null");
-        }
+        ensure_not_null!(out_ip_address);
+        ensure_not_null!(ip_address);
 
         let ip_address = match get_ip_addr_registry().get(ip_address as usize) {
             Some(ip_address) => ip_address.clone(),
@@ -111,12 +107,8 @@ pub unsafe extern "C" fn gosling_target_address_clone(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_target_address.is_null() {
-            bail!("out_target_address must not be null");
-        }
-        if target_address.is_null() {
-            bail!("target_address must not be null");
-        }
+        ensure_not_null!(out_target_address);
+        ensure_not_null!(target_address);
 
         let target_address = match get_target_addr_registry().get(target_address as usize) {
             Some(target_address) => target_address.clone(),
@@ -149,15 +141,9 @@ pub extern "C" fn gosling_context_connect(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if context.is_null() {
-            bail!("context must not be null");
-        }
-        if out_tcp_socket.is_null() {
-            bail!("out_tcp_socket must not be null");
-        }
-        if target_address.is_null() {
-            bail!("target_address must not be null");
-        }
+        ensure_not_null!(context);
+        ensure_not_null!(out_tcp_socket);
+        ensure_not_null!(target_address);
 
         let mut context_tuple_registry = get_context_tuple_registry();
         let context = match context_tuple_registry.get_mut(context as usize) {
@@ -205,9 +191,7 @@ pub unsafe extern "C" fn gosling_ip_address_from_ipv4(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_ip_address.is_null() {
-            bail!("out_ip_address must not be null");
-        }
+        ensure_not_null!(out_ip_address);
 
         let ip_addr = Ipv4Addr::new(a, b, c, d);
         let handle = get_ip_addr_registry().insert(ip_addr.into());
@@ -238,9 +222,7 @@ pub unsafe extern "C" fn gosling_ip_address_from_ipv6(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_ip_address.is_null() {
-            bail!("out_ip_address must not be null");
-        }
+        ensure_not_null!(out_ip_address);
         let ip_addr = Ipv6Addr::new(a, b, c, d, e, f, g, h);
         let handle = get_ip_addr_registry().insert(ip_addr.into());
         *out_ip_address = handle as *mut GoslingIpAddress;
@@ -268,12 +250,8 @@ pub unsafe extern "C" fn gosling_target_address_from_ip_address(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_target_address.is_null() {
-            bail!("out_target_address must not be null");
-        }
-        if ip_address.is_null() {
-            bail!("ip_address must not be null");
-        }
+        ensure_not_null!(out_target_address);
+        ensure_not_null!(ip_address);
 
         let ip_address = match get_ip_addr_registry().get(ip_address as usize) {
             Some(ip_address) => ip_address.clone(),
@@ -307,12 +285,8 @@ pub unsafe extern "C" fn gosling_target_address_from_domain(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_target_address.is_null() {
-            bail!("out_target_address must not be null");
-        }
-        if domain.is_null() {
-            bail!("domain must not be null");
-        }
+        ensure_not_null!(out_target_address);
+        ensure_not_null!(domain);
         if domain_length == 0 {
             bail!("domain_length must be greater than 0");
         }
@@ -343,12 +317,8 @@ pub unsafe extern "C" fn gosling_target_address_from_v3_onion_service_id(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_target_address.is_null() {
-            bail!("out_target_address must not be null");
-        }
-        if service_id.is_null() {
-            bail!("service_id must not be null");
-        }
+        ensure_not_null!(out_target_address);
+        ensure_not_null!(service_id);
 
         let service_id = match get_v3_onion_service_id_registry().get(service_id as usize) {
             Some(service_id) => service_id.clone(),
@@ -378,12 +348,8 @@ pub unsafe extern "C" fn gosling_target_address_from_string(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_target_address.is_null() {
-            bail!("out_target_address must not be null");
-        }
-        if target_address.is_null() {
-            bail!("target_address must not be null");
-        }
+        ensure_not_null!(out_target_address);
+        ensure_not_null!(target_address);
         if target_address_length == 0 {
             bail!("target_address_length must be greater than 0");
         }
@@ -415,12 +381,8 @@ pub unsafe extern "C" fn gosling_target_address_to_string(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if target_address.is_null() {
-            bail!("target_address must not be null");
-        }
-        if out_target_address_string.is_null() {
-            bail!("out_string must not be null");
-        }
+        ensure_not_null!(target_address);
+        ensure_not_null!(out_target_address_string);
 
         let target_address_string = match get_target_addr_registry().get(target_address as usize) {
             Some(target_address) => target_address.to_string(),
@@ -466,9 +428,7 @@ pub unsafe extern "C" fn gosling_context_generate_circuit_token(
     error: *mut *mut GoslingError,
 ) -> GoslingCircuitToken {
     translate_failures(!0usize, error, || -> anyhow::Result<CircuitToken> {
-        if context.is_null() {
-            bail!("context must not be null");
-        }
+        ensure_not_null!(context);
 
         let mut context_tuple_registry = get_context_tuple_registry();
         let token = match context_tuple_registry.get_mut(context as usize) {
@@ -492,9 +452,7 @@ pub unsafe extern "C" fn gosling_context_release_circuit_token(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if context.is_null() {
-            bail!("context must not be null");
-        }
+        ensure_not_null!(context);
 
         let mut context_tuple_registry = get_context_tuple_registry();
         match context_tuple_registry.get_mut(context as usize) {

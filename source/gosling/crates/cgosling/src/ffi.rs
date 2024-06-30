@@ -10,6 +10,7 @@ use cgosling_proc_macros::*;
 use crate::context::*;
 use crate::crypto::*;
 use crate::error::*;
+use crate::macros::*;
 use crate::tor_provider::*;
 use crate::utils::*;
 
@@ -46,9 +47,7 @@ pub unsafe extern "C" fn gosling_library_init(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        if out_library.is_null() {
-            bail!("out_library may not be null");
-        }
+        ensure_not_null!(out_library);
 
         if GOSLING_LIBRARY_INITED.load(Ordering::Relaxed) {
             // error handling
