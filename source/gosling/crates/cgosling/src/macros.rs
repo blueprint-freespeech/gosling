@@ -57,3 +57,13 @@ macro_rules! ensure_not_null {
     }
 }
 pub(crate) use ensure_not_null;
+
+// bail because handle invalid
+macro_rules! bail_invalid_handle {
+    ($handle:ident) => {
+        paste::paste! {
+            bail!(stringify!([<$handle>] is invalid))
+        }
+    }
+}
+pub(crate) use bail_invalid_handle;

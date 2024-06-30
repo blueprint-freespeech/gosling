@@ -74,7 +74,7 @@ pub unsafe extern "C" fn gosling_error_clone(
 
         let orig_error = match get_error_registry().get(orig_error as usize) {
             Some(orig_error) => orig_error.clone(),
-            None => bail!("error is invalid"),
+            None => bail_invalid_handle!(orig_error),
         };
         let handle = get_error_registry().insert(orig_error);
         *out_error = handle as *mut GoslingError;

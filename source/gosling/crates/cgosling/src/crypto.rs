@@ -91,7 +91,7 @@ pub unsafe extern "C" fn gosling_ed25519_private_key_clone(
 
         let private_key = match get_ed25519_private_key_registry().get(private_key as usize) {
             Some(private_key) => private_key.clone(),
-            None => bail!("private key is invalid"),
+            None => bail_invalid_handle!(private_key),
         };
         let handle = get_ed25519_private_key_registry().insert(private_key);
         *out_private_key = handle as *mut GoslingEd25519PrivateKey;
@@ -118,7 +118,7 @@ pub unsafe extern "C" fn gosling_x25519_public_key_clone(
 
         let public_key = match get_x25519_public_key_registry().get(public_key as usize) {
             Some(public_key) => public_key.clone(),
-            None => bail!("public key is invalid"),
+            None => bail_invalid_handle!(public_key),
         };
         let handle = get_x25519_public_key_registry().insert(public_key);
         *out_public_key = handle as *mut GoslingX25519PublicKey;
@@ -146,7 +146,7 @@ pub unsafe extern "C" fn gosling_x25519_private_key_clone(
 
         let private_key = match get_x25519_private_key_registry().get(private_key as usize) {
             Some(private_key) => private_key.clone(),
-            None => bail!("private key is invalid"),
+            None => bail_invalid_handle!(private_key),
         };
         let handle = get_x25519_private_key_registry().insert(private_key);
         *out_private_key = handle as *mut GoslingX25519PrivateKey;
@@ -173,7 +173,7 @@ pub unsafe extern "C" fn gosling_v3_onion_service_id_clone(
 
         let service_id = match get_v3_onion_service_id_registry().get(service_id as usize) {
             Some(service_id) => service_id.clone(),
-            None => bail!("service_id is invalid"),
+            None => bail_invalid_handle!(service_id),
         };
         let handle = get_v3_onion_service_id_registry().insert(service_id);
         *out_service_id = handle as *mut GoslingV3OnionServiceId;
@@ -289,7 +289,7 @@ pub extern "C" fn gosling_ed25519_private_key_to_keyblob(
                 };
             }
             None => {
-                bail!("private_key is invalid");
+                bail_invalid_handle!(private_key);
             }
         };
 
@@ -381,7 +381,7 @@ pub extern "C" fn gosling_x25519_private_key_to_base64(
                 };
             }
             None => {
-                bail!("private_key is invalid");
+                bail_invalid_handle!(private_key);
             }
         };
 
@@ -477,7 +477,7 @@ pub extern "C" fn gosling_x25519_public_key_to_base32(
                 };
             }
             None => {
-                bail!("public_key is invalid");
+                bail_invalid_handle!(public_key);
             }
         };
 
@@ -547,7 +547,7 @@ pub unsafe extern "C" fn gosling_v3_onion_service_id_from_ed25519_private_key(
             let ed25519_private_key =
                 match ed25519_private_key_registry.get(ed25519_private_key as usize) {
                     Some(ed25519_private_key) => ed25519_private_key,
-                    None => bail!("ed25519_private_key is invalid"),
+                    None => bail_invalid_handle!(ed25519_private_key),
                 };
             V3OnionServiceId::from_private_key(ed25519_private_key)
         };
@@ -607,7 +607,7 @@ pub extern "C" fn gosling_v3_onion_service_id_to_string(
                 };
             }
             None => {
-                bail!("service_id is invalid");
+                bail_invalid_handle!(service_id);
             }
         };
 

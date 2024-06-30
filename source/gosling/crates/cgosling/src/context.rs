@@ -92,7 +92,7 @@ pub unsafe extern "C" fn gosling_context_init(
         // get our tor provider
         let tor_provider = match get_tor_provider_registry().remove(in_tor_provider as usize) {
             Some(tor_provider) => tor_provider,
-            None => bail!("tor_provider is invalid"),
+            None => bail_invalid_handle!(tor_provider),
         };
 
         // get our identity key
@@ -100,7 +100,7 @@ pub unsafe extern "C" fn gosling_context_init(
         let identity_private_key =
             match ed25519_private_key_registry.get(identity_private_key as usize) {
                 Some(identity_private_key) => identity_private_key,
-                None => bail!("identity_private_key is invalid"),
+                None => bail_invalid_handle!(identity_private_key),
             };
 
         // construct context
@@ -137,7 +137,7 @@ pub extern "C" fn gosling_context_bootstrap_tor(
         let mut context_tuple_registry = get_context_tuple_registry();
         let context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
-            None => bail!("context is invalid"),
+            None => bail_invalid_handle!(context),
         };
         Ok(context.0.bootstrap()?)
     });
@@ -159,7 +159,7 @@ pub extern "C" fn gosling_context_start_identity_server(
         let mut context_tuple_registry = get_context_tuple_registry();
         let context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
-            None => bail!("context is invalid"),
+            None => bail_invalid_handle!(context),
         };
         Ok(context.0.identity_server_start()?)
     });
@@ -181,7 +181,7 @@ pub extern "C" fn gosling_context_stop_identity_server(
         let mut context_tuple_registry = get_context_tuple_registry();
         let context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
-            None => bail!("context is invalid"),
+            None => bail_invalid_handle!(context),
         };
         Ok(context.0.identity_server_stop()?)
     });
@@ -221,7 +221,7 @@ pub extern "C" fn gosling_context_start_endpoint_server(
         let mut context_tuple_registry = get_context_tuple_registry();
         let context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
-            None => bail!("context is invalid"),
+            None => bail_invalid_handle!(context),
         };
 
         let endpoint_name =
@@ -235,20 +235,20 @@ pub extern "C" fn gosling_context_start_endpoint_server(
         let endpoint_private_key =
             match ed25519_private_key_registry.get(endpoint_private_key as usize) {
                 Some(ed25519_private_key) => ed25519_private_key,
-                None => bail!("endpoint_private_key is invalid"),
+                None => bail_invalid_handle!(endpoint_private_key),
             };
 
         let v3_onion_service_id_registry = get_v3_onion_service_id_registry();
         let client_identity = match v3_onion_service_id_registry.get(client_identity as usize) {
             Some(v3_onion_service_id) => v3_onion_service_id,
-            None => bail!("client_identity is invalid"),
+            None => bail_invalid_handle!(client_identity),
         };
 
         let x25519_public_key_registry = get_x25519_public_key_registry();
         let client_auth_public_key =
             match x25519_public_key_registry.get(client_auth_public_key as usize) {
                 Some(x25519_public_key) => x25519_public_key,
-                None => bail!("client_auth_public_key is invalid"),
+                None => bail_invalid_handle!(client_auth_public_key),
             };
 
         Ok(context.0.endpoint_server_start(
@@ -279,14 +279,14 @@ pub extern "C" fn gosling_context_stop_endpoint_server(
         let mut context_tuple_registry = get_context_tuple_registry();
         let context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
-            None => bail!("context is invalid"),
+            None => bail_invalid_handle!(context),
         };
 
         let ed25519_private_key_registry = get_ed25519_private_key_registry();
         let endpoint_private_key =
             match ed25519_private_key_registry.get(endpoint_private_key as usize) {
                 Some(ed25519_private_key) => ed25519_private_key,
-                None => bail!("endpoint_private_key is invalid"),
+                None => bail_invalid_handle!(endpoint_private_key),
             };
 
         let endpoint_identity = V3OnionServiceId::from_private_key(endpoint_private_key);
@@ -325,14 +325,14 @@ pub extern "C" fn gosling_context_begin_identity_handshake(
             let mut context_tuple_registry = get_context_tuple_registry();
             let context = match context_tuple_registry.get_mut(context as usize) {
                 Some(context) => context,
-                None => bail!("context is invalid"),
+                None => bail_invalid_handle!(context),
             };
 
             let v3_onion_service_id_registry = get_v3_onion_service_id_registry();
             let identity_service_id =
                 match v3_onion_service_id_registry.get(identity_service_id as usize) {
                     Some(v3_onion_service_id) => v3_onion_service_id,
-                    None => bail!("identity_service_id is invalid"),
+                    None => bail_invalid_handle!(identity_service_id),
                 };
 
             let endpoint_name = unsafe {
@@ -368,7 +368,7 @@ pub extern "C" fn gosling_context_abort_identity_client_handshake(
         let mut context_tuple_registry = get_context_tuple_registry();
         let context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
-            None => bail!("context is invalid"),
+            None => bail_invalid_handle!(context),
         };
 
         Ok(context
@@ -410,21 +410,21 @@ pub extern "C" fn gosling_context_begin_endpoint_handshake(
             let mut context_tuple_registry = get_context_tuple_registry();
             let context = match context_tuple_registry.get_mut(context as usize) {
                 Some(context) => context,
-                None => bail!("context is invalid"),
+                None => bail_invalid_handle!(context),
             };
 
             let v3_onion_service_id_registry = get_v3_onion_service_id_registry();
             let endpoint_service_id =
                 match v3_onion_service_id_registry.get(endpoint_service_id as usize) {
                     Some(v3_onion_service_id) => v3_onion_service_id,
-                    None => bail!("endpoint_service_id is invalid"),
+                    None => bail_invalid_handle!(endpoint_service_id),
                 };
 
             let x25519_private_key_registry = get_x25519_private_key_registry();
             let client_auth_private_key =
                 match x25519_private_key_registry.get(client_auth_private_key as usize) {
                     Some(x25519_private_key) => x25519_private_key,
-                    None => bail!("client_auth_private_key is invalid"),
+                    None => bail_invalid_handle!(client_auth_private_key),
                 };
 
             let channel_name = unsafe {
@@ -462,7 +462,7 @@ pub extern "C" fn gosling_context_abort_endpoint_client_handshake(
         let mut context_tuple_registry = get_context_tuple_registry();
         let context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
-            None => bail!("context is invalid"),
+            None => bail_invalid_handle!(context),
         };
 
         Ok(context
@@ -569,7 +569,7 @@ fn handle_context_event(
                 Some(context) => context
                     .0
                     .identity_client_handle_challenge_received(handle, challenge_response)?,
-                None => bail!("context is invalid"),
+                None => bail_invalid_handle!(context),
             };
         }
         ContextEvent::IdentityClientHandshakeCompleted {
@@ -707,7 +707,7 @@ fn handle_context_event(
                     endpoint_supported,
                     endpoint_challenge,
                 )?,
-                None => bail!("context is invalid"),
+                None => bail_invalid_handle!(context),
             };
         }
         ContextEvent::IdentityServerChallengeResponseReceived {
@@ -742,7 +742,7 @@ fn handle_context_event(
                         handle,
                         challenge_response_valid,
                     )?,
-                None => bail!("context is invalid"),
+                None => bail_invalid_handle!(context),
             };
         }
         ContextEvent::IdentityServerHandshakeCompleted {
@@ -1035,7 +1035,7 @@ pub extern "C" fn gosling_context_poll_events(
                     };
                     (context_events, callbacks)
                 }
-                None => bail!("context is invalid"),
+                None => bail_invalid_handle!(context),
             };
 
         // consume the events and trigger any callbacks

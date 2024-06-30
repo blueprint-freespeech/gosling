@@ -182,14 +182,14 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_system_legacy_client_co
         // constructor tor_socks_addr
         let tor_socks_host = match get_ip_addr_registry().get(tor_socks_host as usize) {
             Some(tor_socks_host) => tor_socks_host.clone(),
-            None => bail!("tor_socks_host is invalid"),
+            None => bail_invalid_handle!(tor_socks_host),
         };
         let tor_socks_addr = std::net::SocketAddr::new(tor_socks_host, tor_socks_port);
 
         // construct tor_control_addr
         let tor_control_host = match get_ip_addr_registry().get(tor_control_host as usize) {
             Some(tor_control_host) => tor_control_host.clone(),
-            None => bail!("tor_control_host is invalid"),
+            None => bail_invalid_handle!(tor_control_host),
         };
         let tor_control_addr = std::net::SocketAddr::new(tor_control_host, tor_control_port);
 
@@ -242,7 +242,7 @@ pub unsafe extern "C" fn gosling_tor_provider_from_tor_provider_config(
                     Box::new(tor_provider)
                 },
             },
-            None => bail!("tor_provider_config is invalid"),
+            None => bail_invalid_handle!(tor_provider_config),
         };
 
         let handle = get_tor_provider_registry().insert(tor_provider);

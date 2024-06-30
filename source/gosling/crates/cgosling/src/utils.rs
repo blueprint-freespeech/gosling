@@ -85,7 +85,7 @@ pub unsafe extern "C" fn gosling_ip_address_clone(
 
         let ip_address = match get_ip_addr_registry().get(ip_address as usize) {
             Some(ip_address) => ip_address.clone(),
-            None => bail!("ip_address is invalid"),
+            None => bail_invalid_handle!(ip_address),
         };
         let handle = get_ip_addr_registry().insert(ip_address);
         *out_ip_address = handle as *mut GoslingIpAddress;
@@ -112,7 +112,7 @@ pub unsafe extern "C" fn gosling_target_address_clone(
 
         let target_address = match get_target_addr_registry().get(target_address as usize) {
             Some(target_address) => target_address.clone(),
-            None => bail!("target_address is invalid"),
+            None => bail_invalid_handle!(target_address),
         };
         let handle = get_target_addr_registry().insert(target_address);
         *out_target_address = handle as *mut GoslingTargetAddress;
@@ -148,12 +148,12 @@ pub extern "C" fn gosling_context_connect(
         let mut context_tuple_registry = get_context_tuple_registry();
         let context = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context,
-            None => bail!("context is invalid"),
+            None => bail_invalid_handle!(context),
         };
 
         let target_address = match get_target_addr_registry().get(target_address as usize) {
             Some(target_address) => target_address.clone(),
-            None => bail!("target_address is invalid"),
+            None => bail_invalid_handle!(target_address),
         };
 
         let onion_stream = context.0.connect(target_address, Some(circuit_token))?;
@@ -255,7 +255,7 @@ pub unsafe extern "C" fn gosling_target_address_from_ip_address(
 
         let ip_address = match get_ip_addr_registry().get(ip_address as usize) {
             Some(ip_address) => ip_address.clone(),
-            None => bail!("ip_address is invalid"),
+            None => bail_invalid_handle!(ip_address),
         };
 
         let target_address = TargetAddr::Ip(SocketAddr::new(ip_address, port));
@@ -322,7 +322,7 @@ pub unsafe extern "C" fn gosling_target_address_from_v3_onion_service_id(
 
         let service_id = match get_v3_onion_service_id_registry().get(service_id as usize) {
             Some(service_id) => service_id.clone(),
-            None => bail!("service_id is invalid"),
+            None => bail_invalid_handle!(service_id),
         };
 
         let target_address = TargetAddr::OnionService(OnionAddr::V3(OnionAddrV3::new(service_id, port)));
@@ -386,7 +386,7 @@ pub unsafe extern "C" fn gosling_target_address_to_string(
 
         let target_address_string = match get_target_addr_registry().get(target_address as usize) {
             Some(target_address) => target_address.to_string(),
-            None => bail!("target_address is invalid"),
+            None => bail_invalid_handle!(target_address),
         };
 
         let target_address_string_len = target_address_string.len();
@@ -433,7 +433,7 @@ pub unsafe extern "C" fn gosling_context_generate_circuit_token(
         let mut context_tuple_registry = get_context_tuple_registry();
         let token = match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context.0.generate_circuit_token(),
-            None => bail!("context is invalid"),
+            None => bail_invalid_handle!(context),
         };
         Ok(token)
     })
@@ -457,7 +457,7 @@ pub unsafe extern "C" fn gosling_context_release_circuit_token(
         let mut context_tuple_registry = get_context_tuple_registry();
         match context_tuple_registry.get_mut(context as usize) {
             Some(context) => context.0.release_circuit_token(circuit_token),
-            None => bail!("context is invalid"),
+            None => bail_invalid_handle!(context),
         };
         Ok(())
     })

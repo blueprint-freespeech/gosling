@@ -10,6 +10,7 @@ use cgosling_proc_macros::*;
 use crate::context::*;
 use crate::crypto::*;
 use crate::error::*;
+use crate::macros::*;
 
 #[derive(Default, Clone)]
 pub(crate) struct EventCallbacks {
@@ -514,7 +515,7 @@ macro_rules! impl_callback_setter {
                 let context = match context_tuple_registry.get_mut($context as usize) {
                     Some(context) => context,
                     None => {
-                        bail!("context is invalid");
+                        bail_invalid_handle!(context);
                     }
                 };
                 context.1.[<$callback_type>] = $callback;
