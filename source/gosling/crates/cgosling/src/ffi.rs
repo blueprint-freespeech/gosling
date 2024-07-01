@@ -79,11 +79,18 @@ pub extern "C" fn gosling_library_free(in_library: *mut GoslingLibrary) {
         clear_x25519_private_key_registry();
         clear_x25519_public_key_registry();
         clear_v3_onion_service_id_registry();
+        clear_ip_addr_registry();
+        clear_target_addr_registry();
+        #[cfg(feature = "legacy-tor-provider")]
+        clear_proxy_config_registry();
+        #[cfg(feature = "legacy-tor-provider")]
+        clear_pluggable_transport_config_registry();
+        #[cfg(feature = "legacy-tor-provider")]
+        clear_bridge_line_registry();
         clear_tor_provider_registry();
         clear_tor_provider_config_registry();
         clear_context_tuple_registry();
-        clear_ip_addr_registry();
-        clear_target_addr_registry();
+
 
         GOSLING_LIBRARY_INITED.store(false, Ordering::Relaxed);
     }
