@@ -553,7 +553,7 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_system_legacy_client_co
 /// - Legacy Bundled Client
 ///
 /// @param tor_provider_config: the tor provider config to update
-/// @param proxy_config: the proxy configuration to use
+/// @param proxy_config: the proxy configuration to use; must not be null
 /// @param error: filled on error
 #[no_mangle]
 #[cfg(feature = "legacy-tor-provider")]
@@ -564,7 +564,23 @@ pub unsafe extern "C" fn gosling_tor_provider_config_set_proxy_config(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
+        ensure_not_null!(tor_provider_config);
+        ensure_not_null!(proxy_config);
+
+        match get_tor_provider_config_registry().get_mut(tor_provider_config as usize) {
+            Some(tor_provider_config) => match tor_provider_config {
+                TorProviderConfig::LegacyTorClientConfig(LegacyTorClientConfig::BundledTor{proxy_settings, ..}) => {
+                    *proxy_settings = match get_proxy_config_registry().get(proxy_config as usize) {
+                        Some(proxy_config) => Some(proxy_config.clone()),
+                        None => bail_invalid_handle!(proxy_config),
+                    };
+                },
+                _ => bail!("tor_provider_config does not support this operation"),
+            },
+            None => bail_invalid_handle!(tor_provider_config),
+        }
+
+        Ok(())
     })
 }
 
@@ -575,8 +591,9 @@ pub unsafe extern "C" fn gosling_tor_provider_config_set_proxy_config(
 ///
 /// @param tor_provider_config: the tor provider config to update
 /// @param allowed_ports: an array of ports the local system's firewall allows
-///  connections to
-/// @param allowed_ports_count: the number of ports in the allowed_ports array
+///  connections to; must not be null
+/// @param allowed_ports_count: the number of ports in the allowed_ports array; must
+///  not be 0
 /// @param error: filled on error
 #[no_mangle]
 #[cfg(feature = "legacy-tor-provider")]
@@ -588,7 +605,25 @@ pub unsafe extern "C" fn gosling_tor_provider_config_set_allowed_ports(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
+        ensure_not_null!(tor_provider_config);
+        ensure_not_null!(allowed_ports);
+        ensure_not_equal!(allowed_ports_count, 0);
+
+        let allowed_ports_slice = std::slice::from_raw_parts(
+            allowed_ports as *const u16,
+            allowed_ports_count
+        );
+        match get_tor_provider_config_registry().get_mut(tor_provider_config as usize) {
+        Some(tor_provider_config) => match tor_provider_config {
+                TorProviderConfig::LegacyTorClientConfig(LegacyTorClientConfig::BundledTor{allowed_ports, ..}) => {
+                    *allowed_ports = Some(allowed_ports_slice.into());
+                },
+                _ => bail!("tor_provider_config does not support this operation"),
+            },
+            None => bail_invalid_handle!(tor_provider_config),
+        }
+
+        Ok(())
     })
 }
 /// Add a pluggable transport config to a tor provider config. A tor provider config
@@ -601,7 +636,7 @@ pub unsafe extern "C" fn gosling_tor_provider_config_set_allowed_ports(
 ///
 /// @param tor_provider_config: the tor provider config to update
 /// @param pluggable_transport_config: the pluggable transport config to add to the tor
-///  provider config
+///  provider config; must not be null
 /// @param error: filled on error
 #[no_mangle]
 #[cfg(feature = "legacy-tor-provider")]
@@ -612,7 +647,30 @@ pub unsafe extern "C" fn gosling_tor_provider_config_add_pluggable_transport_con
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
+        ensure_not_null!(tor_provider_config);
+        ensure_not_null!(pluggable_transport_config);
+
+        match get_tor_provider_config_registry().get_mut(tor_provider_config as usize) {
+            Some(tor_provider_config) => {
+                match tor_provider_config {
+                    TorProviderConfig::LegacyTorClientConfig(LegacyTorClientConfig::BundledTor{pluggable_transports, ..}) => {
+                        let pluggable_transport_config = match get_pluggable_transport_config_registry().get(pluggable_transport_config as usize) {
+                            Some(pluggable_transport_config) => pluggable_transport_config.clone(),
+                            None => bail_invalid_handle!(pluggable_transport_config),
+                        };
+
+                        match pluggable_transports {
+                            None => *pluggable_transports = Some(vec![pluggable_transport_config]),
+                            Some(pluggable_transports) => pluggable_transports.push(pluggable_transport_config),
+                        }
+                    },
+                    _ => bail!("tor_provider_config does not support this operation"),
+                }
+            },
+            None => bail_invalid_handle!(tor_provider_config),
+        }
+
+        Ok(())
     })
 }
 
@@ -637,7 +695,30 @@ pub unsafe extern "C" fn gosling_tor_provider_config_add_bridge_line(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
+        ensure_not_null!(tor_provider_config);
+        ensure_not_null!(bridge_line);
+
+        match get_tor_provider_config_registry().get_mut(tor_provider_config as usize) {
+            Some(tor_provider_config) => {
+                match tor_provider_config {
+                    TorProviderConfig::LegacyTorClientConfig(LegacyTorClientConfig::BundledTor{bridge_lines, ..}) => {
+                        let bridge_line = match get_bridge_line_registry().get(bridge_line as usize) {
+                            Some(bridge_line) => bridge_line.clone(),
+                            None => bail_invalid_handle!(bridge_line),
+                        };
+
+                        match bridge_lines {
+                            None => *bridge_lines = Some(vec![bridge_line]),
+                            Some(bridge_lines) => bridge_lines.push(bridge_line),
+                        }
+                    },
+                    _ => bail!("tor_provider_config does not support this operation"),
+                }
+            },
+            None => bail_invalid_handle!(tor_provider_config),
+        }
+
+        Ok(())
     })
 }
 
