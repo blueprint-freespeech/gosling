@@ -3,6 +3,8 @@
 use std::os::raw::c_char;
 #[cfg(feature = "legacy-tor-provider")]
 use std::path::Path;
+#[cfg(feature = "legacy-tor-provider")]
+use std::str::FromStr;
 
 // extern crates
 use anyhow::bail;
@@ -367,7 +369,19 @@ pub unsafe extern "C" fn gosling_bridge_line_from_string(
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
-        bail!("not implemented");
+        ensure_not_null!(out_bridge_line);
+        ensure_not_null!(bridge_line);
+        ensure_not_equal!(bridge_line_length, 0);
+
+        let bridge_line =
+            std::slice::from_raw_parts(bridge_line as *const u8, bridge_line_length);
+        let bridge_line = std::str::from_utf8(bridge_line)?;
+        let bridge_line = BridgeLine::from_str(bridge_line)?;
+
+        let handle = get_bridge_line_registry().insert(bridge_line);
+        *out_bridge_line = handle as *mut GoslingBridgeLine;
+
+        Ok(())
     });
 }
 
