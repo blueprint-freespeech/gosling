@@ -73,9 +73,12 @@ add_custom_command(
 #
 if (ENABLE_TESTS)
     add_test(NAME cgosling_cargo_test
-        COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo test ${CARGO_FLAGS} ${CGOSLING_FEATURES} -- --nocapture
+        COMMAND env TEB_PATH=${TEB_PATH} CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo test ${CARGO_FLAGS} ${CGOSLING_FEATURES} -- --nocapture
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
+    if (ENABLE_TOR_EXPERT_BUNDLE)
+        set_tests_properties(cgosling_cargo_test PROPERTIES FIXTURES_REQUIRED tor_expert_bundle_target_fixture)
+    endif()
 endif()
 
 #
