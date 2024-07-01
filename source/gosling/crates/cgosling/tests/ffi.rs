@@ -273,7 +273,7 @@ fn test_gosling_ffi_handshake_legacy_client() -> anyhow::Result<()> {
     // construct tor providers
 
     let mut alice_working_dir = std::env::temp_dir();
-    alice_working_dir.push("gosling_context_test_alice");
+    alice_working_dir.push("cgosling_bundled_test_alice");
     let alice_working_dir: CString = CString::new(alice_working_dir.to_str().unwrap())?;
 
     let mut alice_tor_provider_config: *mut GoslingTorProviderConfig = ptr::null_mut();
@@ -292,7 +292,106 @@ fn test_gosling_ffi_handshake_legacy_client() -> anyhow::Result<()> {
     ));
 
     let mut pat_working_dir = std::env::temp_dir();
-    pat_working_dir.push("gosling_context_test_pat");
+    pat_working_dir.push("cgosling_bundled_test_pat");
+    let pat_working_dir: CString = CString::new(pat_working_dir.to_str().unwrap())?;
+
+    let mut pat_tor_provider_config: *mut GoslingTorProviderConfig = ptr::null_mut();
+    require_noerror!(gosling_tor_provider_config_new_bundled_legacy_client_config(
+        &mut pat_tor_provider_config,
+        ptr::null(),
+        0usize,
+        pat_working_dir.as_ptr(),
+        pat_working_dir.as_bytes().len()
+    ));
+
+
+    let mut pat_tor_provider: *mut GoslingTorProvider = ptr::null_mut();
+    require_noerror!(gosling_tor_provider_from_tor_provider_config(
+        &mut pat_tor_provider,
+        pat_tor_provider_config
+    ));
+
+    // do test
+    test_gosling_ffi_handshake_impl(library, alice_tor_provider, pat_tor_provider)
+}
+
+// test bundled tor client with pluggable transport
+#[test]
+#[serial]
+#[cfg(feature = "legacy-tor-provider")]
+fn test_gosling_ffi_handshake_bundled_pt_client() -> anyhow::Result<()> {
+    let library = test_gosling_ffi_handshake_preamble()?;
+
+    // construct a shared pt config using lyrebird
+    let mut pt_config: *mut GoslingPluggableTransportConfig = ptr::null_mut();
+    let transports: CString = CString::new("obfs4")?;
+
+    let teb_path = std::env::var("TEB_PATH")?;
+    if teb_path.is_empty() {
+        println!("TEB_PATH environment variable empty, so skipping test_legacy_pluggable_transport_bootstrap()");
+        return Ok(());
+    }
+    let mut lyrebird_path = std::path::PathBuf::from(&teb_path);
+    let lyrebird_bin = format!("lyrebird{}", std::env::consts::EXE_SUFFIX);
+    lyrebird_path.push(lyrebird_bin);
+    assert!(std::path::Path::exists(&lyrebird_path));
+    assert!(std::path::Path::is_file(&lyrebird_path));
+    let lyrebird_path: CString = CString::new(lyrebird_path.to_str().unwrap())?;
+
+    require_noerror!(gosling_pluggable_transport_config_new(
+        &mut pt_config,
+        transports.as_ptr(),
+        transports.as_bytes().len(),
+        lyrebird_path.as_ptr(),
+        lyrebird_path.as_bytes().len()
+    ));
+
+    // construct a obfs4 bridge line to use with lyrebird
+    let mut bridge_line: *mut GoslingBridgeLine = ptr::null_mut();
+    let bridge_line_str = "obfs4 207.172.185.193:22223 F34AC0CDBC06918E54292A474578C99834A58893 cert=MjqosoyVylLQuLo4LH+eQ5hS7Z44s2CaMfQbIjJtn4bGRnvLv8ldSvSED5JpvWSxm09XXg iat-mode=0";
+    let bridge_line_str = CString::new(bridge_line_str)?;
+
+    require_noerror!(gosling_bridge_line_from_string(
+        &mut bridge_line,
+        bridge_line_str.as_ptr(),
+        bridge_line_str.as_bytes().len()
+    ));
+
+    // construct tor providers
+
+    let mut alice_working_dir = std::env::temp_dir();
+    alice_working_dir.push("cgosling_bundled_pt_test_alice");
+    let alice_working_dir: CString = CString::new(alice_working_dir.to_str().unwrap())?;
+
+    let mut alice_tor_provider_config: *mut GoslingTorProviderConfig = ptr::null_mut();
+    require_noerror!(gosling_tor_provider_config_new_bundled_legacy_client_config(
+        &mut alice_tor_provider_config,
+        ptr::null(),
+        0usize,
+        alice_working_dir.as_ptr(),
+        alice_working_dir.as_bytes().len()
+    ));
+
+    // add pt config
+    require_noerror!(gosling_tor_provider_config_add_pluggable_transport_config(
+        alice_tor_provider_config,
+        pt_config
+    ));
+
+    // add bridge line
+    require_noerror!(gosling_tor_provider_config_add_bridge_line(
+        alice_tor_provider_config,
+        bridge_line
+    ));
+
+    let mut alice_tor_provider: *mut GoslingTorProvider = ptr::null_mut();
+    require_noerror!(gosling_tor_provider_from_tor_provider_config(
+        &mut alice_tor_provider,
+        alice_tor_provider_config
+    ));
+
+    let mut pat_working_dir = std::env::temp_dir();
+    pat_working_dir.push("cgosling_bundled_pt_test_pat");
     let pat_working_dir: CString = CString::new(pat_working_dir.to_str().unwrap())?;
 
     let mut pat_tor_provider_config: *mut GoslingTorProviderConfig = ptr::null_mut();
