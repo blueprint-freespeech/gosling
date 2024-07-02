@@ -811,6 +811,12 @@
 <a href="#811" id="811">811</a>
 <a href="#812" id="812">812</a>
 <a href="#813" id="813">813</a>
+<a href="#814" id="814">814</a>
+<a href="#815" id="815">815</a>
+<a href="#816" id="816">816</a>
+<a href="#817" id="817">817</a>
+<a href="#818" id="818">818</a>
+<a href="#819" id="819">819</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::default::Default;
 <span class="kw">use </span>std::net::SocketAddr;
@@ -900,6 +906,12 @@
     </span>status_event_pattern: Regex,
     status_event_argument_pattern: Regex,
     hs_desc_pattern: Regex,
+}
+
+<span class="kw">fn </span>quoted_string(string: <span class="kw-2">&amp;</span>str) -&gt; String {
+    <span class="comment">// replace \ with \\ and " with \"
+    // see: https://spec.torproject.org/control-spec/message-format.html?highlight=QuotedString#description-format
+    </span>string.replace(<span class="string">"\\"</span>, <span class="string">"\\\\"</span>).replace(<span class="string">"\""</span>, <span class="string">"\\\""</span>)
 }
 
 <span class="kw">impl </span>LegacyTorController {
@@ -1071,7 +1083,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>command_buffer = <span class="macro">vec!</span>[<span class="string">"SETCONF"</span>.to_string()];
 
         <span class="kw">for </span>(key, value) <span class="kw">in </span>key_values.iter() {
-            command_buffer.push(<span class="macro">format!</span>(<span class="string">"{}=\"{}\""</span>, key, value.trim()));
+            command_buffer.push(<span class="macro">format!</span>(<span class="string">"{}=\"{}\""</span>, key, quoted_string(value.trim())));
         }
         <span class="kw">let </span>command = command_buffer.join(<span class="string">" "</span>);
 
@@ -1105,7 +1117,7 @@
 
     <span class="comment">// AUTHENTICATE (3.5)
     </span><span class="kw">fn </span>authenticate_cmd(<span class="kw-2">&amp;mut </span><span class="self">self</span>, password: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Reply, Error&gt; {
-        <span class="kw">let </span>command = <span class="macro">format!</span>(<span class="string">"AUTHENTICATE \"{}\""</span>, password);
+        <span class="kw">let </span>command = <span class="macro">format!</span>(<span class="string">"AUTHENTICATE \"{}\""</span>, quoted_string(password));
 
         <span class="self">self</span>.write_command(<span class="kw-2">&amp;</span>command)
     }

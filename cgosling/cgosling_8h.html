@@ -122,6 +122,8 @@ Macros</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
+<tr class="memitem:a64109152ac09494701d99de4412a6c7f"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="cgosling_8h.html#a64109152ac09494701d99de4412a6c7f">gosling_bridge_line</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a64109152ac09494701d99de4412a6c7f">gosling_bridge_line</a></td></tr>
+<tr class="separator:a64109152ac09494701d99de4412a6c7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2d2a1a45dc3bccbf435fd07b5446af3d"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a></td></tr>
 <tr class="separator:a2d2a1a45dc3bccbf435fd07b5446af3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1ce74ce2296552d7587de725370b773c"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="cgosling_8h.html#a1ce74ce2296552d7587de725370b773c">gosling_ed25519_private_key</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a1ce74ce2296552d7587de725370b773c">gosling_ed25519_private_key</a></td></tr>
@@ -132,6 +134,10 @@ Typedefs</h2></td></tr>
 <tr class="separator:a2b3d4339bc594b84e44843daf2f6469c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad92d9c48fd5abaac182982f94cc13f8b"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="cgosling_8h.html#ad92d9c48fd5abaac182982f94cc13f8b">gosling_library</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ad92d9c48fd5abaac182982f94cc13f8b">gosling_library</a></td></tr>
 <tr class="separator:ad92d9c48fd5abaac182982f94cc13f8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8b01e9475045fc116a06098e3820be70"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="cgosling_8h.html#a8b01e9475045fc116a06098e3820be70">gosling_pluggable_transport_config</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a8b01e9475045fc116a06098e3820be70">gosling_pluggable_transport_config</a></td></tr>
+<tr class="separator:a8b01e9475045fc116a06098e3820be70"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a284649b7258e7f3c30384e4a31cc4c9c"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="cgosling_8h.html#a284649b7258e7f3c30384e4a31cc4c9c">gosling_proxy_config</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a284649b7258e7f3c30384e4a31cc4c9c">gosling_proxy_config</a></td></tr>
+<tr class="separator:a284649b7258e7f3c30384e4a31cc4c9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7548e8732efb9c39b94539a1880793ff"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="cgosling_8h.html#a7548e8732efb9c39b94539a1880793ff">gosling_target_address</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a7548e8732efb9c39b94539a1880793ff">gosling_target_address</a></td></tr>
 <tr class="separator:a7548e8732efb9c39b94539a1880793ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa9175b153fa7c5ba3eeddf5860da1a64"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="cgosling_8h.html#aa9175b153fa7c5ba3eeddf5860da1a64">gosling_tor_provider</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#aa9175b153fa7c5ba3eeddf5860da1a64">gosling_tor_provider</a></td></tr>
@@ -345,16 +351,42 @@ Functions</h2></td></tr>
 <tr class="separator:a22c59fa2a56de03786ce876506dad5e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3470379c3c8964b879670b149d9f8c66"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a3470379c3c8964b879670b149d9f8c66">gosling_library_free</a> (<a class="el" href="cgosling_8h.html#ad92d9c48fd5abaac182982f94cc13f8b">gosling_library</a> *in_library)</td></tr>
 <tr class="separator:a3470379c3c8964b879670b149d9f8c66"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a542728eb4b7797c7b2ca5d2725eee597"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a542728eb4b7797c7b2ca5d2725eee597">gosling_tor_provider_free</a> (<a class="el" href="cgosling_8h.html#aa9175b153fa7c5ba3eeddf5860da1a64">gosling_tor_provider</a> *in_tor_provider)</td></tr>
-<tr class="separator:a542728eb4b7797c7b2ca5d2725eee597"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a36b9cc43f253ec71a95a81579aed8559"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a36b9cc43f253ec71a95a81579aed8559">gosling_proxy_config_free</a> (<a class="el" href="cgosling_8h.html#a284649b7258e7f3c30384e4a31cc4c9c">gosling_proxy_config</a> *in_proxy_config)</td></tr>
+<tr class="separator:a36b9cc43f253ec71a95a81579aed8559"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a67b732a039c97f42c8b930137106988a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a67b732a039c97f42c8b930137106988a">gosling_pluggable_transport_config_free</a> (<a class="el" href="cgosling_8h.html#a8b01e9475045fc116a06098e3820be70">gosling_pluggable_transport_config</a> *in_pluggable_transport_config)</td></tr>
+<tr class="separator:a67b732a039c97f42c8b930137106988a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6cb909c9a942eb6113db5fef30114578"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a6cb909c9a942eb6113db5fef30114578">gosling_bridge_line_free</a> (<a class="el" href="cgosling_8h.html#a64109152ac09494701d99de4412a6c7f">gosling_bridge_line</a> *in_bridge_line)</td></tr>
+<tr class="separator:a6cb909c9a942eb6113db5fef30114578"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab29d0f823e6daea5c6f4487bbb34e1a5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ab29d0f823e6daea5c6f4487bbb34e1a5">gosling_tor_provider_config_free</a> (<a class="el" href="cgosling_8h.html#abec8f2cc63e29490aee0e06a29d2c53a">gosling_tor_provider_config</a> *in_tor_provider_config)</td></tr>
 <tr class="separator:ab29d0f823e6daea5c6f4487bbb34e1a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a542728eb4b7797c7b2ca5d2725eee597"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a542728eb4b7797c7b2ca5d2725eee597">gosling_tor_provider_free</a> (<a class="el" href="cgosling_8h.html#aa9175b153fa7c5ba3eeddf5860da1a64">gosling_tor_provider</a> *in_tor_provider)</td></tr>
+<tr class="separator:a542728eb4b7797c7b2ca5d2725eee597"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1e5184bbce6437ab6ab5302d34ba4768"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a1e5184bbce6437ab6ab5302d34ba4768">gosling_proxy_config_new_socks4</a> (<a class="el" href="cgosling_8h.html#a284649b7258e7f3c30384e4a31cc4c9c">gosling_proxy_config</a> **out_proxy_config, const <a class="el" href="cgosling_8h.html#a7548e8732efb9c39b94539a1880793ff">gosling_target_address</a> *proxy_address, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:a1e5184bbce6437ab6ab5302d34ba4768"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac42e4811658b4784cad1fde370a722e0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ac42e4811658b4784cad1fde370a722e0">gosling_proxy_config_new_socks5</a> (<a class="el" href="cgosling_8h.html#a284649b7258e7f3c30384e4a31cc4c9c">gosling_proxy_config</a> **out_proxy_config, const <a class="el" href="cgosling_8h.html#a7548e8732efb9c39b94539a1880793ff">gosling_target_address</a> *proxy_address, const char *username, size_t username_length, const char *password, size_t password_length, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:ac42e4811658b4784cad1fde370a722e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f59cd4192d2426850567fbe1605d1e7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a1f59cd4192d2426850567fbe1605d1e7">gosling_proxy_config_new_https</a> (<a class="el" href="cgosling_8h.html#a284649b7258e7f3c30384e4a31cc4c9c">gosling_proxy_config</a> **out_proxy_config, const <a class="el" href="cgosling_8h.html#a7548e8732efb9c39b94539a1880793ff">gosling_target_address</a> *proxy_address, const char *username, size_t username_length, const char *password, size_t password_length, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:a1f59cd4192d2426850567fbe1605d1e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a762687c1fdc1420df7ae60a171f14fc8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a762687c1fdc1420df7ae60a171f14fc8">gosling_pluggable_transport_config_new</a> (<a class="el" href="cgosling_8h.html#a8b01e9475045fc116a06098e3820be70">gosling_pluggable_transport_config</a> **out_pluggable_transport_config, const char *transports, size_t transports_length, const char *path_to_binary, size_t path_to_binary_length, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:a762687c1fdc1420df7ae60a171f14fc8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac60f3387ca496cfba04587f4cda4eea4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ac60f3387ca496cfba04587f4cda4eea4">gosling_pluggable_transport_config_add_cmdline_option</a> (<a class="el" href="cgosling_8h.html#a8b01e9475045fc116a06098e3820be70">gosling_pluggable_transport_config</a> *pluggable_transport_config, const char *option, size_t option_length, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:ac60f3387ca496cfba04587f4cda4eea4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac98a228a73a413604175ad5cd4970340"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ac98a228a73a413604175ad5cd4970340">gosling_bridge_line_from_string</a> (<a class="el" href="cgosling_8h.html#a64109152ac09494701d99de4412a6c7f">gosling_bridge_line</a> **out_bridge_line, const char *bridge_line, size_t bridge_line_length, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:ac98a228a73a413604175ad5cd4970340"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7861ff72d36fb076fc90764142e616f4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a7861ff72d36fb076fc90764142e616f4">gosling_tor_provider_config_new_mock_client_config</a> (<a class="el" href="cgosling_8h.html#abec8f2cc63e29490aee0e06a29d2c53a">gosling_tor_provider_config</a> **out_tor_provider_config, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
 <tr class="separator:a7861ff72d36fb076fc90764142e616f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a335a414b52e3795d108d62eb0c632f04"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a335a414b52e3795d108d62eb0c632f04">gosling_tor_provider_config_new_bundled_legacy_client_config</a> (<a class="el" href="cgosling_8h.html#abec8f2cc63e29490aee0e06a29d2c53a">gosling_tor_provider_config</a> **out_tor_provider_config, const char *tor_bin_path, size_t tor_bin_path_length, const char *tor_working_directory, size_t tor_working_directory_length, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
 <tr class="separator:a335a414b52e3795d108d62eb0c632f04"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abb03158c8632ce88502a249a437ae9c8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#abb03158c8632ce88502a249a437ae9c8">gosling_tor_provider_config_new_system_legacy_client_config</a> (<a class="el" href="cgosling_8h.html#abec8f2cc63e29490aee0e06a29d2c53a">gosling_tor_provider_config</a> **out_tor_provider_config, const <a class="el" href="cgosling_8h.html#a2b3d4339bc594b84e44843daf2f6469c">gosling_ip_address</a> *tor_socks_host, uint16_t tor_socks_port, const <a class="el" href="cgosling_8h.html#a2b3d4339bc594b84e44843daf2f6469c">gosling_ip_address</a> *tor_control_host, uint16_t tor_control_port, const char *tor_control_passwd, size_t tor_control_passwd_length, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
 <tr class="separator:abb03158c8632ce88502a249a437ae9c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1abfadde1114eda27276be7e6c53283b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a1abfadde1114eda27276be7e6c53283b">gosling_tor_provider_config_set_proxy_config</a> (<a class="el" href="cgosling_8h.html#abec8f2cc63e29490aee0e06a29d2c53a">gosling_tor_provider_config</a> *tor_provider_config, const <a class="el" href="cgosling_8h.html#a284649b7258e7f3c30384e4a31cc4c9c">gosling_proxy_config</a> *proxy_config, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:a1abfadde1114eda27276be7e6c53283b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a486a40c83e05bd4b66733dc9712ca8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a7a486a40c83e05bd4b66733dc9712ca8">gosling_tor_provider_config_set_allowed_ports</a> (<a class="el" href="cgosling_8h.html#abec8f2cc63e29490aee0e06a29d2c53a">gosling_tor_provider_config</a> *tor_provider_config, const uint16_t *allowed_ports, size_t allowed_ports_count, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:a7a486a40c83e05bd4b66733dc9712ca8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5d14f4633b4e2e2810dd6a6320789021"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a5d14f4633b4e2e2810dd6a6320789021">gosling_tor_provider_config_add_pluggable_transport_config</a> (<a class="el" href="cgosling_8h.html#abec8f2cc63e29490aee0e06a29d2c53a">gosling_tor_provider_config</a> *tor_provider_config, const <a class="el" href="cgosling_8h.html#a8b01e9475045fc116a06098e3820be70">gosling_pluggable_transport_config</a> *pluggable_transport_config, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:a5d14f4633b4e2e2810dd6a6320789021"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aab7d02182100475e76effda4569eb1e6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#aab7d02182100475e76effda4569eb1e6">gosling_tor_provider_config_add_bridge_line</a> (<a class="el" href="cgosling_8h.html#abec8f2cc63e29490aee0e06a29d2c53a">gosling_tor_provider_config</a> *tor_provider_config, const <a class="el" href="cgosling_8h.html#a64109152ac09494701d99de4412a6c7f">gosling_bridge_line</a> *bridge_line, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:aab7d02182100475e76effda4569eb1e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae382fe394be03851f35501cad75672a4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ae382fe394be03851f35501cad75672a4">gosling_tor_provider_from_tor_provider_config</a> (<a class="el" href="cgosling_8h.html#aa9175b153fa7c5ba3eeddf5860da1a64">gosling_tor_provider</a> **out_tor_provider, const <a class="el" href="cgosling_8h.html#abec8f2cc63e29490aee0e06a29d2c53a">gosling_tor_provider_config</a> *tor_provider_config, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
 <tr class="separator:ae382fe394be03851f35501cad75672a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9ba1605023bbb6f7effacd517d74fd5a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a9ba1605023bbb6f7effacd517d74fd5a">gosling_ip_address_free</a> (<a class="el" href="cgosling_8h.html#a2b3d4339bc594b84e44843daf2f6469c">gosling_ip_address</a> *in_ip_address)</td></tr>
@@ -583,6 +615,21 @@ Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Typedef Documentation</h2>
+<a id="a64109152ac09494701d99de4412a6c7f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a64109152ac09494701d99de4412a6c7f">&#9670;&nbsp;</a></span>gosling_bridge_line</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef struct <a class="el" href="cgosling_8h.html#a64109152ac09494701d99de4412a6c7f">gosling_bridge_line</a> <a class="el" href="cgosling_8h.html#a64109152ac09494701d99de4412a6c7f">gosling_bridge_line</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Bridge line to use with particular pluggable transport when connecting to the tor network </p>
+
+</div>
+</div>
 <a id="a1085cafdf52a6f9d82ed3760a4962a24"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1085cafdf52a6f9d82ed3760a4962a24">&#9670;&nbsp;</a></span>gosling_circuit_token_t</h2>
 
@@ -1228,6 +1275,36 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a8b01e9475045fc116a06098e3820be70"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8b01e9475045fc116a06098e3820be70">&#9670;&nbsp;</a></span>gosling_pluggable_transport_config</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef struct <a class="el" href="cgosling_8h.html#a8b01e9475045fc116a06098e3820be70">gosling_pluggable_transport_config</a> <a class="el" href="cgosling_8h.html#a8b01e9475045fc116a06098e3820be70">gosling_pluggable_transport_config</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Pluggable transports settings object used by tor provider to launch pluggable transports </p>
+
+</div>
+</div>
+<a id="a284649b7258e7f3c30384e4a31cc4c9c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a284649b7258e7f3c30384e4a31cc4c9c">&#9670;&nbsp;</a></span>gosling_proxy_config</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef struct <a class="el" href="cgosling_8h.html#a284649b7258e7f3c30384e4a31cc4c9c">gosling_proxy_config</a> <a class="el" href="cgosling_8h.html#a284649b7258e7f3c30384e4a31cc4c9c">gosling_proxy_config</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Proxy settings object used by tor provider to connect to the tor network </p>
+
+</div>
+</div>
 <a id="a7548e8732efb9c39b94539a1880793ff"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7548e8732efb9c39b94539a1880793ff">&#9670;&nbsp;</a></span>gosling_target_address</h2>
 
@@ -1444,6 +1521,81 @@ Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
+<a id="a6cb909c9a942eb6113db5fef30114578"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6cb909c9a942eb6113db5fef30114578">&#9670;&nbsp;</a></span>gosling_bridge_line_free()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void gosling_bridge_line_free </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a64109152ac09494701d99de4412a6c7f">gosling_bridge_line</a> *&#160;</td>
+          <td class="paramname"><em>in_bridge_line</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Frees a gosling_bridge_line</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">in_bridge_line</td><td>the bridge line object to free </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ac98a228a73a413604175ad5cd4970340"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac98a228a73a413604175ad5cd4970340">&#9670;&nbsp;</a></span>gosling_bridge_line_from_string()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void gosling_bridge_line_from_string </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a64109152ac09494701d99de4412a6c7f">gosling_bridge_line</a> **&#160;</td>
+          <td class="paramname"><em>out_bridge_line</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>bridge_line</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>bridge_line_length</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **&#160;</td>
+          <td class="paramname"><em>error</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Construct bridge line from string</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">out_bridge_line</td><td>returned bridge line object </td></tr>
+    <tr><td class="paramname">bridge_line</td><td>a bridge address to connect to using a pluggable transport. For more information, see: <a href="https://tb-manual.torproject.org/bridges/">https://tb-manual.torproject.org/bridges/</a> </td></tr>
+    <tr><td class="paramname">bridge_line_length</td><td>number of characters in bridge_line, not counting any null-terminator </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="a6d01a0a1e1607cdafdbac2b5c97c98dc"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6d01a0a1e1607cdafdbac2b5c97c98dc">&#9670;&nbsp;</a></span>gosling_context_abort_endpoint_client_handshake()</h2>
 
@@ -3778,6 +3930,354 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="ac60f3387ca496cfba04587f4cda4eea4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac60f3387ca496cfba04587f4cda4eea4">&#9670;&nbsp;</a></span>gosling_pluggable_transport_config_add_cmdline_option()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void gosling_pluggable_transport_config_add_cmdline_option </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a8b01e9475045fc116a06098e3820be70">gosling_pluggable_transport_config</a> *&#160;</td>
+          <td class="paramname"><em>pluggable_transport_config</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>option</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>option_length</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **&#160;</td>
+          <td class="paramname"><em>error</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Add a command-line option to be used when launching the pluggable transport</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">pluggable_transport_config</td><td>the pluggable transport ocnfig object to update </td></tr>
+    <tr><td class="paramname">option</td><td>cmd-line option or flag to pass to the pluggable transport on launch </td></tr>
+    <tr><td class="paramname">option_length</td><td>number of characters in option, not counting any null- terminator </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a67b732a039c97f42c8b930137106988a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a67b732a039c97f42c8b930137106988a">&#9670;&nbsp;</a></span>gosling_pluggable_transport_config_free()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void gosling_pluggable_transport_config_free </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a8b01e9475045fc116a06098e3820be70">gosling_pluggable_transport_config</a> *&#160;</td>
+          <td class="paramname"><em>in_pluggable_transport_config</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Frees a gosling_pluggable_transport_config</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">in_pluggable_transport</td><td>the pluggable transport object to free </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a762687c1fdc1420df7ae60a171f14fc8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a762687c1fdc1420df7ae60a171f14fc8">&#9670;&nbsp;</a></span>gosling_pluggable_transport_config_new()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void gosling_pluggable_transport_config_new </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a8b01e9475045fc116a06098e3820be70">gosling_pluggable_transport_config</a> **&#160;</td>
+          <td class="paramname"><em>out_pluggable_transport_config</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>transports</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>transports_length</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>path_to_binary</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>path_to_binary_length</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **&#160;</td>
+          <td class="paramname"><em>error</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Create a new pluggable transport config object</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">out_pluggable_transport_config</td><td>returned pluggable transport object </td></tr>
+    <tr><td class="paramname">transports</td><td>comma-delimited list of transports this pluggable transport supports </td></tr>
+    <tr><td class="paramname">transports_length</td><td>number of characters in transports, not counting any null-terminator </td></tr>
+    <tr><td class="paramname">path_to_binary</td><td>path to the pluggable transport binary, either absolute or relative to the tor daemon process </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a36b9cc43f253ec71a95a81579aed8559"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a36b9cc43f253ec71a95a81579aed8559">&#9670;&nbsp;</a></span>gosling_proxy_config_free()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void gosling_proxy_config_free </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a284649b7258e7f3c30384e4a31cc4c9c">gosling_proxy_config</a> *&#160;</td>
+          <td class="paramname"><em>in_proxy_config</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Frees a gosling_proxy_config</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">in_proxy</td><td>the proxy settings object to free </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a1f59cd4192d2426850567fbe1605d1e7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f59cd4192d2426850567fbe1605d1e7">&#9670;&nbsp;</a></span>gosling_proxy_config_new_https()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void gosling_proxy_config_new_https </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a284649b7258e7f3c30384e4a31cc4c9c">gosling_proxy_config</a> **&#160;</td>
+          <td class="paramname"><em>out_proxy_config</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="cgosling_8h.html#a7548e8732efb9c39b94539a1880793ff">gosling_target_address</a> *&#160;</td>
+          <td class="paramname"><em>proxy_address</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>username</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>username_length</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>password</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>password_length</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **&#160;</td>
+          <td class="paramname"><em>error</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Create a https proxy definition</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">out_proxy_config</td><td>returned proxy config object </td></tr>
+    <tr><td class="paramname">proxy_address</td><td>the host address of the proxy, must not be an onion service </td></tr>
+    <tr><td class="paramname">username</td><td>username to authenticate with https proxy </td></tr>
+    <tr><td class="paramname">username_length</td><td>number of characters in username, not counting any null- terminator </td></tr>
+    <tr><td class="paramname">password</td><td>password to authenticate with https proxy </td></tr>
+    <tr><td class="paramname">password_length</td><td>number of characters in username, not counting any null- terminator </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a1e5184bbce6437ab6ab5302d34ba4768"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1e5184bbce6437ab6ab5302d34ba4768">&#9670;&nbsp;</a></span>gosling_proxy_config_new_socks4()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void gosling_proxy_config_new_socks4 </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a284649b7258e7f3c30384e4a31cc4c9c">gosling_proxy_config</a> **&#160;</td>
+          <td class="paramname"><em>out_proxy_config</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="cgosling_8h.html#a7548e8732efb9c39b94539a1880793ff">gosling_target_address</a> *&#160;</td>
+          <td class="paramname"><em>proxy_address</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **&#160;</td>
+          <td class="paramname"><em>error</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Create a socks4 proxy definition</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">out_proxy_config</td><td>returned proxy config object </td></tr>
+    <tr><td class="paramname">proxy_address</td><td>the host address of the proxy, must not be an onion service </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ac42e4811658b4784cad1fde370a722e0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac42e4811658b4784cad1fde370a722e0">&#9670;&nbsp;</a></span>gosling_proxy_config_new_socks5()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void gosling_proxy_config_new_socks5 </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a284649b7258e7f3c30384e4a31cc4c9c">gosling_proxy_config</a> **&#160;</td>
+          <td class="paramname"><em>out_proxy_config</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="cgosling_8h.html#a7548e8732efb9c39b94539a1880793ff">gosling_target_address</a> *&#160;</td>
+          <td class="paramname"><em>proxy_address</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>username</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>username_length</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>password</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>password_length</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **&#160;</td>
+          <td class="paramname"><em>error</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Create a socks5 proxy definition</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">out_proxy</td><td>returned proxy config object </td></tr>
+    <tr><td class="paramname">proxy_address</td><td>the host address of the proxy, must not be an onion service </td></tr>
+    <tr><td class="paramname">username</td><td>username to authenticate with socks5 proxy </td></tr>
+    <tr><td class="paramname">username_length</td><td>number of characters in username, not counting any null- terminator </td></tr>
+    <tr><td class="paramname">password</td><td>password to authenticate with socks5 proxy </td></tr>
+    <tr><td class="paramname">password_length</td><td>number of characters in username, not counting any null- terminator </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="abae746cfb79975c4092fc1f9515e9552"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abae746cfb79975c4092fc1f9515e9552">&#9670;&nbsp;</a></span>gosling_string_is_valid_v3_onion_service_id()</h2>
 
@@ -4146,6 +4646,98 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="aab7d02182100475e76effda4569eb1e6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aab7d02182100475e76effda4569eb1e6">&#9670;&nbsp;</a></span>gosling_tor_provider_config_add_bridge_line()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void gosling_tor_provider_config_add_bridge_line </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#abec8f2cc63e29490aee0e06a29d2c53a">gosling_tor_provider_config</a> *&#160;</td>
+          <td class="paramname"><em>tor_provider_config</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="cgosling_8h.html#a64109152ac09494701d99de4412a6c7f">gosling_bridge_line</a> *&#160;</td>
+          <td class="paramname"><em>bridge_line</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **&#160;</td>
+          <td class="paramname"><em>error</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Add a pluggable transport config to a tor provider config. A tor provider config does not need to support pluggable transport configuration, so this function may fail as a result. The currently supported tor provider configs are:</p><ul>
+<li>Legacy Bundled Client</li>
+</ul>
+<p>This function may be called multiple times allowing a tor provider config to be configured with multiple pluggable-transports.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">tor_provider_config</td><td>the tor provider config to update </td></tr>
+    <tr><td class="paramname">pluggable_transport_config</td><td>the pluggabel transport config to add to the tor provider config </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a5d14f4633b4e2e2810dd6a6320789021"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5d14f4633b4e2e2810dd6a6320789021">&#9670;&nbsp;</a></span>gosling_tor_provider_config_add_pluggable_transport_config()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void gosling_tor_provider_config_add_pluggable_transport_config </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#abec8f2cc63e29490aee0e06a29d2c53a">gosling_tor_provider_config</a> *&#160;</td>
+          <td class="paramname"><em>tor_provider_config</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="cgosling_8h.html#a8b01e9475045fc116a06098e3820be70">gosling_pluggable_transport_config</a> *&#160;</td>
+          <td class="paramname"><em>pluggable_transport_config</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **&#160;</td>
+          <td class="paramname"><em>error</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Add a pluggable transport config to a tor provider config. A tor provider config does not need to support pluggable transport configuration, so this function may fail as a result. The currently supported tor provider configs are:</p><ul>
+<li>Legacy Bundled Client</li>
+</ul>
+<p>This function may be called multiple times allowing a tor provider config to be configured with multiple pluggable-transports.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">tor_provider_config</td><td>the tor provider config to update </td></tr>
+    <tr><td class="paramname">pluggable_transport_config</td><td>the pluggable transport config to add to the tor provider config; must not be null </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="ab29d0f823e6daea5c6f4487bbb34e1a5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab29d0f823e6daea5c6f4487bbb34e1a5">&#9670;&nbsp;</a></span>gosling_tor_provider_config_free()</h2>
 
@@ -4260,7 +4852,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Create a tor provider config to build a mock no-internet tor provider for testing..</p>
+<p>Create a tor provider config to build a mock no-internet tor provider for testing.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">out_tor_provider</td><td>returned tor provider </td></tr>
@@ -4342,6 +4934,103 @@ Functions</h2></td></tr>
     <tr><td class="paramname">tor_control_port</td><td>tor daemon control port </td></tr>
     <tr><td class="paramname">tor_control_passwd</td><td>authentication password </td></tr>
     <tr><td class="paramname">tor_control_passwd_length</td><td>the number of chars in tor_control_password not including any null-terminator </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a7a486a40c83e05bd4b66733dc9712ca8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7a486a40c83e05bd4b66733dc9712ca8">&#9670;&nbsp;</a></span>gosling_tor_provider_config_set_allowed_ports()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void gosling_tor_provider_config_set_allowed_ports </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#abec8f2cc63e29490aee0e06a29d2c53a">gosling_tor_provider_config</a> *&#160;</td>
+          <td class="paramname"><em>tor_provider_config</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const uint16_t *&#160;</td>
+          <td class="paramname"><em>allowed_ports</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>allowed_ports_count</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **&#160;</td>
+          <td class="paramname"><em>error</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Set a tor provider config's allowed ports list. A tor provider config does not need to support a port allow-list, so this function may fail as a result. The currently supported tor provider configs are:</p><ul>
+<li>Legacy Bundled Client</li>
+</ul>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">tor_provider_config</td><td>the tor provider config to update </td></tr>
+    <tr><td class="paramname">allowed_ports</td><td>an array of ports the local system's firewall allows connections to; must not be null </td></tr>
+    <tr><td class="paramname">allowed_ports_count</td><td>the number of ports in the allowed_ports array; must not be 0 </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a1abfadde1114eda27276be7e6c53283b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1abfadde1114eda27276be7e6c53283b">&#9670;&nbsp;</a></span>gosling_tor_provider_config_set_proxy_config()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void gosling_tor_provider_config_set_proxy_config </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#abec8f2cc63e29490aee0e06a29d2c53a">gosling_tor_provider_config</a> *&#160;</td>
+          <td class="paramname"><em>tor_provider_config</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="cgosling_8h.html#a284649b7258e7f3c30384e4a31cc4c9c">gosling_proxy_config</a> *&#160;</td>
+          <td class="paramname"><em>proxy_config</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **&#160;</td>
+          <td class="paramname"><em>error</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Set a tor provider config's proxy configuration. A tor provider config does not need to support proxy configuration, so this function may fail as a result. The currently supported tor provider configs are:</p><ul>
+<li>Legacy Bundled Client</li>
+</ul>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">tor_provider_config</td><td>the tor provider config to update </td></tr>
+    <tr><td class="paramname">proxy_config</td><td>the proxy configuration to use; must not be null </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
