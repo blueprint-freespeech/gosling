@@ -1,7 +1,7 @@
 [package]
 name = "gosling"
 authors = ["Richard Pospesel <richard@blueprintforfreespeech.net>"]
-version = "0.1.1"
+version = "0.2.0"
 rust-version = "1.70"
 edition = "2021"
 license = "BSD-3-Clause"
@@ -12,11 +12,11 @@ repository = "https://github.com/blueprint-freespeech/gosling"
 [dependencies]
 bson = "2.0"
 data-encoding = "2.0"
-honk-rpc = { version = "0.1", path = "../honk-rpc" }
+honk-rpc = { version = "0.2", path = "../honk-rpc" }
 num_enum = "0.6"
 rand = "0.8"
 thiserror = "1.0"
-tor-interface = { version = "0.2", path = "../tor-interface" }
+tor-interface = { version = "0.3", path = "../tor-interface" }
 
 [dev-dependencies]
 anyhow = "1.0"
