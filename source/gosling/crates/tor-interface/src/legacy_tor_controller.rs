@@ -233,6 +233,7 @@ impl LegacyTorController {
     }
 
     fn write_command(&mut self, text: &str) -> Result<Reply, Error> {
+        println!("write_command: '{text}'");
         self.control_stream
             .write(text)
             .map_err(Error::WriteCommandFailed)?;
