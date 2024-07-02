@@ -379,8 +379,7 @@ impl LegacyTorClient {
                     #[cfg(unix)]
                     std::os::unix::fs::symlink(path_to_binary, &pt_symlink).map_err(Error::PluggableTransportSymlinkCreationFailed)?;
 
-                    // verify a bridge-type support has not been defined for multiple pluggable-
-                    // transports
+                    // verify a bridge-type support has not been defined for multiple pluggable-transports
                     for transport in pt_settings.transports() {
                         if supported_transports.contains(transport) {
                             return Err(Error::BridgeTransportTypeMultiplyDefined(transport.to_string()));
