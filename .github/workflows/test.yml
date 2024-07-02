@@ -41,7 +41,7 @@ jobs:
       - name: Test
         run: |
           mkdir build
-          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_TOR_EXPERT_BUNDLE=ON
+          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_TOR_EXPERT_BUNDLE=ON
           cd build
           ctest --verbose -R ^${{matrix.test}}
   windows:
@@ -96,7 +96,7 @@ jobs:
           CC: clang
         run: |
           mkdir build
-          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_TOR_EXPERT_BUNDLE=ON
+          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_TOR_EXPERT_BUNDLE=ON
           cd build
           ctest --verbose -R ^${{matrix.test}}
   macos:
@@ -136,6 +136,6 @@ jobs:
       - name: Test
         run: |
           mkdir build
-          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_TOR_EXPERT_BUNDLE=ON
+          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_TOR_EXPERT_BUNDLE=ON
           cd build
           ctest --verbose -R ^${{matrix.test}}
