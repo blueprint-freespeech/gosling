@@ -46,7 +46,7 @@ if (BUILD_PAGES)
     #
     add_custom_command(
         OUTPUT ${CARGO_TARGET_DIR}/tarpaulin/coverage.html
-        COMMAND CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo tarpaulin --out html --output-dir ${CARGO_TARGET_DIR}/tarpaulin --timeout 600 ${TARPAULIN_FEATURES}
+        COMMAND TEB_PATH=${TEB_PATH} CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo tarpaulin --out html --output-dir ${CARGO_TARGET_DIR}/tarpaulin --timeout 600 ${TARPAULIN_FEATURES}
         COMMAND mv ${CARGO_TARGET_DIR}/tarpaulin/tarpaulin-report.html ${CARGO_TARGET_DIR}/tarpaulin/coverage.html
         COMMAND ${CMAKE_COMMAND} -E echo "Test Coverage Report: ${CARGO_TARGET_DIR}/tarpaulin/coverage.html"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
@@ -54,6 +54,9 @@ if (BUILD_PAGES)
     add_custom_target(gosling_cargo_tarpaulin ALL
         DEPENDS ${CARGO_TARGET_DIR}/tarpaulin/coverage.html
     )
+    if (ENABLE_TOR_EXPERT_BUNDLE)
+        add_dependencies(gosling_cargo_tarpaulin tor_expert_bundle_target)
+    endif()
 
     #
     # Install code coverage pages
