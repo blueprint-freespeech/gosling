@@ -40,6 +40,9 @@ if (BUILD_PAGES)
         "Honk-RPC Specification"
         "Gosling Specification")
 
+    # get current year for copyright notice
+    string(TIMESTAMP year "%Y")
+
     # generate xhtml from page.mustache template and markdown
     foreach(file_md title IN ZIP_LISTS page_sources page_titles)
         get_filename_component(file ${file_md} NAME_WE)
@@ -53,7 +56,8 @@ if (BUILD_PAGES)
         set(file_yml "${file}.yml")
         add_custom_command(
             OUTPUT ${file_yml}
-            COMMAND echo "title: ${title}" > ${file_yml})
+            COMMAND echo "title: ${title}" > ${file_yml}
+            COMMAND echo "year: ${year}" >> ${file_yml})
         # generate .xhtml from template and sources
         set(file_xhtml "${file}.xhtml")
         add_custom_command(
