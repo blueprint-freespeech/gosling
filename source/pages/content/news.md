@@ -2,6 +2,20 @@
 
 ---
 
+## 2024-05-25 - Initial `arti-client` integration
+
+[Arti](https://blog.torproject.org/announcing-arti/) is the Tor Project's pure-Rust tor implementation. This effort has been on-going for a few years, but it has not been until relatively recently that we could begin the work of adding Arti support to Gosling.
+
+The first part of this work actually happened last summer with the implementation of the MockTorClient. This client implements the [TorProvider](crates/tor_interface/tor_provider/index.html) trait using local sockets and testing the Gosling protocol easier and much more rigorous.
+
+Once the entire stack was updated to use a generic TorProvider, implementing more became a much easier task. The [ArtiClientTorClient](crates/tor_interface/arti_client_tor_client/index.html) integrates and wraps the same backend crates used by the Tor Project's [arti crate](https://crates.io/crates/arti).
+
+This tor implementation runs in the same process as Gosling itself, and there is no need for a SOCKS5 proxy or a control port controller. For now, this (and all of the implementations of TorProvider) are gated behind a Rust feature-flag. When building with CMAKE, these flags may be enabled using config options. See the root REAMDE for more details.
+
+For now, this feature is not available for use in Gosling itself, due to arti's missing implementation of client authentication. Client auth prevents tor clients from connecting to an onion service, unless they have a particular private key which allows them to decrypt the so-called 'descriptor' which contains required routing information. Client auth is used by Gosling's endpoint servers as a security-in-depth feature to prevent DDOS in the event the onion service id leaks.
+
+We expect client auth to be implemented upstream in the relatively near future. When it is available, we will do the remaining integration work in the tor-interface crate and plumbing through to cgosling's C-FFI.
+
 ## 2024-03-27 - Some Cargo Annoyances
 
 So in the previous post I mentioned using patchelf to set the [SONAME](https://en.wikipedia.org/wiki/Soname) attribute on the libcgosling.so shared library to facilitate proper debian packaging. I further mentioned this was due to an upstream cargo issue. Well, it turns out a similar issue exists for macOS binaries. Rather than playing whack-a-mole and manually fixing every single eventual build target, I took a step back and re-thought my approach and what could be done that would be most maintainable long term.
