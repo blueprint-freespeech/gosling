@@ -2,6 +2,22 @@
 
 ---
 
+## 2024-07-06 - New minor features and configuration options
+
+The work for the past month or so has been focused on implementing various features unrelated to the Gosling protocol itself.
+
+We anticipate developers of gosling-using applications may also want to connect to other third party domains or onion services. To mitigate anonymity and linkability concerns, we have introduced a `connect` function on the gosling and cgosling interfaces. This will allow developers to connect to domains anonymously through the packaged tor daemon. Some use cases may be for anonymous update pings or for accessing 3rd party services.
+
+Users or application packagers are also very likely going to want to have the option to use a system tor daemon for their gosling-using applications (rather than launching and managing their own tor instance). To enable this, we have generalised the idea of building a `gosling_tor_provider` by instead building a `gosling_tor_provider_config`, and then generating a `gosling_tor_provider` through that config.
+
+This change in API surface means we won't need to worry as much about API breakage if we want to add additional configuration options to an existing tor provider type. The now currently supported config types are:
+
+- **bundled legacy tor daemon**: the previous default, and how Ricochet-Refresh, Tor Browser, and brave package and manage tor; these applications launch, configure and exclusively owned a tor instance.
+- **system legacy to daemon**: a new option which allows users to connect to and manage an existing system-wide tor daemon, provided they know the control-port password; this configuration is necessary for systems such as Tails
+- **mock tor client**: this provides a fake in-process tor network to use for testing
+
+Finally, users need the ability to set various configuration options to use tor or bypass censorship. The bundled legacy tor daemon configuration now has options for the proxy, open firewall ports, pluggable transports, and bridges.
+
 ## 2024-05-25 - Initial `arti-client` integration
 
 [Arti](https://blog.torproject.org/announcing-arti/) is the Tor Project's pure-Rust tor implementation. This effort has been on-going for a few years, but it has not been until relatively recently that we could begin the work of adding Arti support to Gosling.
