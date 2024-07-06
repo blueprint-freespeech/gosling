@@ -1,16 +1,25 @@
+* {
+  font-family: sans-serif;
+  line-height: 1.4;
+}
+
+html, body {
+  height: 100%;
+}
+
 body {
   margin: 0;
   padding: 0;
 }
 
 .container {
+  min-height: 100%;
   display: flex;
 }
 
 .navigation {
   flex: none;
-  width: 196;
-  background-color: #f0f0f0;
+  background-color: #DDD;
   padding: 0.5em;
 }
 
@@ -20,6 +29,26 @@ body {
 }
 
 .logo img {
-  width: 100%;
+  width: 196px;
+  height: 196px;
 }
 
+.content {
+  padding-inline: 1.0em;
+}
+
+
+code {
+  background-color: #EEE;
+  padding-block: 0.15em;
+  padding-inline: 0.35em;
+  font-family: monospace;
+  border-radius: 0.35em;
+}
+
+pre code {
+  box-sizing: border-box;
+  display: table;
+  width: 100%;
+  padding: 0.75em;
+}
