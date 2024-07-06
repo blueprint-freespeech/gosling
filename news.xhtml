@@ -36,6 +36,24 @@
     <div class="content">
       <h1 id="news">News</h1>
       <hr />
+      <h2 id="new-minor-features-and-configuration-options">2024-07-06 - New minor features and configuration options</h2>
+      <p>The work for the past month or so has been focused on implementing various features unrelated to the Gosling protocol itself.</p>
+      <p>We anticipate developers of gosling-using applications may also want to connect to other third party domains or onion services. To mitigate anonymity and linkability concerns, we have introduced a <code>connect</code> function on the gosling and cgosling interfaces. This will allow developers to connect to domains anonymously through the packaged tor daemon. Some use cases may be for anonymous update pings or for accessing 3rd party services.</p>
+      <p>Users or application packagers are also very likely going to want to have the option to use a system tor daemon for their gosling-using applications (rather than launching and managing their own tor instance). To enable this, we have generalised the idea of building a <code>gosling_tor_provider</code> by instead building a <code>gosling_tor_provider_config</code>, and then generating a <code>gosling_tor_provider</code> through that config.</p>
+      <p>This change in API surface means we won’t need to worry as much about API breakage if we want to add additional configuration options to an existing tor provider type. The now currently supported config types are:</p>
+      <ul>
+      <li><strong>bundled legacy tor daemon</strong>: the previous default, and how Ricochet-Refresh, Tor Browser, and brave package and manage tor; these applications launch, configure and exclusively owned a tor instance.</li>
+      <li><strong>system legacy to daemon</strong>: a new option which allows users to connect to and manage an existing system-wide tor daemon, provided they know the control-port password; this configuration is necessary for systems such as Tails</li>
+      <li><strong>mock tor client</strong>: this provides a fake in-process tor network to use for testing</li>
+      </ul>
+      <p>Finally, users need the ability to set various configuration options to use tor or bypass censorship. The bundled legacy tor daemon configuration now has options for the proxy, open firewall ports, pluggable transports, and bridges.</p>
+      <h2 id="initial-arti-client-integration">2024-05-25 - Initial <code>arti-client</code> integration</h2>
+      <p><a href="https://blog.torproject.org/announcing-arti/">Arti</a> is the Tor Project’s pure-Rust tor implementation. This effort has been on-going for a few years, but it has not been until relatively recently that we could begin the work of adding Arti support to Gosling.</p>
+      <p>The first part of this work actually happened last summer with the implementation of the MockTorClient. This client implements the <a href="crates/tor_interface/tor_provider/index.html">TorProvider</a> trait using local sockets and testing the Gosling protocol easier and much more rigorous.</p>
+      <p>Once the entire stack was updated to use a generic TorProvider, implementing more became a much easier task. The <a href="crates/tor_interface/arti_client_tor_client/index.html">ArtiClientTorClient</a> integrates and wraps the same backend crates used by the Tor Project’s <a href="https://crates.io/crates/arti">arti crate</a>.</p>
+      <p>This tor implementation runs in the same process as Gosling itself, and there is no need for a SOCKS5 proxy or a control port controller. For now, this (and all of the implementations of TorProvider) are gated behind a Rust feature-flag. When building with CMAKE, these flags may be enabled using config options. See the root REAMDE for more details.</p>
+      <p>For now, this feature is not available for use in Gosling itself, due to arti’s missing implementation of client authentication. Client auth prevents tor clients from connecting to an onion service, unless they have a particular private key which allows them to decrypt the so-called ‘descriptor’ which contains required routing information. Client auth is used by Gosling’s endpoint servers as a security-in-depth feature to prevent DDOS in the event the onion service id leaks.</p>
+      <p>We expect client auth to be implemented upstream in the relatively near future. When it is available, we will do the remaining integration work in the tor-interface crate and plumbing through to cgosling’s C-FFI.</p>
       <h2 id="some-cargo-annoyances">2024-03-27 - Some Cargo Annoyances</h2>
       <p>So in the previous post I mentioned using patchelf to set the <a href="https://en.wikipedia.org/wiki/Soname">SONAME</a> attribute on the libcgosling.so shared library to facilitate proper debian packaging. I further mentioned this was due to an upstream cargo issue. Well, it turns out a similar issue exists for macOS binaries. Rather than playing whack-a-mole and manually fixing every single eventual build target, I took a step back and re-thought my approach and what could be done that would be most maintainable long term.</p>
       <p>The end-result is <a href="https://github.com/blueprint-freespeech/gosling/commit/9ae019efd3c5e5565287b963d09868c4ffaf5891">this</a>.</p>
@@ -62,7 +80,7 @@
       <p>Nothing to report here.</p>
       <hr/>
       <footer>
-        <p>&copy; 2023 <a href="https://www.blueprintforfreespeech.net">Blueprint for Free Speech</a>. All rights reserved.</p>
+        <p>&copy; 2023-2024 <a href="https://www.blueprintforfreespeech.net">Blueprint for Free Speech</a>. All rights reserved.</p>
       </footer>
     </div>
   </div>
