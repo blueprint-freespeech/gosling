@@ -169,7 +169,27 @@ impl std::fmt::Display for ErrorCode {
 
 impl std::error::Error for ErrorCode {}
 
-const HONK_RPC_VERSION: i32 = 1i32;
+// Honk-RPC semver is packed into an i32
+const fn semver_to_i32(major: u8, minor: u8, patch: u8) -> i32 {
+    let major = major as i32;
+    let minor = minor as i32;
+    let patch = patch as i32;
+    (major << 16) | (minor << 8) | patch
+}
+
+const fn i32_to_semver(ver: i32) -> Option<(u8, u8, u8)> {
+    if ver >= 0 && ver <= 0xffffff {
+        let major = (ver & 0xff0000) >> 16;
+        let minor = (ver & 0xff00) >> 8;
+        let patch = ver & 0xff;
+        Some((major as u8, minor as u8, patch as u8))
+    } else {
+        None
+    }
+}
+
+// Honk-RPC version 0.1.0
+const HONK_RPC_VERSION: i32 = semver_to_i32(0, 1, 0);
 
 struct Message {
     honk_rpc: i32,
@@ -185,7 +205,15 @@ impl TryFrom<bson::document::Document> for Message {
         // verify version
         let honk_rpc = match value.get_i32("honk_rpc") {
             Ok(HONK_RPC_VERSION) => HONK_RPC_VERSION,
-            Ok(_bad_version) => return Err(ErrorCode::MessageVersionIncompatible),
+            Ok(honk_rpc) => {
+                return if let Some(_version) = i32_to_semver(honk_rpc) {
+                    // some other semver we cannot handle
+                    Err(ErrorCode::MessageVersionIncompatible)
+                } else {
+                    // an invalid semver
+                    Err(ErrorCode::MessageParseFailed)
+                };
+            }
             Err(_err) => return Err(ErrorCode::MessageParseFailed),
         };
 
