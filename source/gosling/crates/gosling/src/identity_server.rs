@@ -390,10 +390,14 @@ impl ApiSet for IdentityServer {
         version: i32,
         mut args: bson::document::Document,
         request_cookie: Option<RequestCookie>,
-    ) -> Result<Option<bson::Bson>, ErrorCode> {
+    ) -> Option<Result<Option<bson::Bson>, ErrorCode>> {
         let request_cookie = match request_cookie {
             Some(request_cookie) => request_cookie,
-            None => return Err(ErrorCode::Runtime(RpcError::RequestCookieRequired as i32)),
+            None => {
+                return Some(Err(ErrorCode::Runtime(
+                    RpcError::RequestCookieRequired as i32,
+                )))
+            }
         };
 
         match (
@@ -429,7 +433,7 @@ impl ApiSet for IdentityServer {
                 };
                 if !valid_version {
                     self.state = IdentityServerState::HandshakeFailed;
-                    return Err(ErrorCode::Runtime(RpcError::BadVersion as i32));
+                    return Some(Err(ErrorCode::Runtime(RpcError::BadVersion as i32)));
                 }
 
                 if let (Some(Bson::String(client_identity)), Some(Bson::String(endpoint_name))) =
@@ -440,7 +444,7 @@ impl ApiSet for IdentityServer {
                         Ok(client_identity) => client_identity,
                         Err(_) => {
                             self.state = IdentityServerState::HandshakeFailed;
-                            return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                            return Some(Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)));
                         }
                     };
 
@@ -449,7 +453,7 @@ impl ApiSet for IdentityServer {
                         Ok(endpoint_name) => endpoint_name,
                         Err(_) => {
                             self.state = IdentityServerState::HandshakeFailed;
-                            return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                            return Some(Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)));
                         }
                     };
 
@@ -459,10 +463,10 @@ impl ApiSet for IdentityServer {
                     // save results
                     self.client_identity = Some(client_identity);
                     self.requested_endpoint = Some(endpoint_name);
-                    Ok(None)
+                    None
                 } else {
                     self.state = IdentityServerState::HandshakeFailed;
-                    Err(ErrorCode::Runtime(RpcError::InvalidArg as i32))
+                    Some(Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)))
                 }
             }
             // handle send_response call
@@ -512,7 +516,7 @@ impl ApiSet for IdentityServer {
                         Ok(client_cookie) => client_cookie,
                         Err(_) => {
                             self.state = IdentityServerState::HandshakeFailed;
-                            return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                            return Some(Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)));
                         }
                     };
 
@@ -522,7 +526,7 @@ impl ApiSet for IdentityServer {
                             Ok(client_identity_proof_signature) => client_identity_proof_signature,
                             Err(_) => {
                                 self.state = IdentityServerState::HandshakeFailed;
-                                return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                                return Some(Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)));
                             }
                         };
                     let client_identity_proof_signature =
@@ -530,7 +534,7 @@ impl ApiSet for IdentityServer {
                             Ok(client_identity_proof_signature) => client_identity_proof_signature,
                             Err(_) => {
                                 self.state = IdentityServerState::HandshakeFailed;
-                                return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                                return Some(Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)));
                             }
                         };
 
@@ -540,7 +544,7 @@ impl ApiSet for IdentityServer {
                             Ok(client_authorization_key) => client_authorization_key,
                             Err(_) => {
                                 self.state = IdentityServerState::HandshakeFailed;
-                                return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                                return Some(Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)));
                             }
                         };
                     let client_authorization_key =
@@ -556,7 +560,7 @@ impl ApiSet for IdentityServer {
                             Ok(client_authorization_signature) => client_authorization_signature,
                             Err(_) => {
                                 self.state = IdentityServerState::HandshakeFailed;
-                                return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                                return Some(Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)));
                             }
                         };
                     let client_authorization_signature =
@@ -564,7 +568,7 @@ impl ApiSet for IdentityServer {
                             Ok(client_authorization_signature) => client_authorization_signature,
                             Err(_) => {
                                 self.state = IdentityServerState::HandshakeFailed;
-                                return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                                return Some(Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)));
                             }
                         };
 
@@ -602,20 +606,20 @@ impl ApiSet for IdentityServer {
                     // safe off challenge response for verification
                     self.challenge_response = Some(challenge_response);
 
-                    Ok(None)
+                    None
                 } else {
                     self.state = IdentityServerState::HandshakeFailed;
-                    Err(ErrorCode::Runtime(RpcError::InvalidArg as i32))
+                    Some(Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)))
                 }
             }
             _ => {
                 self.state = IdentityServerState::HandshakeFailed;
-                Err(ErrorCode::Runtime(RpcError::Failure as i32))
+                Some(Err(ErrorCode::Runtime(RpcError::Failure as i32)))
             }
         }
     }
 
-    fn next_result(&mut self) -> Option<(RequestCookie, Option<bson::Bson>, ErrorCode)> {
+    fn next_result(&mut self) -> Option<(RequestCookie, Result<Option<bson::Bson>, ErrorCode>)> {
         match (
             &self.state,
             self.begin_handshake_request_cookie,
@@ -644,11 +648,10 @@ impl ApiSet for IdentityServer {
                 self.state = IdentityServerState::WaitingForSendResponse;
                 Some((
                     begin_handshake_request_cookie,
-                    Some(Bson::Document(doc! {
+                    Ok(Some(Bson::Document(doc! {
                         "server_cookie" : Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: server_cookie.to_vec()}),
                         "endpoint_challenge" : std::mem::take(endpoint_challenge),
-                    })),
-                    ErrorCode::Success,
+                    }))),
                 ))
             }
             (&IdentityServerState::ChallengeReady, _, _, _, _, _, _, _, _) => unreachable!(),
@@ -678,14 +681,12 @@ impl ApiSet for IdentityServer {
                     self.endpoint_private_key = Some(endpoint_private_key);
                     Some((
                         send_response_request_cookie,
-                        Some(Bson::String(endpoint_service_id.to_string())),
-                        ErrorCode::Success,
+                        Ok(Some(Bson::String(endpoint_service_id.to_string()))),
                     ))
                 } else {
                     Some((
                         send_response_request_cookie,
-                        None,
-                        ErrorCode::Runtime(RpcError::Failure as i32),
+                        Err(ErrorCode::Runtime(RpcError::Failure as i32)),
                     ))
                 }
             }

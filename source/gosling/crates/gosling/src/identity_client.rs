@@ -191,7 +191,7 @@ impl IdentityClient {
                                 ));
                             }
                             match result {
-                                Bson::Document(result) => result,
+                                Some(Bson::Document(result)) => result,
                                 _ => {
                                     return Err(Error::UnexpectedResponseReceived(
                                         "begin_handshake() response is unexpected bson type"
@@ -350,7 +350,7 @@ impl IdentityClient {
                         Response::Success { cookie, result } => {
                             if cookie == send_response_request_cookie {
                                 match result {
-                                    Bson::String(endpoint_service_id) => {
+                                    Some(Bson::String(endpoint_service_id)) => {
                                         match V3OnionServiceId::from_string(&endpoint_service_id) {
                                             Ok(endpoint_service_id) => endpoint_service_id,
                                             Err(_) => return Err(Error::UnexpectedResponseReceived(format!("unable to parse received endpoint service id '{}' as v3 onion service id", endpoint_service_id))),

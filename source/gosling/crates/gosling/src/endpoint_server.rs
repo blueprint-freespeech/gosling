@@ -259,10 +259,14 @@ impl ApiSet for EndpointServer {
         version: i32,
         mut args: bson::document::Document,
         request_cookie: Option<RequestCookie>,
-    ) -> Result<Option<bson::Bson>, ErrorCode> {
+    ) -> Option<Result<Option<bson::Bson>, ErrorCode>> {
         let request_cookie = match request_cookie {
             Some(request_cookie) => request_cookie,
-            None => return Err(ErrorCode::Runtime(RpcError::RequestCookieRequired as i32)),
+            None => {
+                return Some(Err(ErrorCode::Runtime(
+                    RpcError::RequestCookieRequired as i32,
+                )))
+            }
         };
 
         match
@@ -284,7 +288,7 @@ impl ApiSet for EndpointServer {
                 };
                 if !valid_version {
                     self.state = EndpointServerState::HandshakeFailed;
-                    return Err(ErrorCode::Runtime(RpcError::BadVersion as i32));
+                    return Some(Err(ErrorCode::Runtime(RpcError::BadVersion as i32)));
                 }
 
                 if let (
@@ -299,7 +303,7 @@ impl ApiSet for EndpointServer {
                         Ok(client_identity) => Some(client_identity),
                         Err(_) => {
                             self.state = EndpointServerState::HandshakeFailed;
-                            return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                            return Some(Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)));
                         }
                     };
 
@@ -307,7 +311,7 @@ impl ApiSet for EndpointServer {
                         Ok(channel_name) => channel_name,
                         Err(_) => {
                             self.state = EndpointServerState::HandshakeFailed;
-                            return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                            return Some(Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)));
                         }
                     };
 
@@ -317,10 +321,10 @@ impl ApiSet for EndpointServer {
                     // save channel name
                     self.requested_channel = Some(channel_name);
 
-                    Ok(None)
+                    None
                 } else {
                     self.state = EndpointServerState::HandshakeFailed;
-                    Err(ErrorCode::Runtime(RpcError::InvalidArg as i32))
+                    Some(Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)))
                 }
             },
             ("send_response", 0,
@@ -338,7 +342,7 @@ impl ApiSet for EndpointServer {
                         Ok(client_cookie) => client_cookie,
                         Err(_) => {
                             self.state = EndpointServerState::HandshakeFailed;
-                            return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                            return Some(Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)));
                         }
                     };
 
@@ -347,14 +351,14 @@ impl ApiSet for EndpointServer {
                         Ok(client_identity_proof_signature) => client_identity_proof_signature,
                         Err(_) => {
                             self.state = EndpointServerState::HandshakeFailed;
-                            return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                            return Some(Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)));
                         }
                     };
                     let client_identity_proof_signature = match Ed25519Signature::from_raw(&client_identity_proof_signature) {
                         Ok(client_identity_proof_signature) => client_identity_proof_signature,
                         Err(_) => {
                             self.state = EndpointServerState::HandshakeFailed;
-                            return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                            return Some(Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)));
                         }
                     };
 
@@ -363,7 +367,7 @@ impl ApiSet for EndpointServer {
                         Ok(client_identity_key) => client_identity_key,
                         Err(_) => {
                             self.state = EndpointServerState::HandshakeFailed;
-                            return Err(ErrorCode::Runtime(RpcError::InvalidArg as i32));
+                            return Some(Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)));
                         }
                     };
 
@@ -386,25 +390,25 @@ impl ApiSet for EndpointServer {
                         self.handshake_succeeded = Some(true);
                         self.state = EndpointServerState::HandledSendResponse;
                         // success, return empty doc
-                        Ok(Some(Bson::Document(doc! {})))
+                        Some(Ok(Some(Bson::Document(doc! {}))))
                     } else {
                         self.handshake_succeeded = Some(false);
                         self.state = EndpointServerState::HandledSendResponse;
-                        Err(ErrorCode::Runtime(RpcError::Failure as i32))
+                        Some(Err(ErrorCode::Runtime(RpcError::Failure as i32)))
                     }
                 } else {
                     self.state = EndpointServerState::HandshakeFailed;
-                    Err(ErrorCode::Runtime(RpcError::InvalidArg as i32))
+                    Some(Err(ErrorCode::Runtime(RpcError::InvalidArg as i32)))
                 }
             },
             _ => {
                 self.state = EndpointServerState::HandshakeFailed;
-                Err(ErrorCode::Runtime(RpcError::Failure as i32))
+                Some(Err(ErrorCode::Runtime(RpcError::Failure as i32)))
             }
         }
     }
 
-    fn next_result(&mut self) -> Option<(RequestCookie, Option<bson::Bson>, ErrorCode)> {
+    fn next_result(&mut self) -> Option<(RequestCookie, Result<Option<bson::Bson>, ErrorCode>)> {
         match (
             &self.state,
             self.begin_handshake_request_cookie,
@@ -418,10 +422,9 @@ impl ApiSet for EndpointServer {
                 self.state = EndpointServerState::WaitingForSendResponse;
                 Some((
                     begin_handshake_request_cookie,
-                    Some(Bson::Document(doc! {
+                    Ok(Some(Bson::Document(doc! {
                         "server_cookie" : Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: server_cookie.to_vec()}),
-                    })),
-                    ErrorCode::Success,
+                    }))),
                 ))
             }
             _ => None,

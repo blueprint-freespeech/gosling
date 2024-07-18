@@ -384,7 +384,7 @@ fuzz_target!(|data: HandshakeData| {
 
                 let result = match complete.result {
                     Argument::Missing => {
-                        expect_honkrpc_message_parse_failure = true;
+                        expect_gosling_unexpected_response = true;
                         None
                     },
                     Argument::Valid => {
@@ -811,7 +811,7 @@ fuzz_target!(|data: HandshakeData| {
 
                 let result = match complete.result {
                     Argument::Missing => {
-                        expect_honkrpc_message_parse_failure = true;
+                        expect_gosling_unexpected_response = true;
                         None
                     },
                     Argument::Valid => {

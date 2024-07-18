@@ -153,7 +153,7 @@ impl EndpointClient {
                             }
                         };
 
-                        if let bson::Bson::Document(result) = result {
+                        if let Some(bson::Bson::Document(result)) = result {
                             if let Some(Bson::Binary(Binary {
                                 subtype: BinarySubtype::Generic,
                                 bytes: server_cookie,
@@ -209,7 +209,7 @@ impl EndpointClient {
                             }
                         } else {
                             return Err(Error::UnexpectedResponseReceived(format!(
-                                "begin_handshake() returned unexpected value: {}",
+                                "begin_handshake() returned unexpected value: {:?}",
                                 result
                             )));
                         }
@@ -255,7 +255,7 @@ impl EndpointClient {
                             }
                         };
 
-                        if let Bson::Document(result) = result {
+                        if let Some(Bson::Document(result)) = result {
                             if result.is_empty() {
                                 self.state = EndpointClientState::HandshakeComplete;
                                 let stream = std::mem::take(&mut self.rpc).unwrap().into_stream();
