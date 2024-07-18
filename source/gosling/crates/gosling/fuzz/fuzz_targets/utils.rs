@@ -4,7 +4,7 @@ use tor_interface::tor_crypto::*;
 
 
 // honk-rpc constants
-pub(crate) const HONK_RPC: i32 = 1;
+pub(crate) const HONK_RPC: i32 = 0x00000100; // semver 0.1.0
 pub(crate) const ERROR_SECTION: i32 = 0;
 pub(crate) const ERROR_CODE_BAD_VERSION: i32 = 0;
 pub(crate) const ERROR_CODE_REQUEST_COOKIE_REQUIRED: i32 = 1;
