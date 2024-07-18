@@ -12,7 +12,7 @@ use honk_rpc::honk_rpc::*;
 
 #[derive(Default)]
 struct TestApiSet {
-    delay_echo_results: VecDeque<(RequestCookie, Option<bson::Bson>, ErrorCode)>,
+    delay_echo_results: VecDeque<(RequestCookie, Result<Option<bson::Bson>, ErrorCode>)>,
 }
 
 const RUNTIME_ERROR_INVALID_ARG: ErrorCode = ErrorCode::Runtime(1i32);
@@ -23,18 +23,22 @@ impl TestApiSet {
     fn echo_0(
         &mut self,
         mut args: bson::document::Document,
-    ) -> Result<Option<bson::Bson>, ErrorCode> {
+    ) -> Option<Result<Option<bson::Bson>, ErrorCode>> {
         if let Some(bson::Bson::String(val)) = args.get_mut("val") {
             println!("TestApiSet::echo_0(val): val = '{}'", val);
-            Ok(Some(bson::Bson::String(std::mem::take(val))))
+            // Some((Some(bson::Bson::String(std::mem::take(val))), None))
+            Some(Ok(Some(bson::Bson::String(std::mem::take(val)))))
         } else {
-            Err(RUNTIME_ERROR_INVALID_ARG)
+            Some(Err(RUNTIME_ERROR_INVALID_ARG))
         }
     }
 
     // second version of echo that isn't implemented
-    fn echo_1(&mut self, _args: bson::document::Document) -> Result<Option<bson::Bson>, ErrorCode> {
-        Err(RUNTIME_ERROR_NOT_IMPLEMENTED)
+    fn echo_1(
+        &mut self,
+        _args: bson::document::Document,
+    ) -> Option<Result<Option<bson::Bson>, ErrorCode>> {
+        Some(Err(RUNTIME_ERROR_NOT_IMPLEMENTED))
     }
 
     // same as echo but takes awhile and appends ' - Delayed!' to source string before returning
@@ -42,7 +46,7 @@ impl TestApiSet {
         &mut self,
         request_cookie: Option<RequestCookie>,
         mut args: bson::document::Document,
-    ) -> Result<Option<bson::Bson>, ErrorCode> {
+    ) -> Option<Result<Option<bson::Bson>, ErrorCode>> {
         if let Some(bson::Bson::String(val)) = args.get_mut("val") {
             println!("TestApiSet::delay_echo_0(val): val = '{}'", val);
             // only enqueue response if a request cookie is provided
@@ -50,30 +54,29 @@ impl TestApiSet {
                 val.push_str(" - Delayed!");
                 self.delay_echo_results.push_back((
                     request_cookie,
-                    Some(bson::Bson::String(std::mem::take(val))),
-                    ErrorCode::Success,
+                    Ok(Some(bson::Bson::String(std::mem::take(val)))),
                 ));
             }
             // async func so don't return result immediately
-            Ok(None)
+            None
         } else {
-            Err(RUNTIME_ERROR_INVALID_ARG)
+            Some(Err(RUNTIME_ERROR_INVALID_ARG))
         }
     }
 
     fn sha256_0(
         &mut self,
         mut args: bson::document::Document,
-    ) -> Result<Option<bson::Bson>, ErrorCode> {
+    ) -> Option<Result<Option<bson::Bson>, ErrorCode>> {
         if let Some(bson::Bson::Binary(val)) = args.get_mut("data") {
             let mut sha256 = Sha3_256::new();
             sha256.update(&val.bytes);
 
             let hash = sha256.finalize();
 
-            Ok(Some(bson::Bson::String(HEXLOWER.encode(&hash))))
+            Some(Ok(Some(bson::Bson::String(HEXLOWER.encode(&hash)))))
         } else {
-            Err(RUNTIME_ERROR_INVALID_ARG)
+            Some(Err(RUNTIME_ERROR_INVALID_ARG))
         }
     }
 }
@@ -89,7 +92,7 @@ impl ApiSet for TestApiSet {
         version: i32,
         args: bson::document::Document,
         request_cookie: Option<RequestCookie>,
-    ) -> Result<Option<bson::Bson>, ErrorCode> {
+    ) -> Option<Result<Option<bson::Bson>, ErrorCode>> {
         match (name, version) {
             ("echo", 0) => self.echo_0(args),
             ("echo", 1) => self.echo_1(args),
@@ -97,12 +100,12 @@ impl ApiSet for TestApiSet {
             ("sha256", 0) => self.sha256_0(args),
             (name, version) => {
                 println!("received {{ name: '{}', version: {} }}", name, version);
-                Err(ErrorCode::RequestFunctionInvalid)
+                Some(Err(ErrorCode::RequestFunctionInvalid))
             }
         }
     }
 
-    fn next_result(&mut self) -> Option<(RequestCookie, Option<bson::Bson>, ErrorCode)> {
+    fn next_result(&mut self) -> Option<(RequestCookie, Result<Option<bson::Bson>, ErrorCode>)> {
         self.delay_echo_results.pop_front()
     }
 }
@@ -143,7 +146,7 @@ fn test_honk_client_apiset() -> anyhow::Result<()> {
                 }
                 Response::Success { cookie, result } => {
                     assert_eq!(sent_cookie, cookie);
-                    if let bson::Bson::String(result) = result {
+                    if let Some(bson::Bson::String(result)) = result {
                         assert_eq!(result, "Hello Alice!");
                         pat_sync_call_handled = true;
                     }
@@ -175,7 +178,10 @@ fn test_honk_client_apiset() -> anyhow::Result<()> {
                     panic!("received unexpected pending, cookie: {}", cookie);
                 }
                 Response::Success { cookie, result } => {
-                    panic!("received unexpected result: {}, cookie: {}", result, cookie);
+                    panic!(
+                        "received unexpected result: {:?}, cookie: {}",
+                        result, cookie
+                    );
                 }
                 Response::Error { cookie, error_code } => {
                     assert_eq!(sent_cookie, cookie);
@@ -206,7 +212,10 @@ fn test_honk_client_apiset() -> anyhow::Result<()> {
                     panic!("received unexpected pending, cookie: {}", cookie);
                 }
                 Response::Success { cookie, result } => {
-                    panic!("received unexpected result: {}, cookie: {}", result, cookie);
+                    panic!(
+                        "received unexpected result: {:?}, cookie: {}",
+                        result, cookie
+                    );
                 }
                 Response::Error { cookie, error_code } => {
                     assert_eq!(sent_cookie, cookie);
@@ -243,7 +252,10 @@ fn test_honk_client_apiset() -> anyhow::Result<()> {
                     );
                 }
                 Response::Success { cookie, result } => {
-                    panic!("received unexpected sucess: {}, cookie: {}", result, cookie);
+                    panic!(
+                        "received unexpected sucess: {:?}, cookie: {}",
+                        result, cookie
+                    );
                 }
             }
         }
@@ -267,7 +279,7 @@ fn test_honk_client_apiset() -> anyhow::Result<()> {
                 }
                 Response::Success { cookie, result } => {
                     assert_eq!(sent_cookie, cookie);
-                    if let bson::Bson::String(result) = result {
+                    if let Some(bson::Bson::String(result)) = result {
                         assert_eq!(result, "Hello Delayed? - Delayed!");
                         println!("--- pat received success response");
                         pat_async_call_handled = true;
@@ -322,8 +334,8 @@ fn test_honk_client_apiset() -> anyhow::Result<()> {
                     );
                 }
                 Response::Success { cookie, result } => {
-                    println!("cookie: {}, result: {}", cookie, result);
-                    if let bson::Bson::String(result) = result {
+                    println!("cookie: {}, result: {:?}", cookie, result);
+                    if let Some(bson::Bson::String(result)) = result {
                         if cookie == cookie1 {
                             pat_0x00_buffer_hashed = true;
                             assert_eq!(

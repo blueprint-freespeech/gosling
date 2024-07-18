@@ -28,7 +28,6 @@ pub enum ErrorCode {
     ResponseCookieInvalid,
     ResponseStateInvalid,
 
-    Success,
     Runtime(i32),
     Unknown(i32),
 }
@@ -89,7 +88,6 @@ impl From<i32> for ErrorCode {
             -10i32 => ErrorCode::RequestVersionInvalid,
             -11i32 => ErrorCode::ResponseCookieInvalid,
             -12i32 => ErrorCode::ResponseStateInvalid,
-            0i32 => ErrorCode::Success,
             value => {
                 if value > 0 {
                     ErrorCode::Runtime(value)
@@ -116,7 +114,6 @@ impl From<ErrorCode> for i32 {
             ErrorCode::RequestVersionInvalid => -10i32,
             ErrorCode::ResponseCookieInvalid => -11i32,
             ErrorCode::ResponseStateInvalid => -12i32,
-            ErrorCode::Success => 0i32,
             ErrorCode::Runtime(val) => val,
             ErrorCode::Unknown(val) => val,
         }
@@ -160,7 +157,6 @@ impl std::fmt::Display for ErrorCode {
                 write!(f, "ProtocolError: response cookie is not recognized")
             }
             ErrorCode::ResponseStateInvalid => write!(f, "ProtocolError: response state not valid"),
-            ErrorCode::Success => write!(f, "Success"),
             ErrorCode::Runtime(code) => write!(f, "RuntimeError: runtime error {}", code),
             ErrorCode::Unknown(code) => write!(f, "UnknownError: unknown error code {}", code),
         }
@@ -478,11 +474,6 @@ impl TryFrom<bson::document::Document> for ResponseSection {
 
         let result = value.get_mut("result").map(std::mem::take);
 
-        // if complete the result must be present
-        if state == RequestState::Complete && result.is_none() {
-            return Err(ErrorCode::SectionParseFailed);
-        }
-
         // if pending there should be no result
         if state == RequestState::Pending && result.is_some() {
             return Err(ErrorCode::SectionParseFailed);
@@ -520,10 +511,10 @@ pub trait ApiSet {
         version: i32,
         args: bson::document::Document,
         request_cookie: Option<RequestCookie>,
-    ) -> Result<Option<bson::Bson>, ErrorCode>;
+    ) -> Option<Result<Option<bson::Bson>, ErrorCode>>;
     fn update(&mut self) {}
     // TODO: add support for more error data per spec (string, debug)?
-    fn next_result(&mut self) -> Option<(RequestCookie, Option<bson::Bson>, ErrorCode)> {
+    fn next_result(&mut self) -> Option<(RequestCookie, Result<Option<bson::Bson>, ErrorCode>)> {
         None
     }
 }
@@ -534,7 +525,7 @@ pub enum Response {
     },
     Success {
         cookie: RequestCookie,
-        result: bson::Bson,
+        result: Option<bson::Bson>,
     },
     Error {
         cookie: RequestCookie,
@@ -586,7 +577,7 @@ pub fn get_error_section_size(
 ) -> Result<usize, Error> {
     let mut error_section = doc! {
         "id": ERROR_SECTION_ID,
-        "code": Into::<i32>::into(ErrorCode::Success),
+        "code": Into::<i32>::into(ErrorCode::Unknown(0)),
     };
 
     if let Some(cookie) = cookie {
@@ -933,15 +924,15 @@ where
                 Section::Response(response) => {
                     // response to our client
 
-                    if let Some(result) = response.result {
-                        self.inbound_responses.push_back(Response::Success {
-                            cookie: response.cookie,
-                            result,
-                        });
-                    } else {
-                        self.inbound_responses.push_back(Response::Pending {
-                            cookie: response.cookie,
-                        });
+                    match (response.cookie, response.state, response.result) {
+                        (cookie, RequestState::Complete, result) => {
+                            self.inbound_responses
+                                .push_back(Response::Success { cookie, result });
+                        }
+                        (cookie, RequestState::Pending, _) => {
+                            self.inbound_responses
+                                .push_back(Response::Pending { cookie });
+                        }
                     }
                 }
             }
@@ -1096,18 +1087,27 @@ where
                     std::mem::take(&mut request.arguments),
                     request.cookie,
                 ) {
-                    // func found, called, and returned immediately
-                    Ok(Some(result)) => {
+                    // func found, invoked and succeeded
+                    Some(Ok(result)) => {
                         if let Some(cookie) = request.cookie {
                             self.push_outbound_section(Section::Response(ResponseSection {
                                 cookie,
                                 state: RequestState::Complete,
-                                result: Some(result),
+                                result,
                             }))?;
                         }
                     }
+                    // func found, invoked and failed
+                    Some(Err(error_code)) => {
+                        self.push_outbound_section(Section::Error(ErrorSection {
+                            cookie: request.cookie,
+                            code: error_code,
+                            message: None,
+                            data: None,
+                        }))?;
+                    }
                     // func found, called, and result is pending
-                    Ok(None) => {
+                    None => {
                         if let Some(cookie) = request.cookie {
                             self.push_outbound_section(Section::Response(ResponseSection {
                                 cookie,
@@ -1115,15 +1115,6 @@ where
                                 result: None,
                             }))?;
                         }
-                    }
-                    // some error
-                    Err(error_code) => {
-                        self.push_outbound_section(Section::Error(ErrorSection {
-                            cookie: request.cookie,
-                            code: error_code,
-                            message: None,
-                            data: None,
-                        }))?;
                     }
                 }
             } else {
@@ -1142,19 +1133,18 @@ where
             // allow apiset to do any required repetitive work
             apiset.update();
             // put pending results in our message
-            while let Some((cookie, result, error_code)) = apiset.next_result() {
-                match (cookie, result, error_code) {
-                    (cookie, Some(result), ErrorCode::Success) => {
+            while let Some((cookie, result)) = apiset.next_result() {
+                match (cookie, result) {
+                    // function completed successfully
+                    (cookie, Ok(result)) => {
                         self.push_outbound_section(Section::Response(ResponseSection {
                             cookie,
                             state: RequestState::Complete,
-                            result: Some(result),
+                            result,
                         }))?;
                     }
-                    (cookie, result, error_code) => {
-                        if let Some(result) = result {
-                            println!("Server::update(): ApiSet next_result() returned both result and an ErrorCode {{ result : '{}', error : {} }}", result, error_code);
-                        }
+                    // function completed with failure
+                    (cookie, Err(error_code)) => {
                         self.push_outbound_section(Section::Error(ErrorSection {
                             cookie: Some(cookie),
                             code: error_code,
@@ -1358,7 +1348,7 @@ impl ApiSet for TestApiSet {
         version: i32,
         _args: bson::document::Document,
         _request_section: Option<RequestCookie>,
-    ) -> Result<Option<bson::Bson>, ErrorCode> {
+    ) -> Option<Result<Option<bson::Bson>, ErrorCode>> {
         match (name, version) {
             ("function", 0) => {
                 println!("--- namespace::function_0() called");
@@ -1366,7 +1356,7 @@ impl ApiSet for TestApiSet {
             }
             _ => (),
         }
-        Ok(Some(bson::Bson::Null))
+        Some(Ok(None))
     }
 }
 

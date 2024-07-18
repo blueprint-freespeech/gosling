@@ -50,10 +50,10 @@ impl ApiSet for TestApiSet {
         name: &str,
         version: i32,
         mut args: bson::document::Document,
-        request_cookie: Option<RequestCookie>) -> Result<Option<Bson>, ErrorCode> {
+        request_cookie: Option<RequestCookie>) -> Option<Result<Option<bson::Bson>, ErrorCode>> {
         match (name, version) {
-            ("sync_call", 0) => Ok(Some(bson::Bson::Null)),
-            ("sync_call", _) => Err(ErrorCode::RequestVersionInvalid),
+            ("sync_call", 0) => Some(Ok(Some(bson::Bson::Null))),
+            ("sync_call", _) => Some(Err(ErrorCode::RequestVersionInvalid)),
             ("async_call", 0) => {
                 if let Some(request_cookie) = request_cookie {
                     if let Some(bson::Bson::Int32(val)) = args.get_mut("wait_count") {
@@ -62,10 +62,10 @@ impl ApiSet for TestApiSet {
                         self.pending_async_calls.push((wait_count, request_cookie));
                     }
                 }
-                Ok(None)
+                None
             },
-            ("async_call", _) => Err(ErrorCode::RequestVersionInvalid),
-            _ => Err(ErrorCode::RequestFunctionInvalid),
+            ("async_call", _) => Some(Err(ErrorCode::RequestVersionInvalid)),
+            _ => Some(Err(ErrorCode::RequestFunctionInvalid)),
         }
     }
 
@@ -81,9 +81,9 @@ impl ApiSet for TestApiSet {
         });
     }
 
-    fn next_result(&mut self) -> Option<(RequestCookie, Option<Bson>, ErrorCode)> {
+    fn next_result(&mut self) -> Option<(RequestCookie, Result<Option<bson::Bson>, ErrorCode>)> {
         match self.complete_async_calls.pop_front() {
-            Some(cookie) => Some((cookie, Some(bson::Bson::Null), ErrorCode::Success)),
+            Some(cookie) => Some((cookie, Ok(Some(bson::Bson::Null)))),
             None => None
         }
     }
