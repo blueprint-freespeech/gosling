@@ -12,63 +12,91 @@ use bson::document::ValueAccessError;
 
 use crate::byte_counter::ByteCounter;
 
+/// Represents various error codes that can be present in a Honk-RPC `error_section`
 #[derive(Debug, Eq, PartialEq)]
 pub enum ErrorCode {
-    // Protocol Errors
+    /// Failure to parse a received BSON document.
     BsonParseFailed,
+    /// Received message document was too big; the default maximum message size
+    /// is 4096 bytes, but can be adjusted.
     MessageTooBig,
+    /// Received message document missing required fields.
     MessageParseFailed,
+    /// Received message contained version the receiver cannot handle.
     MessageVersionIncompatible,
+    /// Section in received message contains unknown id.
     SectionIdUnknown,
+    /// Section in received message missing required field, or provided
+    /// field is wrong datatype.
     SectionParseFailed,
+    /// Provided request cookie is already in use.
     RequestCookieInvalid,
+    /// Provided request namespace does not exist.
     RequestNamespaceInvalid,
+    /// Provided request function does not exist within the provided namespace.
     RequestFunctionInvalid,
+    /// Provided request version does not exist.
     RequestVersionInvalid,
+    /// Provided response cookie is not recognized.
     ResponseCookieInvalid,
+    /// Provided response state is not valid.
     ResponseStateInvalid,
-
+    /// Represents an application-specific runtime error with a specific error code.
     Runtime(i32),
+    /// Represents an unknown error with a specific error code.
     Unknown(i32),
 }
 
+/// The error type for the `Session` type.
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
+    /// Failed to read data from read stream due to `std::io::Error`
     #[error("failed to read data from read stream")]
     ReaderReadFailed(#[source] std::io::Error),
 
+    /// Bson documents need to be at least 4 bytes long
     #[error("received invalid bson document size header value of {0}, must be at least 4")]
     BsonDocumentSizeTooSmall(i32),
 
+    /// Received Bson document header is larger than Session supports
     #[error("received invalid bson document size header value of {0}, must be less than {1}")]
     BsonDocumentSizeTooLarge(i32, i32),
 
+    /// Too much time has elapsed without receiving a message
     #[error("waited longer than {} seconds for read", .0.as_secs_f32())]
     MessageReadTimedOut(std::time::Duration),
 
+    /// Failed to parse bson message
     #[error("failed to parse bson Message document")]
     BsonDocumentParseFailed(#[source] bson::de::Error),
 
+    /// Failed to convert bson document to Honk-RPC message
     #[error("failed to convert bson document to Message")]
     MessageConversionFailed(#[source] crate::honk_rpc::ErrorCode),
 
-    #[error("failed to serialize bson Message document")]
-    MessageWriteFailed(#[source] bson::ser::Error),
+    /// Failed to serialise bson document
+    #[error("failed to serialize bson document")]
+    BsonWriteFailed(#[source] bson::ser::Error),
 
-    #[error("failed to write message to write stream")]
+    /// Failed to write data to write stream due to `std::io::Error`
+    #[error("failed to write data to write stream")]
     WriterWriteFailed(#[source] std::io::Error),
 
+    /// Failed to flush data to write stream due to `std::io::Error`
     #[error("failed to flush message to write stream")]
     WriterFlushFailed(#[source] std::io::Error),
 
+    /// Received a Honk-RPC `error_section` without an associated request cookie
     #[error("recieved error section without cookie")]
     UnknownErrorSectionReceived(#[source] crate::honk_rpc::ErrorCode),
 
+    /// Attempted to define invalid maximum message size
     #[error(
         "tried to set invalid max message size; must be >=5 bytes and <= i32::MAX (2147483647)"
     )]
     InvalidMaxMesageSize(),
 
+    /// Attempted to send a Honk-RPC `section` that is too large to fit in a message
     #[error("queued message section is too large to write; calculated size is {0} but must be less than {1}")]
     SectionTooLarge(usize, usize),
 }
@@ -256,6 +284,7 @@ impl From<Message> for bson::document::Document {
     }
 }
 
+/// A type alias for the cookie used to track client requests.
 pub type RequestCookie = i64;
 
 const ERROR_SECTION_ID: i32 = 0i32;
@@ -503,8 +532,115 @@ impl From<ResponseSection> for bson::document::Document {
     }
 }
 
+/// The `ApiSet` trait represents a set of APIs that can be remotely invoked by a connecting Honk-RPC client.
+/// # Example
+/// This exampe `ApiSet` implements two methods, `example::println()` and `example::async_println()`. The
+/// `println()` method immediatley prints, whereas `async_println()` queues request and
+/// prints the messagge at a later date via `update()`
+///
+/// ```rust
+/// # use honk_rpc::honk_rpc::*;
+/// # use std::collections::VecDeque;
+///
+/// const RUNTIME_ERROR_INVALID_ARG: ErrorCode = ErrorCode::Runtime(1i32);
+///
+/// struct PrintlnApiSet {
+///     // queued print reuests
+///     async_println_work: Vec<(Option<RequestCookie>, String)>,
+///     // successful async requests
+///     async_println_cookies: VecDeque<RequestCookie>,
+/// }
+///
+/// impl PrintlnApiSet {
+///   // prints message immediately
+///   fn println_0(
+///       &mut self,
+///       mut args: bson::document::Document,
+///   ) -> Option<Result<Option<bson::Bson>, ErrorCode>> {
+///     if let Some(bson::Bson::String(val)) = args.get_mut("val") {
+///         println!("example::echo_0(val): '{}'", val);
+///         Some(Ok(Some(bson::Bson::String(std::mem::take(val)))))
+///     } else {
+///         Some(Err(RUNTIME_ERROR_INVALID_ARG))
+///     }
+///   }
+///
+///   // queues message up for printing later
+///   fn async_println_0(
+///       &mut self,
+///       request_cookie: Option<RequestCookie>,
+///       mut args: bson::document::Document,
+///   ) -> Option<Result<Option<bson::Bson>, ErrorCode>>{
+///     if let Some(bson::Bson::String(val)) = args.get_mut("val") {
+///         self.async_println_work.push((request_cookie, std::mem::take(val)));
+///         None
+///     } else {
+///         Some(Err(RUNTIME_ERROR_INVALID_ARG))
+///     }
+///   }
+/// }
+///
+/// impl ApiSet for PrintlnApiSet {
+///     fn namespace(&self) -> &str {
+///         "example"
+///     }
+///
+///     // handles and routes requests for `println` and `async_println`
+///     fn exec_function(
+///         &mut self,
+///         name: &str,
+///         version: i32,
+///         args: bson::document::Document,
+///         request_cookie: Option<RequestCookie>,
+///     ) -> Option<Result<Option<bson::Bson>, ErrorCode>> {
+///         match (name, version) {
+///             ("println", 0) => self.println_0(args),
+///             ("async_println", 0) => self.async_println_0(request_cookie, args),
+///             (name, version) => {
+///                 println!("received {{ name: '{}', version: {} }}", name, version);
+///                 Some(Err(ErrorCode::RequestFunctionInvalid))
+///             }
+///         }
+///     }
+///
+///     // handles queued `async_println` requests
+///     fn update(&mut self) {
+///         for ((cookie, val)) in self.async_println_work.drain(..) {
+///             println!("{}", val);
+///             if let Some(cookie) = cookie {
+///                 self.async_println_cookies.push_back(cookie);
+///             }
+///         }
+///     }
+///
+///     // finally return queued async results
+///     fn next_result(&mut self) -> Option<(RequestCookie, Result<Option<bson::Bson>, ErrorCode>)> {
+///         if let Some(cookie) = self.async_println_cookies.pop_front() {
+///             Some((cookie, Ok(None)))
+///         } else {
+///             None
+///         }
+///     }
+/// }
+///```
+
 pub trait ApiSet {
+    /// Returns the namespace of this `ApiSet`.
     fn namespace(&self) -> &str;
+
+    /// Schedules the execution of the requested remote procedure call. Calls to this
+    /// function map directly to a received Honk-RPC request. Each request has the
+    /// following parameters:
+    /// - `name`: The name of the function to execute.
+    /// - `version`: The version of the function to execute.
+    /// - `args`: The arguments to pass to the function.
+    /// - `request_cookie`: An optional cookie to track the request.
+    ///
+    /// This function handles both synchronous and asynchronous requests. The possible
+    /// return values for each are:
+    /// - Synchronous requests may execute and signal success by returning `Some(Ok(..))`.
+    /// - Synchronous requests may execute and signal failure by returning `Some(Err(..))`.
+    /// - Asynchronous requests must defer execution by returning `None`.
     fn exec_function(
         &mut self,
         name: &str,
@@ -512,29 +648,52 @@ pub trait ApiSet {
         args: bson::document::Document,
         request_cookie: Option<RequestCookie>,
     ) -> Option<Result<Option<bson::Bson>, ErrorCode>>;
+
+    /// Updates any internal state required to make forward progress on any requested
+    /// remote procedure calls. Implementation of this method is optional and not needed
+    /// if the implementor does not have any async functions. If left unimplemented, this
+    /// function is a no-op.
     fn update(&mut self) {}
-    // TODO: add support for more error data per spec (string, debug)?
+
+    /// Returns the result of any in-flight asynchronous requests.
+    /// - Asynchronous requests may signal success by returning `Some((cookie, Ok(..)))`
+    /// - Asynchronous requests may signal failure by returning `Some((cookie, Err(..)))`
+    /// - returns None if no asynchronous results are available
+    ///
+    /// This method is optional and not needed if the implementor does not have any async
+    /// functions, in which case the default implementation will return `None`.
     fn next_result(&mut self) -> Option<(RequestCookie, Result<Option<bson::Bson>, ErrorCode>)> {
         None
     }
 }
 
+/// Represents the response to a client request.
 pub enum Response {
+    /// A pending response, indicating that the request is still being processed.
     Pending {
+        /// The cookie associated with the request.
         cookie: RequestCookie,
     },
+    /// A successful response, containing the result of the request.
     Success {
+        /// The cookie associated with the request.
         cookie: RequestCookie,
+        /// The result of the request.
         result: Option<bson::Bson>,
     },
+    /// An error response, containing the error code.
     Error {
+        /// The cookie associated with the request.
         cookie: RequestCookie,
+        /// The error code indicating the type of error that occurred.
         error_code: ErrorCode,
     },
 }
 
 // 4 kilobytes per specification
+/// The default maximum allowed Honk-RPC message (4096 bytes)
 pub const DEFAULT_MAX_MESSAGE_SIZE: usize = 4 * 1024;
+/// The default maximum allowed duration between Honk-RPC (60 seconds)
 pub const DEFAULT_MAX_WAIT_TIME: std::time::Duration = std::time::Duration::from_secs(60);
 
 // Base Message Bson Format
@@ -550,8 +709,9 @@ const FOOTER_SIZE: usize = 1usize;
 // The honk-rpc message overhead before the content of a single section is added
 const MIN_MESSAGE_SIZE: usize = HEADER_SIZE + HONK_RPC_SIZE + SECTIONS_SIZE + FOOTER_SIZE;
 
-// returns the number of bytes needed to encode a message with one section, not
-// counting the size of that section
+/// Computes the overhead of the Honk-RPC message type. This method in conjunction with
+/// the other `get_*_section_size(..)` functions can be used to compute the size of a
+/// Honk-RPC message with exactly one section.
 pub fn get_message_overhead() -> Result<usize, Error> {
     // construct an example empty message; the size of a real message with
     // one section can be calculated as the sizeof(message) + sizeof(section)
@@ -565,11 +725,15 @@ pub fn get_message_overhead() -> Result<usize, Error> {
     let mut counter: ByteCounter = Default::default();
     message
         .to_writer(&mut counter)
-        .map_err(Error::MessageWriteFailed)?;
+        .map_err(Error::BsonWriteFailed)?;
 
     Ok(counter.bytes())
 }
 
+/// Computes the required size of a Honk-RPC error section in bytes.
+///
+/// Returns the size of the BSON-encoded error section. If BSON encoding fails,
+/// an `Error::BsonWriteFailed` is returned.
 pub fn get_error_section_size(
     cookie: Option<RequestCookie>,
     message: Option<String>,
@@ -595,11 +759,15 @@ pub fn get_error_section_size(
     let mut counter: ByteCounter = Default::default();
     error_section
         .to_writer(&mut counter)
-        .map_err(Error::MessageWriteFailed)?;
+        .map_err(Error::BsonWriteFailed)?;
 
     Ok(counter.bytes())
 }
 
+/// Computes the required size of a Honk-RPC requests section in bytes.
+///
+/// Returns the size of the BSON-encoded request section. If BSON encoding fails,
+/// an `Error::BsonWriteFailed` is returned.
 pub fn get_request_section_size(
     cookie: Option<RequestCookie>,
     namespace: Option<String>,
@@ -631,11 +799,15 @@ pub fn get_request_section_size(
     let mut counter: ByteCounter = Default::default();
     request_section
         .to_writer(&mut counter)
-        .map_err(Error::MessageWriteFailed)?;
+        .map_err(Error::BsonWriteFailed)?;
 
     Ok(counter.bytes())
 }
 
+/// Computes the required size of a Honk-RPC response section in bytes.
+///
+/// Returns the size of the BSON-encoded response section. If BSON encoding fails,
+/// an `Error::BsonWriteFailed` is returned.
 pub fn get_response_section_size(result: Option<bson::Bson>) -> Result<usize, Error> {
     let mut response_section = doc! {
         "id": RESPONSE_SECTION_ID,
@@ -650,11 +822,15 @@ pub fn get_response_section_size(result: Option<bson::Bson>) -> Result<usize, Er
     let mut counter: ByteCounter = Default::default();
     response_section
         .to_writer(&mut counter)
-        .map_err(Error::MessageWriteFailed)?;
+        .map_err(Error::BsonWriteFailed)?;
 
     Ok(counter.bytes())
 }
 
+/// The object that handles the communication between two endpoints  using the
+/// Honk-RPC protocol. Provides methods for setting and getting configuration
+/// parameters, reading and processing message documents, and handling API
+/// requests and responses.
 pub struct Session<RW> {
     // read-write stream
     stream: RW,
@@ -698,6 +874,7 @@ impl<RW> Session<RW>
 where
     RW: std::io::Read + std::io::Write + Send,
 {
+    /// Sets the maximum message size this `Session` is willing to read from from the underlying `RW`. Attempted reads  will abort if the next bson document's `i32` size field is greater than the `max_message_size` defined in this function.
     pub fn set_max_message_size(&mut self, max_message_size: i32) -> Result<(), Error> {
         if max_message_size < MIN_MESSAGE_SIZE as i32 {
             // base size of a honk-rpc mssage
@@ -708,18 +885,22 @@ where
         }
     }
 
+    /// Gets the maximum allowed message size this `Session` is willing to read from the underlying `RW`. The default value is 4096 bytes.
     pub fn get_max_message_size(&self) -> usize {
         self.max_message_size
     }
 
+    /// Sets the maximum amount of time this `Session` is willing to wait for a new Honk-RPC message on the underlying `RW`. `Session` updates will fil after `max_wait_time` has elapsed without receiving any new Honk-RPC message documents.
     pub fn set_max_wait_time(&mut self, max_wait_time: std::time::Duration) {
         self.max_wait_time = max_wait_time;
     }
 
+    /// Gets the maximum amount this `Session` is willing to wait for a new Honk-RPC message. The default value is 60 seconds.
     pub fn get_max_wait_time(&self) -> std::time::Duration {
         self.max_wait_time
     }
 
+    /// Creates a new `Session` using the given `stream`.
     pub fn new(stream: RW) -> Self {
         let mut message_write_buffer: VecDeque<u8> = Default::default();
         message_write_buffer.reserve(DEFAULT_MAX_MESSAGE_SIZE);
@@ -744,10 +925,12 @@ where
         }
     }
 
+    /// Consumes the `Session` and returns the underlying stream.
     pub fn into_stream(self) -> RW {
         self.stream
     }
 
+    // read a block of bytes from the undelrying stream
     fn stream_read(&mut self, buffer: &mut [u8]) -> Result<usize, Error> {
         match self.stream.read(buffer) {
             Err(err) => {
@@ -775,6 +958,7 @@ where
         }
     }
 
+    // read the next block of bytes as a bson document size header
     fn read_message_size(&mut self) -> Result<(), Error> {
         match self.remaining_byte_count {
             // we've already read the size header
@@ -828,6 +1012,7 @@ where
         }
     }
 
+    // read the remainder of a bson message
     fn read_message(&mut self) -> Result<Option<Message>, Error> {
         // update remaining bytes to read for message
         self.read_message_size()?;
@@ -941,6 +1126,7 @@ where
         Ok(())
     }
 
+    // queue outbound section for packaging into a Honk-RPC message
     fn push_outbound_section(&mut self, section: Section) -> Result<(), Error> {
         let max_section_size = self.max_message_size - MIN_MESSAGE_SIZE;
 
@@ -948,7 +1134,7 @@ where
         let section: bson::Document = section.into();
         section
             .to_writer(&mut counter)
-            .map_err(Error::MessageWriteFailed)?;
+            .map_err(Error::BsonWriteFailed)?;
         let section_size = counter.bytes();
 
         if section_size <= max_section_size {
@@ -976,6 +1162,7 @@ where
         self.serialize_messages_impl(message)
     }
 
+    // pack sections into messages and serialise them to buffer
     fn serialize_messages_impl(
         &mut self,
         mut message: bson::document::Document,
@@ -983,7 +1170,7 @@ where
         self.message_serialization_buffer.clear();
         message
             .to_writer(&mut self.message_serialization_buffer)
-            .map_err(Error::MessageWriteFailed)?;
+            .map_err(Error::BsonWriteFailed)?;
 
         if self.message_serialization_buffer.len() > self.max_message_size {
             // if we can't split a message anymore then we have a problem
@@ -1009,6 +1196,7 @@ where
         Ok(())
     }
 
+    // write data to stream and remove from write buffer
     fn write_pending_data(&mut self) -> Result<(), Error> {
         let bytes_written = self.write_pending_data_impl()?;
         self.stream.flush().map_err(Error::WriterWriteFailed)?;
@@ -1050,6 +1238,7 @@ where
         Ok(bytes_written)
     }
 
+    /// Read and process Honk-RPC message documents from connected peer, handle any new incoming Honk-RPC requests, update any in-progress async requests and write pending reponses, errors and requests to peer. This function must be called regularly for the `Session` to make forward progress.
     pub fn update(&mut self, apisets: Option<&mut [&mut dyn ApiSet]>) -> Result<(), Error> {
         // read sections from remote
         self.read_sections()?;
@@ -1158,7 +1347,7 @@ where
         Ok(())
     }
 
-    // call a remote client's function
+    /// Performs a client call to a remote function. Returns a `RequestCookie` to associate this client call with a future `Response`.
     pub fn client_call(
         &mut self,
         namespace: &str,
@@ -1182,12 +1371,12 @@ where
         Ok(cookie)
     }
 
-    // consume all the responses from the client
+    /// Drains all `Response` objects resulting from prevoius invocations of `Session::client_call()`
     pub fn client_drain_responses(&mut self) -> std::collections::vec_deque::Drain<Response> {
         self.inbound_responses.drain(..)
     }
 
-    // get the next response from the client
+    /// Retrieves the next `Response` object from previous invocations of `Session::client_call()`
     pub fn client_next_response(&mut self) -> Option<Response> {
         self.inbound_responses.pop_front()
     }
