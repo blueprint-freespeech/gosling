@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `ApiSet` trait in crate `honk_rpc`."><title>ApiSet in honk_rpc::honk_rpc - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="honk_rpc" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-e32f0c247825364d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../honk_rpc/index.html">honk_rpc</a><span class="version">0.2.0</span></h2></div><h2 class="location"><a href="#">ApiSet</a></h2><div class="sidebar-elems"><section><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.exec_function">exec_function</a></li><li><a href="#tymethod.namespace">namespace</a></li></ul><h3><a href="#provided-methods">Provided Methods</a></h3><ul class="block"><li><a href="#method.next_result">next_result</a></li><li><a href="#method.update">update</a></li></ul><h3><a href="#implementors">Implementors</a></h3></section><h2><a href="index.html">In honk_rpc::honk_rpc</a></h2></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../honk_rpc/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Trait <a href="../index.html">honk_rpc</a>::<wbr><a href="index.html">honk_rpc</a>::<wbr><a class="trait" href="#">ApiSet</a><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><span class="out-of-band"><a class="src" href="../../src/honk_rpc/honk_rpc.rs.html#487-501">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><pre class="rust item-decl"><code>pub trait ApiSet {
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="The `ApiSet` trait represents a set of APIs that can be remotely invoked by a connecting Honk-RPC client."><title>ApiSet in honk_rpc::honk_rpc - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="honk_rpc" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-e32f0c247825364d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../honk_rpc/index.html">honk_rpc</a><span class="version">0.2.0</span></h2></div><h2 class="location"><a href="#">ApiSet</a></h2><div class="sidebar-elems"><section><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.exec_function">exec_function</a></li><li><a href="#tymethod.namespace">namespace</a></li></ul><h3><a href="#provided-methods">Provided Methods</a></h3><ul class="block"><li><a href="#method.next_result">next_result</a></li><li><a href="#method.update">update</a></li></ul><h3><a href="#implementors">Implementors</a></h3></section><h2><a href="index.html">In honk_rpc::honk_rpc</a></h2></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../honk_rpc/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Trait <a href="../index.html">honk_rpc</a>::<wbr><a href="index.html">honk_rpc</a>::<wbr><a class="trait" href="#">ApiSet</a><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><span class="out-of-band"><a class="src" href="../../src/honk_rpc/honk_rpc.rs.html#627-668">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><pre class="rust item-decl"><code>pub trait ApiSet {
     // Required methods
     fn <a href="#tymethod.namespace" class="fn">namespace</a>(&amp;self) -&gt; &amp;<a class="primitive" href="https://doc.rust-lang.org/1.79.0/std/primitive.str.html">str</a>;
 <span class="item-spacer"></span>    fn <a href="#tymethod.exec_function" class="fn">exec_function</a>(
@@ -7,17 +7,135 @@
         version: <a class="primitive" href="https://doc.rust-lang.org/1.79.0/std/primitive.i32.html">i32</a>,
         args: <a class="struct" href="https://docs.rs/bson/2.6.0/bson/document/struct.Document.html" title="struct bson::document::Document">Document</a>,
         request_cookie: <a class="enum" href="https://doc.rust-lang.org/1.79.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="type.RequestCookie.html" title="type honk_rpc::honk_rpc::RequestCookie">RequestCookie</a>&gt;
-    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.79.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="https://doc.rust-lang.org/1.79.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="https://docs.rs/bson/2.6.0/bson/bson/enum.Bson.html" title="enum bson::bson::Bson">Bson</a>&gt;, <a class="enum" href="enum.ErrorCode.html" title="enum honk_rpc::honk_rpc::ErrorCode">ErrorCode</a>&gt;;
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.79.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="https://doc.rust-lang.org/1.79.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="https://doc.rust-lang.org/1.79.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="https://docs.rs/bson/2.6.0/bson/bson/enum.Bson.html" title="enum bson::bson::Bson">Bson</a>&gt;, <a class="enum" href="enum.ErrorCode.html" title="enum honk_rpc::honk_rpc::ErrorCode">ErrorCode</a>&gt;&gt;;
 
     // Provided methods
     fn <a href="#method.update" class="fn">update</a>(&amp;mut self) { ... }
 <span class="item-spacer"></span>    fn <a href="#method.next_result" class="fn">next_result</a>(
         &amp;mut self
-    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.79.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;(<a class="type" href="type.RequestCookie.html" title="type honk_rpc::honk_rpc::RequestCookie">RequestCookie</a>, <a class="enum" href="https://doc.rust-lang.org/1.79.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="https://docs.rs/bson/2.6.0/bson/bson/enum.Bson.html" title="enum bson::bson::Bson">Bson</a>&gt;, <a class="enum" href="enum.ErrorCode.html" title="enum honk_rpc::honk_rpc::ErrorCode">ErrorCode</a>)&gt; { ... }
-}</code></pre><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><section id="tymethod.namespace" class="method"><a class="src rightside" href="../../src/honk_rpc/honk_rpc.rs.html#488">source</a><h4 class="code-header">fn <a href="#tymethod.namespace" class="fn">namespace</a>(&amp;self) -&gt; &amp;<a class="primitive" href="https://doc.rust-lang.org/1.79.0/std/primitive.str.html">str</a></h4></section><section id="tymethod.exec_function" class="method"><a class="src rightside" href="../../src/honk_rpc/honk_rpc.rs.html#489-495">source</a><h4 class="code-header">fn <a href="#tymethod.exec_function" class="fn">exec_function</a>(
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.79.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;(<a class="type" href="type.RequestCookie.html" title="type honk_rpc::honk_rpc::RequestCookie">RequestCookie</a>, <a class="enum" href="https://doc.rust-lang.org/1.79.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="https://doc.rust-lang.org/1.79.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="https://docs.rs/bson/2.6.0/bson/bson/enum.Bson.html" title="enum bson::bson::Bson">Bson</a>&gt;, <a class="enum" href="enum.ErrorCode.html" title="enum honk_rpc::honk_rpc::ErrorCode">ErrorCode</a>&gt;)&gt; { ... }
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>The <code>ApiSet</code> trait represents a set of APIs that can be remotely invoked by a connecting Honk-RPC client.</p>
+<h2 id="example"><a class="doc-anchor" href="#example">§</a>Example</h2>
+<p>This exampe <code>ApiSet</code> implements two methods, <code>example::println()</code> and <code>example::async_println()</code>. The
+<code>println()</code> method immediatley prints, whereas <code>async_println()</code> queues request and
+prints the messagge at a later date via <code>update()</code></p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>
+<span class="kw">const </span>RUNTIME_ERROR_INVALID_ARG: ErrorCode = ErrorCode::Runtime(<span class="number">1i32</span>);
+
+<span class="kw">struct </span>PrintlnApiSet {
+    <span class="comment">// queued print reuests
+    </span>async_println_work: Vec&lt;(<span class="prelude-ty">Option</span>&lt;RequestCookie&gt;, String)&gt;,
+    <span class="comment">// successful async requests
+    </span>async_println_cookies: VecDeque&lt;RequestCookie&gt;,
+}
+
+<span class="kw">impl </span>PrintlnApiSet {
+  <span class="comment">// prints message immediately
+  </span><span class="kw">fn </span>println_0(
+      <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+      <span class="kw-2">mut </span>args: bson::document::Document,
+  ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;bson::Bson&gt;, ErrorCode&gt;&gt; {
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(bson::Bson::String(val)) = args.get_mut(<span class="string">"val"</span>) {
+        <span class="macro">println!</span>(<span class="string">"example::echo_0(val): '{}'"</span>, val);
+        <span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(bson::Bson::String(std::mem::take(val)))))
+    } <span class="kw">else </span>{
+        <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(RUNTIME_ERROR_INVALID_ARG))
+    }
+  }
+
+  <span class="comment">// queues message up for printing later
+  </span><span class="kw">fn </span>async_println_0(
+      <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+      request_cookie: <span class="prelude-ty">Option</span>&lt;RequestCookie&gt;,
+      <span class="kw-2">mut </span>args: bson::document::Document,
+  ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;bson::Bson&gt;, ErrorCode&gt;&gt;{
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(bson::Bson::String(val)) = args.get_mut(<span class="string">"val"</span>) {
+        <span class="self">self</span>.async_println_work.push((request_cookie, std::mem::take(val)));
+        <span class="prelude-val">None
+    </span>} <span class="kw">else </span>{
+        <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(RUNTIME_ERROR_INVALID_ARG))
+    }
+  }
+}
+
+<span class="kw">impl </span>ApiSet <span class="kw">for </span>PrintlnApiSet {
+    <span class="kw">fn </span>namespace(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>str {
+        <span class="string">"example"
+    </span>}
+
+    <span class="comment">// handles and routes requests for `println` and `async_println`
+    </span><span class="kw">fn </span>exec_function(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        name: <span class="kw-2">&amp;</span>str,
+        version: i32,
+        args: bson::document::Document,
+        request_cookie: <span class="prelude-ty">Option</span>&lt;RequestCookie&gt;,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;bson::Bson&gt;, ErrorCode&gt;&gt; {
+        <span class="kw">match </span>(name, version) {
+            (<span class="string">"println"</span>, <span class="number">0</span>) =&gt; <span class="self">self</span>.println_0(args),
+            (<span class="string">"async_println"</span>, <span class="number">0</span>) =&gt; <span class="self">self</span>.async_println_0(request_cookie, args),
+            (name, version) =&gt; {
+                <span class="macro">println!</span>(<span class="string">"received {{ name: '{}', version: {} }}"</span>, name, version);
+                <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(ErrorCode::RequestFunctionInvalid))
+            }
+        }
+    }
+
+    <span class="comment">// handles queued `async_println` requests
+    </span><span class="kw">fn </span>update(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">for </span>((cookie, val)) <span class="kw">in </span><span class="self">self</span>.async_println_work.drain(..) {
+            <span class="macro">println!</span>(<span class="string">"{}"</span>, val);
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(cookie) = cookie {
+                <span class="self">self</span>.async_println_cookies.push_back(cookie);
+            }
+        }
+    }
+
+    <span class="comment">// finally return queued async results
+    </span><span class="kw">fn </span>next_result(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;(RequestCookie, <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;bson::Bson&gt;, ErrorCode&gt;)&gt; {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(cookie) = <span class="self">self</span>.async_println_cookies.pop_front() {
+            <span class="prelude-val">Some</span>((cookie, <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)))
+        } <span class="kw">else </span>{
+            <span class="prelude-val">None
+        </span>}
+    }
+}</code></pre></div>
+</div></details><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.namespace" class="method"><a class="src rightside" href="../../src/honk_rpc/honk_rpc.rs.html#629">source</a><h4 class="code-header">fn <a href="#tymethod.namespace" class="fn">namespace</a>(&amp;self) -&gt; &amp;<a class="primitive" href="https://doc.rust-lang.org/1.79.0/std/primitive.str.html">str</a></h4></section></summary><div class="docblock"><p>Returns the namespace of this <code>ApiSet</code>.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.exec_function" class="method"><a class="src rightside" href="../../src/honk_rpc/honk_rpc.rs.html#644-650">source</a><h4 class="code-header">fn <a href="#tymethod.exec_function" class="fn">exec_function</a>(
     &amp;mut self,
     name: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.79.0/std/primitive.str.html">str</a>,
     version: <a class="primitive" href="https://doc.rust-lang.org/1.79.0/std/primitive.i32.html">i32</a>,
     args: <a class="struct" href="https://docs.rs/bson/2.6.0/bson/document/struct.Document.html" title="struct bson::document::Document">Document</a>,
     request_cookie: <a class="enum" href="https://doc.rust-lang.org/1.79.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="type.RequestCookie.html" title="type honk_rpc::honk_rpc::RequestCookie">RequestCookie</a>&gt;
-) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.79.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="https://doc.rust-lang.org/1.79.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="https://docs.rs/bson/2.6.0/bson/bson/enum.Bson.html" title="enum bson::bson::Bson">Bson</a>&gt;, <a class="enum" href="enum.ErrorCode.html" title="enum honk_rpc::honk_rpc::ErrorCode">ErrorCode</a>&gt;</h4></section></div><h2 id="provided-methods" class="section-header">Provided Methods<a href="#provided-methods" class="anchor">§</a></h2><div class="methods"><section id="method.update" class="method"><a class="src rightside" href="../../src/honk_rpc/honk_rpc.rs.html#496">source</a><h4 class="code-header">fn <a href="#method.update" class="fn">update</a>(&amp;mut self)</h4></section><section id="method.next_result" class="method"><a class="src rightside" href="../../src/honk_rpc/honk_rpc.rs.html#498-500">source</a><h4 class="code-header">fn <a href="#method.next_result" class="fn">next_result</a>(&amp;mut self) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.79.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;(<a class="type" href="type.RequestCookie.html" title="type honk_rpc::honk_rpc::RequestCookie">RequestCookie</a>, <a class="enum" href="https://doc.rust-lang.org/1.79.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="https://docs.rs/bson/2.6.0/bson/bson/enum.Bson.html" title="enum bson::bson::Bson">Bson</a>&gt;, <a class="enum" href="enum.ErrorCode.html" title="enum honk_rpc::honk_rpc::ErrorCode">ErrorCode</a>)&gt;</h4></section></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../trait.impl/honk_rpc/honk_rpc/trait.ApiSet.js" async></script></section></div></main></body></html>
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.79.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="https://doc.rust-lang.org/1.79.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="https://doc.rust-lang.org/1.79.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="https://docs.rs/bson/2.6.0/bson/bson/enum.Bson.html" title="enum bson::bson::Bson">Bson</a>&gt;, <a class="enum" href="enum.ErrorCode.html" title="enum honk_rpc::honk_rpc::ErrorCode">ErrorCode</a>&gt;&gt;</h4></section></summary><div class="docblock"><p>Schedules the execution of the requested remote procedure call. Calls to this
+function map directly to a received Honk-RPC request. Each request has the
+following parameters:</p>
+<ul>
+<li><code>name</code>: The name of the function to execute.</li>
+<li><code>version</code>: The version of the function to execute.</li>
+<li><code>args</code>: The arguments to pass to the function.</li>
+<li><code>request_cookie</code>: An optional cookie to track the request.</li>
+</ul>
+<p>This function handles both synchronous and asynchronous requests. The possible
+return values for each are:</p>
+<ul>
+<li>Synchronous requests may execute and signal success by returning <code>Some(Ok(..))</code>.</li>
+<li>Synchronous requests may execute and signal failure by returning <code>Some(Err(..))</code>.</li>
+<li>Asynchronous requests must defer execution by returning <code>None</code>.</li>
+</ul>
+</div></details></div><h2 id="provided-methods" class="section-header">Provided Methods<a href="#provided-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="method.update" class="method"><a class="src rightside" href="../../src/honk_rpc/honk_rpc.rs.html#656">source</a><h4 class="code-header">fn <a href="#method.update" class="fn">update</a>(&amp;mut self)</h4></section></summary><div class="docblock"><p>Updates any internal state required to make forward progress on any requested
+remote procedure calls. Implementation of this method is optional and not needed
+if the implementor does not have any async functions. If left unimplemented, this
+function is a no-op.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.next_result" class="method"><a class="src rightside" href="../../src/honk_rpc/honk_rpc.rs.html#665-667">source</a><h4 class="code-header">fn <a href="#method.next_result" class="fn">next_result</a>(
+    &amp;mut self
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.79.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;(<a class="type" href="type.RequestCookie.html" title="type honk_rpc::honk_rpc::RequestCookie">RequestCookie</a>, <a class="enum" href="https://doc.rust-lang.org/1.79.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="https://doc.rust-lang.org/1.79.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="enum" href="https://docs.rs/bson/2.6.0/bson/bson/enum.Bson.html" title="enum bson::bson::Bson">Bson</a>&gt;, <a class="enum" href="enum.ErrorCode.html" title="enum honk_rpc::honk_rpc::ErrorCode">ErrorCode</a>&gt;)&gt;</h4></section></summary><div class="docblock"><p>Returns the result of any in-flight asynchronous requests.</p>
+<ul>
+<li>Asynchronous requests may signal success by returning <code>Some((cookie, Ok(..)))</code></li>
+<li>Asynchronous requests may signal failure by returning <code>Some((cookie, Err(..)))</code></li>
+<li>returns None if no asynchronous results are available</li>
+</ul>
+<p>This method is optional and not needed if the implementor does not have any async
+functions, in which case the default implementation will return <code>None</code>.</p>
+</div></details></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../trait.impl/honk_rpc/honk_rpc/trait.ApiSet.js" async></script></section></div></main></body></html>

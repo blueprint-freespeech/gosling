@@ -692,6 +692,76 @@
 <a href="#692" id="692">692</a>
 <a href="#693" id="693">693</a>
 <a href="#694" id="694">694</a>
+<a href="#695" id="695">695</a>
+<a href="#696" id="696">696</a>
+<a href="#697" id="697">697</a>
+<a href="#698" id="698">698</a>
+<a href="#699" id="699">699</a>
+<a href="#700" id="700">700</a>
+<a href="#701" id="701">701</a>
+<a href="#702" id="702">702</a>
+<a href="#703" id="703">703</a>
+<a href="#704" id="704">704</a>
+<a href="#705" id="705">705</a>
+<a href="#706" id="706">706</a>
+<a href="#707" id="707">707</a>
+<a href="#708" id="708">708</a>
+<a href="#709" id="709">709</a>
+<a href="#710" id="710">710</a>
+<a href="#711" id="711">711</a>
+<a href="#712" id="712">712</a>
+<a href="#713" id="713">713</a>
+<a href="#714" id="714">714</a>
+<a href="#715" id="715">715</a>
+<a href="#716" id="716">716</a>
+<a href="#717" id="717">717</a>
+<a href="#718" id="718">718</a>
+<a href="#719" id="719">719</a>
+<a href="#720" id="720">720</a>
+<a href="#721" id="721">721</a>
+<a href="#722" id="722">722</a>
+<a href="#723" id="723">723</a>
+<a href="#724" id="724">724</a>
+<a href="#725" id="725">725</a>
+<a href="#726" id="726">726</a>
+<a href="#727" id="727">727</a>
+<a href="#728" id="728">728</a>
+<a href="#729" id="729">729</a>
+<a href="#730" id="730">730</a>
+<a href="#731" id="731">731</a>
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a>
+<a href="#734" id="734">734</a>
+<a href="#735" id="735">735</a>
+<a href="#736" id="736">736</a>
+<a href="#737" id="737">737</a>
+<a href="#738" id="738">738</a>
+<a href="#739" id="739">739</a>
+<a href="#740" id="740">740</a>
+<a href="#741" id="741">741</a>
+<a href="#742" id="742">742</a>
+<a href="#743" id="743">743</a>
+<a href="#744" id="744">744</a>
+<a href="#745" id="745">745</a>
+<a href="#746" id="746">746</a>
+<a href="#747" id="747">747</a>
+<a href="#748" id="748">748</a>
+<a href="#749" id="749">749</a>
+<a href="#750" id="750">750</a>
+<a href="#751" id="751">751</a>
+<a href="#752" id="752">752</a>
+<a href="#753" id="753">753</a>
+<a href="#754" id="754">754</a>
+<a href="#755" id="755">755</a>
+<a href="#756" id="756">756</a>
+<a href="#757" id="757">757</a>
+<a href="#758" id="758">758</a>
+<a href="#759" id="759">759</a>
+<a href="#760" id="760">760</a>
+<a href="#761" id="761">761</a>
+<a href="#762" id="762">762</a>
+<a href="#763" id="763">763</a>
+<a href="#764" id="764">764</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::boxed::Box;
 <span class="kw">use </span>std::convert::TryFrom;
@@ -843,7 +913,10 @@
                 });
             }
         }
-        <span class="prelude-val">Err</span>(DomainAddrParseError::Generic(<span class="macro">format!</span>(<span class="string">"{}:{}"</span>, domain, port)))
+        <span class="prelude-val">Err</span>(DomainAddrParseError::Generic(<span class="macro">format!</span>(
+            <span class="string">"{}:{}"</span>,
+            domain, port
+        )))
     }
 }
 
@@ -1044,13 +1117,17 @@
         <span class="kw">let </span>port = <span class="kw">match </span><span class="kw-2">&amp;</span>address {
             TargetAddr::Ip(addr) =&gt; addr.port(),
             TargetAddr::Domain(addr) =&gt; addr.port(),
-            TargetAddr::OnionService(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ProxyConfigError::Generic(<span class="string">"proxy address may not be onion service"</span>.to_string())),
+            TargetAddr::OnionService(<span class="kw">_</span>) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(ProxyConfigError::Generic(
+                    <span class="string">"proxy address may not be onion service"</span>.to_string(),
+                ))
+            }
         };
         <span class="kw">if </span>port == <span class="number">0 </span>{
             <span class="kw">return </span><span class="prelude-val">Err</span>(ProxyConfigError::Generic(<span class="string">"proxy port not be 0"</span>.to_string()));
         }
 
-        <span class="prelude-val">Ok</span>(<span class="self">Self</span>{address})
+        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{ address })
     }
 }
 
@@ -1062,11 +1139,19 @@
 }
 
 <span class="kw">impl </span>Socks5ProxyConfig {
-    <span class="kw">pub fn </span>new(address: TargetAddr, username: <span class="prelude-ty">Option</span>&lt;String&gt;, password: <span class="prelude-ty">Option</span>&lt;String&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, ProxyConfigError&gt; {
+    <span class="kw">pub fn </span>new(
+        address: TargetAddr,
+        username: <span class="prelude-ty">Option</span>&lt;String&gt;,
+        password: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, ProxyConfigError&gt; {
         <span class="kw">let </span>port = <span class="kw">match </span><span class="kw-2">&amp;</span>address {
             TargetAddr::Ip(addr) =&gt; addr.port(),
             TargetAddr::Domain(addr) =&gt; addr.port(),
-            TargetAddr::OnionService(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ProxyConfigError::Generic(<span class="string">"proxy address may not be onion service"</span>.to_string())),
+            TargetAddr::OnionService(<span class="kw">_</span>) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(ProxyConfigError::Generic(
+                    <span class="string">"proxy address may not be onion service"</span>.to_string(),
+                ))
+            }
         };
         <span class="kw">if </span>port == <span class="number">0 </span>{
             <span class="kw">return </span><span class="prelude-val">Err</span>(ProxyConfigError::Generic(<span class="string">"proxy port not be 0"</span>.to_string()));
@@ -1075,17 +1160,25 @@
         <span class="comment">// username must be less than 255 bytes
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(username) = <span class="kw-2">&amp;</span>username {
             <span class="kw">if </span>username.len() &gt; <span class="number">255 </span>{
-                <span class="kw">return </span><span class="prelude-val">Err</span>(ProxyConfigError::Generic(<span class="string">"socks5 username must be &lt;= 255 bytes"</span>.to_string()));
+                <span class="kw">return </span><span class="prelude-val">Err</span>(ProxyConfigError::Generic(
+                    <span class="string">"socks5 username must be &lt;= 255 bytes"</span>.to_string(),
+                ));
             }
         }
         <span class="comment">// password must be less than 255 bytes
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(password) = <span class="kw-2">&amp;</span>password {
             <span class="kw">if </span>password.len() &gt; <span class="number">255 </span>{
-                <span class="kw">return </span><span class="prelude-val">Err</span>(ProxyConfigError::Generic(<span class="string">"socks5 password must be &lt;= 255 bytes"</span>.to_string()));
+                <span class="kw">return </span><span class="prelude-val">Err</span>(ProxyConfigError::Generic(
+                    <span class="string">"socks5 password must be &lt;= 255 bytes"</span>.to_string(),
+                ));
             }
         }
 
-        <span class="prelude-val">Ok</span>(<span class="self">Self</span>{address, username, password})
+        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+            address,
+            username,
+            password,
+        })
     }
 }
 
@@ -1097,11 +1190,19 @@
 }
 
 <span class="kw">impl </span>HttpsProxyConfig {
-    <span class="kw">pub fn </span>new(address: TargetAddr, username: <span class="prelude-ty">Option</span>&lt;String&gt;, password: <span class="prelude-ty">Option</span>&lt;String&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, ProxyConfigError&gt; {
+    <span class="kw">pub fn </span>new(
+        address: TargetAddr,
+        username: <span class="prelude-ty">Option</span>&lt;String&gt;,
+        password: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, ProxyConfigError&gt; {
         <span class="kw">let </span>port = <span class="kw">match </span><span class="kw-2">&amp;</span>address {
             TargetAddr::Ip(addr) =&gt; addr.port(),
             TargetAddr::Domain(addr) =&gt; addr.port(),
-            TargetAddr::OnionService(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ProxyConfigError::Generic(<span class="string">"proxy address may not be onion service"</span>.to_string())),
+            TargetAddr::OnionService(<span class="kw">_</span>) =&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(ProxyConfigError::Generic(
+                    <span class="string">"proxy address may not be onion service"</span>.to_string(),
+                ))
+            }
         };
         <span class="kw">if </span>port == <span class="number">0 </span>{
             <span class="kw">return </span><span class="prelude-val">Err</span>(ProxyConfigError::Generic(<span class="string">"proxy port not be 0"</span>.to_string()));
@@ -1110,11 +1211,17 @@
         <span class="comment">// username may not contain ':' character (per RFC 2617)
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(username) = <span class="kw-2">&amp;</span>username {
             <span class="kw">if </span>username.contains(<span class="string">':'</span>) {
-                <span class="kw">return </span><span class="prelude-val">Err</span>(ProxyConfigError::Generic(<span class="string">"username may not contain ':' character"</span>.to_string()));
+                <span class="kw">return </span><span class="prelude-val">Err</span>(ProxyConfigError::Generic(
+                    <span class="string">"username may not contain ':' character"</span>.to_string(),
+                ));
             }
         }
 
-        <span class="prelude-val">Ok</span>(<span class="self">Self</span>{address, username, password})
+        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+            address,
+            username,
+            password,
+        })
     }
 }
 
@@ -1151,7 +1258,7 @@
 </span><span class="kw">pub struct </span>PluggableTransportConfig {
     transports: Vec&lt;String&gt;,
     path_to_binary: PathBuf,
-    options: Vec&lt;String&gt;
+    options: Vec&lt;String&gt;,
 }
 
 <span class="attr">#[derive(thiserror::Error, Debug)]
@@ -1159,7 +1266,7 @@
     <span class="attr">#[error(<span class="string">"pluggable transport name '{0}' is invalid"</span>)]
     </span>TransportNameInvalid(String),
     <span class="attr">#[error(<span class="string">"unable to use '{0}' as pluggable transport binary path, {1}"</span>)]
-    </span>BinaryPathInvalid(String, String)
+    </span>BinaryPathInvalid(String, String),
 }
 
 <span class="comment">// per the PT spec: https://github.com/Pluggable-Transports/Pluggable-Transports-spec/blob/main/releases/PTSpecV1.0/pt-1_0.txt
@@ -1169,34 +1276,46 @@
 }
 
 <span class="kw">impl </span>PluggableTransportConfig {
-    <span class="kw">pub fn </span>new(transports: Vec&lt;String&gt;, path_to_binary: PathBuf) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, PluggableTransportConfigError&gt; {
+    <span class="kw">pub fn </span>new(
+        transports: Vec&lt;String&gt;,
+        path_to_binary: PathBuf,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, PluggableTransportConfigError&gt; {
         <span class="kw">let </span>transport_pattern = TRANSPORT_PATTERN.get_or_init(init_transport_pattern);
         <span class="comment">// validate each transport
         </span><span class="kw">for </span>transport <span class="kw">in </span><span class="kw-2">&amp;</span>transports {
             <span class="kw">if </span>!transport_pattern.is_match(<span class="kw-2">&amp;</span>transport) {
-                <span class="kw">return </span><span class="prelude-val">Err</span>(PluggableTransportConfigError::TransportNameInvalid(transport.clone()));
+                <span class="kw">return </span><span class="prelude-val">Err</span>(PluggableTransportConfigError::TransportNameInvalid(
+                    transport.clone(),
+                ));
             }
         }
 
         <span class="comment">// pluggable transport path must be absolute so we can fix it up for individual
         // TorProvider implementations
         </span><span class="kw">if </span>!path_to_binary.is_absolute() {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(PluggableTransportConfigError::BinaryPathInvalid(<span class="macro">format!</span>(<span class="string">"{:?}"</span>, path_to_binary.display()), <span class="string">"must be an absolute path"</span>.to_string()));
+            <span class="kw">return </span><span class="prelude-val">Err</span>(PluggableTransportConfigError::BinaryPathInvalid(
+                <span class="macro">format!</span>(<span class="string">"{:?}"</span>, path_to_binary.display()),
+                <span class="string">"must be an absolute path"</span>.to_string(),
+            ));
         }
 
-        <span class="prelude-val">Ok</span>(<span class="self">Self</span>{transports, path_to_binary, options: Default::default()})
+        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+            transports,
+            path_to_binary,
+            options: Default::default(),
+        })
     }
 
     <span class="kw">pub fn </span>transports(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Vec&lt;String&gt; {
-    	<span class="kw-2">&amp;</span><span class="self">self</span>.transports
+        <span class="kw-2">&amp;</span><span class="self">self</span>.transports
     }
 
     <span class="kw">pub fn </span>path_to_binary(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>PathBuf {
-    	<span class="kw-2">&amp;</span><span class="self">self</span>.path_to_binary
+        <span class="kw-2">&amp;</span><span class="self">self</span>.path_to_binary
     }
 
     <span class="kw">pub fn </span>options(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Vec&lt;String&gt; {
-    	<span class="kw-2">&amp;</span><span class="self">self</span>.options
+        <span class="kw-2">&amp;</span><span class="self">self</span>.options
     }
 
     <span class="kw">pub fn </span>add_option(<span class="kw-2">&amp;mut </span><span class="self">self</span>, arg: String) {
@@ -1213,7 +1332,7 @@
     transport: String,
     address: SocketAddr,
     fingerprint: String,
-    keyvalues: Vec&lt;(String,String)&gt;,
+    keyvalues: Vec&lt;(String, String)&gt;,
 }
 
 <span class="attr">#[derive(thiserror::Error, Debug)]
@@ -1244,7 +1363,12 @@
 }
 
 <span class="kw">impl </span>BridgeLine {
-    <span class="kw">pub fn </span>new(transport: String, address: SocketAddr, fingerprint: String, keyvalues: Vec&lt;(String,String)&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;BridgeLine, BridgeLineError&gt; {
+    <span class="kw">pub fn </span>new(
+        transport: String,
+        address: SocketAddr,
+        fingerprint: String,
+        keyvalues: Vec&lt;(String, String)&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;BridgeLine, BridgeLineError&gt; {
         <span class="kw">let </span>transport_pattern = TRANSPORT_PATTERN.get_or_init(init_transport_pattern);
 
         <span class="comment">// transports have a particular pattern
@@ -1258,10 +1382,8 @@
         }
 
         <span class="kw">static </span>BRIDGE_FINGERPRINT_PATTERN: OnceLock&lt;Regex&gt; = OnceLock::new();
-        <span class="kw">let </span>bridge_fingerprint_pattern = BRIDGE_FINGERPRINT_PATTERN.get_or_init(|| {
-            Regex::new(<span class="string">r"(?m)^[0-9a-fA-F]{40}$"</span>)
-                .unwrap()
-        });
+        <span class="kw">let </span>bridge_fingerprint_pattern = BRIDGE_FINGERPRINT_PATTERN
+            .get_or_init(|| Regex::new(<span class="string">r"(?m)^[0-9a-fA-F]{40}$"</span>).unwrap());
 
         <span class="comment">// fingerprint should be a sha1 hash
         </span><span class="kw">if </span>!bridge_fingerprint_pattern.is_match(<span class="kw-2">&amp;</span>fingerprint) {
@@ -1270,14 +1392,17 @@
 
         <span class="comment">// validate key-values
         </span><span class="kw">for </span>(key, value) <span class="kw">in </span><span class="kw-2">&amp;</span>keyvalues {
-            <span class="kw">if </span>key.contains(<span class="string">' '</span>)
-            || key.contains(<span class="string">'='</span>)
-            || key.len() == <span class="number">0 </span>{
+            <span class="kw">if </span>key.contains(<span class="string">' '</span>) || key.contains(<span class="string">'='</span>) || key.len() == <span class="number">0 </span>{
                 <span class="kw">return </span><span class="prelude-val">Err</span>(BridgeLineError::KeyValueInvalid(<span class="macro">format!</span>(<span class="string">"{key}={value}"</span>)));
             }
         }
 
-        <span class="prelude-val">Ok</span>(<span class="self">Self</span>{transport, address, fingerprint, keyvalues})
+        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+            transport,
+            address,
+            fingerprint,
+            keyvalues,
+        })
     }
 
     <span class="kw">pub fn </span>transport(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>String {
@@ -1292,7 +1417,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>.fingerprint
     }
 
-    <span class="kw">pub fn </span>keyvalues(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Vec&lt;(String,String)&gt; {
+    <span class="kw">pub fn </span>keyvalues(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Vec&lt;(String, String)&gt; {
         <span class="kw-2">&amp;</span><span class="self">self</span>.keyvalues
     }
 
@@ -1301,7 +1426,11 @@
         <span class="kw">let </span>transport = <span class="kw-2">&amp;</span><span class="self">self</span>.transport;
         <span class="kw">let </span>address = <span class="self">self</span>.address.to_string();
         <span class="kw">let </span>fingerprint = <span class="self">self</span>.fingerprint.to_string();
-        <span class="kw">let </span>keyvalues: Vec&lt;String&gt; = <span class="self">self</span>.keyvalues.iter().map(|(key,value)| <span class="macro">format!</span>(<span class="string">"{key}={value}"</span>)).collect();
+        <span class="kw">let </span>keyvalues: Vec&lt;String&gt; = <span class="self">self
+            </span>.keyvalues
+            .iter()
+            .map(|(key, value)| <span class="macro">format!</span>(<span class="string">"{key}={value}"</span>))
+            .collect();
         <span class="kw">let </span>keyvalues = keyvalues.join(<span class="string">" "</span>);
 
         <span class="macro">format!</span>(<span class="string">"{transport} {address} {fingerprint} {keyvalues}"</span>)
@@ -1337,23 +1466,34 @@
 
         <span class="comment">// get the bridge options
         </span><span class="kw">static </span>BRIDGE_OPTION_PATTERN: OnceLock&lt;Regex&gt; = OnceLock::new();
-        <span class="kw">let </span>bridge_option_pattern = BRIDGE_OPTION_PATTERN.get_or_init(|| {
-            Regex::new(<span class="string">r"(?m)^(?&lt;key&gt;[^=]+)=(?&lt;value&gt;.*)$"</span>)
-                .unwrap()
-        });
+        <span class="kw">let </span>bridge_option_pattern = BRIDGE_OPTION_PATTERN
+            .get_or_init(|| Regex::new(<span class="string">r"(?m)^(?&lt;key&gt;[^=]+)=(?&lt;value&gt;.*)$"</span>).unwrap());
 
-        <span class="kw">let </span><span class="kw-2">mut </span>keyvalues: Vec&lt;(String,String)&gt; = Default::default();
+        <span class="kw">let </span><span class="kw-2">mut </span>keyvalues: Vec&lt;(String, String)&gt; = Default::default();
         <span class="kw">while let </span><span class="prelude-val">Some</span>(keyvalue) = tokens.next() {
             <span class="kw">if let </span><span class="prelude-val">Some</span>(caps) = bridge_option_pattern.captures(<span class="kw-2">&amp;</span>keyvalue) {
-                <span class="kw">let </span>key = caps.name(<span class="string">"key"</span>).expect(<span class="string">"missing key group"</span>).as_str().to_string();
-                <span class="kw">let </span>value = caps.name(<span class="string">"value"</span>).expect(<span class="string">"missing value group"</span>).as_str().to_string();
-                keyvalues.push((key,value));
+                <span class="kw">let </span>key = caps
+                    .name(<span class="string">"key"</span>)
+                    .expect(<span class="string">"missing key group"</span>)
+                    .as_str()
+                    .to_string();
+                <span class="kw">let </span>value = caps
+                    .name(<span class="string">"value"</span>)
+                    .expect(<span class="string">"missing value group"</span>)
+                    .as_str()
+                    .to_string();
+                keyvalues.push((key, value));
             } <span class="kw">else </span>{
                 <span class="kw">return </span><span class="prelude-val">Err</span>(BridgeLineError::KeyValueInvalid(keyvalue.to_string()));
             }
         }
 
-        BridgeLine::new(transport.to_string(), address, fingerprint.to_string(), keyvalues)
+        BridgeLine::new(
+            transport.to_string(),
+            address,
+            fingerprint.to_string(),
+            keyvalues,
+        )
     }
 }
 

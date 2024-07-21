@@ -619,7 +619,7 @@
                                 ));
                             }
                             <span class="kw">match </span>result {
-                                Bson::Document(result) =&gt; result,
+                                <span class="prelude-val">Some</span>(Bson::Document(result)) =&gt; result,
                                 <span class="kw">_ </span>=&gt; {
                                     <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(
                                         <span class="string">"begin_handshake() response is unexpected bson type"
@@ -778,7 +778,7 @@
                         Response::Success { cookie, result } =&gt; {
                             <span class="kw">if </span>cookie == send_response_request_cookie {
                                 <span class="kw">match </span>result {
-                                    Bson::String(endpoint_service_id) =&gt; {
+                                    <span class="prelude-val">Some</span>(Bson::String(endpoint_service_id)) =&gt; {
                                         <span class="kw">match </span>V3OnionServiceId::from_string(<span class="kw-2">&amp;</span>endpoint_service_id) {
                                             <span class="prelude-val">Ok</span>(endpoint_service_id) =&gt; endpoint_service_id,
                                             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(<span class="macro">format!</span>(<span class="string">"unable to parse received endpoint service id '{}' as v3 onion service id"</span>, endpoint_service_id))),

@@ -34,130 +34,167 @@
       </ul>
     </div>
     <div class="content">
-      <h1 id="honk-rpc-v1">Honk RPC v1</h1>
-      <p>Honk RPC is an asynchronous, bi-directional, dynamic, binary remote procedure call interface: - <strong>asynchronous</strong>: All procedures are asynchronous by default - <strong>bi-directional</strong>: Each participant in a Honk session may simultaneously act as both a server and a client, regardless of who has connected to whom; both parties may call procedures on the other - <strong>dynamic</strong>: The procedure interface is dynamic, in that it is up to the receiver to route function call requests. There is no pre-compiled interface definition. - <strong>binary</strong>: Underlying messages are encoded in version 1.1 binary-json (BSON)<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
-      <h2 id="making-method-calls">Making Method Calls</h2>
-      <p>Objects specified here are BSON documents using BSON data-types. Unexpected members on any of these defined objects must be ignored by implementations.</p>
-      <h3 id="object-format-for-messages">Object format for messages</h3>
-      <p>All <code>message</code> objects have the following format.</p>
-      <div class="sourceCode" id="cb1"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a>document message {</span>
-      <span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a>    <span class="co">// the Honk RPC version number</span></span>
-      <span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a>    [[<span class="at">required</span>]] <span class="dt">int32_t</span> honk_rpc;</span>
-      <span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a>    <span class="co">// an array of BSON documents, each document containing a message section</span></span>
-      <span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a>    <span class="co">// multiple sections can therefore be sent in a single message</span></span>
-      <span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a>    <span class="co">// a HonkRPC message must have at least one section to be valid or else it is an error</span></span>
-      <span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a>    [[<span class="at">required</span>]] document sections[];</span>
-      <span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a>}</span></code></pre></div>
-      <h3 id="sections">Sections</h3>
-      <p>Each section contains the following in-line header:</p>
-      <div class="sourceCode" id="cb2"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a>{</span>
-      <span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a>    <span class="co">// the id is used to determine which type of section this document is</span></span>
-      <span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a>    [[<span class="at">required</span>]] <span class="dt">int32_t</span> id;</span>
-      <span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a>}</span></code></pre></div>
-      <h4 id="error-section">Error Section</h4>
-      <p>An <code>error_section</code> may be sent in response to a request, or due to an unrelated runtime error.</p>
-      <p>Error codes are 32-bit signed integers. <strong>Negative</strong> error codes are reserved for <strong>protocol errors</strong>, while <strong>positive</strong> codes are reserved for per-application, developer-defined <strong>runtime errors</strong>.</p>
-      <p>Negative (protocol) errors are fatal, and the sender must terminate the connection after sending one. Positive (runtime) errors are application specific, and should be handled accordingly by the application developer.</p>
-      <p>Function arguments must be validated by the application developer.</p>
-      <div class="sourceCode" id="cb3"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="kw">typedef</span> <span class="kw">enum</span> <span class="kw">class</span> error_code : <span class="dt">int32_t</span> {</span>
-      <span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a>    <span class="co">// failure to parse a received BSON object</span></span>
-      <span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a>    bson_parse_failed            = -<span class="dv">1</span>,</span>
-      <span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a></span>
-      <span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a>    <span class="co">// received message document was too big; the default maximum message size</span></span>
-      <span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a>    <span class="co">// is 4Kib, but can be adjusted</span></span>
-      <span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a>    message_too_big              = -<span class="dv">2</span>,</span>
-      <span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a>    <span class="co">// received message document missing required members</span></span>
-      <span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a>    message_parse_failed         = -<span class="dv">3</span>,</span>
-      <span id="cb3-10"><a href="#cb3-10" aria-hidden="true"></a>    <span class="co">// received message contained version the receiver cannot handle</span></span>
-      <span id="cb3-11"><a href="#cb3-11" aria-hidden="true"></a>    message_version_incompatible = -<span class="dv">4</span>,</span>
-      <span id="cb3-12"><a href="#cb3-12" aria-hidden="true"></a></span>
-      <span id="cb3-13"><a href="#cb3-13" aria-hidden="true"></a>    <span class="co">// section in received message contains unknown id</span></span>
-      <span id="cb3-14"><a href="#cb3-14" aria-hidden="true"></a>    section_id_unknown           = -<span class="dv">5</span>,</span>
-      <span id="cb3-15"><a href="#cb3-15" aria-hidden="true"></a>    <span class="co">// section in received message missing required member, or provided</span></span>
-      <span id="cb3-16"><a href="#cb3-16" aria-hidden="true"></a>    <span class="co">// member is wrong datatype</span></span>
-      <span id="cb3-17"><a href="#cb3-17" aria-hidden="true"></a>    section_parse_failed         = -<span class="dv">6</span>,</span>
-      <span id="cb3-18"><a href="#cb3-18" aria-hidden="true"></a></span>
-      <span id="cb3-19"><a href="#cb3-19" aria-hidden="true"></a>    <span class="co">// provided request cookie is already in use</span></span>
-      <span id="cb3-20"><a href="#cb3-20" aria-hidden="true"></a>    request_cookie_invalid       = -<span class="dv">7</span>,</span>
-      <span id="cb3-21"><a href="#cb3-21" aria-hidden="true"></a>    <span class="co">// provided request namespace does not exist</span></span>
-      <span id="cb3-22"><a href="#cb3-22" aria-hidden="true"></a>    request_namespace_invalid    = -<span class="dv">8</span>,</span>
-      <span id="cb3-23"><a href="#cb3-23" aria-hidden="true"></a>    <span class="co">// provided request function does not exist within the provided namespace</span></span>
-      <span id="cb3-24"><a href="#cb3-24" aria-hidden="true"></a>    request_function_invalid     = -<span class="dv">9</span>,</span>
-      <span id="cb3-25"><a href="#cb3-25" aria-hidden="true"></a>    <span class="co">// provided request version does not exist</span></span>
-      <span id="cb3-26"><a href="#cb3-26" aria-hidden="true"></a>    request_version_invalid      = -<span class="dv">10</span>,</span>
-      <span id="cb3-27"><a href="#cb3-27" aria-hidden="true"></a></span>
-      <span id="cb3-28"><a href="#cb3-28" aria-hidden="true"></a>    <span class="co">// provided response cookie is not recognized</span></span>
-      <span id="cb3-29"><a href="#cb3-29" aria-hidden="true"></a>    response_cookie_invalid      = -<span class="dv">11</span>,</span>
-      <span id="cb3-30"><a href="#cb3-30" aria-hidden="true"></a>    <span class="co">// provided response state is not valid</span></span>
-      <span id="cb3-31"><a href="#cb3-31" aria-hidden="true"></a>    response_state_invalid       = -<span class="dv">12</span>,</span>
-      <span id="cb3-32"><a href="#cb3-32" aria-hidden="true"></a>} <span class="dt">error_code_t</span>;</span>
-      <span id="cb3-33"><a href="#cb3-33" aria-hidden="true"></a></span>
-      <span id="cb3-34"><a href="#cb3-34" aria-hidden="true"></a>document error_section {</span>
-      <span id="cb3-35"><a href="#cb3-35" aria-hidden="true"></a>    <span class="co">// id for error_section</span></span>
-      <span id="cb3-36"><a href="#cb3-36" aria-hidden="true"></a>    [[<span class="at">required</span>]] <span class="dt">int32_t</span> id = <span class="dv">0</span>;</span>
-      <span id="cb3-37"><a href="#cb3-37" aria-hidden="true"></a>    <span class="co">// request cookie associated with a previous request; only present for</span></span>
-      <span id="cb3-38"><a href="#cb3-38" aria-hidden="true"></a>    <span class="co">// errors that can be associated with a previous request</span></span>
-      <span id="cb3-39"><a href="#cb3-39" aria-hidden="true"></a>    [[<span class="at">optional</span>]] <span class="dt">int64_t</span> cookie;</span>
-      <span id="cb3-40"><a href="#cb3-40" aria-hidden="true"></a>    <span class="co">// the error code</span></span>
-      <span id="cb3-41"><a href="#cb3-41" aria-hidden="true"></a>    [[<span class="at">required</span>]] <span class="dt">error_code_t</span> code;</span>
-      <span id="cb3-42"><a href="#cb3-42" aria-hidden="true"></a>    <span class="co">// human-readable message associated with this error</span></span>
-      <span id="cb3-43"><a href="#cb3-43" aria-hidden="true"></a>    [[<span class="at">optional</span>]] string message;</span>
-      <span id="cb3-44"><a href="#cb3-44" aria-hidden="true"></a>    <span class="co">// primitive or structured debug data associated with with this error</span></span>
-      <span id="cb3-45"><a href="#cb3-45" aria-hidden="true"></a>    [[<span class="at">optional</span>]] element data;</span>
-      <span id="cb3-46"><a href="#cb3-46" aria-hidden="true"></a>}</span></code></pre></div>
-      <h4 id="request-section">Request Section</h4>
-      <p>Remote procedure calls are made by submitting a message with a <code>request_section</code>. The requestor may provide a cookie to associate with future response messages. If no cookie is provided, the request is carried out but no response is sent.</p>
-      <div class="sourceCode" id="cb4"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a>document request_section {</span>
-      <span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a>    <span class="co">// id for request_section</span></span>
-      <span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a>    [[<span class="at">required</span>]] <span class="dt">int32_t</span> id = <span class="dv">1</span>;</span>
-      <span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a>    <span class="co">// request cookie used to associate a future response to this request. If a</span></span>
-      <span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a>    <span class="co">// cookie is not provided, the receiver must not return a response section.</span></span>
-      <span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a>    <span class="co">// It is up to the requestor to avoid cookie collisions (cookies are scoped</span></span>
-      <span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a>    <span class="co">// by session, so concurrent requests from multiple requestors may use</span></span>
-      <span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a>    <span class="co">// identical cookies without issue).</span></span>
-      <span id="cb4-9"><a href="#cb4-9" aria-hidden="true"></a>    [[<span class="at">optional</span>]] <span class="dt">int64_t</span> cookie;</span>
-      <span id="cb4-10"><a href="#cb4-10" aria-hidden="true"></a>    <span class="co">// function namespace; if not provided assumed to the global/empty &quot;&quot;</span></span>
-      <span id="cb4-11"><a href="#cb4-11" aria-hidden="true"></a>    <span class="co">// namespace</span></span>
-      <span id="cb4-12"><a href="#cb4-12" aria-hidden="true"></a>    [[<span class="at">optional</span>]] string <span class="kw">namespace</span>;</span>
-      <span id="cb4-13"><a href="#cb4-13" aria-hidden="true"></a>    <span class="co">// name of function to call; must not be empty string</span></span>
-      <span id="cb4-14"><a href="#cb4-14" aria-hidden="true"></a>    [[<span class="at">required</span>]] string function;</span>
-      <span id="cb4-15"><a href="#cb4-15" aria-hidden="true"></a>    <span class="co">// the version of the function to call; if not provided assumed to be 0</span></span>
-      <span id="cb4-16"><a href="#cb4-16" aria-hidden="true"></a>    [[<span class="at">optional</span>]] <span class="dt">int32_t</span> version;</span>
-      <span id="cb4-17"><a href="#cb4-17" aria-hidden="true"></a>    <span class="co">// a document containing arguments for the function; not required for a</span></span>
-      <span id="cb4-18"><a href="#cb4-18" aria-hidden="true"></a>    <span class="co">// function which has no arguments</span></span>
-      <span id="cb4-19"><a href="#cb4-19" aria-hidden="true"></a>    [[<span class="at">optional</span>]] document arguments;</span>
-      <span id="cb4-20"><a href="#cb4-20" aria-hidden="true"></a>}</span></code></pre></div>
-      <h4 id="response-section">Response Section</h4>
-      <p>After receiving a message with a <code>request_section</code>, a message with a <code>response_section</code> is sent in response. Long-running operations may return a <code>response_section</code> with the state set to ‘pending’ and send a ‘complete’ response at a later date. Short-running operations may only send one response with the ‘complete’ state.</p>
-      <p>In the event of a runtime (non-protocol) error, a <code>response_section</code> is not returned and an <code>error_section</code> is instead.</p>
-      <div class="sourceCode" id="cb5"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="kw">typedef</span> <span class="kw">enum</span> <span class="kw">class</span> request_state : <span class="dt">int32_t</span> {</span>
-      <span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a>    <span class="co">// request started and result is pending</span></span>
-      <span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a>    pending = <span class="dv">0</span>,</span>
-      <span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a>    <span class="co">// request is complete</span></span>
-      <span id="cb5-5"><a href="#cb5-5" aria-hidden="true"></a>    complete = <span class="dv">1</span>,</span>
-      <span id="cb5-6"><a href="#cb5-6" aria-hidden="true"></a>} request_state;</span>
-      <span id="cb5-7"><a href="#cb5-7" aria-hidden="true"></a></span>
-      <span id="cb5-8"><a href="#cb5-8" aria-hidden="true"></a>document response_section {</span>
-      <span id="cb5-9"><a href="#cb5-9" aria-hidden="true"></a>    <span class="co">// id for request_section</span></span>
-      <span id="cb5-10"><a href="#cb5-10" aria-hidden="true"></a>    [[<span class="at">required</span>]] <span class="dt">int32_t</span> id = <span class="dv">2</span>;</span>
-      <span id="cb5-11"><a href="#cb5-11" aria-hidden="true"></a>    <span class="co">// the cookie associated with a previous request this response document</span></span>
-      <span id="cb5-12"><a href="#cb5-12" aria-hidden="true"></a>    <span class="co">// refers to</span></span>
-      <span id="cb5-13"><a href="#cb5-13" aria-hidden="true"></a>    [[<span class="at">required</span>]] <span class="dt">int64_t</span> cookie;</span>
-      <span id="cb5-14"><a href="#cb5-14" aria-hidden="true"></a>    <span class="co">// the current state of function execution</span></span>
-      <span id="cb5-15"><a href="#cb5-15" aria-hidden="true"></a>    [[<span class="at">required</span>]] <span class="dt">request_state_t</span> state;</span>
-      <span id="cb5-16"><a href="#cb5-16" aria-hidden="true"></a>    <span class="co">// the primitive or structured return from the request associated with</span></span>
-      <span id="cb5-17"><a href="#cb5-17" aria-hidden="true"></a>    <span class="co">// &#39;cookie&#39;; must be present if state is complete, must not be present</span></span>
-      <span id="cb5-18"><a href="#cb5-18" aria-hidden="true"></a>    <span class="co">// if state is pending</span></span>
-      <span id="cb5-19"><a href="#cb5-19" aria-hidden="true"></a>    [[<span class="at">optional</span>]] element result;</span>
-      <span id="cb5-20"><a href="#cb5-20" aria-hidden="true"></a>}</span></code></pre></div>
-      <h2 id="acknowledgements">Acknowledgements</h2>
-      <p>Creation of innovative free software needs support. We thank the NGI Assure Fund, a fund established by NLnet with financial support from the European Commission’s Next Generation Internet programme, under the aegis of DG Communications Networks, Content and Technology under grant agreement No 957073</p>
-      <section class="footnotes" role="doc-endnotes">
-      <hr />
-      <ol>
-      <li id="fn1" role="doc-endnote"><p>see <a href="https://bsonspec.org/spec.html">BSON spec</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-      </ol>
-      </section>
+<h1 id="honk-rpc-v0.1.0">Honk-RPC v0.1.0</h1>
+<hr />
+<p>Honk-RPC is a remote procedure call protocol.</p>
+<p>The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in this document are to be interpreted as described in RFC 2119<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>.</p>
+<p>Honk-RPC has the following properties:</p>
+<ul>
+<li><strong>Bi-Directional</strong>: The participants in a Honk-RPC session MAY simultaneously make requests and receive requests, regardless of who has originally connected to whom.</li>
+<li><strong>Asynchronous</strong>: Remote procedure calls are asynchronous by default. Requests MAY be either be resolved immediately or some time in the future. Requests MAY be executed out-of-order, executed concurrently, or scheduled for execution at a later date. How and when requests are executed are undefined implementation details.</li>
+<li><strong>Dynamic</strong>: There is no pre-compiled interface definition. Users of the Honk-RPC protocol MUST implement their own method for determining which remote procedure calls are available. There are no built-in or standard remote procedure calls.</li>
+<li><strong>Binary Format</strong>: The Honk-RPC data format is version 1.1 binary-json (BSON) documents. All data-types mentioned in this specification refer to BSON data-types<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>.</li>
+<li><strong>Transport Agnostic</strong>: No assumptions are made about the underlying transport method used to transmit Honk-RPC communications. The transport method MUST handle all aspects of correctly routing Honk-RPC communications to the right session.</li>
+</ul>
+<h2 id="protocol">Protocol</h2>
+<p>All Honk-RPC requests and responses are encoded as BSON documents. Honk-RPC BSON documents MUST conform to a particular schema described here.</p>
+<p>Some fields are optional, while others are required. Honk-RPC BSON documents MUST contain all required fields.</p>
+<p>Any unexpected fields found in a Honk-RPC document MUST be ignored.</p>
+<h3 id="messages">Messages</h3>
+<p>The base Honk-RPC BSON document type is a <code>message</code>. A <code>message</code> MUST contain a non-empty list of BSON documents. Each of these documents MUST be a valid <code>section</code>.</p>
+<p>Because each <code>message</code> can contain more than one <code>section</code> objects, multiple requests, responses, or errors MAY be batched together and sent at once. The order in which <code>section</code> objects are handled is an undefined implementation detail.</p>
+<p>The key/values defined in the various message format sections in this specification are listed in a particular order for illustrative purposes only. In reality, these fields MAY be arbitrarily ordered in memory.</p>
+<h4 id="message-format">Message Format</h4>
+<pre><code>document message {
+  // the Honk-RPC protocol version number
+  [[required]] int32_t honk_rpc;
+  // an array of section objects
+  [[required]] document sections[];
+}</code></pre>
+<p>The <code>honk_rpc</code> field is the Honk-RPC version supported by the <code>message</code> sender. Honk-RPC follows the Semantic Versioning 2.0.0 specification<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>. The major, minor, and patch values are encoded as unsigned bytes within the signed 32-bit integer <code>honk_rpc</code>.</p>
+<p>The following pseudo-code demonstrates conversion between these two representations:</p>
+<pre><code>pub fn semver_to_i32(major: u8, minor: u8, patch: u8) -&gt; i32 {
+    let major = major as i32;
+    let minor = minor as i32;
+    let patch = patch as i32;
+    (major &lt;&lt; 16) | (minor &lt;&lt; 8) | patch
+}
+
+pub fn i32_to_semver(ver: i32) -&gt; (u8, u8, u8) {
+    let major = (ver &amp; 0xff0000) &gt;&gt; 16;
+    let minor = (ver &amp; 0xff00) &gt;&gt; 8;
+    let patch = ver &amp; 0xff;
+    (major as u8, minor as u8, patch as u8)
+}</code></pre>
+<p>This representation <em>does</em> necessitate that the Honk-RPC protocol semantic version components never exceed the value 255. Implementations MUST verify they can correctly handle the Honk-RPC version. Receiving a <code>message</code> with an incompatible <code>honk_rpc</code> field SHALL be treated as fatal error.</p>
+<h3 id="sections">Sections</h3>
+<p>Honk-RPC defines three types of <code>section</code> object: <code>error</code>, <code>request</code> or <code>response</code>. Each <code>section</code> object is a document with the following format:</p>
+<h4 id="section-format">Section Format</h4>
+<pre><code>document section {
+  // the id is used to determine which type of section this document is:
+  //  0 =&gt; error
+  //  1 =&gt; request
+  //  2 =&gt; response
+  [[required]] int32_t id;
+  // section-specific data
+}</code></pre>
+<h4 id="error-section">Error Section</h4>
+<p>An <code>error_section</code> MAY be sent in response to a request or due to an unrelated runtime error.</p>
+<p>Each <code>error_section</code> MUST have an error code field. An error code is a 32-bit signed integer.</p>
+<p>Some error codes indicate a fatal error. The sender of a fatal error MUST end the session after sending one, and the receiver of a fatal error MUST end the session after receiving one.</p>
+<p>Negative error codes are reserved for protocol errors. Protocol errors SHALL be fatal.</p>
+<p>Zero is not a valid error code and SHALL be treated as fatal.</p>
+<p>Positive codes are reserved for application-specific errors. Such errors MAY be either fatal or non-fatal depending on what is appropriate for the application. How non-fatal errors should be handled is up to the application developer and outside the scope of the Honk-RPC protocol.</p>
+<h4 id="error-section-format">Error Section Format</h4>
+<pre><code>typedef enum class error_code : int32_t {
+  // failure to parse a received BSON document
+  bson_parse_failed            = -1,
+  // received message document was too big; the default maximum message size
+  // is 4096 bytes, but can be adjusted
+  message_too_big              = -2,
+  // received message document missing required fields
+  message_parse_failed         = -3,
+  // received message contained version the receiver cannot handle
+  message_version_incompatible = -4,
+  // section in received message contains unknown id
+  section_id_unknown           = -5,
+  // section in received message missing required field, or provided
+  // field is wrong datatype
+  section_parse_failed         = -6,
+  // provided request cookie is already in use
+  request_cookie_invalid       = -7,
+  // provided request namespace does not exist
+  request_namespace_invalid    = -8,
+  // provided request function does not exist within the provided namespace
+  request_function_invalid     = -9,
+  // provided request version does not exist
+  request_version_invalid      = -10,
+  // provided response cookie is not recognized
+  response_cookie_invalid      = -11,
+  // provided response state is not valid
+  response_state_invalid       = -12,
+} error_code_t;
+
+document error_section {
+  // id for error_section
+  [[required]] int32_t id = 0;
+  // request cookie associated with a previous request; only present for
+  // errors that can be associated with a previous request
+  [[optional]] int64_t cookie;
+  // the error code
+  [[required]] error_code_t code;
+  // human-readable message associated with this error
+  [[optional]] string message;
+  // primitive or structured debug data associated with with this error
+  [[optional]] element data;
+}</code></pre>
+<h4 id="request-section">Request Section</h4>
+<p>Remote procedure calls are made by submitting a message with a <code>request_section</code>. The requestor MAY provide a cookie to associate with future response messages. If no cookie is provided, the remote procedure call SHALL be carried out but no response is sent.</p>
+<p>Re-using a <code>cookie</code> value which is already associated with an in-process request MUST result in a fatal error.</p>
+<p>Function arguments must be validated by the application developer.</p>
+<pre><code>document request_section {
+  // id for request_section
+  [[required]] int32_t id = 1;
+  // request cookie used to associate a future response to this request. If a
+  // cookie is not provided, the receiver must not return a response section.
+  // It is up to the requestor to avoid cookie collisions (cookies are scoped
+  // by session, so concurrent requests from multiple requestors may use
+  // identical cookies without issue).
+  [[optional]] int64_t cookie;
+  // function namespace; if not provided assumed to the global/empty &quot;&quot;
+  // namespace
+  [[optional]] string namespace;
+  // name of function to call; must not be empty string
+  [[required]] string function;
+  // the version of the function to call; if not provided assumed to be 0
+  [[optional]] int32_t version;
+  // a document containing arguments for the function; not required for a
+  // function which takes no arguments
+  [[optional]] document arguments;
+}</code></pre>
+<h4 id="response-section">Response Section</h4>
+<p>After handling a <code>request_section</code> with a valid <code>cookie</code> field, a <code>response_section</code> MUST be sent in response. Long-running operations MAY return a <code>response_section</code> with the state set to ‘pending’ and send a ‘complete’ response at a later date. Short-running operations MAY only send one response with the ‘complete’ state.</p>
+<p>In the event of a runtime (non-protocol) error, a <code>response_section</code> SHALL not be returned and an <code>error_section</code> is returned instead.</p>
+<pre><code>typedef enum class request_state : int32_t {
+  // request started and result is pending
+  pending = 0,
+  // request is complete
+  complete = 1,
+} request_state;
+
+document response_section {
+  // id for request_section
+  [[required]] int32_t id = 2;
+  // the cookie associated with a previous request this response document
+  // refers to
+  [[required]] int64_t cookie;
+  // the current state of function execution
+  [[required]] request_state_t state;
+  // the primitive or structured return from the request associated with
+  // &#39;cookie&#39;; MAY be present if state is complete, MUST NOT be present
+  // if state is pending
+  [[optional]] element result;
+}</code></pre>
+<h2 id="acknowledgements">Acknowledgements</h2>
+<p>Creation of innovative free software needs support. We thank the NGI Assure Fund, a fund established by NLnet with financial support from the European Commission’s Next Generation Internet programme, under the aegis of DG Communications Networks, Content and Technology under grant agreement No 957073</p>
+<section class="footnotes" role="doc-endnotes">
+<hr />
+<ol>
+<li id="fn1" role="doc-endnote"><p>RFC 2119: <a href="https://www.rfc-editor.org/rfc/rfc2119">https://www.rfc-editor.org/rfc/rfc2119</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2" role="doc-endnote"><p>BSON spec: <a href="https://bsonspec.org/spec.html">https://bsonspec.org/spec.html</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3" role="doc-endnote"><p>Semantic Versioning 2.0.0 spec: <a href="https://semver.org/spec/v2.0.0.html">https://semver.org/spec/v2.0.0.html</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
       <hr/>
       <footer>
         <p>&copy; 2023-2024 <a href="https://www.blueprintforfreespeech.net">Blueprint for Free Speech</a>. All rights reserved.</p>

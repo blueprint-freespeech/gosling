@@ -439,7 +439,7 @@
                             }
                         };
 
-                        <span class="kw">if let </span>bson::Bson::Document(result) = result {
+                        <span class="kw">if let </span><span class="prelude-val">Some</span>(bson::Bson::Document(result)) = result {
                             <span class="kw">if let </span><span class="prelude-val">Some</span>(Bson::Binary(Binary {
                                 subtype: BinarySubtype::Generic,
                                 bytes: server_cookie,
@@ -495,7 +495,7 @@
                             }
                         } <span class="kw">else </span>{
                             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::UnexpectedResponseReceived(<span class="macro">format!</span>(
-                                <span class="string">"begin_handshake() returned unexpected value: {}"</span>,
+                                <span class="string">"begin_handshake() returned unexpected value: {:?}"</span>,
                                 result
                             )));
                         }
@@ -541,7 +541,7 @@
                             }
                         };
 
-                        <span class="kw">if let </span>Bson::Document(result) = result {
+                        <span class="kw">if let </span><span class="prelude-val">Some</span>(Bson::Document(result)) = result {
                             <span class="kw">if </span>result.is_empty() {
                                 <span class="self">self</span>.state = EndpointClientState::HandshakeComplete;
                                 <span class="kw">let </span>stream = std::mem::take(<span class="kw-2">&amp;mut </span><span class="self">self</span>.rpc).unwrap().into_stream();

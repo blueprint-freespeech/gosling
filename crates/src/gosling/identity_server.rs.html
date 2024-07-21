@@ -693,6 +693,7 @@
 <a href="#693" id="693">693</a>
 <a href="#694" id="694">694</a>
 <a href="#695" id="695">695</a>
+<a href="#696" id="696">696</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::clone::Clone;
 <span class="kw">use </span>std::convert::TryInto;
@@ -1085,10 +1086,14 @@
         version: i32,
         <span class="kw-2">mut </span>args: bson::document::Document,
         request_cookie: <span class="prelude-ty">Option</span>&lt;RequestCookie&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;bson::Bson&gt;, ErrorCode&gt; {
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;bson::Bson&gt;, ErrorCode&gt;&gt; {
         <span class="kw">let </span>request_cookie = <span class="kw">match </span>request_cookie {
             <span class="prelude-val">Some</span>(request_cookie) =&gt; request_cookie,
-            <span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::RequestCookieRequired <span class="kw">as </span>i32)),
+            <span class="prelude-val">None </span>=&gt; {
+                <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(ErrorCode::Runtime(
+                    RpcError::RequestCookieRequired <span class="kw">as </span>i32,
+                )))
+            }
         };
 
         <span class="kw">match </span>(
@@ -1124,7 +1129,7 @@
                 };
                 <span class="kw">if </span>!valid_version {
                     <span class="self">self</span>.state = IdentityServerState::HandshakeFailed;
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::BadVersion <span class="kw">as </span>i32));
+                    <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::BadVersion <span class="kw">as </span>i32)));
                 }
 
                 <span class="kw">if let </span>(<span class="prelude-val">Some</span>(Bson::String(client_identity)), <span class="prelude-val">Some</span>(Bson::String(endpoint_name))) =
@@ -1135,7 +1140,7 @@
                         <span class="prelude-val">Ok</span>(client_identity) =&gt; client_identity,
                         <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                             <span class="self">self</span>.state = IdentityServerState::HandshakeFailed;
-                            <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32));
+                            <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32)));
                         }
                     };
 
@@ -1144,7 +1149,7 @@
                         <span class="prelude-val">Ok</span>(endpoint_name) =&gt; endpoint_name,
                         <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                             <span class="self">self</span>.state = IdentityServerState::HandshakeFailed;
-                            <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32));
+                            <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32)));
                         }
                     };
 
@@ -1154,10 +1159,10 @@
                     <span class="comment">// save results
                     </span><span class="self">self</span>.client_identity = <span class="prelude-val">Some</span>(client_identity);
                     <span class="self">self</span>.requested_endpoint = <span class="prelude-val">Some</span>(endpoint_name);
-                    <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
-                } <span class="kw">else </span>{
+                    <span class="prelude-val">None
+                </span>} <span class="kw">else </span>{
                     <span class="self">self</span>.state = IdentityServerState::HandshakeFailed;
-                    <span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32))
+                    <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32)))
                 }
             }
             <span class="comment">// handle send_response call
@@ -1207,7 +1212,7 @@
                         <span class="prelude-val">Ok</span>(client_cookie) =&gt; client_cookie,
                         <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                             <span class="self">self</span>.state = IdentityServerState::HandshakeFailed;
-                            <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32));
+                            <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32)));
                         }
                     };
 
@@ -1217,7 +1222,7 @@
                             <span class="prelude-val">Ok</span>(client_identity_proof_signature) =&gt; client_identity_proof_signature,
                             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                                 <span class="self">self</span>.state = IdentityServerState::HandshakeFailed;
-                                <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32));
+                                <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32)));
                             }
                         };
                     <span class="kw">let </span>client_identity_proof_signature =
@@ -1225,7 +1230,7 @@
                             <span class="prelude-val">Ok</span>(client_identity_proof_signature) =&gt; client_identity_proof_signature,
                             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                                 <span class="self">self</span>.state = IdentityServerState::HandshakeFailed;
-                                <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32));
+                                <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32)));
                             }
                         };
 
@@ -1235,7 +1240,7 @@
                             <span class="prelude-val">Ok</span>(client_authorization_key) =&gt; client_authorization_key,
                             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                                 <span class="self">self</span>.state = IdentityServerState::HandshakeFailed;
-                                <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32));
+                                <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32)));
                             }
                         };
                     <span class="kw">let </span>client_authorization_key =
@@ -1251,7 +1256,7 @@
                             <span class="prelude-val">Ok</span>(client_authorization_signature) =&gt; client_authorization_signature,
                             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                                 <span class="self">self</span>.state = IdentityServerState::HandshakeFailed;
-                                <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32));
+                                <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32)));
                             }
                         };
                     <span class="kw">let </span>client_authorization_signature =
@@ -1259,7 +1264,7 @@
                             <span class="prelude-val">Ok</span>(client_authorization_signature) =&gt; client_authorization_signature,
                             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                                 <span class="self">self</span>.state = IdentityServerState::HandshakeFailed;
-                                <span class="kw">return </span><span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32));
+                                <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32)));
                             }
                         };
 
@@ -1297,20 +1302,20 @@
                     <span class="comment">// safe off challenge response for verification
                     </span><span class="self">self</span>.challenge_response = <span class="prelude-val">Some</span>(challenge_response);
 
-                    <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
-                } <span class="kw">else </span>{
+                    <span class="prelude-val">None
+                </span>} <span class="kw">else </span>{
                     <span class="self">self</span>.state = IdentityServerState::HandshakeFailed;
-                    <span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32))
+                    <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::InvalidArg <span class="kw">as </span>i32)))
                 }
             }
             <span class="kw">_ </span>=&gt; {
                 <span class="self">self</span>.state = IdentityServerState::HandshakeFailed;
-                <span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::Failure <span class="kw">as </span>i32))
+                <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::Failure <span class="kw">as </span>i32)))
             }
         }
     }
 
-    <span class="kw">fn </span>next_result(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;(RequestCookie, <span class="prelude-ty">Option</span>&lt;bson::Bson&gt;, ErrorCode)&gt; {
+    <span class="kw">fn </span>next_result(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;(RequestCookie, <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;bson::Bson&gt;, ErrorCode&gt;)&gt; {
         <span class="kw">match </span>(
             <span class="kw-2">&amp;</span><span class="self">self</span>.state,
             <span class="self">self</span>.begin_handshake_request_cookie,
@@ -1339,11 +1344,10 @@
                 <span class="self">self</span>.state = IdentityServerState::WaitingForSendResponse;
                 <span class="prelude-val">Some</span>((
                     begin_handshake_request_cookie,
-                    <span class="prelude-val">Some</span>(Bson::Document(<span class="macro">doc!</span> {
+                    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(Bson::Document(<span class="macro">doc!</span> {
                         <span class="string">"server_cookie" </span>: Bson::Binary(Binary{subtype: BinarySubtype::Generic, bytes: server_cookie.to_vec()}),
                         <span class="string">"endpoint_challenge" </span>: std::mem::take(endpoint_challenge),
-                    })),
-                    ErrorCode::Success,
+                    }))),
                 ))
             }
             (<span class="kw-2">&amp;</span>IdentityServerState::ChallengeReady, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(),
@@ -1373,14 +1377,12 @@
                     <span class="self">self</span>.endpoint_private_key = <span class="prelude-val">Some</span>(endpoint_private_key);
                     <span class="prelude-val">Some</span>((
                         send_response_request_cookie,
-                        <span class="prelude-val">Some</span>(Bson::String(endpoint_service_id.to_string())),
-                        ErrorCode::Success,
+                        <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(Bson::String(endpoint_service_id.to_string()))),
                     ))
                 } <span class="kw">else </span>{
                     <span class="prelude-val">Some</span>((
                         send_response_request_cookie,
-                        <span class="prelude-val">None</span>,
-                        ErrorCode::Runtime(RpcError::Failure <span class="kw">as </span>i32),
+                        <span class="prelude-val">Err</span>(ErrorCode::Runtime(RpcError::Failure <span class="kw">as </span>i32)),
                     ))
                 }
             }

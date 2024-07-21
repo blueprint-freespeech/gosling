@@ -366,6 +366,11 @@
 <a href="#366" id="366">366</a>
 <a href="#367" id="367">367</a>
 <a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
+<a href="#370" id="370">370</a>
+<a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::collections::BTreeMap;
 <span class="kw">use </span>std::io::ErrorKind;
@@ -543,7 +548,6 @@
         <span class="kw">let </span>line = <span class="string">"[notice] MockTorClient running"</span>.to_string();
         events.push(TorEvent::LogReceived { line });
 
-
         <span class="kw">let </span>socket_addr = SocketAddr::from(([<span class="number">127</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>], <span class="number">0u16</span>));
         <span class="kw">let </span>listener = TcpListener::bind(socket_addr).expect(<span class="string">"tcplistener bind failed"</span>);
 
@@ -643,15 +647,21 @@
                 service_id,
                 virt_port,
             })) =&gt; (service_id, virt_port),
-            target_address =&gt; <span class="kw">if let </span><span class="prelude-val">Ok</span>(stream) = TcpStream::connect(<span class="self">self</span>.loopback.local_addr().expect(<span class="string">"loopback local_addr failed"</span>)) {
-                <span class="kw">return </span><span class="prelude-val">Ok</span>(OnionStream {
-                    stream,
-                    local_addr: <span class="prelude-val">None</span>,
-                    peer_addr: <span class="prelude-val">Some</span>(target_address),
-                });
-            } <span class="kw">else </span>{
-                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ConnectFailed(target_address).into());
-            },
+            target_address =&gt; {
+                <span class="kw">if let </span><span class="prelude-val">Ok</span>(stream) = TcpStream::connect(
+                    <span class="self">self</span>.loopback
+                        .local_addr()
+                        .expect(<span class="string">"loopback local_addr failed"</span>),
+                ) {
+                    <span class="kw">return </span><span class="prelude-val">Ok</span>(OnionStream {
+                        stream,
+                        local_addr: <span class="prelude-val">None</span>,
+                        peer_addr: <span class="prelude-val">Some</span>(target_address),
+                    });
+                } <span class="kw">else </span>{
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ConnectFailed(target_address).into());
+                }
+            }
         };
         <span class="kw">let </span>client_auth = <span class="self">self</span>.client_auth_keys.get(<span class="kw-2">&amp;</span>service_id);
 
