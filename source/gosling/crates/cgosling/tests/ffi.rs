@@ -248,7 +248,9 @@ fn test_gosling_ffi_handshake_mock_client() -> anyhow::Result<()> {
 
     // construct a shared mock config
     let mut mock_tor_provider_config: *mut GoslingTorProviderConfig = ptr::null_mut();
-    require_noerror!(gosling_tor_provider_config_new_mock_client_config(&mut mock_tor_provider_config));
+    require_noerror!(gosling_tor_provider_config_new_mock_client_config(
+        &mut mock_tor_provider_config
+    ));
 
     // construct tor providers
     let mut alice_tor_provider: *mut GoslingTorProvider = ptr::null_mut();
@@ -258,7 +260,10 @@ fn test_gosling_ffi_handshake_mock_client() -> anyhow::Result<()> {
     ));
 
     let mut pat_tor_provider: *mut GoslingTorProvider = ptr::null_mut();
-    require_noerror!(gosling_tor_provider_from_tor_provider_config(&mut pat_tor_provider, mock_tor_provider_config));
+    require_noerror!(gosling_tor_provider_from_tor_provider_config(
+        &mut pat_tor_provider,
+        mock_tor_provider_config
+    ));
 
     // do test
     test_gosling_ffi_handshake_impl(library, alice_tor_provider, pat_tor_provider)
@@ -277,13 +282,15 @@ fn test_gosling_ffi_handshake_legacy_client() -> anyhow::Result<()> {
     let alice_working_dir: CString = CString::new(alice_working_dir.to_str().unwrap())?;
 
     let mut alice_tor_provider_config: *mut GoslingTorProviderConfig = ptr::null_mut();
-    require_noerror!(gosling_tor_provider_config_new_bundled_legacy_client_config(
-        &mut alice_tor_provider_config,
-        ptr::null(),
-        0usize,
-        alice_working_dir.as_ptr(),
-        alice_working_dir.as_bytes().len()
-    ));
+    require_noerror!(
+        gosling_tor_provider_config_new_bundled_legacy_client_config(
+            &mut alice_tor_provider_config,
+            ptr::null(),
+            0usize,
+            alice_working_dir.as_ptr(),
+            alice_working_dir.as_bytes().len()
+        )
+    );
 
     let mut alice_tor_provider: *mut GoslingTorProvider = ptr::null_mut();
     require_noerror!(gosling_tor_provider_from_tor_provider_config(
@@ -296,14 +303,15 @@ fn test_gosling_ffi_handshake_legacy_client() -> anyhow::Result<()> {
     let pat_working_dir: CString = CString::new(pat_working_dir.to_str().unwrap())?;
 
     let mut pat_tor_provider_config: *mut GoslingTorProviderConfig = ptr::null_mut();
-    require_noerror!(gosling_tor_provider_config_new_bundled_legacy_client_config(
-        &mut pat_tor_provider_config,
-        ptr::null(),
-        0usize,
-        pat_working_dir.as_ptr(),
-        pat_working_dir.as_bytes().len()
-    ));
-
+    require_noerror!(
+        gosling_tor_provider_config_new_bundled_legacy_client_config(
+            &mut pat_tor_provider_config,
+            ptr::null(),
+            0usize,
+            pat_working_dir.as_ptr(),
+            pat_working_dir.as_bytes().len()
+        )
+    );
 
     let mut pat_tor_provider: *mut GoslingTorProvider = ptr::null_mut();
     require_noerror!(gosling_tor_provider_from_tor_provider_config(
@@ -364,13 +372,15 @@ fn test_gosling_ffi_handshake_bundled_pt_client() -> anyhow::Result<()> {
     let alice_working_dir: CString = CString::new(alice_working_dir.to_str().unwrap())?;
 
     let mut alice_tor_provider_config: *mut GoslingTorProviderConfig = ptr::null_mut();
-    require_noerror!(gosling_tor_provider_config_new_bundled_legacy_client_config(
-        &mut alice_tor_provider_config,
-        ptr::null(),
-        0usize,
-        alice_working_dir.as_ptr(),
-        alice_working_dir.as_bytes().len()
-    ));
+    require_noerror!(
+        gosling_tor_provider_config_new_bundled_legacy_client_config(
+            &mut alice_tor_provider_config,
+            ptr::null(),
+            0usize,
+            alice_working_dir.as_ptr(),
+            alice_working_dir.as_bytes().len()
+        )
+    );
 
     // add pt config
     require_noerror!(gosling_tor_provider_config_add_pluggable_transport_config(
@@ -395,14 +405,15 @@ fn test_gosling_ffi_handshake_bundled_pt_client() -> anyhow::Result<()> {
     let pat_working_dir: CString = CString::new(pat_working_dir.to_str().unwrap())?;
 
     let mut pat_tor_provider_config: *mut GoslingTorProviderConfig = ptr::null_mut();
-    require_noerror!(gosling_tor_provider_config_new_bundled_legacy_client_config(
-        &mut pat_tor_provider_config,
-        ptr::null(),
-        0usize,
-        pat_working_dir.as_ptr(),
-        pat_working_dir.as_bytes().len()
-    ));
-
+    require_noerror!(
+        gosling_tor_provider_config_new_bundled_legacy_client_config(
+            &mut pat_tor_provider_config,
+            ptr::null(),
+            0usize,
+            pat_working_dir.as_ptr(),
+            pat_working_dir.as_bytes().len()
+        )
+    );
 
     let mut pat_tor_provider: *mut GoslingTorProvider = ptr::null_mut();
     require_noerror!(gosling_tor_provider_from_tor_provider_config(

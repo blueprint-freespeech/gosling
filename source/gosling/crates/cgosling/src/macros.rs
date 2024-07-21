@@ -1,4 +1,3 @@
-
 // implemeents per-type registry types
 macro_rules! define_registry {
     ($type:ty) => {
@@ -54,7 +53,7 @@ macro_rules! ensure_not_null {
                 bail!(stringify!([<$ptr>] must not be null));
             }
         }
-    }
+    };
 }
 pub(crate) use ensure_not_null;
 
@@ -73,6 +72,6 @@ macro_rules! bail_invalid_handle {
         paste::paste! {
             bail!(stringify!([<$handle>] is invalid))
         }
-    }
+    };
 }
 pub(crate) use bail_invalid_handle;

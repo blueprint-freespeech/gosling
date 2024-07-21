@@ -127,7 +127,6 @@ pub unsafe extern "C" fn gosling_x25519_public_key_clone(
     })
 }
 
-
 /// Copy method for gosling_x25519_private_key
 ///
 /// @param out_private_key: returned copy

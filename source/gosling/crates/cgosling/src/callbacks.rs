@@ -24,31 +24,38 @@ pub(crate) struct EventCallbacks {
         GoslingIdentityClientHandshakeChallengeResponseSizeCallback,
     pub identity_client_build_challenge_response_callback:
         GoslingIdentityClientHandshakeBuildChallengeResponseCallback,
-    pub identity_client_handshake_completed_callback: GoslingIdentityClientHandshakeCompletedCallback,
+    pub identity_client_handshake_completed_callback:
+        GoslingIdentityClientHandshakeCompletedCallback,
     pub identity_client_handshake_failed_callback: GoslingIdentityClientHandshakeFailedCallback,
 
     // identity server events
     pub identity_server_published_callback: GoslingIdentityServerPublishedCallback,
     pub identity_server_handshake_started_callback: GoslingIdentityServerHandshakeStartedCallback,
-    pub identity_server_client_allowed_callback: GoslingIdentityServerHandshakeClientAllowedCallback,
+    pub identity_server_client_allowed_callback:
+        GoslingIdentityServerHandshakeClientAllowedCallback,
     pub identity_server_endpoint_supported_callback: GoslingIdentityServerEndpointSupportedCallback,
-    pub identity_server_challenge_size_callback: GoslingIdentityServerHandshakeChallengeSizeCallback,
-    pub identity_server_build_challenge_callback: GoslingIdentityServerHandshakeBuildChallengeCallback,
+    pub identity_server_challenge_size_callback:
+        GoslingIdentityServerHandshakeChallengeSizeCallback,
+    pub identity_server_build_challenge_callback:
+        GoslingIdentityServerHandshakeBuildChallengeCallback,
     pub identity_server_verify_challenge_response_callback:
         GoslingIdentityServerHandshakeVerifyChallengeResponseCallback,
-    pub identity_server_handshake_completed_callback: GoslingIdentityServerHandshakeCompletedCallback,
+    pub identity_server_handshake_completed_callback:
+        GoslingIdentityServerHandshakeCompletedCallback,
     pub identity_server_handshake_rejected_callback: GoslingIdentityServerHandshakeRejectedCallback,
     pub identity_server_handshake_failed_callback: GoslingIdentityServerHandshakeFailedCallback,
 
     // endpoint client events
-    pub endpoint_client_handshake_completed_callback: GoslingEndpointClientHandshakeCompletedCallback,
+    pub endpoint_client_handshake_completed_callback:
+        GoslingEndpointClientHandshakeCompletedCallback,
     pub endpoint_client_handshake_failed_callback: GoslingEndpointClientHandshakeFailedCallback,
 
     // endpoint server events
     pub endpoint_server_published_callback: GoslingEndpointServerPublishedCallback,
     pub endpoint_server_handshake_started_callback: GoslingEndpointServerHandshakeStartedCallback,
     pub endpoint_server_channel_supported_callback: GoslingEndpointServerChannelSupportedCallback,
-    pub endpoint_server_handshake_completed_callback: GoslingEndpointServerHandshakeCompletedCallback,
+    pub endpoint_server_handshake_completed_callback:
+        GoslingEndpointServerHandshakeCompletedCallback,
     pub endpoint_server_handshake_rejected_callback: GoslingEndpointServerHandshakeRejectedCallback,
     pub endpoint_server_handshake_failed_callback: GoslingEndpointServerHandshakeFailedCallback,
 }
@@ -505,7 +512,6 @@ pub type GoslingEndpointServerHandshakeFailedCallback = Option<
         error: *const GoslingError,
     ) -> (),
 >;
-
 
 macro_rules! impl_callback_setter {
     ($callback_type:tt, $context:expr, $callback:expr, $error:expr) => {

@@ -35,7 +35,6 @@ pub(crate) const CONTEXT_TUPLE_TAG: usize = 0xD;
 /// A handle for the gosling library
 pub struct GoslingLibrary;
 
-
 static GOSLING_LIBRARY_INITED: AtomicBool = AtomicBool::new(false);
 const GOSLING_LIBRARY_HANDLE: usize = {
     // integer constant in the form 0x6000..5E (GOOOOOSE)
@@ -90,7 +89,6 @@ pub extern "C" fn gosling_library_free(in_library: *mut GoslingLibrary) {
         clear_tor_provider_registry();
         clear_tor_provider_config_registry();
         clear_context_tuple_registry();
-
 
         GOSLING_LIBRARY_INITED.store(false, Ordering::Relaxed);
     }

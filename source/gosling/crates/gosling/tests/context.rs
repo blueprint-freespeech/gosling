@@ -32,7 +32,7 @@ fn test_legacy_client_gosling_context() -> anyhow::Result<()> {
 
     let mut alice_path = std::env::temp_dir();
     alice_path.push("test_legacy_client_gosling_context_alice");
-    let tor_config = LegacyTorClientConfig::BundledTor{
+    let tor_config = LegacyTorClientConfig::BundledTor {
         tor_bin_path: tor_path.clone(),
         data_directory: alice_path,
         proxy_settings: None,
@@ -44,7 +44,7 @@ fn test_legacy_client_gosling_context() -> anyhow::Result<()> {
 
     let mut pat_path = std::env::temp_dir();
     pat_path.push("test_legacy_client_gosling_context_pat");
-    let tor_config = LegacyTorClientConfig::BundledTor{
+    let tor_config = LegacyTorClientConfig::BundledTor {
         tor_bin_path: tor_path,
         data_directory: pat_path,
         proxy_settings: None,

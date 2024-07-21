@@ -8,21 +8,21 @@ use std::str::FromStr;
 
 // extern crates
 use anyhow::bail;
+#[cfg(feature = "impl-lib")]
+use cgosling_proc_macros::*;
 #[cfg(feature = "legacy-tor-provider")]
 use tor_interface::legacy_tor_client::*;
 #[cfg(feature = "mock-tor-provider")]
 use tor_interface::mock_tor_client::*;
 use tor_interface::tor_provider::*;
 use tor_interface::*;
-#[cfg(feature = "impl-lib")]
-use cgosling_proc_macros::*;
 
 // internal crates
 use crate::error::*;
 use crate::ffi::*;
+use crate::macros::*;
 #[cfg(feature = "legacy-tor-provider")]
 use crate::utils::*;
-use crate::macros::*;
 
 /// Proxy settings object used by tor provider to connect to the tor network
 #[cfg(feature = "legacy-tor-provider")]
@@ -78,7 +78,9 @@ pub extern "C" fn gosling_proxy_config_free(in_proxy_config: *mut GoslingProxyCo
 #[no_mangle]
 #[cfg(feature = "legacy-tor-provider")]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
-pub extern "C" fn gosling_pluggable_transport_config_free(in_pluggable_transport_config: *mut GoslingPluggableTransportConfig) {
+pub extern "C" fn gosling_pluggable_transport_config_free(
+    in_pluggable_transport_config: *mut GoslingPluggableTransportConfig,
+) {
     impl_registry_free!(in_pluggable_transport_config, PluggableTransportConfig);
 }
 
@@ -97,7 +99,9 @@ pub extern "C" fn gosling_bridge_line_free(in_bridge_line: *mut GoslingBridgeLin
 /// @param in_tor_provider_config: the tor provider config object to free
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
-pub extern "C" fn gosling_tor_provider_config_free(in_tor_provider_config: *mut GoslingTorProviderConfig) {
+pub extern "C" fn gosling_tor_provider_config_free(
+    in_tor_provider_config: *mut GoslingTorProviderConfig,
+) {
     impl_registry_free!(in_tor_provider_config, TorProviderConfig);
 }
 
@@ -179,8 +183,7 @@ pub unsafe extern "C" fn gosling_proxy_config_new_socks5(
         let username = if username.is_null() || username_length == 0 {
             None
         } else {
-            let username =
-                std::slice::from_raw_parts(username as *const u8, username_length);
+            let username = std::slice::from_raw_parts(username as *const u8, username_length);
             let username = std::str::from_utf8(username)?;
             Some(username.to_string())
         };
@@ -188,8 +191,7 @@ pub unsafe extern "C" fn gosling_proxy_config_new_socks5(
         let password = if password.is_null() || password_length == 0 {
             None
         } else {
-            let password =
-                std::slice::from_raw_parts(password as *const u8, password_length);
+            let password = std::slice::from_raw_parts(password as *const u8, password_length);
             let password = std::str::from_utf8(password)?;
             Some(password.to_string())
         };
@@ -238,8 +240,7 @@ pub unsafe extern "C" fn gosling_proxy_config_new_https(
         let username = if username.is_null() || username_length == 0 {
             None
         } else {
-            let username =
-                std::slice::from_raw_parts(username as *const u8, username_length);
+            let username = std::slice::from_raw_parts(username as *const u8, username_length);
             let username = std::str::from_utf8(username)?;
             Some(username.to_string())
         };
@@ -247,8 +248,7 @@ pub unsafe extern "C" fn gosling_proxy_config_new_https(
         let password = if password.is_null() || password_length == 0 {
             None
         } else {
-            let password =
-                std::slice::from_raw_parts(password as *const u8, password_length);
+            let password = std::slice::from_raw_parts(password as *const u8, password_length);
             let password = std::str::from_utf8(password)?;
             Some(password.to_string())
         };
@@ -294,8 +294,7 @@ pub unsafe extern "C" fn gosling_pluggable_transport_config_new(
         ensure_not_null!(path_to_binary);
         ensure_not_equal!(path_to_binary_length, 0);
 
-        let transports =
-            std::slice::from_raw_parts(transports as *const u8, transports_length);
+        let transports = std::slice::from_raw_parts(transports as *const u8, transports_length);
         let transports = std::str::from_utf8(transports)?;
         let transports: Vec<String> = transports.split(',').map(|s| s.to_string()).collect();
 
@@ -305,7 +304,8 @@ pub unsafe extern "C" fn gosling_pluggable_transport_config_new(
         let path_to_binary = Path::new(path_to_binary);
         path_to_binary.canonicalize()?;
 
-        let pluggable_transport_config = PluggableTransportConfig::new(transports, path_to_binary.into())?;
+        let pluggable_transport_config =
+            PluggableTransportConfig::new(transports, path_to_binary.into())?;
         let handle = get_pluggable_transport_config_registry().insert(pluggable_transport_config);
         *out_pluggable_transport_config = handle as *mut GoslingPluggableTransportConfig;
 
@@ -334,11 +334,11 @@ pub unsafe extern "C" fn gosling_pluggable_transport_config_add_cmdline_option(
         ensure_not_null!(option);
         ensure_not_equal!(option_length, 0);
 
-        let option =
-            std::slice::from_raw_parts(option as *const u8, option_length);
+        let option = std::slice::from_raw_parts(option as *const u8, option_length);
         let option = std::str::from_utf8(option)?;
 
-        match get_pluggable_transport_config_registry().get_mut(pluggable_transport_config as usize) {
+        match get_pluggable_transport_config_registry().get_mut(pluggable_transport_config as usize)
+        {
             Some(config) => config.add_option(option.to_string()),
             None => bail_invalid_handle!(pluggable_transport_config),
         }
@@ -373,8 +373,7 @@ pub unsafe extern "C" fn gosling_bridge_line_from_string(
         ensure_not_null!(bridge_line);
         ensure_not_equal!(bridge_line_length, 0);
 
-        let bridge_line =
-            std::slice::from_raw_parts(bridge_line as *const u8, bridge_line_length);
+        let bridge_line = std::slice::from_raw_parts(bridge_line as *const u8, bridge_line_length);
         let bridge_line = std::str::from_utf8(bridge_line)?;
         let bridge_line = BridgeLine::from_str(bridge_line)?;
 
@@ -403,7 +402,8 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_mock_client_config(
     translate_failures((), error, || -> anyhow::Result<()> {
         ensure_not_null!(out_tor_provider_config);
 
-        let handle = get_tor_provider_config_registry().insert(TorProviderConfig::MockTorClientConfig);
+        let handle =
+            get_tor_provider_config_registry().insert(TorProviderConfig::MockTorClientConfig);
         *out_tor_provider_config = handle as *mut GoslingTorProviderConfig;
 
         Ok(())
@@ -460,7 +460,7 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_bundled_legacy_client_c
         );
         let tor_working_directory = std::str::from_utf8(tor_working_directory)?;
         let tor_working_directory = Path::new(tor_working_directory).to_path_buf();
-        let tor_config = LegacyTorClientConfig::BundledTor{
+        let tor_config = LegacyTorClientConfig::BundledTor {
             tor_bin_path: tor_bin_path,
             data_directory: tor_working_directory,
             proxy_settings: None,
@@ -469,7 +469,8 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_bundled_legacy_client_c
             bridge_lines: None,
         };
 
-        let handle = get_tor_provider_config_registry().insert(TorProviderConfig::LegacyTorClientConfig(tor_config));
+        let handle = get_tor_provider_config_registry()
+            .insert(TorProviderConfig::LegacyTorClientConfig(tor_config));
         *out_tor_provider_config = handle as *mut GoslingTorProviderConfig;
 
         Ok(())
@@ -524,19 +525,18 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_system_legacy_client_co
         let tor_control_addr = std::net::SocketAddr::new(tor_control_host, tor_control_port);
 
         // construct tor_control_password
-        let tor_control_passwd = std::slice::from_raw_parts(
-            tor_control_passwd as *const u8,
-            tor_control_passwd_length,
-        );
+        let tor_control_passwd =
+            std::slice::from_raw_parts(tor_control_passwd as *const u8, tor_control_passwd_length);
         let tor_control_passwd = std::str::from_utf8(tor_control_passwd)?.to_string();
 
-        let tor_config = LegacyTorClientConfig::SystemTor{
+        let tor_config = LegacyTorClientConfig::SystemTor {
             tor_socks_addr,
             tor_control_addr,
             tor_control_passwd,
         };
 
-        let handle = get_tor_provider_config_registry().insert(TorProviderConfig::LegacyTorClientConfig(tor_config));
+        let handle = get_tor_provider_config_registry()
+            .insert(TorProviderConfig::LegacyTorClientConfig(tor_config));
         *out_tor_provider_config = handle as *mut GoslingTorProviderConfig;
 
         Ok(())
@@ -569,12 +569,15 @@ pub unsafe extern "C" fn gosling_tor_provider_config_set_proxy_config(
 
         match get_tor_provider_config_registry().get_mut(tor_provider_config as usize) {
             Some(tor_provider_config) => match tor_provider_config {
-                TorProviderConfig::LegacyTorClientConfig(LegacyTorClientConfig::BundledTor{proxy_settings, ..}) => {
+                TorProviderConfig::LegacyTorClientConfig(LegacyTorClientConfig::BundledTor {
+                    proxy_settings,
+                    ..
+                }) => {
                     *proxy_settings = match get_proxy_config_registry().get(proxy_config as usize) {
                         Some(proxy_config) => Some(proxy_config.clone()),
                         None => bail_invalid_handle!(proxy_config),
                     };
-                },
+                }
                 _ => bail!("tor_provider_config does not support this operation"),
             },
             None => bail_invalid_handle!(tor_provider_config),
@@ -609,15 +612,16 @@ pub unsafe extern "C" fn gosling_tor_provider_config_set_allowed_ports(
         ensure_not_null!(allowed_ports);
         ensure_not_equal!(allowed_ports_count, 0);
 
-        let allowed_ports_slice = std::slice::from_raw_parts(
-            allowed_ports as *const u16,
-            allowed_ports_count
-        );
+        let allowed_ports_slice =
+            std::slice::from_raw_parts(allowed_ports as *const u16, allowed_ports_count);
         match get_tor_provider_config_registry().get_mut(tor_provider_config as usize) {
-        Some(tor_provider_config) => match tor_provider_config {
-                TorProviderConfig::LegacyTorClientConfig(LegacyTorClientConfig::BundledTor{allowed_ports, ..}) => {
+            Some(tor_provider_config) => match tor_provider_config {
+                TorProviderConfig::LegacyTorClientConfig(LegacyTorClientConfig::BundledTor {
+                    allowed_ports,
+                    ..
+                }) => {
                     *allowed_ports = Some(allowed_ports_slice.into());
-                },
+                }
                 _ => bail!("tor_provider_config does not support this operation"),
             },
             None => bail_invalid_handle!(tor_provider_config),
@@ -651,21 +655,26 @@ pub unsafe extern "C" fn gosling_tor_provider_config_add_pluggable_transport_con
         ensure_not_null!(pluggable_transport_config);
 
         match get_tor_provider_config_registry().get_mut(tor_provider_config as usize) {
-            Some(tor_provider_config) => {
-                match tor_provider_config {
-                    TorProviderConfig::LegacyTorClientConfig(LegacyTorClientConfig::BundledTor{pluggable_transports, ..}) => {
-                        let pluggable_transport_config = match get_pluggable_transport_config_registry().get(pluggable_transport_config as usize) {
-                            Some(pluggable_transport_config) => pluggable_transport_config.clone(),
-                            None => bail_invalid_handle!(pluggable_transport_config),
-                        };
+            Some(tor_provider_config) => match tor_provider_config {
+                TorProviderConfig::LegacyTorClientConfig(LegacyTorClientConfig::BundledTor {
+                    pluggable_transports,
+                    ..
+                }) => {
+                    let pluggable_transport_config = match get_pluggable_transport_config_registry()
+                        .get(pluggable_transport_config as usize)
+                    {
+                        Some(pluggable_transport_config) => pluggable_transport_config.clone(),
+                        None => bail_invalid_handle!(pluggable_transport_config),
+                    };
 
-                        match pluggable_transports {
-                            None => *pluggable_transports = Some(vec![pluggable_transport_config]),
-                            Some(pluggable_transports) => pluggable_transports.push(pluggable_transport_config),
+                    match pluggable_transports {
+                        None => *pluggable_transports = Some(vec![pluggable_transport_config]),
+                        Some(pluggable_transports) => {
+                            pluggable_transports.push(pluggable_transport_config)
                         }
-                    },
-                    _ => bail!("tor_provider_config does not support this operation"),
+                    }
                 }
+                _ => bail!("tor_provider_config does not support this operation"),
             },
             None => bail_invalid_handle!(tor_provider_config),
         }
@@ -699,21 +708,22 @@ pub unsafe extern "C" fn gosling_tor_provider_config_add_bridge_line(
         ensure_not_null!(bridge_line);
 
         match get_tor_provider_config_registry().get_mut(tor_provider_config as usize) {
-            Some(tor_provider_config) => {
-                match tor_provider_config {
-                    TorProviderConfig::LegacyTorClientConfig(LegacyTorClientConfig::BundledTor{bridge_lines, ..}) => {
-                        let bridge_line = match get_bridge_line_registry().get(bridge_line as usize) {
-                            Some(bridge_line) => bridge_line.clone(),
-                            None => bail_invalid_handle!(bridge_line),
-                        };
+            Some(tor_provider_config) => match tor_provider_config {
+                TorProviderConfig::LegacyTorClientConfig(LegacyTorClientConfig::BundledTor {
+                    bridge_lines,
+                    ..
+                }) => {
+                    let bridge_line = match get_bridge_line_registry().get(bridge_line as usize) {
+                        Some(bridge_line) => bridge_line.clone(),
+                        None => bail_invalid_handle!(bridge_line),
+                    };
 
-                        match bridge_lines {
-                            None => *bridge_lines = Some(vec![bridge_line]),
-                            Some(bridge_lines) => bridge_lines.push(bridge_line),
-                        }
-                    },
-                    _ => bail!("tor_provider_config does not support this operation"),
+                    match bridge_lines {
+                        None => *bridge_lines = Some(vec![bridge_line]),
+                        Some(bridge_lines) => bridge_lines.push(bridge_line),
+                    }
                 }
+                _ => bail!("tor_provider_config does not support this operation"),
             },
             None => bail_invalid_handle!(tor_provider_config),
         }
@@ -738,21 +748,23 @@ pub unsafe extern "C" fn gosling_tor_provider_from_tor_provider_config(
         ensure_not_null!(out_tor_provider);
         ensure_not_null!(tor_provider_config);
 
-        let tor_provider: Box::<dyn tor_provider::TorProvider> = match get_tor_provider_config_registry().get(tor_provider_config as usize) {
-            Some(tor_provider_config) => match tor_provider_config {
-                #[cfg(feature = "mock-tor-provider")]
-                TorProviderConfig::MockTorClientConfig => {
-                    let tor_provider: MockTorClient = Default::default();
-                    Box::new(tor_provider)
+        let tor_provider: Box<dyn tor_provider::TorProvider> =
+            match get_tor_provider_config_registry().get(tor_provider_config as usize) {
+                Some(tor_provider_config) => match tor_provider_config {
+                    #[cfg(feature = "mock-tor-provider")]
+                    TorProviderConfig::MockTorClientConfig => {
+                        let tor_provider: MockTorClient = Default::default();
+                        Box::new(tor_provider)
+                    }
+                    #[cfg(feature = "legacy-tor-provider")]
+                    TorProviderConfig::LegacyTorClientConfig(legacy_tor_config) => {
+                        let tor_provider: LegacyTorClient =
+                            LegacyTorClient::new(legacy_tor_config.clone())?;
+                        Box::new(tor_provider)
+                    }
                 },
-                #[cfg(feature = "legacy-tor-provider")]
-                TorProviderConfig::LegacyTorClientConfig(legacy_tor_config) => {
-                    let tor_provider: LegacyTorClient = LegacyTorClient::new(legacy_tor_config.clone())?;
-                    Box::new(tor_provider)
-                },
-            },
-            None => bail_invalid_handle!(tor_provider_config),
-        };
+                None => bail_invalid_handle!(tor_provider_config),
+            };
 
         let handle = get_tor_provider_registry().insert(tor_provider);
         *out_tor_provider = handle as *mut GoslingTorProvider;

@@ -101,7 +101,11 @@ pub extern "C" fn gosling_error_free(error: *mut GoslingError) {
 /// @param out_error: A pointer to pointer to GoslingError 'struct' for the C FFI
 /// @param closure: The functionality we need to encapsulate behind the error handling logic
 /// @return The result of closure() on success, or the value of default on failure.
-pub(crate) fn translate_failures<R, F>(default: R, out_error: *mut *mut GoslingError, closure: F) -> R
+pub(crate) fn translate_failures<R, F>(
+    default: R,
+    out_error: *mut *mut GoslingError,
+    closure: F,
+) -> R
 where
     F: FnOnce() -> anyhow::Result<R> + std::panic::UnwindSafe,
 {

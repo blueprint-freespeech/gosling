@@ -3,9 +3,9 @@ use std::convert::TryFrom;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, TcpStream};
 use std::os::raw::c_char;
 #[cfg(unix)]
-use std::os::unix::io::{IntoRawFd};
+use std::os::unix::io::IntoRawFd;
 #[cfg(windows)]
-use std::os::windows::io::{IntoRawSocket};
+use std::os::windows::io::IntoRawSocket;
 use std::str::FromStr;
 
 // extern
@@ -31,15 +31,14 @@ pub const TARGET_ADDRESS_STRING_SIZE: usize = 260;
 
 /// An internet socket address, either IPv4 or IPv6
 pub struct GoslingIpAddress;
-define_registry!{IpAddr}
+define_registry! {IpAddr}
 
 /// An endpoint to connect to over tor
 pub struct GoslingTargetAddress;
-define_registry!{TargetAddr}
+define_registry! {TargetAddr}
 
 /// A stream isolation token
 pub type GoslingCircuitToken = usize;
-
 
 //
 // Free Functions
@@ -187,7 +186,10 @@ pub extern "C" fn gosling_context_connect(
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_ip_address_from_ipv4(
     out_ip_address: *mut *mut GoslingIpAddress,
-    a: u8, b: u8, c: u8, d: u8,
+    a: u8,
+    b: u8,
+    c: u8,
+    d: u8,
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
@@ -217,8 +219,14 @@ pub unsafe extern "C" fn gosling_ip_address_from_ipv4(
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_ip_address_from_ipv6(
     out_ip_address: *mut *mut GoslingIpAddress,
-    a: u16, b: u16, c: u16, d: u16,
-    e: u16, f: u16, g: u16, h: u16,
+    a: u16,
+    b: u16,
+    c: u16,
+    d: u16,
+    e: u16,
+    f: u16,
+    g: u16,
+    h: u16,
     error: *mut *mut GoslingError,
 ) {
     translate_failures((), error, || -> anyhow::Result<()> {
@@ -294,7 +302,8 @@ pub unsafe extern "C" fn gosling_target_address_from_domain(
         let domain_view = std::slice::from_raw_parts(domain as *const u8, domain_length);
         let domain_str = std::str::from_utf8(domain_view)?;
 
-        let target_address = TargetAddr::Domain(DomainAddr::try_from((domain_str.to_string(), port))?);
+        let target_address =
+            TargetAddr::Domain(DomainAddr::try_from((domain_str.to_string(), port))?);
         let handle = get_target_addr_registry().insert(target_address);
         *out_target_address = handle as *mut GoslingTargetAddress;
 
@@ -325,7 +334,8 @@ pub unsafe extern "C" fn gosling_target_address_from_v3_onion_service_id(
             None => bail_invalid_handle!(service_id),
         };
 
-        let target_address = TargetAddr::OnionService(OnionAddr::V3(OnionAddrV3::new(service_id, port)));
+        let target_address =
+            TargetAddr::OnionService(OnionAddr::V3(OnionAddrV3::new(service_id, port)));
         let handle = get_target_addr_registry().insert(target_address);
         *out_target_address = handle as *mut GoslingTargetAddress;
 
@@ -354,7 +364,8 @@ pub unsafe extern "C" fn gosling_target_address_from_string(
             bail!("target_address_length must be greater than 0");
         }
 
-        let target_address_view = std::slice::from_raw_parts(target_address as *const u8, target_address_length);
+        let target_address_view =
+            std::slice::from_raw_parts(target_address as *const u8, target_address_length);
         let target_address_str = std::str::from_utf8(target_address_view)?;
 
         let target_address = TargetAddr::from_str(target_address_str)?;
@@ -391,7 +402,11 @@ pub unsafe extern "C" fn gosling_target_address_to_string(
 
         let target_address_string_len = target_address_string.len();
         if target_address_string_len >= target_address_string_size {
-            bail!("string_size must be at least '{}', received '{}'", target_address_string_len, target_address_string_size);
+            bail!(
+                "string_size must be at least '{}', received '{}'",
+                target_address_string_len,
+                target_address_string_size
+            );
         }
 
         unsafe {
