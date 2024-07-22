@@ -146,6 +146,14 @@ The following additional dependencies are required for this configure option:
 - [cargo-fuzz](https://github.com/rust-fuzz/cargo-fuzz)
 - [libfuzzer](https://www.llvm.org/docs/LibFuzzer.html)
 
+### ENABLE_TOR_EXPERT_BUNDLE
+
+```shell
+cmake -DENABLE_TOR_EXPERT_BUNDLE=ON
+```
+
+Downloads and extracts the `tor-expert-bundle` in tree. The `tor-expert-bundle` is an [archive](https://www.torproject.org/download/tor/) provided by the Tor Project containing the latest tor binaries, pluggable-transport binaries, and configuration options used in Tor Browser. Enabling this option allows testing the pluggable-transport integration in the `tor-interface` and `cgosling` crates.
+
 ### ENABLE_LINTING
 
 ```shell
@@ -255,6 +263,22 @@ The following additional dependencies are required for this configure option:
 - [pandoc](https://pandoc.org)
 - [plantuml](https://github.com/plantuml/plantuml)
 - [tidy](https://github.com/htacg/tidy-html5)
+
+### TEB_TARGET
+
+```shell
+cmake -DTEB_TARGET==${TEB_TARGET}
+```
+
+The `tor-expert-bundle` target to download and use when `ENABLE_TOR_EXPERT_BUNDLE=ON`. If not provided, CMake will do its best to guess.
+
+The supported targets are:
+- windows-i686
+- windows-x86_64
+- macos-x86_64
+- macos-aarch64\
+- linux-i686
+- linux-x86_64
 
 ---
 
