@@ -14,6 +14,8 @@ use cgosling_proc_macros::*;
 use tor_interface::legacy_tor_client::*;
 #[cfg(feature = "mock-tor-provider")]
 use tor_interface::mock_tor_client::*;
+#[cfg(feature = "legacy-tor-provider")]
+use tor_interface::proxy::*;
 use tor_interface::tor_provider::*;
 use tor_interface::*;
 
