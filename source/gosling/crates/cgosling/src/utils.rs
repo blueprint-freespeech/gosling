@@ -266,7 +266,7 @@ pub unsafe extern "C" fn gosling_target_address_from_ip_address(
             None => bail_invalid_handle!(ip_address),
         };
 
-        let target_address = TargetAddr::Ip(SocketAddr::new(ip_address, port));
+        let target_address = TargetAddr::Socket(SocketAddr::new(ip_address, port));
 
         let handle = get_target_addr_registry().insert(target_address);
         *out_target_address = handle as *mut GoslingTargetAddress;
