@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Error"],"struct":["ArtiClientOnionListener","ArtiClientTorClient"]};
+window.SIDEBAR_ITEMS = {"enum":["Error"],"struct":["ArtiClientTorClient"]};

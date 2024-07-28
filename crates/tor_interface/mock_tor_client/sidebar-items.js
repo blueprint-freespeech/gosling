@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Error"],"struct":["MockOnionListener","MockTorClient"]};
+window.SIDEBAR_ITEMS = {"enum":["Error"],"struct":["MockTorClient"]};

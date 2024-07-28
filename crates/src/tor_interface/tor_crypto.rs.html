@@ -754,13 +754,71 @@
 <a href="#754" id="754">754</a>
 <a href="#755" id="755">755</a>
 <a href="#756" id="756">756</a>
+<a href="#757" id="757">757</a>
+<a href="#758" id="758">758</a>
+<a href="#759" id="759">759</a>
+<a href="#760" id="760">760</a>
+<a href="#761" id="761">761</a>
+<a href="#762" id="762">762</a>
+<a href="#763" id="763">763</a>
+<a href="#764" id="764">764</a>
+<a href="#765" id="765">765</a>
+<a href="#766" id="766">766</a>
+<a href="#767" id="767">767</a>
+<a href="#768" id="768">768</a>
+<a href="#769" id="769">769</a>
+<a href="#770" id="770">770</a>
+<a href="#771" id="771">771</a>
+<a href="#772" id="772">772</a>
+<a href="#773" id="773">773</a>
+<a href="#774" id="774">774</a>
+<a href="#775" id="775">775</a>
+<a href="#776" id="776">776</a>
+<a href="#777" id="777">777</a>
+<a href="#778" id="778">778</a>
+<a href="#779" id="779">779</a>
+<a href="#780" id="780">780</a>
+<a href="#781" id="781">781</a>
+<a href="#782" id="782">782</a>
+<a href="#783" id="783">783</a>
+<a href="#784" id="784">784</a>
+<a href="#785" id="785">785</a>
+<a href="#786" id="786">786</a>
+<a href="#787" id="787">787</a>
+<a href="#788" id="788">788</a>
+<a href="#789" id="789">789</a>
+<a href="#790" id="790">790</a>
+<a href="#791" id="791">791</a>
+<a href="#792" id="792">792</a>
+<a href="#793" id="793">793</a>
+<a href="#794" id="794">794</a>
+<a href="#795" id="795">795</a>
+<a href="#796" id="796">796</a>
+<a href="#797" id="797">797</a>
+<a href="#798" id="798">798</a>
+<a href="#799" id="799">799</a>
+<a href="#800" id="800">800</a>
+<a href="#801" id="801">801</a>
+<a href="#802" id="802">802</a>
+<a href="#803" id="803">803</a>
+<a href="#804" id="804">804</a>
+<a href="#805" id="805">805</a>
+<a href="#806" id="806">806</a>
+<a href="#807" id="807">807</a>
+<a href="#808" id="808">808</a>
+<a href="#809" id="809">809</a>
+<a href="#810" id="810">810</a>
+<a href="#811" id="811">811</a>
+<a href="#812" id="812">812</a>
+<a href="#813" id="813">813</a>
+<a href="#814" id="814">814</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::convert::TryInto;
 <span class="kw">use </span>std::str;
 
 <span class="comment">// extern crates
 </span><span class="kw">use </span>curve25519_dalek::Scalar;
-<span class="kw">use </span>data_encoding::{BASE32, BASE32_NOPAD, BASE64};
+<span class="kw">use </span>data_encoding::{BASE32_NOPAD, BASE64};
 <span class="kw">use </span>data_encoding_macro::new_encoding;
 <span class="attr">#[cfg(feature = <span class="string">"legacy-tor-provider"</span>)]
 </span><span class="kw">use </span>rand::distributions::Alphanumeric;
@@ -772,13 +830,19 @@
 <span class="kw">use </span>tor_llcrypto::pk::keymanip::<span class="kw-2">*</span>;
 <span class="kw">use </span>tor_llcrypto::<span class="kw-2">*</span>;
 
-<span class="attr">#[derive(thiserror::Error, Debug)]
+<span class="doccomment">/// Represents various errors that can occur in the tor_crypto module.
+</span><span class="attr">#[derive(thiserror::Error, Debug)]
 </span><span class="kw">pub enum </span>Error {
-    <span class="attr">#[error(<span class="string">"{0}"</span>)]
+    <span class="doccomment">/// A error encountered converting a String to a tor_crypto type
+    </span><span class="attr">#[error(<span class="string">"{0}"</span>)]
     </span>ParseError(String),
-    <span class="attr">#[error(<span class="string">"{0}"</span>)]
+
+    <span class="doccomment">/// An error encountered converting between tor_crypto types
+    </span><span class="attr">#[error(<span class="string">"{0}"</span>)]
     </span>ConversionError(String),
-    <span class="attr">#[error(<span class="string">"invalid key"</span>)]
+
+    <span class="doccomment">/// An error encountered converting from a raw byte representation
+    </span><span class="attr">#[error(<span class="string">"invalid key"</span>)]
     </span>KeyInvalid,
 }
 
@@ -873,36 +937,47 @@
 
 <span class="comment">// Struct deinitions
 
+</span><span class="doccomment">/// An ed25519 private key.
+///
+/// This key type is used with [`crate::tor_provider::TorProvider`] trait for hosting onion-services and can be convertd to an [`Ed25519PublicKey`]. It can also be used to sign messages and create an [`Ed25519Signature`].
 </span><span class="kw">pub struct </span>Ed25519PrivateKey {
     expanded_keypair: pk::ed25519::ExpandedKeypair,
 }
 
-<span class="attr">#[derive(Clone)]
+<span class="doccomment">/// An ed25519 public key.
+///
+/// This key type is derived from [`Ed25519PrivateKey`] and can be converted to a [`V3OnionServiceId`]. It can also be used to verify a [`Ed25519Signature`].
+</span><span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>Ed25519PublicKey {
     public_key: pk::ed25519::PublicKey,
 }
 
-<span class="attr">#[derive(Clone)]
+<span class="doccomment">/// An ed25519 cryptographic signature
+</span><span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>Ed25519Signature {
     signature: pk::ed25519::Signature,
 }
 
-<span class="attr">#[derive(Clone)]
+<span class="doccomment">/// An x25519 private key
+</span><span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>X25519PrivateKey {
     secret_key: pk::curve25519::StaticSecret,
 }
 
-<span class="attr">#[derive(Clone, PartialEq, Eq, Hash)]
+<span class="doccomment">/// An x25519 public key
+</span><span class="attr">#[derive(Clone, PartialEq, Eq, Hash)]
 </span><span class="kw">pub struct </span>X25519PublicKey {
     public_key: pk::curve25519::PublicKey,
 }
 
-<span class="attr">#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+<span class="doccomment">/// A v3 onion-service id
+</span><span class="attr">#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 </span><span class="kw">pub struct </span>V3OnionServiceId {
     data: [u8; V3_ONION_SERVICE_ID_STRING_LENGTH],
 }
 
-<span class="attr">#[derive(Clone, Copy)]
+<span class="doccomment">/// An enum representing a single bit
+</span><span class="attr">#[derive(Clone, Copy)]
 </span><span class="kw">pub enum </span>SignBit {
     Zero,
     One,
@@ -948,10 +1023,10 @@
     </span>Ed25519Dalek,
 }
 
-<span class="comment">// Ed25519 Private Key
-
+<span class="doccomment">/// A wrapper around `tor_llcrypto::pk::ed25519::ExpandedKeypair`.
 </span><span class="kw">impl </span>Ed25519PrivateKey {
-    <span class="kw">pub fn </span>generate() -&gt; Ed25519PrivateKey {
+    <span class="doccomment">/// Securely generate a new `Ed25519PrivateKey`.
+    </span><span class="kw">pub fn </span>generate() -&gt; Ed25519PrivateKey {
         <span class="kw">let </span>csprng = <span class="kw-2">&amp;mut </span>OsRng;
         <span class="kw">let </span>keypair = pk::ed25519::Keypair::generate(csprng);
 
@@ -994,7 +1069,10 @@
         }
     }
 
-    <span class="kw">pub fn </span>from_raw(raw: <span class="kw-2">&amp;</span>[u8; ED25519_PRIVATE_KEY_SIZE]) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519PrivateKey, Error&gt; {
+    <span class="doccomment">/// Attempt to create an `Ed25519PrivateKey` from an array of bytes. Not all byte buffers of the required size can create a valid `Ed25519PrivateKey`. Only buffers derived from [`Ed25519PrivateKey::to_bytes()`] are required to convert correctly.
+    ///
+    /// To securely generate a valid `Ed25519PrivateKey`, use [`Ed25519PrivateKey::generate()`].
+    </span><span class="kw">pub fn </span>from_raw(raw: <span class="kw-2">&amp;</span>[u8; ED25519_PRIVATE_KEY_SIZE]) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519PrivateKey, Error&gt; {
         <span class="self">Self</span>::from_raw_impl(raw, FromRawValidationMethod::Ed25519Dalek)
     }
 
@@ -1047,11 +1125,16 @@
         <span class="self">Self</span>::from_key_blob_impl(key_blob, FromRawValidationMethod::LegacyCTor)
     }
 
-    <span class="kw">pub fn </span>from_key_blob(key_blob: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519PrivateKey, Error&gt; {
+    <span class="doccomment">/// Create an `Ed25519PrivateKey` from a [`String`] in the legacy c-tor daemon key blob format used in the `ADD_ONION` control-port command. From the c-tor control [specification](https://spec.torproject.org/control-spec/commands.html#add_onion):
+    /// &gt; For a "ED25519-V3" key is the Base64 encoding of the concatenation of the 32-byte ed25519 secret scalar in little-endian and the 32-byte ed25519 PRF secret.
+    ///
+    /// Only key blob strings derived from [`Ed25519PrivateKey::to_key_blob()`] are required to convert correctly.
+    </span><span class="kw">pub fn </span>from_key_blob(key_blob: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519PrivateKey, Error&gt; {
         <span class="self">Self</span>::from_key_blob_impl(key_blob, FromRawValidationMethod::Ed25519Dalek)
     }
 
-    <span class="kw">pub fn </span>from_private_x25519(
+    <span class="doccomment">/// Construct an `Ed25519PrivateKEy` from an [`X25519PrivateKey`].
+    </span><span class="kw">pub fn </span>from_private_x25519(
         x25519_private: <span class="kw-2">&amp;</span>X25519PrivateKey,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(Ed25519PrivateKey, SignBit), Error&gt; {
         <span class="kw">if let </span><span class="prelude-val">Some</span>((result, signbit)) =
@@ -1079,28 +1162,24 @@
         }
     }
 
-    <span class="kw">pub fn </span>to_key_blob(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+    <span class="doccomment">/// Write `Ed25519PrivateKey` to a c-tor key blob formatted [`String`].
+    </span><span class="kw">pub fn </span>to_key_blob(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
         <span class="kw">let </span><span class="kw-2">mut </span>key_blob = ED25519_PRIVATE_KEY_KEYBLOB_HEADER.to_string();
         key_blob.push_str(<span class="kw-2">&amp;</span>BASE64.encode(<span class="kw-2">&amp;</span><span class="self">self</span>.expanded_keypair.to_secret_key_bytes()));
 
         key_blob
     }
 
-    <span class="kw">pub fn </span>sign_message_ex(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        _public_key: <span class="kw-2">&amp;</span>Ed25519PublicKey,
-        message: <span class="kw-2">&amp;</span>[u8],
-    ) -&gt; Ed25519Signature {
+    <span class="doccomment">/// Sign the provided message and return an [`Ed25519Signature`].
+    /// ## ⚠ Warning ⚠
+    ///Only ever sign messages the private key owner controls the contents of!
+    </span><span class="kw">pub fn </span>sign_message(<span class="kw-2">&amp;</span><span class="self">self</span>, message: <span class="kw-2">&amp;</span>[u8]) -&gt; Ed25519Signature {
         <span class="kw">let </span>signature = <span class="self">self</span>.expanded_keypair.sign(message);
         Ed25519Signature { signature }
     }
 
-    <span class="kw">pub fn </span>sign_message(<span class="kw-2">&amp;</span><span class="self">self</span>, message: <span class="kw-2">&amp;</span>[u8]) -&gt; Ed25519Signature {
-        <span class="kw">let </span>public_key = Ed25519PublicKey::from_private_key(<span class="self">self</span>);
-        <span class="self">self</span>.sign_message_ex(<span class="kw-2">&amp;</span>public_key, message)
-    }
-
-    <span class="kw">pub fn </span>to_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; [u8; ED25519_PRIVATE_KEY_SIZE] {
+    <span class="doccomment">/// Convert this private key to an array of bytes.
+    </span><span class="kw">pub fn </span>to_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; [u8; ED25519_PRIVATE_KEY_SIZE] {
         <span class="self">self</span>.expanded_keypair.to_secret_key_bytes()
     }
 
@@ -1131,23 +1210,20 @@
     }
 }
 
-<span class="comment">// Ed25519 Public Key
-
+<span class="doccomment">/// A wrapper around `tor_llcrypto::pk::ed25519::PublicKey`
 </span><span class="kw">impl </span>Ed25519PublicKey {
-    <span class="kw">pub fn </span>from_raw(raw: <span class="kw-2">&amp;</span>[u8; ED25519_PUBLIC_KEY_SIZE]) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519PublicKey, Error&gt; {
+    <span class="doccomment">/// Construct an `Ed25519PublicKey` from an array of bytes. Not all byte buffers of the required size can create a valid `Ed25519PublicKey`. Only buffers derived from [`Ed25519PublicKey::as_bytes()`] are required to convert correctly.
+    </span><span class="kw">pub fn </span>from_raw(raw: <span class="kw-2">&amp;</span>[u8; ED25519_PUBLIC_KEY_SIZE]) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519PublicKey, Error&gt; {
         <span class="prelude-val">Ok</span>(Ed25519PublicKey {
             public_key: <span class="kw">match </span>pk::ed25519::PublicKey::from_bytes(raw) {
                 <span class="prelude-val">Ok</span>(public_key) =&gt; public_key,
-                <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ConversionError(
-                        <span class="string">"failed to create ed25519 public key from bytes"</span>.to_string(),
-                    ))
-                }
+                <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::KeyInvalid),
             },
         })
     }
 
-    <span class="kw">pub fn </span>from_service_id(service_id: <span class="kw-2">&amp;</span>V3OnionServiceId) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519PublicKey, Error&gt; {
+    <span class="doccomment">/// Construct an `Ed25519PublicKey` from a [`V3OnionServiceId`].
+    </span><span class="kw">pub fn </span>from_service_id(service_id: <span class="kw-2">&amp;</span>V3OnionServiceId) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519PublicKey, Error&gt; {
         <span class="comment">// decode base32 encoded service id
         </span><span class="kw">let </span><span class="kw-2">mut </span>decoded_service_id = [<span class="number">0u8</span>; V3_ONION_SERVICE_ID_RAW_SIZE];
         <span class="kw">let </span>decoded_byte_count =
@@ -1174,7 +1250,8 @@
         )
     }
 
-    <span class="kw">pub fn </span>from_private_key(private_key: <span class="kw-2">&amp;</span>Ed25519PrivateKey) -&gt; Ed25519PublicKey {
+    <span class="doccomment">/// Construct an `Ed25519PublicKey` from an [`Ed25519PrivateKey`].
+    </span><span class="kw">pub fn </span>from_private_key(private_key: <span class="kw-2">&amp;</span>Ed25519PrivateKey) -&gt; Ed25519PublicKey {
         Ed25519PublicKey {
             public_key: <span class="kw-2">*</span>private_key.expanded_keypair.public(),
         }
@@ -1193,11 +1270,8 @@
         }
     }
 
-    <span class="kw">pub fn </span>to_base32(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
-        BASE32.encode(<span class="self">self</span>.as_bytes())
-    }
-
-    <span class="kw">pub fn </span>as_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8; ED25519_PUBLIC_KEY_SIZE] {
+    <span class="doccomment">/// View this public key as an array of bytes
+    </span><span class="kw">pub fn </span>as_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8; ED25519_PUBLIC_KEY_SIZE] {
         <span class="self">self</span>.public_key.as_bytes()
     }
 }
@@ -1214,16 +1288,19 @@
     }
 }
 
-<span class="comment">// Ed25519 Signature
 
+<span class="doccomment">/// A wrapper around `tor_llcrypto::pk::ed25519::Signature`
 </span><span class="kw">impl </span>Ed25519Signature {
-    <span class="kw">pub fn </span>from_raw(raw: <span class="kw-2">&amp;</span>[u8; ED25519_SIGNATURE_SIZE]) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519Signature, Error&gt; {
-        <span class="prelude-val">Ok</span>(Ed25519Signature {
+    <span class="doccomment">/// Construct an `Ed25519Signature` from an array of bytes.
+    </span><span class="kw">pub fn </span>from_raw(raw: <span class="kw-2">&amp;</span>[u8; ED25519_SIGNATURE_SIZE]) -&gt; <span class="prelude-ty">Result</span>&lt;Ed25519Signature, Error&gt; {
+        <span class="comment">// todo: message cannot fail so should not return a Result&lt;&gt;
+        </span><span class="prelude-val">Ok</span>(Ed25519Signature {
             signature: pk::ed25519::Signature::from_bytes(raw),
         })
     }
 
-    <span class="kw">pub fn </span>verify(<span class="kw-2">&amp;</span><span class="self">self</span>, message: <span class="kw-2">&amp;</span>[u8], public_key: <span class="kw-2">&amp;</span>Ed25519PublicKey) -&gt; bool {
+    <span class="doccomment">/// Verify this `Ed25519Signature` for the given message and [`Ed25519PublicKey`].
+    </span><span class="kw">pub fn </span>verify(<span class="kw-2">&amp;</span><span class="self">self</span>, message: <span class="kw-2">&amp;</span>[u8], public_key: <span class="kw-2">&amp;</span>Ed25519PublicKey) -&gt; bool {
         <span class="kw">if let </span><span class="prelude-val">Ok</span>(()) = public_key
             .public_key
             .verify_strict(message, <span class="kw-2">&amp;</span><span class="self">self</span>.signature)
@@ -1233,8 +1310,7 @@
         <span class="bool-val">false
     </span>}
 
-    <span class="comment">// derives an ed25519 public key from the provided x25519 public key and signbit, then
-    // verifies this signature using said ed25519 public key
+    <span class="doccomment">/// Verify this `Ed25519Signature` for the given message, [`X25519PublicKey`], and [`SignBit`]. This signature must have been created by first converting an [`X25519PrivateKey`] to a [`Ed25519PrivateKey`] and [`SignBit`], and then signing the message using this [`Ed25519PrivateKey`]. This method verifies the signature using the [`Ed25519PublicKey`] derived from the provided  [`X25519PublicKey`] and [`SignBit`].
     </span><span class="kw">pub fn </span>verify_x25519(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         message: <span class="kw-2">&amp;</span>[u8],
@@ -1247,7 +1323,8 @@
         <span class="bool-val">false
     </span>}
 
-    <span class="kw">pub fn </span>to_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; [u8; ED25519_SIGNATURE_SIZE] {
+    <span class="doccomment">/// Convert this signature to an array of bytes
+    </span><span class="kw">pub fn </span>to_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; [u8; ED25519_SIGNATURE_SIZE] {
         <span class="self">self</span>.signature.to_bytes()
     }
 }
@@ -1264,17 +1341,20 @@
     }
 }
 
-<span class="comment">// X25519 Private Key
-
+<span class="doccomment">/// A wrapper around `tor_llcrypto::pk::curve25519::StaticSecret`
 </span><span class="kw">impl </span>X25519PrivateKey {
-    <span class="kw">pub fn </span>generate() -&gt; X25519PrivateKey {
+    <span class="doccomment">/// Securely generate a new `X25519PrivateKey`
+    </span><span class="kw">pub fn </span>generate() -&gt; X25519PrivateKey {
         <span class="kw">let </span>csprng = <span class="kw-2">&amp;mut </span>OsRng;
         X25519PrivateKey {
             secret_key: pk::curve25519::StaticSecret::random_from_rng(csprng),
         }
     }
 
-    <span class="kw">pub fn </span>from_raw(raw: <span class="kw-2">&amp;</span>[u8; X25519_PRIVATE_KEY_SIZE]) -&gt; <span class="prelude-ty">Result</span>&lt;X25519PrivateKey, Error&gt; {
+    <span class="doccomment">/// Attempt to create an `X25519PrivateKey` from an array of bytes. Not all byte buffers of the required size can create a valid `X25519PrivateKey`. Only buffers derived from [`X25519PrivateKey::to_bytes()`] are required to convert correctly.
+    ///
+    /// To securely generate a valid `X25519PrivateKey`, use [`X25519PrivateKey::generate()`].
+    </span><span class="kw">pub fn </span>from_raw(raw: <span class="kw-2">&amp;</span>[u8; X25519_PRIVATE_KEY_SIZE]) -&gt; <span class="prelude-ty">Result</span>&lt;X25519PrivateKey, Error&gt; {
         <span class="comment">// see: https://docs.rs/x25519-dalek/2.0.0-pre.1/src/x25519_dalek/x25519.rs.html#197
         </span><span class="kw">if </span>raw[<span class="number">0</span>] == raw[<span class="number">0</span>] &amp; <span class="number">240 </span>&amp;&amp; raw[<span class="number">31</span>] == (raw[<span class="number">31</span>] &amp; <span class="number">127</span>) | <span class="number">64 </span>{
             <span class="prelude-val">Ok</span>(X25519PrivateKey {
@@ -1285,9 +1365,15 @@
         }
     }
 
-    <span class="comment">// a base64 encoded keyblob
+    <span class="doccomment">/// Create an `X25519PrivateKey` from a [`String`] in the legacy c-tor daemon key blob format used in the `ONION_CLIENT_AUTH_ADD` control-port command. From the c-tor control [specification](https://spec.torproject.org/control-spec/commands.html#onion_client_auth_add):
+    /// &gt; ```text
+    /// &gt; PrivateKeyBlob = base64 encoding of x25519 key
+    /// &gt; ```
+    ///
+    /// Only key blob strings derived from [`X25519PrivateKey::to_base64()`] are required to convert correctly.
     </span><span class="kw">pub fn </span>from_base64(base64: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;X25519PrivateKey, Error&gt; {
-        <span class="kw">if </span>base64.len() != X25519_PRIVATE_KEY_BASE64_LENGTH {
+        <span class="comment">// todo: see if this should be from/to key blob like with ed25519 rather than base64
+        </span><span class="kw">if </span>base64.len() != X25519_PRIVATE_KEY_BASE64_LENGTH {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ParseError(<span class="macro">format!</span>(
                 <span class="string">"expects string of length '{}'; received string with length '{}'"</span>,
                 X25519_PRIVATE_KEY_BASE64_LENGTH,
@@ -1319,20 +1405,24 @@
         X25519PrivateKey::from_raw(<span class="kw-2">&amp;</span>private_key_data_raw)
     }
 
-    <span class="comment">// security note: only ever sign messages the private key owner controls the contents of!
-    // this function first derives an ed25519 private key from the provided x25519 private key
-    // and signs the message, returning the signature and signbit needed to calculate the
-    // ed25519 public key from our x25519 private key's associated x25519 public key
+    <span class="doccomment">/// Sign the provided message and return an [`Ed25519Signature`] and [`SignBit`].
+    ///
+    /// This method first converts this `X25519PrivateKey` to an [`Ed25519PrivateKey`] and [`SignBit`]. Then, the message is signed using the derived [`Ed25519PrivateKey`]. To verify the signature, both the [`X25519PublicKey`] and this calculated [`SignBit`] are required.
+    ///
+    /// ## ⚠ Warning ⚠
+    ///Only ever sign messages the private key owner controls the contents of!
     </span><span class="kw">pub fn </span>sign_message(<span class="kw-2">&amp;</span><span class="self">self</span>, message: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;(Ed25519Signature, SignBit), Error&gt; {
         <span class="kw">let </span>(ed25519_private, signbit) = Ed25519PrivateKey::from_private_x25519(<span class="self">self</span>)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>((ed25519_private.sign_message(message), signbit))
     }
 
-    <span class="kw">pub fn </span>to_base64(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+    <span class="doccomment">/// Write `X25519PrivateKey` to a base64 encocded [`String`].
+    </span><span class="kw">pub fn </span>to_base64(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
         BASE64.encode(<span class="kw-2">&amp;</span><span class="self">self</span>.secret_key.to_bytes())
     }
 
-    <span class="kw">pub fn </span>to_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; [u8; X25519_PRIVATE_KEY_SIZE] {
+    <span class="doccomment">/// Convert this private key to an array of bytes.
+    </span><span class="kw">pub fn </span>to_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; [u8; X25519_PRIVATE_KEY_SIZE] {
         <span class="self">self</span>.secret_key.to_bytes()
     }
 }
@@ -1349,21 +1439,30 @@
     }
 }
 
-<span class="comment">// X25519 Public Key
+<span class="doccomment">/// A wrapper around `tor_llcrypto::pk::curve25519::PublicKey`
 </span><span class="kw">impl </span>X25519PublicKey {
-    <span class="kw">pub fn </span>from_private_key(private_key: <span class="kw-2">&amp;</span>X25519PrivateKey) -&gt; X25519PublicKey {
+    <span class="doccomment">/// Construct an `X25519PublicKey` from an [`X25519PrivateKey`].
+    </span><span class="kw">pub fn </span>from_private_key(private_key: <span class="kw-2">&amp;</span>X25519PrivateKey) -&gt; X25519PublicKey {
         X25519PublicKey {
             public_key: pk::curve25519::PublicKey::from(<span class="kw-2">&amp;</span>private_key.secret_key),
         }
     }
 
-    <span class="kw">pub fn </span>from_raw(raw: <span class="kw-2">&amp;</span>[u8; X25519_PUBLIC_KEY_SIZE]) -&gt; X25519PublicKey {
+    <span class="doccomment">/// Construct an `X25519PublicKey` from an array of bytes.
+    </span><span class="kw">pub fn </span>from_raw(raw: <span class="kw-2">&amp;</span>[u8; X25519_PUBLIC_KEY_SIZE]) -&gt; X25519PublicKey {
         X25519PublicKey {
             public_key: pk::curve25519::PublicKey::from(<span class="kw-2">*</span>raw),
         }
     }
 
-    <span class="kw">pub fn </span>from_base32(base32: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;X25519PublicKey, Error&gt; {
+    <span class="doccomment">/// Create an `X25519PublicKey` from a [`String`] in the legacy c-tor daemon key base32 format used in the `ADD_ONION` control-port command. From the c-tor control [specification](https://spec.torproject.org/control-spec/commands.html#add_onion):
+    /// &gt; ```text
+    /// &gt; V3Key = The client's base32-encoded x25519 public key, using only the key
+    /// &gt;         part of rend-spec-v3.txt section G.1.2 (v3 only).
+    /// &gt; ```
+    ///
+    /// Only key base32 strings derived from [`X25519PublicKey::to_base32()`] are required to convert correctly.
+    </span><span class="kw">pub fn </span>from_base32(base32: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;X25519PublicKey, Error&gt; {
         <span class="kw">if </span>base32.len() != X25519_PUBLIC_KEY_BASE32_LENGTH {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ParseError(<span class="macro">format!</span>(
                 <span class="string">"expects string of length '{}'; received '{}' with length '{}'"</span>,
@@ -1396,11 +1495,13 @@
         <span class="prelude-val">Ok</span>(X25519PublicKey::from_raw(<span class="kw-2">&amp;</span>public_key_data_raw))
     }
 
-    <span class="kw">pub fn </span>to_base32(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+    <span class="doccomment">/// Write `X25519PublicKey` to a base32 encocded [`String`].
+    </span><span class="kw">pub fn </span>to_base32(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
         BASE32_NOPAD.encode(<span class="self">self</span>.public_key.as_bytes())
     }
 
-    <span class="kw">pub fn </span>as_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8; X25519_PUBLIC_KEY_SIZE] {
+    <span class="doccomment">/// View this public key as an array of bytes
+    </span><span class="kw">pub fn </span>as_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8; X25519_PUBLIC_KEY_SIZE] {
         <span class="self">self</span>.public_key.as_bytes()
     }
 }
@@ -1411,8 +1512,7 @@
     }
 }
 
-<span class="comment">// Onion Service Id
-
+<span class="doccomment">/// Strongly-typed representation of a v3 onion-service id
 </span><span class="kw">impl </span>V3OnionServiceId {
     <span class="comment">// see https://github.com/torproject/torspec/blob/main/rend-spec-v3.txt#L2143
     </span><span class="kw">fn </span>calc_truncated_checksum(
@@ -1429,7 +1529,19 @@
         [hash_bytes[<span class="number">0</span>], hash_bytes[<span class="number">1</span>]]
     }
 
-    <span class="kw">pub fn </span>from_string(service_id: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;V3OnionServiceId, Error&gt; {
+    <span class="doccomment">/// Create a `V3OnionServiceId` from a [`String`] in the version 3 onion service digest format. From the tor address [specification](https://spec.torproject.org/address-spec.html#onion):
+    /// &gt; ```text
+    /// &gt; onion_address = base32(PUBKEY | CHECKSUM | VERSION)
+    /// &gt; CHECKSUM = H(".onion checksum" | PUBKEY | VERSION)[:2]
+    /// &gt;
+    /// &gt; where:
+    /// &gt; - PUBKEY is the 32 bytes ed25519 master pubkey of the onion service.
+    /// &gt; - VERSION is a one byte version field (default value '\x03')
+    /// &gt; - ".onion checksum" is a constant string
+    /// &gt; - H is SHA3-256
+    /// &gt; - CHECKSUM is truncated to two bytes before inserting it in onion_address
+    /// &gt; ```
+    </span><span class="kw">pub fn </span>from_string(service_id: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;V3OnionServiceId, Error&gt; {
         <span class="kw">if </span>!V3OnionServiceId::is_valid(service_id) {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ParseError(<span class="macro">format!</span>(
                 <span class="string">"'{}' is not a valid v3 onion service id"</span>,
@@ -1441,7 +1553,8 @@
         })
     }
 
-    <span class="kw">pub fn </span>from_public_key(public_key: <span class="kw-2">&amp;</span>Ed25519PublicKey) -&gt; V3OnionServiceId {
+    <span class="doccomment">/// Create a `V3OnionServiceId` from an [`Ed25519PublicKey`].
+    </span><span class="kw">pub fn </span>from_public_key(public_key: <span class="kw-2">&amp;</span>Ed25519PublicKey) -&gt; V3OnionServiceId {
         <span class="kw">let </span><span class="kw-2">mut </span>raw_service_id = [<span class="number">0u8</span>; V3_ONION_SERVICE_ID_RAW_SIZE];
 
         raw_service_id[..ED25519_PUBLIC_KEY_SIZE].copy_from_slice(<span class="kw-2">&amp;</span>public_key.as_bytes()[..]);
@@ -1457,11 +1570,13 @@
         V3OnionServiceId { data: service_id }
     }
 
-    <span class="kw">pub fn </span>from_private_key(private_key: <span class="kw-2">&amp;</span>Ed25519PrivateKey) -&gt; V3OnionServiceId {
+    <span class="doccomment">/// Create a `V3OnionServiceId` from an [`Ed25519PrivateKey`].
+    </span><span class="kw">pub fn </span>from_private_key(private_key: <span class="kw-2">&amp;</span>Ed25519PrivateKey) -&gt; V3OnionServiceId {
         <span class="self">Self</span>::from_public_key(<span class="kw-2">&amp;</span>Ed25519PublicKey::from_private_key(private_key))
     }
 
-    <span class="kw">pub fn </span>is_valid(service_id: <span class="kw-2">&amp;</span>str) -&gt; bool {
+    <span class="doccomment">/// Determine if the provided string is a valid representation of a `V3OnionServiceId`
+    </span><span class="kw">pub fn </span>is_valid(service_id: <span class="kw-2">&amp;</span>str) -&gt; bool {
         <span class="kw">if </span>service_id.len() != V3_ONION_SERVICE_ID_STRING_LENGTH {
             <span class="kw">return </span><span class="bool-val">false</span>;
         }
@@ -1494,7 +1609,8 @@
         }
     }
 
-    <span class="kw">pub fn </span>as_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8; V3_ONION_SERVICE_ID_STRING_LENGTH] {
+    <span class="doccomment">/// View this service id as an array of bytes
+    </span><span class="kw">pub fn </span>as_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8; V3_ONION_SERVICE_ID_STRING_LENGTH] {
         <span class="kw-2">&amp;</span><span class="self">self</span>.data
     }
 }

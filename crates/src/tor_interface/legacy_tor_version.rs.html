@@ -293,26 +293,29 @@
 <a href="#293" id="293">293</a>
 <a href="#294" id="294">294</a>
 <a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::cmp::Ordering;
 <span class="kw">use </span>std::option::Option;
 <span class="kw">use </span>std::str::FromStr;
 <span class="kw">use </span>std::string::ToString;
 
-<span class="attr">#[derive(thiserror::Error, Debug)]
+<span class="doccomment">/// `LegacyTorVersion`-specific error type
+</span><span class="attr">#[derive(thiserror::Error, Debug)]
 </span><span class="kw">pub enum </span>Error {
     <span class="attr">#[error(<span class="string">"{}"</span>, .<span class="number">0</span>)]
     </span>ParseError(String),
 }
 
-<span class="comment">// see version-spec.txt
+<span class="doccomment">/// Type representing a legacy c-tor daemon's version number. This version conforms c-tor's [version-spec](https://spec.torproject.org/version-spec.htm).
 </span><span class="attr">#[derive(Clone)]
 </span><span class="kw">pub struct </span>LegacyTorVersion {
-    <span class="kw">pub </span>major: u32,
-    <span class="kw">pub </span>minor: u32,
-    <span class="kw">pub </span>micro: u32,
-    <span class="kw">pub </span>patch_level: u32,
-    <span class="kw">pub </span>status_tag: <span class="prelude-ty">Option</span>&lt;String&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) major: u32,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) minor: u32,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) micro: u32,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) patch_level: u32,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) status_tag: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
 
 <span class="kw">impl </span>LegacyTorVersion {
@@ -329,7 +332,8 @@
         <span class="bool-val">true
     </span>}
 
-    <span class="kw">fn </span>new(
+    <span class="doccomment">/// Construct a new `LegacyTorVersion` object.
+    </span><span class="kw">pub fn </span>new(
         major: u32,
         minor: u32,
         micro: u32,

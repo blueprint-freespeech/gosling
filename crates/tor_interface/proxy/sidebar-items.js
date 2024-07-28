@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ProxyConfig","ProxyConfigError"],"struct":["HttpsProxyConfig","Socks4ProxyConfig","Socks5ProxyConfig"]};
