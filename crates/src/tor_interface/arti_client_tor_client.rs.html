@@ -634,8 +634,8 @@
 <span class="comment">// used to forward traffic to/from arti to local tcp streams
 </span><span class="kw">async fn </span>forward_stream&lt;R, W&gt;(alive: Arc&lt;AtomicBool&gt;, <span class="kw-2">mut </span>reader: R, <span class="kw-2">mut </span>writer: W) -&gt; ()
 <span class="kw">where
-    </span>R: tokio::io::AsyncRead + Unpin,
-    W: tokio::io::AsyncWrite + Unpin,
+    </span>R: AsyncReadExt + Unpin,
+    W: AsyncWriteExt + Unpin,
 {
     <span class="comment">// allow 100ms timeout on reads to verify writer is still good
     </span><span class="kw">let </span>read_timeout = std::time::Duration::from_millis(<span class="number">100</span>);
