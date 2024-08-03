@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 // some internal functions take a lot of args but thats ok
 #![allow(clippy::too_many_arguments)]
 
