@@ -2,24 +2,13 @@
 
 card client_identity as "Client Identity v3 Onion Service Id"
 card x25519_private as "Client Auth x25519 Private Key"
-card x25519_public as "Client Auth x25519 Public Key"
-card ed25519_private as "Client Auth ed25519 Private Key"
-card ed25519_public as "Client Auth ed25519 Public Key"
+card ed25519_private as "Client Auth ed25519 Private Key + Signbit"
 
 card client_auth_signature as "Client Auth ed25519 Signature"
-card client_auth_signature_verification as "Client Auth ed25519 Signature Verification"
 
 x25519_private --> ed25519_private
-x25519_private --> x25519_public
 
-
-x25519_public --> ed25519_public
-
-client_identity --> client_auth_signature
 ed25519_private --> client_auth_signature
-
-client_identity --> client_auth_signature_verification
-client_auth_signature --> client_auth_signature_verification
-ed25519_public --> client_auth_signature_verification
+client_identity --> client_auth_signature
 
 @enduml

@@ -1,90 +1,63 @@
-# Gosling Protocol v0.0.0.1
+# Gosling Protocol v0.1.0
 
-The Gosling protocol allows for the creation of Tor onion-service based peer-to-peer (onion-to-onion) applications. Initial inspiration came from the Ricochet instant messenger's peer-to-peer onion service architecture. Improvements have been made and some privacy issues have been addressed and fixed.
+---
 
-It is assumed that the reader is familiar with onion routing[^1], Tor[^2], and onion services (aka hidden services)[^3]. For the purposes of this document, Ricochet and Ricochet Refresh are used interchangeably when referring to properties or guarantees common to both applications.
+Gosling is a peer-to-peer authentication protocol built on Tor onion-services.
+
+The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED",  "MAY", and "OPTIONAL" in this document are to be interpreted as described in RFC 2119[^1].
+
+It is assumed that the reader is familiar with Tor[^2], onion-routing[^3], and onion-services (aka hidden services)[^4].
+
+The purpose of Gosling is to allow the authorised peers in an onion-service-based peer-to-peer network to connect to each other while minimising the leaked metadata available to unauthorised peers. Because peers are actually onion-services, the Gosling protocol also inherits the following properties from Tor:
+
+- end-to-end encryption
+- anonymity
+- censorship-circumvention
+- NAT-punching
 
 ## Overview
 
-The purpose of Gosling is to standardize a privacy-preserving architecture for peer-to-peer applications on the Tor network between **nodes**.
+Gosling peers have a long-term identity defined by their onion-service service-id. The onion-service associated with this service-id is used as an introduction point to acquire and allow-list new peers. We refer to this onion-service as the **identity server**. This onion-service MUST be online to acquire new authenticated peers. New potential peers connect to the the **identity server** and are required to complete the **identity handshake**. If no new peers are required, the **identity server** MAY be shutdown until they are.
 
-- **Node** - A peer in a service-specific Gosling peer-to-peer network.
+The **identity handshake** serves three purposes:
 
-Each node has three components: a **client**, an **identity server**, and at least one **endpoint server**. A node can simultaneously have all three components running at the same time on a single computer, or each component could be split across multiple real computers on the tor network. A node is primarily identified by the onion-service id of its identity server.
+- peer authentication: to determine a potential new peer initiating the handshake with the **identity server** has ownership of the private keys required to derive its claimed onion-service service-id (i.e. to verify the peer is not attempting to impersonate another peer)
+- peer authorisation: once authenticated, to determine if the peer is allowed to connect (e.g. by consulting a block-list, verifying knowledge of a shared secret, calculating of some cryptographic proof-of-work, solving a CAPTCHA, etc)
+- credential negotiation: once authorised, jointly build the configuration required by the peer to access a second onion-service known as the **endpoint server** where the actual application-specific communications occur (e.g. transferring or syncing files, sending chat messages, etc)
 
-  - **Client**  - A **node's** component making an outgoing connection to another **node**
-  - **Identity Server** - A **node's** onion-service which listens for requests coming from **clients** who have never connected before that wish to become 'friends'. The **identity server** and a **client** perform a handshake and exchange information required to reach the **node's** **endpoint server(s)**.
-  - **Endpoint Server** - A **node's** onion-service(s) which listen for connections coming from **clients**. The route to this server is protected with onion service client authorization[^4], so only trusted Gosling **clients** are able to connect. A **node** may have multiple simultaneous **endpoint servers** (each with a different onion-service id), as tor only supports a finite number of authorized clients per onion service.
+The peer authorisation process of the **identity handshake** is customisable to meet the needs of the application. The Gosling protocol MAY be configured to include OPTIONAL attachments on the identity handshake messages in order to implement additional custom authorisation logic.
 
-For the rest of this document we'll also use instant messenger term **contact**.
+If the connecting peer and the hosting peer wish to swap roles in the future, during subsequent **identity handshakes** the authorisation portion of the **identity handshake** MAY be short-circuited if appropriate for the application.
 
-  - **Contact** - a Gosling **node** that has successfully completed the authentication handshake with another **node's** **identity server** and is allowed to connect to said **node's** **endpoint server**.
+After the **identity handshake** completes, the owner of the **identity server** MAY then start an **endpoint server** for the previously connecting peer to connect to. This **endpoint server**'s service-id SHALL be secret and known only to this pair of peers, and its descriptor (information required to connect to it) SHALL be protected using the connecting peer's agreed upon onion-service client-authorisation[^7] keypair. The **endpoint server**'s credentials MUST NOT be shared between multiple peers.
 
-The protocol supports a single **identity server** serving multiple endpoint applications. For example, an application ecosystem may want a single identifier for **nodes** which are part of both a peer-to-peer instant messaging and a file sharing network. This type of arrangement is supported by having each different application using a different endpoint name.
+After the **identity handshake** successfully completes, the host MAY start the **endpoint server** using the agreed-upon credentials, and the previously connecting peer MAY now attempt to connect to it. Connecting to the **endpoint server** requires completion of an **endpoint handshake**.
 
-The protocol *technically* supports a single **endpoint server** serving multiple **clients** concurrently. The **identity server** could simply always return the same **endpoint server** service id after a successful introductory handshake. However, the reference implementation here does not implement this architecture for the following reasons:
+The **endpoint handshake** serves three purposes:
 
- - There is currently no way to update a running tor onion-service's set of client authorization keys (used to encrypt onion-service's onion descriptor) without restarting the onion-service. This means we cannot add a new authorized **client** nor revoke the access of a previously authorized **client** to the **endpoint server** without severing all existing **endpoint server** sessions.
- - **Clients** would be able to determine the online/offline status of **endpoint servers** after their access has been revoked. This is because tor does not provide a way to have a 'hidden' onion-service (even when using client authorization). All of the existing authorized **clients** with access to a common **endpoint server** would need to be migrated to a new **endpoint server** if any of their access were to be revoked. This migration would also necessarily sever any existing **endpoint server** sessions. This issue is being tracked upstream in [torspec#119](https://gitlab.torproject.org/tpo/core/torspec/-/issues/119).
- - **Endpoint servers** make use of client authorization as an extra layer of security. An onion-service must upload an encrypted copy of its onion descriptor for each of its authorized clients to the tor-network. The maximum number of authorized clients an individual onion-service may have is not precisely defined or documented, but is estimated to be on the order of about a thousand clients. This is a practical limitation on the number of **clients** an individual **endpoint server** can have.
+- peer authentication: to verify the peer initiating the handshake with the **endpoint server** has ownership of the private keys required to derive its claimed onion-service service-id (i.e. to verify the peer is not attempting to impersonate another peer)
+- peer authorisation: once authenticated, verify the peer's identity corresponds with the identity associated with this **endpoint server**
+- tcp stream hand-off: upon completion, the underlying tcp connection is returned to the application
 
-Due to the above considerations, the reference Gosling implementation will only ever assign one **client** per **endpoint server**.
+This handshake's authorisation is not customisable.
 
-### Background
+## Protocol
 
-The above architecture is informed by our experience with and the limitations of Ricochet's architecture.
+The Gosling protocol is defined in terms of a remote procedure call (RPC) interface. Specifically, Gosling uses Honk-RPC v0.1.0[^5].
 
-Ricochet only uses a single onion service. The service id of this onion service is used as your Ricochet ID for connecting to and chatting with other Ricochet users.
+Honk-RPC itself uses BSON[^6] as the wire format for its messages, so the types in the following function definitions are referring to BSON-types. Any type marked `binary` is specifically encoded as the 'Generic binary subtype' (`\x00`). Any type marked `document` is specifically encoded as a BSON document (an encoded set of key/value pairs).
 
-This simple architecture has some drawbacks:
+Calling these functions out of order MUST result in an error being returned and the connection being closed.
 
-#### Poor visibility control to contacts
-
-Though not supported by the Ricochet front-end, in theory if one wanted to appear 'offline' while still being able to chat to your friends, they could disable their onion service and only make outgoing connections their friends. However, this must be done for *all* friends at once.
-
-**Gosling's Solution:** Gosling allows finer-grained visibility controls:
-
-- If a **node** does not wish to receive new contact requests, they can simply not run their **identity server**. Your existing allowed contacts are still be able to connect to the user's **endpoint server(s)** which are not publicly advertised.
-
-- If a user wishes to appear offline to *all* **contacts**, they can disable their **endpoint server(s)**. A user may still selectively connect to their **contacts** by acting solely as a **client**.
-
-#### Cyber-stalking
-
-As a side-effect of Ricochet's usage of a single onion service and the poor visibility controls, anybody who knows
-your Ricochet ID can secretly track a your online status. This is because the onion service is necessarily public to receive new friend requests.
-
-All a malicious actor needs to do is attempt to open a connection to the target's Ricochet onion service.
-Periodically pinging a Ricochet user's advertised service id will give a nearly perfect profile for when the are and are not using Ricochet.
-
-This has some serious privacy implications. If a user uses Ricochet as they would any other IM application (always on in the background), this will give a perfect profile of the target's computer+internet usage.
-
-**Gosling's Solution:** Because of the above described visibility controls, users can control when they are visible to to unauthorized users by selectively running their **identity server**.
-
-One could also imagine applications which forego using the **identity server** entirely, and instead allow users to exchange client authorization keys and endpoint servers offline (via QR codes for example).
-
-**Note:** A Gosling node may still be cyber-stalked by a *previously* authenticated user if the node is configured to group together multiple **clients** in a single **endpoint server** (rather than handing out a unique **endpoint server** to each client).
-
-## Gosling Handshakes
-
-**Nodes** communicate with each other using a BSON-based RPC protocol[^5]. As described above, each **node** has two server components: an **identity server** and at least one **endpoint server**.
-
-A **client** initially connects to an **identity server** to complete the identity handshake. The purpose of this handshake is to prove to the **identity server** that the connecting **client** controls all of the keys they claim to, and (if successful) to exchange credentials the **client** needs to access a **identity server's** associated **endpoint server**.
-
-After a **client** connects to and successfully authenticates with an **endpoint server**, we exit the Gosling handshake state machine and the underlying TCP stream is handed off to the endpoint application.
-
-All types used in these RPC calls are BSON[^6] types. Any type marked `binary` is specifically the 'Generic binary subtype' (`\x00`). Any type marked `document` is specifically a BSON document (an encoded set of key/value pairs).
-
-Calling these functions out of order must result in an error being returned and the connection being closed.
-
-### Identity Server
+### Identity Handshake
 
 #### Sequence Diagram
 
-![](images/identity_handshake.svg "Identity Handshake Sequence Diagram")
+![](images/identity_handshake.svg "identity handshake sequence diagram")
 
 #### Identity Server RPC API
 
-```c++
+```
 namespace gosling_identity {
   // Begins an identity handshake session.
   //
@@ -92,7 +65,7 @@ namespace gosling_identity {
   // - string version : the requested version of the Gosling protocol to use
   // - string client_identity : the client's identity server v3 onion service id
   // - string endpoint : the application endpoint the client wants to access; this
-  //   value must be encodable as ASCII.
+  //   value MUST be encodable as ASCII.
   //
   // return : on success, a document object with the following members
   // - binary server_cookie : 32 byte cookie randomly generated by the server
@@ -129,7 +102,7 @@ namespace gosling_identity {
   //
   // return : on success, a string containing the v3 onion service id of the
   // endpoint server (otherwise an error is raised); the endpoint's onion
-  // service descriptor will be encrypted with the provided client authorization key
+  // service descriptor will be encrypted with the provided client-authorization key
   //
   // An error is raised if any of the associated checks or signature verifications fail
   send_response(binary client_cookie,
@@ -141,17 +114,17 @@ namespace gosling_identity {
 }
 ```
 
-### Endpoint Server
+### Endpoint Handshake
 
-A **client** may connect an **endpoint server** multiple times by specifying different channel names. For example, a chat application may have concurrent 'messaging' and 'file transfer' channels.
+A client MAY connect an **endpoint server** multiple times by specifying different channel names. For example, a chat application could have concurrent 'messaging' and 'file transfer' channels.
 
 #### Sequence Diagram
 
-![](images/endpoint_handshake.svg "Endpoint handshake sequence diagram")
+![](images/endpoint_handshake.svg "endpoint handshake sequence diagram")
 
 #### Endpoint Server RPC API
 
-```c++
+```
 namespace gosling_endpoint {
   // Begins an identity handshake session.
   //
@@ -159,7 +132,7 @@ namespace gosling_endpoint {
   // - string version : the requested version of the Gosling protocol to use
   // - string client_identity : the client's identity server v3 onion service id
   // - string channel : the application channel the client wants to open; this
-  //   value must be encodable as ASCII.
+  //   value MUST be encodable as ASCII.
   //
   // return : on success, a document object with the following members
   // - binary server_cookie: 32 byte cookie randomly generated by the server
@@ -187,9 +160,13 @@ namespace gosling_endpoint {
 }
 ```
 
+#### Proofs and Signatures
+
 ### Client Identity Proof Calculation and Verification
 
-The proof signed by client is calculated as:
+The purpose of this proof verification is for a connecting **identity client** or **endpoint client** to prove it owns the ed25519 private key used to derive the v3 onion-service service-id it claims as its identity. This prevents client impersonation.
+
+The proof is calculated as:
 
 ```
 proof = domain_separator  +
@@ -202,37 +179,51 @@ proof = domain_separator  +
 
 The `+` operator here indicates concatenation with a null byte in-between. For example, `"a" + "b" + "c"` would be encoded as the byte array `['a', \x00, 'b', \x00, 'c']`.
 
-Each of the parameters  must be representable as an ASCII string and do *not* include an implicit null-terminator. The parameters are defined as:
+Each of the parameters  MUST be representable as an ASCII string and do not include an implicit null-terminator. The parameters are defined as:
 
-- `domain_separator` : an ASCII string; for the identity handshake, this string is `gosling-identity`; for the endpoint handshake, this string is `gosling-endpoint`
-- `request` : an ASCII string; for the identity handshake, this string is the requested endpoint; for the endpoint handshake, this string is the requested channel
-- `client_service_id` : an ASCII string; the base-32 encoded onion service id (without the ".onion" suffix) of the connecting client's identity server
-- `server_service_id` : an ASCII string; the base-32 encoded onion service id (without the ".onion" suffix) of the connected server (ie: when connected to the identity server, the identity server's onion service id is used; when connected to an endpoint server, that endpoint server's onion service id is used)
+- `domain_separator` : an ASCII string; for the **identity handshake**, this string is `gosling-identity` and for the **endpoint handshake**, this string is `gosling-endpoint`
+- `request` : an ASCII string; for the **identity handshake**, this string is the requested endpoint and for the **endpoint handshake**, this string is the requested channel
+- `client_service_id` : an ASCII string; the base-32 encoded onion-service service-id (without the ".onion" suffix) of the connecting client's **identity server**
+- `server_service_id` : an ASCII string; the base-32 encoded onion-service service-id (without the ".onion" suffix) of the connected server (i.e. when connected to the **identity server**, that **identity server**'s onion-service service-id is used; when connected to an **endpoint server**, that **endpoint server**'s onion-service service-id is used)
 - `client_cookie` : an ASCII string; the cryptographically-randomly generated 32-byte client cookie encoded as lower-case hexadecimal (0-9a-f)
 - `server_cookie` : an ASCII string; the cryptographically-randomly generated 32-byte server cookie encoded as lower-case hexadecimal (0-9a-f)
 
-A **client** proves its identity to a gosling server (both **identity** or **endpoint**) by signing the above proof with the associated ed25519 private key of its own **identity server**. A gosling server must verify this signature using the **client's** public key derived from the provided v3 onion service id coinciding with the **client's** own **identity server**.
+A client signs the above proof with its ed25519 private key. A gosling server MUST verify this signature using the client's ed25519 public key derived from the client's provided v3 onion-service service-id .
 
-### Client Authorization Signature Generation and Verification
+### Client-Authorization Signature Generation and Verification
 
-The client authorization signature is calculated by the **client** by signing the **client's** v3 onion service id with the ed25519 private key derived from the **client's** x25519 private key used to calculate their provided x25519 public key used for client authorization. The **identity server** verifies this signature with the ed25519 public key derived from the **client's** provided x25519 key (used for onion service client authorization).
+The purpose of this verification is to verify the connecting **identity client** owns the x25519 private key used to derive the x25519 public key it provides for **endpoint server** client-authorisation. This prevents impersonation of other clients.
 
-![](images/client_auth_signature.svg "Client auth ed25519 signature verification derivation")
+#### Generation
 
-A **client** proves they control the x25519 private key associated with the provided x25519 public key (used for onion service client authorization) by generating the above signature and sending it to the **identity server**. A gosling **identity server** must verify the validity of the provided signature to guarantee the **client** controls the private x25519 key used to derive the provided public x25519 key.
+The signature is calculated by the **identity client** by signing its  v3 onion-service service-id (without the ".onion" suffix) with the ed25519 private key derived from the x25519 private key used to calculate the provided x25519 public key to use for onion-service client-authorization. The **identity server** verifies this signature with the ed25519 public key derived from the **identity client's** provided x25519 key.
+
+![](images/client_auth_signature.svg "client-authorisation x25519 signature calculation")
+
+An **identity client** proves they control the x25519 private key associated with the provided x25519 public key (used for onion service client-authorization) by generating the above signature and sending it to the **identity server**.
+
+#### Verification
+
+To verify this signature, the **identity server** first converts the received x25519 public key + signbit into an ed25519 public key. It then verifies the signature using this derived key.
+
+![](images/client_auth_signature_verification.svg "client-authorisation x25519 signature verification")
+
+A gosling **identity server** MUST verify the validity of the provided signature to prove the **identity client** controls the private x25519 key used to derive the provided public x25519 key.
 
 ## Acknowledgements
 
 Creation of innovative free software needs support. We thank the NGI Assure Fund, a fund established by NLnet with financial support from the European Commission's Next Generation Internet programme, under the aegis of DG Communications Networks, Content and Technology under grant agreement No 957073
 
-[^1]: see [Onion routing](https://en.wikipedia.org/wiki/Onion_routing)
+[^1]: RFC 2119 [https://www.rfc-editor.org/rfc/rfc2119](https://www.rfc-editor.org/rfc/rfc2119)
 
-[^2]: see [About Tor](https://support.torproject.org/about/)
+[^2]: onion-routing [https://en.wikipedia.org/wiki/Onion_routing](https://en.wikipedia.org/wiki/Onion_routing)
 
-[^3]: see [Onion Sevices](https://community.torproject.org/onion-services/overview/)
+[^3]: Tor [https://support.torproject.org/about/](https://support.torproject.org/about/)
 
-[^4]: see: [Onion Service Client Authorization](https://community.torproject.org/onion-services/advanced/client-auth/)
+[^4]: onion-services [https://community.torproject.org/onion-services/overview/](https://community.torproject.org/onion-services/overview/)
 
-[^5]: see [Honk-RPC Specification](honk-rpc-spec.xhtml)
+[^5]: Honk-RPC v0.1.0 specification [https://gosling.technology/honk-rpc-spec.xtml](honk-rpc-spec.xhtml)
 
-[^6]: see [BSON spec](https://bsonspec.org/spec.html)
+[^6]: BSON specification [https://bsonspec.org/spec.html](https://bsonspec.org/spec.html)
+
+[^7]: onion-service client-authorization [https://community.torproject.org/onion-services/advanced/client-auth/](https://community.torproject.org/onion-services/advanced/client-auth/)

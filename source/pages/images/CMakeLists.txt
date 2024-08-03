@@ -17,6 +17,7 @@ endforeach()
 # files which we need to generate via plantuml
 set(plantuml_sources
     client_auth_signature.uml
+    client_auth_signature_verification.uml
     endpoint_handshake.uml
     identity_handshake.uml)
 
