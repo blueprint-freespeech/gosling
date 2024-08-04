@@ -1,114 +1,69 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-  <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Gosling | Honk-RPC Specification</title>
-    <link rel="icon" type="image/x-icon" href="images/favicon.png" />
-    <link rel="stylesheet" type="text/css" href="style.css" />
-  </head>
-  <body>
-    <div class="container">
-      <div class="navigation">
-        <div class="logo">
-          <a href="index.xhtml">
-            <img src="images/gosling-square-small-opt.svg" alt="Gosling Icon" />
-          </a>
-        </div>
-        <h2>Navigation</h2>
-        <ul>
-          <li>
-            <a href="news.xhtml">News</a>
-          </li>
-          <li>
-            <a href="https://github.com/blueprint-freespeech/gosling">GitHub</a>
-          </li>
-          <li>
-            <a href="coverage.html">Test Coverage</a>
-          </li>
-          <li>Crate Docs 
-          <ul>
-            <li>
-              <a href="crates/gosling/index.html">gosling</a>
-            </li>
-            <li>
-              <a href="crates/tor_interface/index.html">tor-interface</a>
-            </li>
-            <li>
-              <a href="crates/honk_rpc/index.html">honk-rpc</a>
-            </li>
-          </ul></li>
-          <li>
-            <a href="cgosling/index.html">C/C++ Docs</a>
-          </li>
-          <li>Protocol Specs 
-          <ul>
-            <li>
-              <a href="honk-rpc-spec.xhtml">Honk-RPC</a>
-            </li>
-            <li>
-              <a href="gosling-spec.xhtml">Gosling</a>
-            </li>
-          </ul></li>
-        </ul>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>Gosling | Honk-RPC Specification</title>
+  <link rel="icon" type="image/x-icon" href="images/favicon.png" />
+  <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="navigation">
+      <div class="logo">
+        <a href="index.xhtml"><img src="images/gosling-square-small-opt.svg" alt="Gosling Icon" /></a>
       </div>
-      <div class="content">
-        <h1 id="honk-rpc-v0.1.0">Honk-RPC v0.1.0</h1>
-        <hr />
-        <p>Honk-RPC is a remote procedure call protocol.</p>
-        <p>The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in this document are to be interpreted as described in RFC 2119
-        <a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref">
-          <sup>1</sup>
-        </a>.</p>
-        <p>Honk-RPC has the following properties:</p>
-        <ul>
-          <li>
-          <strong>Bi-Directional</strong>: The participants in a Honk-RPC session MAY simultaneously make requests and receive requests, regardless of who has originally connected to whom.</li>
-          <li>
-          <strong>Asynchronous</strong>: Remote procedure calls are asynchronous by default. Requests MAY be either be resolved immediately or some time in the future. Requests MAY be executed out-of-order, executed concurrently, or scheduled for execution at a later date. How and when requests are executed are undefined implementation details.</li>
-          <li>
-          <strong>Dynamic</strong>: There is no pre-compiled interface definition. Users of the Honk-RPC protocol MUST implement their own method for determining which remote procedure calls are available. There are no built-in or standard remote procedure calls.</li>
-          <li>
-          <strong>Binary Format</strong>: The Honk-RPC data format is version 1.1 binary-json (BSON) documents. All data-types mentioned in this specification refer to BSON data-types
-          <a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref">
-            <sup>2</sup>
-          </a>.</li>
-          <li>
-          <strong>Transport Agnostic</strong>: No assumptions are made about the underlying transport method used to transmit Honk-RPC communications. The transport method MUST handle all aspects of correctly routing Honk-RPC communications to the right session.</li>
-        </ul>
-        <h2 id="protocol">Protocol</h2>
-        <p>All Honk-RPC requests and responses are encoded as BSON documents. Honk-RPC BSON documents MUST conform to a particular schema described here.</p>
-        <p>Some fields are optional, while others are required. Honk-RPC BSON documents MUST contain all required fields.</p>
-        <p>Any unexpected fields found in a Honk-RPC document MUST be ignored.</p>
-        <h3 id="messages">Messages</h3>
-        <p>The base Honk-RPC BSON document type is a 
-        <code>message</code>. A 
-        <code>message</code>MUST contain a non-empty list of BSON documents. Each of these documents MUST be a valid 
-        <code>section</code>.</p>
-        <p>Because each 
-        <code>message</code>can contain more than one 
-        <code>section</code>objects, multiple requests, responses, or errors MAY be batched together and sent at once. The order in which 
-        <code>section</code>objects are handled is an undefined implementation detail.</p>
-        <p>The key/values defined in the various message format sections in this specification are listed in a particular order for illustrative purposes only. In reality, these fields MAY be arbitrarily ordered in memory.</p>
-        <h4 id="message-format">Message Format</h4>
-        <pre>
-<code>document message {
+      <h2>Navigation</h2>
+      <ul>
+        <li><a href="news.xhtml">News</a></li>
+        <li><a href="https://github.com/blueprint-freespeech/gosling">GitHub</a></li>
+        <li><a href="coverage.html">Test Coverage</a></li>
+        <li>Crate Docs
+          <ul>
+            <li><a href="crates/gosling/index.html">gosling</a></li>
+            <li><a href="crates/tor_interface/index.html">tor-interface</a></li>
+            <li><a href="crates/honk_rpc/index.html">honk-rpc</a></li>
+          </ul>
+        </li>
+        <li><a href="cgosling/index.html">C/C++ Docs</a></li>
+        <li>Protocol Specs
+          <ul>
+            <li><a href="honk-rpc-spec.xhtml">Honk-RPC</a></li>
+            <li><a href="gosling-spec.xhtml">Gosling</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+    <div class="content">
+<h1 id="honk-rpc-v0.1.0">Honk-RPC v0.1.0</h1>
+<hr />
+<p>Honk-RPC is a remote procedure call protocol.</p>
+<p>The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in this document are to be interpreted as described in RFC 2119<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>.</p>
+<p>Honk-RPC has the following properties:</p>
+<ul>
+<li><strong>Bi-Directional</strong>: The participants in a Honk-RPC session MAY simultaneously make requests and receive requests, regardless of who has originally connected to whom.</li>
+<li><strong>Asynchronous</strong>: Remote procedure calls are asynchronous by default. Requests MAY be either be resolved immediately or some time in the future. Requests MAY be executed out-of-order, executed concurrently, or scheduled for execution at a later date. How and when requests are executed are undefined implementation details.</li>
+<li><strong>Dynamic</strong>: There is no pre-compiled interface definition. Users of the Honk-RPC protocol MUST implement their own method for determining which remote procedure calls are available. There are no built-in or standard remote procedure calls.</li>
+<li><strong>Binary Format</strong>: The Honk-RPC data format is version 1.1 binary-json (BSON) documents. All data-types mentioned in this specification refer to BSON data-types<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>.</li>
+<li><strong>Transport Agnostic</strong>: No assumptions are made about the underlying transport method used to transmit Honk-RPC communications. The transport method MUST handle all aspects of correctly routing Honk-RPC communications to the right session.</li>
+</ul>
+<h2 id="protocol">Protocol</h2>
+<p>All Honk-RPC requests and responses are encoded as BSON documents. Honk-RPC BSON documents MUST conform to a particular schema described here.</p>
+<p>Some fields are optional, while others are required. Honk-RPC BSON documents MUST contain all required fields.</p>
+<p>Any unexpected fields found in a Honk-RPC document MUST be ignored.</p>
+<h3 id="messages">Messages</h3>
+<p>The base Honk-RPC BSON document type is a <code>message</code>. A <code>message</code> MUST contain a non-empty list of BSON documents. Each of these documents MUST be a valid <code>section</code>.</p>
+<p>Because each <code>message</code> can contain more than one <code>section</code> objects, multiple requests, responses, or errors MAY be batched together and sent at once. The order in which <code>section</code> objects are handled is an undefined implementation detail.</p>
+<p>The key/values defined in the various message format sections in this specification are listed in a particular order for illustrative purposes only. In reality, these fields MAY be arbitrarily ordered in memory.</p>
+<h4 id="message-format">Message Format</h4>
+<pre><code>document message {
   // the Honk-RPC protocol version number
   [[required]] int32_t honk_rpc;
   // an array of section objects
   [[required]] document sections[];
-}</code>
-</pre>
-        <p>The 
-        <code>honk_rpc</code>field is the Honk-RPC version supported by the 
-        <code>message</code>sender. Honk-RPC follows the Semantic Versioning 2.0.0 specification
-        <a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref">
-          <sup>3</sup>
-        </a>. The major, minor, and patch values are encoded as unsigned bytes within the signed 32-bit integer 
-        <code>honk_rpc</code>.</p>
-        <p>The following pseudo-code demonstrates conversion between these two representations:</p>
-        <pre>
-<code>pub fn semver_to_i32(major: u8, minor: u8, patch: u8) -&gt; i32 {
+}</code></pre>
+<p>The <code>honk_rpc</code> field is the Honk-RPC version supported by the <code>message</code> sender. Honk-RPC follows the Semantic Versioning 2.0.0 specification<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>. The major, minor, and patch values are encoded as unsigned bytes within the signed 32-bit integer <code>honk_rpc</code>.</p>
+<p>The following pseudo-code demonstrates conversion between these two representations:</p>
+<pre><code>pub fn semver_to_i32(major: u8, minor: u8, patch: u8) -&gt; i32 {
     let major = major as i32;
     let minor = minor as i32;
     let patch = patch as i32;
@@ -120,42 +75,28 @@ pub fn i32_to_semver(ver: i32) -&gt; (u8, u8, u8) {
     let minor = (ver &amp; 0xff00) &gt;&gt; 8;
     let patch = ver &amp; 0xff;
     (major as u8, minor as u8, patch as u8)
-}</code>
-</pre>
-        <p>This representation 
-        <em>does</em>necessitate that the Honk-RPC protocol semantic version components never exceed the value 255. Implementations MUST verify they can correctly handle the Honk-RPC version. Receiving a 
-        <code>message</code>with an incompatible 
-        <code>honk_rpc</code>field SHALL be treated as fatal error.</p>
-        <h3 id="sections">Sections</h3>
-        <p>Honk-RPC defines three types of 
-        <code>section</code>object: 
-        <code>error</code>, 
-        <code>request</code>or 
-        <code>response</code>. Each 
-        <code>section</code>object is a document with the following format:</p>
-        <h4 id="section-format">Section Format</h4>
-        <pre>
-<code>document section {
+}</code></pre>
+<p>This representation <em>does</em> necessitate that the Honk-RPC protocol semantic version components never exceed the value 255. Implementations MUST verify they can correctly handle the Honk-RPC version. Receiving a <code>message</code> with an incompatible <code>honk_rpc</code> field SHALL be treated as fatal error.</p>
+<h3 id="sections">Sections</h3>
+<p>Honk-RPC defines three types of <code>section</code> object: <code>error</code>, <code>request</code> or <code>response</code>. Each <code>section</code> object is a document with the following format:</p>
+<h4 id="section-format">Section Format</h4>
+<pre><code>document section {
   // the id is used to determine which type of section this document is:
   //  0 =&gt; error
   //  1 =&gt; request
   //  2 =&gt; response
   [[required]] int32_t id;
   // section-specific data
-}</code>
-</pre>
-        <h4 id="error-section">Error Section</h4>
-        <p>An 
-        <code>error_section</code>MAY be sent in response to a request or due to an unrelated runtime error.</p>
-        <p>Each 
-        <code>error_section</code>MUST have an error code field. An error code is a 32-bit signed integer.</p>
-        <p>Some error codes indicate a fatal error. The sender of a fatal error MUST end the session after sending one, and the receiver of a fatal error MUST end the session after receiving one.</p>
-        <p>Negative error codes are reserved for protocol errors. Protocol errors SHALL be fatal.</p>
-        <p>Zero is not a valid error code and SHALL be treated as fatal.</p>
-        <p>Positive codes are reserved for application-specific errors. Such errors MAY be either fatal or non-fatal depending on what is appropriate for the application. How non-fatal errors should be handled is up to the application developer and outside the scope of the Honk-RPC protocol.</p>
-        <h4 id="error-section-format">Error Section Format</h4>
-        <pre>
-<code>typedef enum class error_code : int32_t {
+}</code></pre>
+<h4 id="error-section">Error Section</h4>
+<p>An <code>error_section</code> MAY be sent in response to a request or due to an unrelated runtime error.</p>
+<p>Each <code>error_section</code> MUST have an error code field. An error code is a 32-bit signed integer.</p>
+<p>Some error codes indicate a fatal error. The sender of a fatal error MUST end the session after sending one, and the receiver of a fatal error MUST end the session after receiving one.</p>
+<p>Negative error codes are reserved for protocol errors. Protocol errors SHALL be fatal.</p>
+<p>Zero is not a valid error code and SHALL be treated as fatal.</p>
+<p>Positive codes are reserved for application-specific errors. Such errors MAY be either fatal or non-fatal depending on what is appropriate for the application. How non-fatal errors should be handled is up to the application developer and outside the scope of the Honk-RPC protocol.</p>
+<h4 id="error-section-format">Error Section Format</h4>
+<pre><code>typedef enum class error_code : int32_t {
   // failure to parse a received BSON document
   bson_parse_failed            = -1,
   // received message document was too big; the default maximum message size
@@ -196,16 +137,12 @@ document error_section {
   [[optional]] string message;
   // primitive or structured debug data associated with with this error
   [[optional]] element data;
-}</code>
-</pre>
-        <h4 id="request-section">Request Section</h4>
-        <p>Remote procedure calls are made by submitting a message with a 
-        <code>request_section</code>. The requestor MAY provide a cookie to associate with future response messages. If no cookie is provided, the remote procedure call SHALL be carried out but no response is sent.</p>
-        <p>Re-using a 
-        <code>cookie</code>value which is already associated with an in-process request MUST result in a fatal error.</p>
-        <p>Function arguments must be validated by the application developer.</p>
-        <pre>
-<code>document request_section {
+}</code></pre>
+<h4 id="request-section">Request Section</h4>
+<p>Remote procedure calls are made by submitting a message with a <code>request_section</code>. The requestor MAY provide a cookie to associate with future response messages. If no cookie is provided, the remote procedure call SHALL be carried out but no response is sent.</p>
+<p>Re-using a <code>cookie</code> value which is already associated with an in-process request MUST result in a fatal error.</p>
+<p>Function arguments must be validated by the application developer.</p>
+<pre><code>document request_section {
   // id for request_section
   [[required]] int32_t id = 1;
   // request cookie used to associate a future response to this request. If a
@@ -214,7 +151,7 @@ document error_section {
   // by session, so concurrent requests from multiple requestors may use
   // identical cookies without issue).
   [[optional]] int64_t cookie;
-  // function namespace; if not provided assumed to the global/empty ""
+  // function namespace; if not provided assumed to the global/empty &quot;&quot;
   // namespace
   [[optional]] string namespace;
   // name of function to call; must not be empty string
@@ -224,19 +161,11 @@ document error_section {
   // a document containing arguments for the function; not required for a
   // function which takes no arguments
   [[optional]] document arguments;
-}</code>
-</pre>
-        <h4 id="response-section">Response Section</h4>
-        <p>After handling a 
-        <code>request_section</code>with a valid 
-        <code>cookie</code>field, a 
-        <code>response_section</code>MUST be sent in response. Long-running operations MAY return a 
-        <code>response_section</code>with the state set to ‘pending’ and send a ‘complete’ response at a later date. Short-running operations MAY only send one response with the ‘complete’ state.</p>
-        <p>In the event of a runtime (non-protocol) error, a 
-        <code>response_section</code>SHALL not be returned and an 
-        <code>error_section</code>is returned instead.</p>
-        <pre>
-<code>typedef enum class request_state : int32_t {
+}</code></pre>
+<h4 id="response-section">Response Section</h4>
+<p>After handling a <code>request_section</code> with a valid <code>cookie</code> field, a <code>response_section</code> MUST be sent in response. Long-running operations MAY return a <code>response_section</code> with the state set to ‘pending’ and send a ‘complete’ response at a later date. Short-running operations MAY only send one response with the ‘complete’ state.</p>
+<p>In the event of a runtime (non-protocol) error, a <code>response_section</code> SHALL not be returned and an <code>error_section</code> is returned instead.</p>
+<pre><code>typedef enum class request_state : int32_t {
   // request started and result is pending
   pending = 0,
   // request is complete
@@ -252,39 +181,26 @@ document response_section {
   // the current state of function execution
   [[required]] request_state_t state;
   // the primitive or structured return from the request associated with
-  // 'cookie'; MAY be present if state is complete, MUST NOT be present
+  // &#39;cookie&#39;; MAY be present if state is complete, MUST NOT be present
   // if state is pending
   [[optional]] element result;
-}</code>
-</pre>
-        <h2 id="acknowledgements">Acknowledgements</h2>
-        <p>Creation of innovative free software needs support. We thank the NGI Assure Fund, a fund established by NLnet with financial support from the European Commission’s Next Generation Internet programme, under the aegis of DG Communications Networks, Content and Technology under grant agreement No 957073</p>
-        <section class="footnotes" role="doc-endnotes">
-          <hr />
-          <ol>
-            <li id="fn1" role="doc-endnote">
-              <p>RFC 2119: 
-              <a href="https://www.rfc-editor.org/rfc/rfc2119">https://www.rfc-editor.org/rfc/rfc2119</a>
-              <a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p>
-            </li>
-            <li id="fn2" role="doc-endnote">
-              <p>BSON spec: 
-              <a href="https://bsonspec.org/spec.html">https://bsonspec.org/spec.html</a>
-              <a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p>
-            </li>
-            <li id="fn3" role="doc-endnote">
-              <p>Semantic Versioning 2.0.0 spec: 
-              <a href="https://semver.org/spec/v2.0.0.html">https://semver.org/spec/v2.0.0.html</a>
-              <a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p>
-            </li>
-          </ol>
-        </section>
-        <hr />
-        <footer>
-          <p>© 2023-2024 
-          <a href="https://www.blueprintforfreespeech.net">Blueprint for Free Speech</a>. All rights reserved.</p>
-        </footer>
-      </div>
+}</code></pre>
+<h2 id="acknowledgements">Acknowledgements</h2>
+<p>Creation of innovative free software needs support. We thank the NGI Assure Fund, a fund established by NLnet with financial support from the European Commission’s Next Generation Internet programme, under the aegis of DG Communications Networks, Content and Technology under grant agreement No 957073</p>
+<section class="footnotes" role="doc-endnotes">
+<hr />
+<ol>
+<li id="fn1" role="doc-endnote"><p>RFC 2119: <a href="https://www.rfc-editor.org/rfc/rfc2119">https://www.rfc-editor.org/rfc/rfc2119</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2" role="doc-endnote"><p>BSON spec: <a href="https://bsonspec.org/spec.html">https://bsonspec.org/spec.html</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3" role="doc-endnote"><p>Semantic Versioning 2.0.0 spec: <a href="https://semver.org/spec/v2.0.0.html">https://semver.org/spec/v2.0.0.html</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+      <hr/>
+      <footer>
+        <p>&copy; 2023-2024 <a href="https://www.blueprintforfreespeech.net">Blueprint for Free Speech</a>. All rights reserved.</p>
+      </footer>
     </div>
-  </body>
+  </div>
+</body>
 </html>
+
