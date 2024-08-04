@@ -19,7 +19,6 @@ use crate::identity_server::*;
 
 /// cbindgen:ignore
 pub type HandshakeHandle = usize;
-pub const INVALID_HANDSHAKE_HANDLE: HandshakeHandle = !0usize;
 const DEFAULT_ENDPOINT_TIMEOUT: Duration = Duration::from_secs(60);
 const DEFAULT_ENDPOINT_MAX_MESSAGE_SIZE: i32 = 384;
 //

@@ -30,7 +30,7 @@ use crate::identity_server::*;
 #[derive(Debug, Eq, PartialEq, TryFromPrimitive)]
 #[repr(i32)]
 /// cbindgen:ignore
-pub enum RpcError {
+pub(crate) enum RpcError {
     // bad gosling version
     BadVersion,
     // cookie required

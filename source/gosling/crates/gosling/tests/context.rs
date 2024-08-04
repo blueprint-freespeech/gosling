@@ -16,6 +16,8 @@ use tor_interface::tor_provider::*;
 // internal crates
 use gosling::context::*;
 
+const INVALID_HANDSHAKE_HANDLE: HandshakeHandle = !0usize;
+
 #[test]
 #[cfg(feature = "mock-tor-provider")]
 fn test_mock_client_gosling_context() -> anyhow::Result<()> {
