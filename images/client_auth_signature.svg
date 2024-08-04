@@ -2,12 +2,12 @@
 <svg xmlns="http://www.w3.org/2000/svg"
 xmlns:xlink="http://www.w3.org/1999/xlink"
 contentScriptType="application/ecmascript"
-contentStyleType="text/css" height="287px"
-preserveAspectRatio="none" style="width:801px;height:287px;"
-version="1.1" viewBox="0 0 801 287" width="801px"
+contentStyleType="text/css" height="205px"
+preserveAspectRatio="none" style="width:608px;height:205px;"
+version="1.1" viewBox="0 0 608 205" width="608px"
 zoomAndPan="magnify">
   <defs>
-    <filter height="300%" id="f1k1ck9b6ry9zt" width="300%" x="-1"
+    <filter height="300%" id="fegmh7m96sgwn" width="300%" x="-1"
     y="-1">
       <feGaussianBlur result="blurOut" stdDeviation="2.0" />
       <feColorMatrix in="blurOut" result="blurOut2" type="matrix"
@@ -18,98 +18,47 @@ zoomAndPan="magnify">
     </filter>
   </defs>
   <g>
-    <rect fill="#FEFECE" filter="url(#f1k1ck9b6ry9zt)"
+    <rect fill="#FEFECE" filter="url(#fegmh7m96sgwn)"
     height="22.2969" style="stroke: #000000; stroke-width: 1.5;"
     width="248" x="6" y="90" />
     <text fill="#000000" font-family="sans-serif" font-size="14"
     lengthAdjust="spacingAndGlyphs" textLength="228" x="16"
     y="105.9951">Client Identity v3 Onion Service Id</text>
-    <rect fill="#FEFECE" filter="url(#f1k1ck9b6ry9zt)"
+    <rect fill="#FEFECE" filter="url(#fegmh7m96sgwn)"
     height="22.2969" style="stroke: #000000; stroke-width: 1.5;"
-    width="230" x="429" y="8" />
+    width="230" x="328" y="8" />
     <text fill="#000000" font-family="sans-serif" font-size="14"
-    lengthAdjust="spacingAndGlyphs" textLength="210" x="439"
+    lengthAdjust="spacingAndGlyphs" textLength="210" x="338"
     y="23.9951">Client Auth x25519 Private Key</text>
-    <rect fill="#FEFECE" filter="url(#f1k1ck9b6ry9zt)"
+    <rect fill="#FEFECE" filter="url(#fegmh7m96sgwn)"
     height="22.2969" style="stroke: #000000; stroke-width: 1.5;"
-    width="225" x="565.5" y="90" />
+    width="308" x="289" y="90" />
     <text fill="#000000" font-family="sans-serif" font-size="14"
-    lengthAdjust="spacingAndGlyphs" textLength="205" x="575.5"
-    y="105.9951">Client Auth x25519 Public Key</text>
-    <rect fill="#FEFECE" filter="url(#f1k1ck9b6ry9zt)"
+    lengthAdjust="spacingAndGlyphs" textLength="288" x="299"
+    y="105.9951">Client Auth ed25519 Private Key + Signbit</text>
+    <rect fill="#FEFECE" filter="url(#fegmh7m96sgwn)"
     height="22.2969" style="stroke: #000000; stroke-width: 1.5;"
-    width="241" x="289.5" y="90" />
+    width="232" x="170" y="172" />
     <text fill="#000000" font-family="sans-serif" font-size="14"
-    lengthAdjust="spacingAndGlyphs" textLength="221" x="299.5"
-    y="105.9951">Client Auth ed25519 Private Key</text>
-    <rect fill="#FEFECE" filter="url(#f1k1ck9b6ry9zt)"
-    height="22.2969" style="stroke: #000000; stroke-width: 1.5;"
-    width="236" x="546" y="172" />
-    <text fill="#000000" font-family="sans-serif" font-size="14"
-    lengthAdjust="spacingAndGlyphs" textLength="216" x="556"
-    y="187.9951">Client Auth ed25519 Public Key</text>
-    <rect fill="#FEFECE" filter="url(#f1k1ck9b6ry9zt)"
-    height="22.2969" style="stroke: #000000; stroke-width: 1.5;"
-    width="232" x="265" y="172" />
-    <text fill="#000000" font-family="sans-serif" font-size="14"
-    lengthAdjust="spacingAndGlyphs" textLength="212" x="275"
+    lengthAdjust="spacingAndGlyphs" textLength="212" x="180"
     y="187.9951">Client Auth ed25519 Signature</text>
-    <rect fill="#FEFECE" filter="url(#f1k1ck9b6ry9zt)"
-    height="22.2969" style="stroke: #000000; stroke-width: 1.5;"
-    width="311" x="225.5" y="254" />
-    <text fill="#000000" font-family="sans-serif" font-size="14"
-    lengthAdjust="spacingAndGlyphs" textLength="291" x="235.5"
-    y="269.9951">Client Auth ed25519 Signature Verification</text>
-    <path d="M527.03,30.13 C502.66,44.68 457.79,71.47 431.25,87.31"
-    fill="none" id="x25519_private-&gt;ed25519_private"
+    <path d="M443,30.13 C443,43.96 443,68.84 443,84.88" fill="none"
+    id="x25519_private-&gt;ed25519_private"
     style="stroke: #A80036; stroke-width: 1.0;" />
     <polygon fill="#A80036"
-    points="426.83,89.95,436.61,88.7878,431.1275,87.3943,432.521,81.9118,426.83,89.95"
+    points="443,89.95,447,80.95,443,84.95,439,80.95,443,89.95"
     style="stroke: #A80036; stroke-width: 1.0;" />
-    <path d="M560.97,30.13 C585.34,44.68 630.21,71.47 656.75,87.31"
-    fill="none" id="x25519_private-&gt;x25519_public"
-    style="stroke: #A80036; stroke-width: 1.0;" />
-    <polygon fill="#A80036"
-    points="661.17,89.95,655.479,81.9118,656.8725,87.3943,651.39,88.7878,661.17,89.95"
-    style="stroke: #A80036; stroke-width: 1.0;" />
-    <path d="M676.23,112.13 C673.81,125.96 669.45,150.84 666.65,166.88"
-    fill="none" id="x25519_public-&gt;ed25519_public"
-    style="stroke: #A80036; stroke-width: 1.0;" />
-    <polygon fill="#A80036"
-    points="665.76,171.95,671.27,163.7867,666.633,167.0268,663.3929,162.3898,665.76,171.95"
-    style="stroke: #A80036; stroke-width: 1.0;" />
-    <path d="M161.54,112.05 C208.13,126.9 295.14,154.63 344.45,170.35"
-    fill="none" id="client_identity-&gt;client_auth_signature"
-    style="stroke: #A80036; stroke-width: 1.0;" />
-    <polygon fill="#A80036"
-    points="349.4,171.93,342.0316,165.3949,344.6342,170.4175,339.6117,173.0201,349.4,171.93"
-    style="stroke: #A80036; stroke-width: 1.0;" />
-    <path d="M406.33,112.13 C401.32,125.96 392.29,150.84 386.48,166.88"
+    <path d="M423.12,112.13 C394.45,126.74 341.56,153.69 310.51,169.51"
     fill="none" id="ed25519_private-&gt;client_auth_signature"
     style="stroke: #A80036; stroke-width: 1.0;" />
     <polygon fill="#A80036"
-    points="384.64,171.95,391.4818,164.8655,386.3533,167.2527,383.9661,162.1242,384.64,171.95"
+    points="305.72,171.95,315.555,171.4274,310.1749,169.6797,311.9226,164.2996,305.72,171.95"
     style="stroke: #A80036; stroke-width: 1.0;" />
-    <path d="M141.42,112.16 C161.76,129.98 205.99,167.49 247,194 C282.42,216.9 326.18,238.63 353.84,251.64"
-    fill="none"
-    id="client_identity-&gt;client_auth_signature_verification"
-    style="stroke: #A80036; stroke-width: 1.0;" />
-    <polygon fill="#A80036"
-    points="358.48,253.81,352.0172,246.3782,353.9494,251.6948,348.6328,253.6271,358.48,253.81"
-    style="stroke: #A80036; stroke-width: 1.0;" />
-    <path d="M381,194.13 C381,207.96 381,232.84 381,248.88"
-    fill="none"
-    id="client_auth_signature-&gt;client_auth_signature_verification"
+    <path d="M149.76,112.13 C178.24,126.74 230.8,153.69 261.65,169.51"
+    fill="none" id="client_identity-&gt;client_auth_signature"
     style="stroke: #A80036; stroke-width: 1.0;" />
     <polygon fill="#A80036"
-    points="381,253.95,385,244.95,381,248.95,377,244.95,381,253.95"
-    style="stroke: #A80036; stroke-width: 1.0;" />
-    <path d="M628.44,194.05 C575.7,208.96 477.01,236.86 421.54,252.54"
-    fill="none"
-    id="ed25519_public-&gt;client_auth_signature_verification"
-    style="stroke: #A80036; stroke-width: 1.0;" />
-    <polygon fill="#A80036"
-    points="416.63,253.93,426.3777,255.338,421.4424,252.5734,424.2071,247.6381,416.63,253.93"
+    points="266.4,171.95,260.1974,164.2996,261.9451,169.6797,256.565,171.4274,266.4,171.95"
     style="stroke: #A80036; stroke-width: 1.0;" />
   </g>
 </svg>
