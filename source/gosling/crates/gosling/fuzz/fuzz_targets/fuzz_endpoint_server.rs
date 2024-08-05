@@ -240,9 +240,9 @@ fuzz_target!(|data: HandshakeData| {
             let mut arguments = Document::new();
             let version = match version {
                 Argument::Missing => None,
-                Argument::Valid => Some(Bson::String(GOSLING_VERSION.to_string())),
+                Argument::Valid => Some(Bson::String(GOSLING_PROTOCOL_VERSION.to_string())),
                 Argument::Invalid(invalid) => {
-                    if invalid == GOSLING_VERSION {
+                    if invalid == GOSLING_PROTOCOL_VERSION {
                         Some(Bson::String("invalid_version".to_string()))
                     } else {
                         Some(Bson::String(invalid.clone()))
