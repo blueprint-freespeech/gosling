@@ -11,7 +11,7 @@ mod endpoint_client;
 pub mod endpoint_server;
 #[cfg(not(fuzzing))]
 mod endpoint_server;
-pub mod gosling;
+pub(crate) mod gosling;
 #[cfg(fuzzing)]
 pub mod identity_client;
 #[cfg(not(fuzzing))]
