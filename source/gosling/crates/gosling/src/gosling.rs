@@ -36,7 +36,7 @@ pub(crate) enum RpcError {
     Failure,
 }
 
-pub const GOSLING_PROTOCOL_VERSION: &str = "0.1.0";
+pub(crate) const GOSLING_PROTOCOL_VERSION: &str = "0.1.0";
 
 pub(crate) const CLIENT_COOKIE_SIZE: usize = 32usize;
 pub(crate) const SERVER_COOKIE_SIZE: usize = 32usize;
