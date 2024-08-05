@@ -516,32 +516,32 @@ fuzz_target!(|data: HandshakeData| {
             ContextEvent::EndpointClientHandshakeFailed{handle, reason} => {
                 assert_eq!(handshake_handle, handle);
                 match reason {
-                    gosling::Error::EndpointClientError(
+                    context::Error::EndpointClientError(
                         endpoint_client::Error::HonkRPCFailure(
                             honk_rpc::honk_rpc::Error::MessageReadTimedOut(_))) => {
                         assert!(expect_timeout, "{:?}", reason);
                     }
-                    gosling::Error::EndpointClientError(
+                    context::Error::EndpointClientError(
                         endpoint_client::Error::HonkRPCFailure(
                             honk_rpc::honk_rpc::Error::BsonDocumentSizeTooSmall(_))) => {
                         assert!(expect_bson_too_small, "{:?}", reason);
                     },
-                    gosling::Error::EndpointClientError(
+                    context::Error::EndpointClientError(
                         endpoint_client::Error::HonkRPCFailure(
                             honk_rpc::honk_rpc::Error::BsonDocumentSizeTooLarge(_, _))) => {
                         assert!(expect_bson_too_large, "{:?}", reason);
                     },
-                    gosling::Error::EndpointClientError(
+                    context::Error::EndpointClientError(
                         endpoint_client::Error::HonkRPCFailure(
                             honk_rpc::honk_rpc::Error::MessageConversionFailed(_))) => {
                         assert!(expect_honkrpc_message_parse_failure, "{:?}", reason);
                     },
-                    gosling::Error::EndpointClientError(
+                    context::Error::EndpointClientError(
                         endpoint_client::Error::HonkRPCFailure(
                             honk_rpc::honk_rpc::Error::UnknownErrorSectionReceived(_))) => {
                         assert!(expect_unknown_error_section, "{:?}", reason);
                     },
-                    gosling::Error::EndpointClientError(
+                    context::Error::EndpointClientError(
                         endpoint_client::Error::UnexpectedResponseReceived(_)) => {
                         assert!(expect_gosling_unexpected_response, "{:?}", reason);
                     },
@@ -560,7 +560,7 @@ fuzz_target!(|data: HandshakeData| {
             ContextEvent::EndpointClientHandshakeFailed{handle, reason} => {
                 assert_eq!(handshake_handle, handle);
                 match reason {
-                    gosling::Error::EndpointClientError(
+                    context::Error::EndpointClientError(
                         endpoint_client::Error::UnexpectedResponseReceived(_)) => {
                         assert!(expect_gosling_unexpected_response, "{:?}", reason);
                     },
@@ -581,7 +581,7 @@ fuzz_target!(|data: HandshakeData| {
                 ContextEvent::EndpointClientHandshakeFailed{handle, reason} => {
                     assert_eq!(handshake_handle, handle);
                     match reason {
-                        gosling::Error::EndpointClientError(
+                        context::Error::EndpointClientError(
                             endpoint_client::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::MessageReadTimedOut(_))) => (),
                         error => panic!("unexpected error: {:?}", error),
@@ -943,32 +943,32 @@ fuzz_target!(|data: HandshakeData| {
                 ContextEvent::EndpointClientHandshakeFailed{handle, reason} => {
                     assert_eq!(handshake_handle, handle);
                     match reason {
-                        gosling::Error::EndpointClientError(
+                        context::Error::EndpointClientError(
                             endpoint_client::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::MessageReadTimedOut(_))) => {
                             assert!(expect_timeout, "{:?}", reason);
                         }
-                        gosling::Error::EndpointClientError(
+                        context::Error::EndpointClientError(
                             endpoint_client::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::BsonDocumentSizeTooSmall(_))) => {
                             assert!(expect_bson_too_small, "{:?}", reason);
                         },
-                        gosling::Error::EndpointClientError(
+                        context::Error::EndpointClientError(
                             endpoint_client::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::BsonDocumentSizeTooLarge(_, _))) => {
                             assert!(expect_bson_too_large, "{:?}", reason);
                         },
-                        gosling::Error::EndpointClientError(
+                        context::Error::EndpointClientError(
                             endpoint_client::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::MessageConversionFailed(_))) => {
                             assert!(expect_honkrpc_message_parse_failure, "{:?}", reason);
                         },
-                        gosling::Error::EndpointClientError(
+                        context::Error::EndpointClientError(
                             endpoint_client::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::UnknownErrorSectionReceived(_))) => {
                             assert!(expect_unknown_error_section, "{:?}", reason);
                         },
-                        gosling::Error::EndpointClientError(
+                        context::Error::EndpointClientError(
                             endpoint_client::Error::UnexpectedResponseReceived(_)) => {
                             assert!(expect_gosling_unexpected_response, "{:?}", reason);
                         },

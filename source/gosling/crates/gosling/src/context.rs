@@ -11,16 +11,62 @@ use tor_interface::tor_provider::*;
 
 // internal crates
 use crate::ascii_string::*;
+use crate::endpoint_client;
 use crate::endpoint_client::*;
+use crate::endpoint_server;
 use crate::endpoint_server::*;
-use crate::gosling::Error;
+use crate::identity_client;
 use crate::identity_client::*;
+use crate::identity_server;
 use crate::identity_server::*;
 
 /// cbindgen:ignore
 pub type HandshakeHandle = usize;
 const DEFAULT_ENDPOINT_TIMEOUT: Duration = Duration::from_secs(60);
 const DEFAULT_ENDPOINT_MAX_MESSAGE_SIZE: i32 = 384;
+
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("invalid argument: {0}")]
+    InvalidArgument(String),
+
+    #[error(
+        "context is not connected, must call bootstrap() and wait for TorBootstrapCompleted event"
+    )]
+    TorNotConnected(),
+
+    #[error("handshake handle {0} not found")]
+    HandshakeHandleNotFound(HandshakeHandle),
+
+    #[error("incorrect usage: {0}")]
+    IncorrectUsage(String),
+
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+
+    #[error(transparent)]
+    HonkRpc(#[from] honk_rpc::honk_rpc::Error),
+
+    #[error(transparent)]
+    TorCrypto(#[from] tor_interface::tor_crypto::Error),
+
+    #[error(transparent)]
+    TorProvider(#[from] tor_interface::tor_provider::Error),
+
+    #[error(transparent)]
+    IdentityClientError(#[from] identity_client::Error),
+
+    #[error(transparent)]
+    IdentityServerError(#[from] identity_server::Error),
+
+    #[error(transparent)]
+    EndpointClientError(#[from] endpoint_client::Error),
+
+    #[error(transparent)]
+    EndpointServerError(#[from] endpoint_server::Error),
+}
+
+
 //
 // The root Gosling Context object
 //
