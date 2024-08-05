@@ -13,17 +13,12 @@ use tor_interface::tor_crypto::*;
 
 // internal crates
 use crate::ascii_string::*;
-use crate::context;
-use crate::endpoint_client;
 #[cfg(test)]
 use crate::endpoint_client::*;
-use crate::endpoint_server;
 #[cfg(test)]
 use crate::endpoint_server::*;
-use crate::identity_client;
 #[cfg(test)]
 use crate::identity_client::*;
-use crate::identity_server;
 #[cfg(test)]
 use crate::identity_server::*;
 
@@ -39,47 +34,6 @@ pub(crate) enum RpcError {
     InvalidArg,
     // generic runtime error
     Failure,
-}
-
-#[derive(thiserror::Error, Debug)]
-pub enum Error {
-    #[error("invalid argument: {0}")]
-    InvalidArgument(String),
-
-    #[error(
-        "context is not connected, must call bootstrap() and wait for TorBootstrapCompleted event"
-    )]
-    TorNotConnected(),
-
-    #[error("handshake handle {0} not found")]
-    HandshakeHandleNotFound(context::HandshakeHandle),
-
-    #[error("incorrect usage: {0}")]
-    IncorrectUsage(String),
-
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
-
-    #[error(transparent)]
-    HonkRpc(#[from] honk_rpc::honk_rpc::Error),
-
-    #[error(transparent)]
-    TorCrypto(#[from] tor_interface::tor_crypto::Error),
-
-    #[error(transparent)]
-    TorProvider(#[from] tor_interface::tor_provider::Error),
-
-    #[error(transparent)]
-    IdentityClientError(#[from] identity_client::Error),
-
-    #[error(transparent)]
-    IdentityServerError(#[from] identity_server::Error),
-
-    #[error(transparent)]
-    EndpointClientError(#[from] endpoint_client::Error),
-
-    #[error(transparent)]
-    EndpointServerError(#[from] endpoint_server::Error),
 }
 
 pub const GOSLING_PROTOCOL_VERSION: &str = "0.1.0";

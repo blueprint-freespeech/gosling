@@ -114,7 +114,7 @@ fuzz_target!(|data: HandshakeData| {
                     // start alice endpoint server
                     match alice.endpoint_server_start(alice_endpoint_ed25519.clone(), VALID_ENDPOINT.to_string(), bob_onion_service_id.clone(), bob_public_x25519.clone()) {
                         Ok(()) => (),
-                        Err(gosling::Error::InvalidArgument(_)) => {
+                        Err(context::Error::InvalidArgument(_)) => {
                             assert_eq!(alice_onion_service_id_string, alice_endpoint_onion_service_id_string);
                             return;
                         },
@@ -350,32 +350,32 @@ fuzz_target!(|data: HandshakeData| {
                 ContextEvent::EndpointServerHandshakeFailed{handle, reason} => {
                     assert_eq!(handle, alice_handshake_handle);
                     match reason {
-                        gosling::Error::EndpointServerError(
+                        context::Error::EndpointServerError(
                             endpoint_server::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::MessageReadTimedOut(_))) => {
                             assert_eq!(expected_response, ExpectedBeginHandshakeResponse::ErrorTimedOut, "{:?}", reason);
                         },
-                        gosling::Error::EndpointServerError(
+                        context::Error::EndpointServerError(
                             endpoint_server::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::BsonDocumentParseFailed(_))) => {
                             assert_eq!(expected_response, ExpectedBeginHandshakeResponse::ErrorBsonParseFailure, "{:?}", reason);
                         },
-                        gosling::Error::EndpointServerError(
+                        context::Error::EndpointServerError(
                             endpoint_server::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::BsonDocumentSizeTooSmall(_))) => {
                             assert_eq!(expected_response, ExpectedBeginHandshakeResponse::ErrorBsonTooSmall, "{:?}", reason);
                         },
-                        gosling::Error::EndpointServerError(
+                        context::Error::EndpointServerError(
                             endpoint_server::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::BsonDocumentSizeTooLarge(_, _))) => {
                             assert_eq!(expected_response, ExpectedBeginHandshakeResponse::ErrorBsonTooLarge, "{:?}", reason);
                         },
-                        gosling::Error::EndpointServerError(
+                        context::Error::EndpointServerError(
                             endpoint_server::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::MessageConversionFailed(_))) => {
                             assert_eq!(expected_response, ExpectedBeginHandshakeResponse::ErrorMessageParseFailure, "{:?}", reason);
                         },
-                        gosling::Error::EndpointServerError(endpoint_server::Error::BadClient) => {
+                        context::Error::EndpointServerError(endpoint_server::Error::BadClient) => {
                             assert!(expected_response == ExpectedBeginHandshakeResponse::ErrorBadClient ||
                                     expected_response == ExpectedBeginHandshakeResponse::ErrorBadGoslingVersion ||
                                     expected_response == ExpectedBeginHandshakeResponse::ErrorInvalidArg, "{:?}", reason);
@@ -651,32 +651,32 @@ fuzz_target!(|data: HandshakeData| {
                 ContextEvent::EndpointServerHandshakeFailed{handle, reason} => {
                     assert_eq!(handle, alice_handshake_handle);
                     match reason {
-                        gosling::Error::EndpointServerError(
+                        context::Error::EndpointServerError(
                             endpoint_server::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::MessageReadTimedOut(_))) => {
                             assert_eq!(expected_response, ExpectedSendResponseResponse::ErrorTimedOut, "{:?}", reason);
                         },
-                        gosling::Error::EndpointServerError(
+                        context::Error::EndpointServerError(
                             endpoint_server::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::BsonDocumentParseFailed(_))) => {
                             assert_eq!(expected_response, ExpectedSendResponseResponse::ErrorBsonParseFailure, "{:?}", reason);
                         },
-                        gosling::Error::EndpointServerError(
+                        context::Error::EndpointServerError(
                             endpoint_server::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::BsonDocumentSizeTooSmall(_))) => {
                             assert_eq!(expected_response, ExpectedSendResponseResponse::ErrorBsonTooSmall, "{:?}", reason);
                         },
-                        gosling::Error::EndpointServerError(
+                        context::Error::EndpointServerError(
                             endpoint_server::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::BsonDocumentSizeTooLarge(_, _))) => {
                             assert_eq!(expected_response, ExpectedSendResponseResponse::ErrorBsonTooLarge, "{:?}", reason);
                         },
-                        gosling::Error::EndpointServerError(
+                        context::Error::EndpointServerError(
                             endpoint_server::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::MessageConversionFailed(_))) => {
                             assert_eq!(expected_response, ExpectedSendResponseResponse::ErrorMessageParseFailure, "{:?}", reason);
                         },
-                        gosling::Error::EndpointServerError(endpoint_server::Error::BadClient) => {
+                        context::Error::EndpointServerError(endpoint_server::Error::BadClient) => {
                             assert!(expected_response == ExpectedSendResponseResponse::ErrorBadClient ||
                                     expected_response == ExpectedSendResponseResponse::ErrorInvalidArg, "{:?}", reason);
                         },

@@ -326,7 +326,7 @@ fuzz_target!(|data: HandshakeData| {
                         data.client_allowed,
                         data.endpoint_supported && requested_endpoint == VALID_ENDPOINT,
                         data.endpoint_challenge.value.clone()) {
-                        Err(gosling::Error::IdentityServerError(identity_server::Error::EndpointChallengeTooLarge(_,_))) => {
+                        Err(context::Error::IdentityServerError(identity_server::Error::EndpointChallengeTooLarge(_,_))) => {
                             assert_eq!(expected_result, ExpectedHandleEndpointRequestReceiveResult::ErrorSectionTooLarge);
                             return;
                         },
@@ -341,32 +341,32 @@ fuzz_target!(|data: HandshakeData| {
                 ContextEvent::IdentityServerHandshakeFailed{handle, reason} => {
                     assert_eq!(handle, alice_handshake_handle);
                     match reason {
-                        gosling::Error::IdentityServerError(
+                        context::Error::IdentityServerError(
                             identity_server::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::MessageReadTimedOut(_))) => {
                             assert_eq!(expected_response, ExpectedBeginHandshakeResponse::ErrorTimedOut, "{:?}", reason);
                         },
-                        gosling::Error::IdentityServerError(
+                        context::Error::IdentityServerError(
                             identity_server::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::BsonDocumentParseFailed(_))) => {
                             assert_eq!(expected_response, ExpectedBeginHandshakeResponse::ErrorBsonParseFailure, "{:?}", reason);
                         },
-                        gosling::Error::IdentityServerError(
+                        context::Error::IdentityServerError(
                             identity_server::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::BsonDocumentSizeTooSmall(_))) => {
                             assert_eq!(expected_response, ExpectedBeginHandshakeResponse::ErrorBsonTooSmall, "{:?}", reason);
                         },
-                        gosling::Error::IdentityServerError(
+                        context::Error::IdentityServerError(
                             identity_server::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::BsonDocumentSizeTooLarge(_, _))) => {
                             assert_eq!(expected_response, ExpectedBeginHandshakeResponse::ErrorBsonTooLarge, "{:?}", reason);
                         },
-                        gosling::Error::IdentityServerError(
+                        context::Error::IdentityServerError(
                             identity_server::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::MessageConversionFailed(_))) => {
                             assert_eq!(expected_response, ExpectedBeginHandshakeResponse::ErrorMessageParseFailure, "{:?}", reason);
                         },
-                        gosling::Error::IdentityServerError(identity_server::Error::BadClient) => {
+                        context::Error::IdentityServerError(identity_server::Error::BadClient) => {
                             assert!(expected_response == ExpectedBeginHandshakeResponse::ErrorBadClient ||
                                     expected_response == ExpectedBeginHandshakeResponse::ErrorBadGoslingVersion ||
                                     expected_response == ExpectedBeginHandshakeResponse::ErrorInvalidArg, "{:?}", reason);
@@ -730,32 +730,32 @@ fuzz_target!(|data: HandshakeData| {
                 ContextEvent::IdentityServerHandshakeFailed{handle, reason} => {
                     assert_eq!(handle, alice_handshake_handle);
                     match reason {
-                        gosling::Error::IdentityServerError(
+                        context::Error::IdentityServerError(
                             identity_server::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::MessageReadTimedOut(_))) => {
                             assert_eq!(expected_response, ExpectedSendResponseResponse::ErrorTimedOut, "{:?}", reason);
                         },
-                        gosling::Error::IdentityServerError(
+                        context::Error::IdentityServerError(
                             identity_server::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::BsonDocumentParseFailed(_))) => {
                             assert_eq!(expected_response, ExpectedSendResponseResponse::ErrorBsonParseFailure, "{:?}", reason);
                         },
-                        gosling::Error::IdentityServerError(
+                        context::Error::IdentityServerError(
                             identity_server::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::BsonDocumentSizeTooSmall(_))) => {
                             assert_eq!(expected_response, ExpectedSendResponseResponse::ErrorBsonTooSmall, "{:?}", reason);
                         },
-                        gosling::Error::IdentityServerError(
+                        context::Error::IdentityServerError(
                             identity_server::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::BsonDocumentSizeTooLarge(_, _))) => {
                             assert_eq!(expected_response, ExpectedSendResponseResponse::ErrorBsonTooLarge, "{:?}", reason);
                         },
-                        gosling::Error::IdentityServerError(
+                        context::Error::IdentityServerError(
                             identity_server::Error::HonkRPCFailure(
                                 honk_rpc::honk_rpc::Error::MessageConversionFailed(_))) => {
                             assert_eq!(expected_response, ExpectedSendResponseResponse::ErrorMessageParseFailure, "{:?}", reason);
                         },
-                        gosling::Error::IdentityServerError(identity_server::Error::BadClient) => {
+                        context::Error::IdentityServerError(identity_server::Error::BadClient) => {
                             assert!(expected_response == ExpectedSendResponseResponse::ErrorBadClient ||
                                     expected_response == ExpectedSendResponseResponse::ErrorInvalidArg, "{:?}", reason);
                         },
