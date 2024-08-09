@@ -20,56 +20,71 @@ use crate::identity_client::*;
 use crate::identity_server;
 use crate::identity_server::*;
 
-/// cbindgen:ignore
+/// A handle to an in-progres identity or endpoint handshake
 pub type HandshakeHandle = usize;
 const DEFAULT_ENDPOINT_TIMEOUT: Duration = Duration::from_secs(60);
 const DEFAULT_ENDPOINT_MAX_MESSAGE_SIZE: i32 = 384;
 
+/// The error type for the [`Context`] type.
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
+    /// An invalid argument was provided to a function
     #[error("invalid argument: {0}")]
     InvalidArgument(String),
 
+    /// Function requiring tor connectivity called before bootstrap
     #[error(
         "context is not connected, must call bootstrap() and wait for TorBootstrapCompleted event"
     )]
     TorNotConnected(),
 
+    /// Provided handle does not map to an in-flight handshake
     #[error("handshake handle {0} not found")]
     HandshakeHandleNotFound(HandshakeHandle),
 
+    /// Requesting an invalid operation
     #[error("incorrect usage: {0}")]
     IncorrectUsage(String),
 
+    /// An underlying `std::io::Error`
     #[error(transparent)]
     Io(#[from] std::io::Error),
 
+    /// An underlying `honk_rpc::honk_rpc::Error`
     #[error(transparent)]
     HonkRpc(#[from] honk_rpc::honk_rpc::Error),
 
+    /// An underlying `tor_interface::tor_crypto::Error`
     #[error(transparent)]
     TorCrypto(#[from] tor_interface::tor_crypto::Error),
 
+    /// An underlying `tor_interface::tor_provider::Error`
     #[error(transparent)]
     TorProvider(#[from] tor_interface::tor_provider::Error),
 
+    /// Failure ocurred in outgoing identity handshake
     #[error(transparent)]
     IdentityClientError(#[from] identity_client::Error),
 
+    /// Failure ocurred in incoming identity handshake
     #[error(transparent)]
     IdentityServerError(#[from] identity_server::Error),
 
+    /// Failure ocurred in outgoing endpoint handshake
     #[error(transparent)]
     EndpointClientError(#[from] endpoint_client::Error),
 
+    /// Failure ocurred in incoming endpoint handshake
     #[error(transparent)]
     EndpointServerError(#[from] endpoint_server::Error),
 }
 
-
-//
-// The root Gosling Context object
-//
+/// The gosling protocol implementation.
+///
+/// The `Context` object provides various methods for starting and progressing identity and endpoint handshakes. The general usage pattern developers will follow is to construct a `Context` object, connect to the Tor Network using [`Context::bootstrap()`], optionally start an identity or endpoint servers, and listen for and handle incoming identity and endpoint clients using [`Context::update()`] and the various associated methods. Depending on the application's requirements, the developer can also initiate identity and endpoint handshakes as necessary.
+///
+/// The Gosling Protocol specification can be found here:
+/// - [https://gosling.technology/gosling-spec.xhtml](https://gosling.technology/gosling-spec.xhtml)
 pub struct Context {
     // our tor instance
     tor_provider: Box<dyn TorProvider>,
@@ -107,24 +122,29 @@ pub struct Context {
     identity_service_id: V3OnionServiceId,
 }
 
+/// Events to signal completion of asynchronous [`Context`] operations
 #[derive(Debug)]
 pub enum ContextEvent {
     //
     // Tor Events
     //
 
-    // bootstrap progress
+    /// Tor bootstrap progress
     TorBootstrapStatusReceived {
+        /// Bootstrap percent compeletion
         progress: u32,
+        /// A short string indicating the completed bootstrap step
         tag: String,
+        /// A longer human-readable summary of the bootstrap progress
         summary: String,
     },
 
-    // bootstrapping finished
+    /// Tor bootstrap completed
     TorBootstrapCompleted,
 
-    // tor log
+    /// Human-readable logs from the [`Context`]'s [`TorProvider`]
     TorLogReceived {
+        /// Human-readable debug log
         line: String,
     },
 
@@ -132,73 +152,106 @@ pub enum ContextEvent {
     // Identity Client Events
     //
 
-    // identity client has received a challenge request from an identy server
-    // to continue the handshake, call Context::identity_client_handle_challenge_received
+    /// An identity client has received a challenge request from an identy server
+    ///
+    /// To continue the handshake, the client must call [`Context::identity_client_handle_challenge_received()`]
     IdentityClientChallengeReceived {
+        /// The handle of the in-progress handshake
         handle: HandshakeHandle,
+        /// An application specific challenge object used by the identity client to create a challenge response object
         endpoint_challenge: bson::document::Document,
     },
 
-    // identity client successfully completes identity handshake
+    /// An identity client has successfully completed an identity handshake and may now access the requested endpoint server.
     IdentityClientHandshakeCompleted {
+        /// The handle of the completed handshake
         handle: HandshakeHandle,
+        /// The onion-service service-id of the identity server the client has completed an identity handshake with
         identity_service_id: V3OnionServiceId,
+        /// The onion-service service-id of the requested endpoint server
         endpoint_service_id: V3OnionServiceId,
+        /// The ASCII-encoded name of the requested endpoint server
         endpoint_name: String,
+        /// The private x25519 client-auth key required to access the requested endpoint server
         client_auth_private_key: X25519PrivateKey,
     },
 
-    // identity client handshake failed
+    /// An incoming identit handshake has failed
     IdentityClientHandshakeFailed {
+        /// The handle of the failed handshake
         handle: HandshakeHandle,
+        /// The failure reason
         reason: Error,
     },
 
-    // identity server onion service published
+    /// The identity server's onion-service has been published and may be reachable by identity clients
     IdentityServerPublished,
 
-    // identity server has received incoming connection
+    /// An identity server has received an incoming connection and the handshake is ready to begin
     IdentityServerHandshakeStarted {
+        /// The handle of the new handshake
         handle: HandshakeHandle,
     },
 
-    // identity server receives request from identity client
-    // to continue the handshake, call Context::identity_server_handle_endpoint_request_received()
+    /// An identity server has received a request for an endpoint from an identity client.
+    ///
+    /// To continue the handshake, the server must call [`Context::identity_server_handle_endpoint_request_received()`]
     IdentityServerEndpointRequestReceived {
+        /// The handle of the in-progress handshake
         handle: HandshakeHandle,
+        /// The alleged onion-service service-id of the connecting client
         client_service_id: V3OnionServiceId,
+        /// The ASCII-encoded name of the requested endpoint server
         requested_endpoint: String,
     },
 
-    // identity server receives challenge response from identity client
-    // to continue the handshake, call Context::identity_server_handle_challenge_response_received()
+    /// An identity server has received a challenge response from an identity client.
+    ///
+    /// To continue the handshake, the server must call [`Context::identity_server_handle_challenge_response_received()`]
     IdentityServerChallengeResponseReceived {
+        /// The handle of the in-progress handshake
         handle: HandshakeHandle,
+        /// An application specific challenge response object created by the identity client in response to the identity server's challenge object
         challenge_response: bson::document::Document,
     },
 
-    // identity server supplies a new endpoint server to an identity client
+    /// An identity server's handshake has completed.
     IdentityServerHandshakeCompleted {
+        /// The handle of the completed handshake
         handle: HandshakeHandle,
+        /// The ed25519 private key of requested endpoint server
         endpoint_private_key: Ed25519PrivateKey,
+        /// The ASCII-encoded name of the requested endpoint server
         endpoint_name: String,
+        /// The onion-service service-id of the authenticated client
         client_service_id: V3OnionServiceId,
+        /// The public x25519 client-auth key used to encrypt the endpoint server's onion-service descriptor
         client_auth_public_key: X25519PublicKey,
     },
 
-    // identity server handshake explicitly rejected client handshake
+    /// An identity server has rejected an identity client's endpoint-request.
+    ///
+    /// There are multiple potential reasons why a handshake may be rejected and this event provides a breakdown on which part(s) failed specifically.
     IdentityServerHandshakeRejected {
+        /// The handle of the rejected handshake
         handle: HandshakeHandle,
+        /// `false` if the client was rejected based on their onion-service service-id
         client_allowed: bool,
+        /// `false` if the requested endpoint name was not understood by the server
         client_requested_endpoint_valid: bool,
+        /// `false` if the client failed its authentication proof (i.e. potential attempt at identity client impersonation)
         client_proof_signature_valid: bool,
+        /// `false` if the client fails its x25519 key-ownership proof (i.e. potential attempt at use an x25519 public key not owned by the client)
         client_auth_signature_valid: bool,
+        /// `false` if the client's challenge response was not suitable
         challenge_response_valid: bool,
     },
 
-    // identity server handshake failed due to error
+    /// An incoming identity handshake has failed.
     IdentityServerHandshakeFailed {
+        /// The handle of the failed handshake
         handle: HandshakeHandle,
+        /// The failure reason
         reason: Error,
     },
 
@@ -206,17 +259,23 @@ pub enum ContextEvent {
     // Endpoint Client Events
     //
 
-    // endpoint client successfully opens a channel on an endpoint server
+    /// An endpoint client has successfully completed an endpoint handshake and may now communicate freely with the endpoint server.
     EndpointClientHandshakeCompleted {
+        /// The handle of the completed handshake
         handle: HandshakeHandle,
+        /// The onion-service service-id of the endpoint server the client has connected to
         endpoint_service_id: V3OnionServiceId,
+        /// The ASCII-encoded name of the requested channel on the endpoint server
         channel_name: String,
+        /// The resulting TCP connection to the endpoint server
         stream: TcpStream,
     },
 
-    // identity client handshake aborted
+    /// An outgoing endpoint handshake has failed.
     EndpointClientHandshakeFailed {
+        /// The handle of the failed handshake
         handle: HandshakeHandle,
+        /// The failure reason
         reason: Error,
     },
 
@@ -224,49 +283,82 @@ pub enum ContextEvent {
     // Endpint Server Events
     //
 
-    // endpoint server onion service published
+    /// The endpoint server’s onion-service has been published and may be reachable by endpoint clients.
     EndpointServerPublished {
+        /// The onion-service service-id of the published endpoint server
         endpoint_service_id: V3OnionServiceId,
+        /// The name of the published endpoint server
         endpoint_name: String,
     },
 
+    /// An endpoint server has received an incoming connection and the handshake is ready to begin.
     EndpointServerHandshakeStarted {
+        /// The handle of the new handshake
         handle: HandshakeHandle,
     },
 
-    // endpoint server receives request from endpoint client
-    // to continue the handshake, call Context::endpoint_server_handle_channel_request_received()
+    /// An endpoint server has received a request for a channel from an endpoint client.
+    ///
+    /// To continue the handshake, the server must call [`Context::endpoint_server_handle_channel_request_received()`]
     EndpointServerChannelRequestReceived {
+        /// The handle of the in-progress handshake
         handle: HandshakeHandle,
+        /// The alleged onion-service service-id of the connecting client
         client_service_id: V3OnionServiceId,
+        /// The ASCII-encoded name of the requested channel
         requested_channel: String,
     },
 
-    // endpoint server has acepted incoming channel request from identity client
+    /// An endpoint server's handshake has completed
     EndpointServerHandshakeCompleted {
+        /// The handle of the completed handshake
         handle: HandshakeHandle,
+        /// The onion-service service-id of the endpoint server which an endpoint client has connected to
         endpoint_service_id: V3OnionServiceId,
+        /// The onion-service service-id of the connected client
         client_service_id: V3OnionServiceId,
+        /// The ASCII-encoded name of the client's requested channel
         channel_name: String,
+        /// The resulting TCP connection to tohe endpoint clientt
         stream: TcpStream,
     },
 
-    // endpoint server handshake explicitly rejected client handshake
+    /// An endpoint server has rejected an endpoint client's channel request.
+    ///
+    /// There are multiple potential reasons why a handshake may be rejected and this event provides a breakdown on which part(s) failed specifically.
     EndpointServerHandshakeRejected {
+        /// The handle of the rejected handshake
         handle: HandshakeHandle,
+        /// `false` if the client was rejected based on their onion-service service-id
         client_allowed: bool,
+        /// `false` if the requested channel name was not understood by the server
         client_requested_channel_valid: bool,
+        /// `false` if the client failed its authentication proof (i.e. potential attempt at endpoint client impersonation)
         client_proof_signature_valid: bool,
     },
 
-    // endpoint server request failed
+    /// An incoming endpoint handshake has failed.
     EndpointServerHandshakeFailed {
+        /// The handle of the failed handshake
         handle: HandshakeHandle,
+        /// The failure reason
         reason: Error,
     },
 }
 
 impl Context {
+    /// Construct a new `Context` object.
+    ///
+    /// # Parameters
+    /// - `tor_provider`: an implementation of the [`TorProvider`] trait which provides our Tor Network connectivity
+    /// - `identity_port`: the virt-port this `Context`'s identity server's onion-service will listen on for new identity handshakes.
+    /// - `endpoint_port`: the virt-port this `Context`'s endpoint servers' onion-services will listen on for new endpoint handshakes.
+    /// - `identity_timeout`: the maximum amount of time this `Context`' will allow an identity handshake to delay between steps before rejecting the request.
+    /// - `identity_max_message_size`: the maximum size of the underlying Honk-RPC BSON message this `Context`'s identity handshake will send and accept.
+    /// - `endpoint_timeout`: the maximum amount of time this `Context`' will allow an endpoint handshake to delay between steps before rejecting the request.
+    /// - `identity_private_key`: the ed25519 private key used to start this `Context`'s identity server's onion-service
+    /// # Returns
+    /// A newly constructed `Context`.
     pub fn new(
         tor_provider: Box<dyn TorProvider>,
         identity_port: u16,
@@ -305,11 +397,19 @@ impl Context {
         })
     }
 
+    /// Initiate bootstrap of the `Context`'s owned [`TorProvider`]. Bootstrap status is communicated through [`ContextEvent`]s returned from the [`Context::update()`] method.
     pub fn bootstrap(&mut self) -> Result<(), Error> {
         self.tor_provider.bootstrap()?;
         Ok(())
     }
 
+    /// Initiate an identity handshake with an identity server. Handshake progression is communicated through  [`ContextEvent`]s returned from the [`Context::update()`] method.
+    ///
+    /// # Parameters
+    /// - `identitity_server_id`: the long term identity onion-service service-id of a remote peer
+    /// - `endpoint`: the ASCII-encoded requested endpoint
+    /// # Returns
+    /// A `HandshakeHandle` used to refer to this particular identity handshake.
     pub fn identity_client_begin_handshake(
         &mut self,
         identity_server_id: V3OnionServiceId,
@@ -356,6 +456,10 @@ impl Context {
         Ok(handshake_handle)
     }
 
+    /// Abort an in-process outgoing identity handshake.
+    ///
+    /// # Parameters
+    /// - `handle`: the handle of the in-progress outoing identity handshake to abort
     pub fn identity_client_abort_handshake(
         &mut self,
         handle: HandshakeHandle,
@@ -367,8 +471,11 @@ impl Context {
         }
     }
 
-    // sends an endpoint challenge response to a connected identity server as
-    // part of an identity handshake session
+    /// Handle an identity server's endpoint challenge. Callers must construct an identity client's endpoint challenge-response. The particulars of creating and verifying the challenge-response BSON documents are undefined and application-specific.
+    ///
+    /// # Parameters
+    /// - `handle`: the handle of the in-progress outgoing identity handshake
+    /// - `challenge_response`: an application-specific BSON document which somehow responds to an identity server's challenge.
     pub fn identity_client_handle_challenge_received(
         &mut self,
         handle: HandshakeHandle,
@@ -382,7 +489,7 @@ impl Context {
         }
     }
 
-    // no-op if identity server is already running
+    /// Start this `Context`'s identity server. Publish status is communicated through [`ContextEvent`]s returned from the [`Context::update()`] method.
     pub fn identity_server_start(&mut self) -> Result<(), Error> {
         if !self.bootstrap_complete {
             return Err(Error::TorNotConnected());
@@ -402,6 +509,7 @@ impl Context {
         Ok(())
     }
 
+    /// Stops this `Context`'s identity server and ends any in-progress incoming identity handshakes.
     pub fn identity_server_stop(&mut self) -> Result<(), Error> {
         if self.identity_listener.is_none() {
             return Err(Error::IncorrectUsage(
@@ -418,9 +526,13 @@ impl Context {
         Ok(())
     }
 
-    // sends an endpoint challenge to a connected identity client as part of
-    // an identity handshake session abd save off wheether the requested endpoint
-    // is supported
+    /// Handle an identity client's incoming endpoint request. Callers must determine whether the connected identity client is allowed to access the requested endpoint, decide whether the requested endpoint is supported by this `Context`, and build an endpoint challenge for the identity client. The particulars of creating the endpoint challenge is undefined and application-specific.
+    ///
+    /// # Parameters
+    /// - `handle`: the handle of the in-progress incoming identity handshake
+    /// - `client_allowed`: whether the connected identity client is allowed to access the requested endpoint
+    /// - `endpoint_supported`: whether the requested endpoint is supported
+    /// - `endpoint_challenge`: an application-specific BSON document which the connected identity client must respond to
     pub fn identity_server_handle_endpoint_request_received(
         &mut self,
         handle: HandshakeHandle,
@@ -440,6 +552,12 @@ impl Context {
     }
 
     // confirm that a received endpoint challenge response is valid
+
+    /// Handle an identity client's incoming endpoint challenge-response. Callers must determine whether the connected identity client's challenge-response is valid. The particulars of verifying the challenge-response is undefined and application-specific.
+    ///
+    /// # Parameters
+    /// - `handle`: the handle of the in-progress incoming identity handshake
+    /// - `challenge_response_valid`: whether the received challenge-response is valid
     pub fn identity_server_handle_challenge_response_received(
         &mut self,
         handle: HandshakeHandle,
@@ -452,6 +570,12 @@ impl Context {
         }
     }
 
+    /// Initiate an endpoint handshake with an identity server. An endpoint client acquires the `endpoint_server_id` and `client_auth_key` by completing an identity handshake or through some other side-channnel. Handshake progression is communicated through [`ContextEvent`]s returned from the [`Context::update()`] method.
+    ///
+    /// # Parameters
+    /// - `endpoint_server_id`: the endpoint onion-service service-id of a remote peer
+    /// - `client_uath_key`: the x25519 private-key required to decrypt the endpoint server's onion-service descriptor
+    /// - `channel`: the ASCII-encoded requested channel
     pub fn endpoint_client_begin_handshake(
         &mut self,
         endpoint_server_id: V3OnionServiceId,
@@ -500,6 +624,10 @@ impl Context {
         Ok(handshake_handle)
     }
 
+    /// Abort an in-process outgoing endpoint handshake
+    ///
+    /// # Parameters
+    /// - `handle`: the handle of the in-progress outoing identity handshake to abort
     pub fn endpoint_client_abort_handshake(
         &mut self,
         handle: HandshakeHandle,
@@ -511,6 +639,13 @@ impl Context {
         }
     }
 
+    /// Start one of this `Context`'s endpoint servers. Publish status is communicated through [`ContextEvent`]s returned from the [`Context::update()`] method.
+    ///
+    /// # Parameters
+    /// - `endpoint_private_key`: the ed25519 private key used to start this endpoint server's onion-service
+    /// - `endpoint_name`: the ASCII-encoded endpoint name
+    /// - `client_identity`: the onion-service service-id of the client which will be connecting to this endpoint server
+    /// - `client_auth`: the x25519 public-key used to encrypt the endpoint server's onion-service descriptor
     pub fn endpoint_server_start(
         &mut self,
         endpoint_private_key: Ed25519PrivateKey,
@@ -551,6 +686,11 @@ impl Context {
         Ok(())
     }
 
+    /// Handle an endpoint client's incoming channel request. Callers must determine whether the requested channel is supported by this `Context`. The particulars of making this determination is undefined and application-specific.
+    ///
+    /// # Parameters
+    /// - `handle`: the handle of the in-progress incoming endpoint handshake
+    /// - `channel_supported`: whether the requested channel is supported
     pub fn endpoint_server_handle_channel_request_received(
         &mut self,
         handle: HandshakeHandle,
@@ -563,6 +703,10 @@ impl Context {
         }
     }
 
+    /// Stop one of this `Context`'s endpoint servers and ends any of its in-progress incoming endpoint handshakes.
+    ///
+    /// # Parameters
+    /// - `endpoint_identity`: the onion-service service-id of the enpdoint server to stop
     pub fn endpoint_server_stop(
         &mut self,
         endpoint_identity: V3OnionServiceId,
@@ -633,6 +777,7 @@ impl Context {
         }
     }
 
+    /// A direct pass-through to the underlying [`TorProvider`]'s [`TorProvider::connect()`] method.
     pub fn connect(
         &mut self,
         target_addr: TargetAddr,
@@ -641,14 +786,17 @@ impl Context {
         Ok(self.tor_provider.connect(target_addr, circuit_token)?)
     }
 
+    /// A direct pass-through to the underlying [`TorProvider`]'s [`TorProvider::generate_token()`] method.
     pub fn generate_circuit_token(&mut self) -> CircuitToken {
         self.tor_provider.generate_token()
     }
 
+    /// A direct pass-through to the underlying [`TorProvider`]'s [`TorProvider::release_token()`] method.
     pub fn release_circuit_token(&mut self, circuit_token: CircuitToken) {
         self.tor_provider.release_token(circuit_token)
     }
 
+    /// This function updates the `Context`'s underlying [`TorProvider`], handles new handshakes requests, and updates in-progress handshakes. This function needs to be regularly called to process the returned [`ContextEvent`]s.
     pub fn update(&mut self) -> Result<VecDeque<ContextEvent>, Error> {
         // events to return
         let mut events: VecDeque<ContextEvent> = Default::default();
