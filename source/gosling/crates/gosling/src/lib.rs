@@ -2,6 +2,7 @@
 #![allow(clippy::too_many_arguments)]
 
 mod ascii_string;
+/// Implementation of the Gosling protocol
 pub mod context;
 #[cfg(fuzzing)]
 pub mod endpoint_client;
