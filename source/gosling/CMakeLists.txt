@@ -68,7 +68,9 @@ if (BUILD_PAGES)
     #
     add_custom_command(
         OUTPUT ${CARGO_TARGET_DIR}/doc
-        COMMAND CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo doc --no-deps --package honk-rpc --package tor-interface --package gosling --all-features
+        COMMAND CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo doc --no-deps --package honk-rpc --all-features
+        COMMAND CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo doc --no-deps --package tor-interface --all-features
+        COMMAND CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo doc --no-deps --package gosling --all-features
         COMMAND ${CMAKE_COMMAND} -E echo "Rust Crate Documentation: ${CARGO_TARGET_DIR}/doc/gosling/index.html"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/crates)
     add_custom_target(gosling_cargo_doc_target ALL
