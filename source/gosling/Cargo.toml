@@ -4,5 +4,6 @@ members = [
     "crates/honk-rpc",
     "crates/tor-interface",
     "crates/gosling",
+    "crates/cgosling-proc-macros",
     "crates/cgosling",
 ]
