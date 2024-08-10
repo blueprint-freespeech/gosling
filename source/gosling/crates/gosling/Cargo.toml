@@ -22,7 +22,3 @@ tor-interface = { version = "0.3", path = "../tor-interface" }
 anyhow = "1.0"
 serial_test = "0.9"
 which = "4.4"
-
-[features]
-mock-tor-provider = ["tor-interface/mock-tor-provider"]
-legacy-tor-provider = ["tor-interface/legacy-tor-provider"]

@@ -33,5 +33,5 @@ crate-type = ["staticlib" ,"rlib"]
 
 [features]
 impl-lib = []
-mock-tor-provider = ["gosling/mock-tor-provider"]
-legacy-tor-provider = ["gosling/legacy-tor-provider"]
+mock-tor-provider = ["tor-interface/mock-tor-provider"]
+legacy-tor-provider = ["tor-interface/legacy-tor-provider"]
