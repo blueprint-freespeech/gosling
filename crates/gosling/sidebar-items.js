@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["context","gosling"]};
+window.SIDEBAR_ITEMS = {"mod":["context"]};

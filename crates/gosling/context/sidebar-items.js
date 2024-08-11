@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["ContextEvent"],"struct":["Context"],"type":["HandshakeHandle"]};
+window.SIDEBAR_ITEMS = {"enum":["ContextEvent","Error"],"struct":["Context"],"type":["HandshakeHandle"]};

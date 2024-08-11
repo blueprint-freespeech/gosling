@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["GOSLING_PROTOCOL_VERSION"],"enum":["Error"]};
