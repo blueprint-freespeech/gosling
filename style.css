@@ -29,6 +29,10 @@ body {
   }
 }
 
+.navigation ul {
+  padding-inline-start: 20px;
+}
+
 .logo {
   text-align: center;
   margin-bottom: 1em;

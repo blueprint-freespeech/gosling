@@ -1,0 +1,68 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>Gosling | </title>
+  <link rel="icon" type="image/x-icon" href="images/favicon.png" />
+  <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="navigation">
+      <div class="logo">
+        <a href="index.xhtml"><img src="images/gosling-square-small-opt.svg" alt="Gosling Icon" /></a>
+      </div>
+      <h2>Navigation</h2>
+      <ul>
+        <li><a href="news.xhtml">News</a></li>
+        <li><a href="https://github.com/blueprint-freespeech/gosling">GitHub</a></li>
+        <li><a href="coverage.html">Test Coverage</a></li>
+        <li>Source Documentation
+          <ul>
+            <li><a href="cgosling/index.html">cgosling (C/C++)</a></li>
+            <li><a href="crates/gosling/index.html">gosling</a></li>
+            <li><a href="crates/tor_interface/index.html">tor-interface</a></li>
+            <li><a href="crates/honk_rpc/index.html">honk-rpc</a></li>
+          </ul>
+        </li>
+        <li>Protocol Specifications
+          <ul>
+            <li><a href="gosling-spec.xhtml">Gosling</a></li>
+            <li><a href="honk-rpc-spec.xhtml">Honk-RPC</a></li>
+          </ul>
+        </li>
+        <li><a href="security-reviews.xhtml">Security Reviews</a></li>
+      </ul>
+    </div>
+    <div class="content">
+<h1 id="security-reviews">Security Reviews</h1>
+<hr />
+<p>Quality software cannot be developed in a vacuum. Periodic external audits and code-review help ensure that our software does what we claim and that we do not have any critical vulnerabilities.</p>
+<h2 id="code-audit-report">2022-11-18 - Code audit report</h2>
+<p>by <a href="https://www.radicallyopensecurity.com/">Radically Open Security</a></p>
+<p>This was Gosling’s first audit of its implementation and specifications.</p>
+<h3 id="report-report_ngir-blueprintforfreespeech-1.1.pdf">Report: <a href="pdfs/report_ngir-blueprintforfreespeech%201.1.pdf">report_ngir-blueprintforfreespeech 1.1.pdf</a></h3>
+<h3 id="issues">Issues</h3>
+<ul>
+<li><p><a href="https://github.com/blueprint-freespeech/gosling/issues/45">GS-001 - DoS through OOM condition</a> (Elevated Threat)</p>
+<p><strong>status</strong>: fixed in <a href="https://github.com/blueprint-freespeech/gosling/commit/6af83925bac126881bd70550293978c07cdc2fa0">6af83925bac126881bd70550293978c07cdc2fa0</a></p></li>
+<li><p><a href="https://github.com/blueprint-freespeech/gosling/issues/46">GS-002 - DoS through stale connections</a> (Moderate Threat)</p>
+<p><strong>status</strong>: fixed in <a href="https://github.com/blueprint-freespeech/gosling/commit/8c3dfe34d3683df107271ad677c9fcfc61a9e5dc">8c3dfe34d3683df107271ad677c9fcfc61a9e5dc</a></p></li>
+<li><p><a href="https://github.com/blueprint-freespeech/gosling/issues/47">GS-003 - Protocol is vulnerable to MITM attack</a> (Moderate Threat)</p>
+<p><strong>status</strong>: out of scope, see <a href="https://github.com/blueprint-freespeech/gosling/issues/47#issuecomment-1328274406">discussion</a></p></li>
+<li><p><a href="https://github.com/blueprint-freespeech/gosling/issues/48">GS-004 - Protocol is not end-to-end encrypted</a> (Low Threat)</p>
+<p><strong>status</strong>: not an issue, see <a href="https://github.com/blueprint-freespeech/gosling/issues/48#issuecomment-1328280576">discussion</a></p></li>
+<li><p><a href="https://github.com/blueprint-freespeech/gosling/issues/49">GS-005 - DOS through malformed string</a> (High Threat)</p>
+<p><strong>status</strong>: fixed in <a href="https://github.com/blueprint-freespeech/gosling/commit/fa8f758314a615b739a45fd5ea726f5b55f1b399">fa8f758314a615b739a45fd5ea726f5b55f1b399</a></p></li>
+<li><p><a href="https://github.com/blueprint-freespeech/gosling/issues/50">GS-006 - Path interception vulnerability</a> (Low Threat)</p>
+<p><strong>status</strong>: fixed in <a href="https://github.com/blueprint-freespeech/gosling/commit/c1ca986496347e31141202edc4984e62116acf31">c1ca986496347e31141202edc4984e62116acf31</a></p></li>
+</ul>
+      <hr/>
+      <footer>
+        <p>&copy; 2023-2024 <a href="https://www.blueprintforfreespeech.net">Blueprint for Free Speech</a>. All rights reserved.</p>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>
+
