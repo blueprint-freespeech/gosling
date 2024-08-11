@@ -20,6 +20,7 @@ if (BUILD_PAGES)
     #
 
     add_subdirectory(images)
+    add_subdirectory(pdfs)
 
     # list of build output filenames
     set(build_outputs)
@@ -31,7 +32,8 @@ if (BUILD_PAGES)
         index.md
         news.md
         honk-rpc-spec.md
-        gosling-spec.md)
+        gosling-spec.md
+        security-reviews.md)
 
     # page titles for each
     set(page_titles
@@ -84,7 +86,7 @@ if (BUILD_PAGES)
     endforeach()
 
     add_custom_target(gosling_pages_target ALL
-        DEPENDS ${build_outputs} gosling_pages_images_target
+        DEPENDS ${build_outputs} gosling_pages_images_target gosling_pages_pdfs_target
     )
 
     #
