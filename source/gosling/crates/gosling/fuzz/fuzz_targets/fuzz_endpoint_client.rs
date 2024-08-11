@@ -369,7 +369,9 @@ fuzz_target!(|data: HandshakeData| {
                     },
                     Argument::Random(bson) => {
                         if let Bson::Int32(state) = bson.value {
-                            if state != COMPLETE_REQUEST_STATE {
+                            if state == PENDING_REQUEST_STATE {
+                                expect_timeout = true;
+                            } else if state != COMPLETE_REQUEST_STATE {
                                 expect_honkrpc_message_parse_failure = true;
                             }
                         } else {
@@ -796,7 +798,9 @@ fuzz_target!(|data: HandshakeData| {
                     },
                     Argument::Random(bson) => {
                         if let Bson::Int32(state) = bson.value {
-                            if state != COMPLETE_REQUEST_STATE {
+                            if state == PENDING_REQUEST_STATE {
+                                expect_timeout = true;
+                            } else if state != COMPLETE_REQUEST_STATE {
                                 expect_honkrpc_message_parse_failure = true;
                             }
                         } else {
