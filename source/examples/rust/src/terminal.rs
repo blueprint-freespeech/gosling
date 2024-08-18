@@ -5,14 +5,19 @@ use std::{
 };
 // extern
 use anyhow::Result;
-use crossterm::{cursor, event, event::Event, execute, queue, terminal};
+use crossterm::{cursor, event, execute, queue, terminal};
+use crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers};
 use crossterm::terminal::ClearType;
 
 pub struct Terminal {
+    // scrollback
     line_buffer: VecDeque<String>,
+    // current command
     input_buffer: Vec<u8>,
     rows: u16,
     cols: u16,
+    // do we need to re-render
+    dirty: bool,
 }
 
 pub struct Command {
@@ -23,12 +28,14 @@ pub struct Command {
 impl Terminal {
     pub fn new() -> Result<Self> {
         let (cols, rows) = terminal::size()?;
+        terminal::enable_raw_mode()?;
         execute!(std::io::stdout(), terminal::EnterAlternateScreen)?;
         Ok(Self {
             line_buffer: Default::default(),
             input_buffer: Default::default(),
             rows,
             cols,
+            dirty: true,
         })
     }
 
@@ -54,20 +61,47 @@ impl Terminal {
 
     /// Returns a list of commands to be handled
     pub fn update(&mut self) -> Result<Option<Command>> {
-        let mut dirty = true;
-
         while event::poll(std::time::Duration::ZERO)? {
             match event::read()? {
+                // handle terminal resizing
                 Event::Resize(cols, rows) => {
                     self.cols = cols;
                     self.rows = rows;
+                    self.dirty = true;
+                }
+                // handle keyboard events
+                Event::Key(key_event) => {
+                    if key_event.kind != KeyEventKind::Release {
+                        match key_event.code {
+                            KeyCode::Char(c) => {
+                                // ungracefully terminate
+                                if key_event.modifiers == KeyModifiers::CONTROL {
+                                    if c == 'c' {
+                                        anyhow::bail!("ctrl+c");
+                                    }
+                                // is printable ascii
+                                } else if c >= 32 as char && c <= 126 as char {
+                                    self.input_buffer.push(c as u8);
+                                    self.dirty = true;
+                                }
+                            },
+                            KeyCode::Backspace => {
+                                if self.input_buffer.len() > 0 {
+                                    self.input_buffer.pop();
+                                    self.dirty = true;
+                                }
+                            }
+                            _ => (),
+                        }
+                    }
                 }
                 _ => (),
             }
         }
 
-        if dirty {
-            self.render()?
+        if self.dirty {
+            self.render()?;
+            self.dirty = false;
         }
 
         Ok(None)
@@ -129,5 +163,6 @@ impl Terminal {
 impl Drop for Terminal {
     fn drop(&mut self) {
         let _ = execute!(std::io::stdout(), terminal::LeaveAlternateScreen);
+        let _ = terminal::disable_raw_mode();
     }
 }
