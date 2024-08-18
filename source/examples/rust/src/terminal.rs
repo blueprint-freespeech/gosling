@@ -2,9 +2,10 @@
 use std::{
     collections::VecDeque,
     io::Write,
+    str::FromStr,
 };
 // extern
-use anyhow::Result;
+use anyhow::{bail, Result};
 use crossterm::{cursor, event, execute, queue, terminal};
 use crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers};
 use crossterm::terminal::ClearType;
@@ -21,8 +22,43 @@ pub struct Terminal {
 }
 
 pub struct Command {
-    command: String,
-    arguments: Vec<String>
+    pub command: String,
+    pub arguments: Vec<String>
+}
+
+impl FromStr for Command {
+    type Err = anyhow::Error;
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        let mut args = Vec::new();
+        let mut token = String::new();
+        let mut in_quotes = false;
+
+        for c in input.chars() {
+            match c {
+                '"' => in_quotes = !in_quotes,
+                ' ' if !in_quotes => {
+                    if !token.is_empty() {
+                        args.push(token.clone());
+                        token.clear();
+                    }
+                }
+                _ => token.push(c),
+            }
+        }
+
+        if !token.is_empty() || in_quotes {
+            args.push(token);
+        }
+
+        if args.is_empty() {
+            bail!("empty command");
+        }
+
+        Ok(Self{
+            command: args.remove(0),
+            arguments: args
+        })
+    }
 }
 
 impl Terminal {
@@ -61,6 +97,9 @@ impl Terminal {
 
     /// Returns a list of commands to be handled
     pub fn update(&mut self) -> Result<Option<Command>> {
+
+        let mut cmd: Option<Command> = None;
+
         while event::poll(std::time::Duration::ZERO)? {
             match event::read()? {
                 // handle terminal resizing
@@ -90,7 +129,19 @@ impl Terminal {
                                     self.input_buffer.pop();
                                     self.dirty = true;
                                 }
-                            }
+                            },
+                            KeyCode::Enter => {
+                                let cmd_str = unsafe { std::str::from_utf8_unchecked(self.input_buffer.as_slice()) }.to_string();
+                                if let Ok(command) = Command::from_str(&cmd_str) {
+                                    self.write_line(format!("> {}", cmd_str).as_str());
+                                    self.input_buffer.clear();
+                                    cmd = Some(command);
+                                    self.dirty = true;
+                                } else if !self.input_buffer.is_empty() {
+                                    self.input_buffer.clear();
+                                    self.dirty = true;
+                                }
+                            },
                             _ => (),
                         }
                     }
@@ -104,7 +155,7 @@ impl Terminal {
             self.dirty = false;
         }
 
-        Ok(None)
+        Ok(cmd)
     }
 
     fn render(&mut self) -> Result<()> {
