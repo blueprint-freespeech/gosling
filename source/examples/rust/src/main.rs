@@ -1,4 +1,5 @@
 // program modules
+mod commands;
 mod globals;
 mod terminal;
 
@@ -12,14 +13,22 @@ fn main() -> Result<()> {
     // event loop
     while !globals.exit_requested {
         if let Some(cmd) = globals.term.update()? {
-            match cmd.command.as_str() {
-                "echo" => {
-                    globals.term.write_line(cmd.arguments.join(" ").as_str());
-                },
-                "exit" => {
-                    globals.exit_requested = true;
-                },
-                _ => (),
+            if let Err(err) = match cmd.command.as_str() {
+                "help" => commands::help(&mut globals, &cmd.arguments),
+                "init-context" => commands::init_context(&mut globals, &cmd.arguments),
+                "start-identity" => commands::start_identity(&mut globals, &cmd.arguments),
+                "stop-identity" => commands::stop_identity(&mut globals, &cmd.arguments),
+                "request-endpoint" => commands::request_endpoint(&mut globals, &cmd.arguments),
+                "start-endpoint" => commands::start_endpoint(&mut globals, &cmd.arguments),
+                "stop-endpoint" => commands::stop_endpoint(&mut globals, &cmd.arguments),
+                "connect-endpoint" => commands::connect_endpoint(&mut globals, &cmd.arguments),
+                "drop-peer" => commands::drop_peer(&mut globals, &cmd.arguments),
+                "list-peers" => commands::list_peers(&mut globals, &cmd.arguments),
+                "chat" => commands::chat(&mut globals, &cmd.arguments),
+                "exit" => commands::exit(&mut globals, &cmd.arguments),
+                invalid => Ok(globals.term.write_line(format!("invalid command: {invalid}").as_str()))
+            } {
+                globals.term.write_line(format!("error: {:?}", err).as_str());
             }
         }
     }
