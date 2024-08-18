@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-  <title>Gosling | Gosling Specification</title>
+  <title>Gosling | News</title>
   <link rel="icon" type="image/x-icon" href="images/favicon.png" />
   <link rel="stylesheet" type="text/css" href="style.css" />
 </head>
@@ -16,7 +16,7 @@
       <ul>
         <li><a href="news.xhtml">News</a></li>
         <li><a href="https://github.com/blueprint-freespeech/gosling">GitHub</a></li>
-        <li><a href="coverage.html">Test Coverage</a></li>
+        <li><a href="design-doc.xhtml">Design Document</a></li>
         <li>Source Documentation
           <ul>
             <li><a href="cgosling/index.html">cgosling (C/C++)</a></li>
@@ -31,44 +31,20 @@
             <li><a href="honk-rpc-spec.xhtml">Honk-RPC</a></li>
           </ul>
         </li>
+        <li><a href="coverage.html">Test Coverage</a></li>
         <li><a href="security-reviews.xhtml">Security Reviews</a></li>
       </ul>
     </div>
     <div class="content">
 <h1 id="gosling-protocol-v0.1.0">Gosling Protocol v0.1.0</h1>
+<h4 id="richard-pospesel-richardblueprintforfreespeech.org">Richard Pospesel &lt;<a href="mailto:richard@blueprintforfreespeech.org">richard@blueprintforfreespeech.org</a>&gt;</h4>
+<h4 id="morgan-morgantorproject.org">Morgan &lt;<a href="mailto:morgan@torproject.org">morgan@torproject.org</a>&gt;</h4>
 <hr />
-<p>Gosling is a peer-to-peer authentication protocol built on Tor onion-services.</p>
-<p>The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in this document are to be interpreted as described in RFC 2119<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>.</p>
-<p>It is assumed that the reader is familiar with Tor<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>, onion-routing<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>, and onion-services (aka hidden services)<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>.</p>
-<p>The purpose of Gosling is to allow the authorised peers in an onion-service-based peer-to-peer network to connect to each other while minimising the leaked metadata available to unauthorised peers. Because peers are actually onion-services, the Gosling protocol also inherits the following properties from Tor:</p>
-<ul>
-<li>end-to-end encryption</li>
-<li>anonymity</li>
-<li>censorship-circumvention</li>
-<li>NAT-punching</li>
-</ul>
-<h2 id="overview">Overview</h2>
-<p>Gosling peers have a long-term identity defined by their onion-service service-id. The onion-service associated with this service-id is used as an introduction point to acquire and allow-list new peers. We refer to this onion-service as the <strong>identity server</strong>. This onion-service MUST be online to acquire new authenticated peers. New potential peers connect to the the <strong>identity server</strong> and are required to complete the <strong>identity handshake</strong>. If no new peers are required, the <strong>identity server</strong> MAY be shutdown until they are.</p>
-<p>The <strong>identity handshake</strong> serves three purposes:</p>
-<ul>
-<li>peer authentication: to determine a potential new peer initiating the handshake with the <strong>identity server</strong> has ownership of the private keys required to derive its claimed onion-service service-id (i.e. to verify the peer is not attempting to impersonate another peer)</li>
-<li>peer authorisation: once authenticated, to determine if the peer is allowed to connect (e.g. by consulting a block-list, verifying knowledge of a shared secret, calculating of some cryptographic proof-of-work, solving a CAPTCHA, etc)</li>
-<li>credential negotiation: once authorised, jointly build the configuration required by the peer to access a second onion-service known as the <strong>endpoint server</strong> where the actual application-specific communications occur (e.g. transferring or syncing files, sending chat messages, etc)</li>
-</ul>
-<p>The peer authorisation process of the <strong>identity handshake</strong> is customisable to meet the needs of the application. The Gosling protocol MAY be configured to include OPTIONAL attachments on the identity handshake messages in order to implement additional custom authorisation logic.</p>
-<p>If the connecting peer and the hosting peer wish to swap roles in the future, during subsequent <strong>identity handshakes</strong> the authorisation portion of the <strong>identity handshake</strong> MAY be short-circuited if appropriate for the application.</p>
-<p>After the <strong>identity handshake</strong> completes, the owner of the <strong>identity server</strong> MAY then start an <strong>endpoint server</strong> for the previously connecting peer to connect to. This <strong>endpoint server</strong>’s service-id SHALL be secret and known only to this pair of peers, and its descriptor (information required to connect to it) SHALL be protected using the connecting peer’s agreed upon onion-service client-authorisation<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a> keypair. The <strong>endpoint server</strong>’s credentials MUST NOT be shared between multiple peers.</p>
-<p>After the <strong>identity handshake</strong> successfully completes, the host MAY start the <strong>endpoint server</strong> using the agreed-upon credentials, and the previously connecting peer MAY now attempt to connect to it. Connecting to the <strong>endpoint server</strong> requires completion of an <strong>endpoint handshake</strong>.</p>
-<p>The <strong>endpoint handshake</strong> serves three purposes:</p>
-<ul>
-<li>peer authentication: to verify the peer initiating the handshake with the <strong>endpoint server</strong> has ownership of the private keys required to derive its claimed onion-service service-id (i.e. to verify the peer is not attempting to impersonate another peer)</li>
-<li>peer authorisation: once authenticated, verify the peer’s identity corresponds with the identity associated with this <strong>endpoint server</strong></li>
-<li>tcp stream hand-off: upon completion, the underlying tcp connection is returned to the application</li>
-</ul>
-<p>This handshake’s authorisation is not customisable.</p>
+<p>Gosling is a peer-to-peer authentication and authorisation protocol built on Tor onion-services. For a high-level overview of the protocol and its purpose, please see the design document<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>.</p>
+<p>The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in this document are to be interpreted as described in RFC 2119<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>.</p>
 <h2 id="protocol">Protocol</h2>
-<p>The Gosling protocol is defined in terms of a remote procedure call (RPC) interface. Specifically, Gosling uses Honk-RPC v0.1.0<a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a>.</p>
-<p>Honk-RPC itself uses BSON<a href="#fn7" class="footnote-ref" id="fnref7" role="doc-noteref"><sup>7</sup></a> as the wire format for its messages, so the types in the following function definitions are referring to BSON-types. Any type marked <code>binary</code> is specifically encoded as the ‘Generic binary subtype’ (<code>\x00</code>). Any type marked <code>document</code> is specifically encoded as a BSON document (an encoded set of key/value pairs).</p>
+<p>The Gosling protocol is defined in terms of a remote procedure call (RPC) interface. Specifically, Gosling uses Honk-RPC v0.1.0<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>.</p>
+<p>Honk-RPC itself uses BSON<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a> as the wire format for its messages, so the types in the following function definitions are referring to BSON-types. Any type marked <code>binary</code> is specifically encoded as the ‘Generic binary subtype’ (<code>\x00</code>). Any type marked <code>document</code> is specifically encoded as a BSON document (an encoded set of key/value pairs).</p>
 <p>Calling these functions out of order MUST result in an error being returned and the connection being closed.</p>
 <h3 id="identity-handshake">Identity Handshake</h3>
 <h4 id="sequence-diagram">Sequence Diagram</h4>
@@ -202,13 +178,10 @@
 <section class="footnotes" role="doc-endnotes">
 <hr />
 <ol>
-<li id="fn1" role="doc-endnote"><p>RFC 2119 <a href="https://www.rfc-editor.org/rfc/rfc2119">https://www.rfc-editor.org/rfc/rfc2119</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" role="doc-endnote"><p>onion-routing <a href="https://en.wikipedia.org/wiki/Onion_routing">https://en.wikipedia.org/wiki/Onion_routing</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3" role="doc-endnote"><p>Tor <a href="https://support.torproject.org/about/">https://support.torproject.org/about/</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4" role="doc-endnote"><p>onion-services <a href="https://community.torproject.org/onion-services/overview/">https://community.torproject.org/onion-services/overview/</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn5" role="doc-endnote"><p>onion-service client-authorization <a href="https://community.torproject.org/onion-services/advanced/client-auth/">https://community.torproject.org/onion-services/advanced/client-auth/</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn6" role="doc-endnote"><p>Honk-RPC v0.1.0 specification <a href="honk-rpc-spec.xhtml">https://gosling.technology/honk-rpc-spec.xtml</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn7" role="doc-endnote"><p>BSON specification <a href="https://bsonspec.org/spec.html">https://bsonspec.org/spec.html</a><a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn1" role="doc-endnote"><p>Gosling Design and Adversary Model <a href="design-doc.xhtml">https://gosling.technology/design-doc.xhtml</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2" role="doc-endnote"><p>RFC 2119 <a href="https://www.rfc-editor.org/rfc/rfc2119">https://www.rfc-editor.org/rfc/rfc2119</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3" role="doc-endnote"><p>Honk-RPC v0.1.0 specification <a href="honk-rpc-spec.xhtml">https://gosling.technology/honk-rpc-spec.xtml</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4" role="doc-endnote"><p>BSON specification <a href="https://bsonspec.org/spec.html">https://bsonspec.org/spec.html</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
       <hr/>
