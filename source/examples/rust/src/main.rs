@@ -1,4 +1,5 @@
 // program modules
+mod globals;
 mod terminal;
 
 // std
@@ -7,20 +8,20 @@ mod terminal;
 use anyhow::Result;
 
 fn main() -> Result<()> {
-    let mut term = terminal::Terminal::new()?;
-
+    let mut globals = globals::Globals::new()?;
     // event loop
-    loop  {
-        if let Some(cmd) = term.update()? {
+    while !globals.exit_requested {
+        if let Some(cmd) = globals.term.update()? {
             match cmd.command.as_str() {
                 "echo" => {
-                    term.write_line(cmd.arguments.join(" ").as_str());
+                    globals.term.write_line(cmd.arguments.join(" ").as_str());
                 },
-                "exit" => break,
+                "exit" => {
+                    globals.exit_requested = true;
+                },
                 _ => (),
             }
         }
     }
-
     Ok(())
 }
