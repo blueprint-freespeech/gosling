@@ -6,6 +6,7 @@ if (BUILD_EXAMPLES AND ENABLE_LEGACY_TOR_PROVIDER)
 
     set(example_chat_rs_sources
         Cargo.toml
+        src/commands.rs
         src/globals.rs
         src/main.rs
         src/terminal.rs)
