@@ -7,3 +7,6 @@ edition = "2021"
 license = "BSD-3-Clause"
 description = "An example anonymous chat-client using Gosling"
 repository = "https://github.com/blueprint-freespeech/gosling"
+
+[dependencies]
+crossterm = "0.28"
