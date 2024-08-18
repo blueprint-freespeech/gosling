@@ -32,8 +32,24 @@ impl Terminal {
         })
     }
 
-    pub fn write_line(&mut self, line: String) -> () {
+    pub fn write_line(&mut self, line: &str) -> () {
+        let cols = self.cols as usize;
 
+        if line.is_empty() {
+            self.line_buffer.push_back(Default::default());
+        } else {
+            // split lines on newline
+            for line in line.lines() {
+                let mut start = 0;
+                // and line-wrap
+                while start < line.len() {
+                    let end = (start + cols).min(line.len());
+                    self.line_buffer.push_back(line[start..end].to_string());
+                    start = end;
+                }
+            }
+        }
+        self.dirty = true;
     }
 
     /// Returns a list of commands to be handled
