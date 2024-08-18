@@ -5,7 +5,7 @@ use std::{
 };
 // extern
 use anyhow::Result;
-use crossterm::{cursor, event, execute, queue, terminal};
+use crossterm::{cursor, event, event::Event, execute, queue, terminal};
 use crossterm::terminal::ClearType;
 
 pub struct Terminal {
@@ -55,6 +55,16 @@ impl Terminal {
     /// Returns a list of commands to be handled
     pub fn update(&mut self) -> Result<Option<Command>> {
         let mut dirty = true;
+
+        while event::poll(std::time::Duration::ZERO)? {
+            match event::read()? {
+                Event::Resize(cols, rows) => {
+                    self.cols = cols;
+                    self.rows = rows;
+                }
+                _ => (),
+            }
+        }
 
         if dirty {
             self.render()?
