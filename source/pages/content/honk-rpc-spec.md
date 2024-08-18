@@ -1,5 +1,9 @@
 # Honk-RPC v0.1.0
 
+#### Richard Pospesel <[richard@blueprintforfreespeech.org](mailto:richard@blueprintforfreespeech.org)>
+
+#### Morgan <[morgan@torproject.org](mailto:morgan@torproject.org)>
+
 ---
 
 Honk-RPC is a remote procedure call protocol.

@@ -1,51 +1,20 @@
 # Gosling Protocol v0.1.0
 
+#### Richard Pospesel <[richard@blueprintforfreespeech.org](mailto:richard@blueprintforfreespeech.org)>
+
+#### Morgan <[morgan@torproject.org](mailto:morgan@torproject.org)>
+
 ---
 
-Gosling is a peer-to-peer authentication protocol built on Tor onion-services.
+Gosling is a peer-to-peer authentication and authorisation protocol built on Tor onion-services. For a high-level overview of the protocol and its purpose, please see the design document[^1].
 
-The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED",  "MAY", and "OPTIONAL" in this document are to be interpreted as described in RFC 2119[^1].
-
-It is assumed that the reader is familiar with Tor[^2], onion-routing[^3], and onion-services (aka hidden services)[^4].
-
-The purpose of Gosling is to allow the authorised peers in an onion-service-based peer-to-peer network to connect to each other while minimising the leaked metadata available to unauthorised peers. Because peers are actually onion-services, the Gosling protocol also inherits the following properties from Tor:
-
-- end-to-end encryption
-- anonymity
-- censorship-circumvention
-- NAT-punching
-
-## Overview
-
-Gosling peers have a long-term identity defined by their onion-service service-id. The onion-service associated with this service-id is used as an introduction point to acquire and allow-list new peers. We refer to this onion-service as the **identity server**. This onion-service MUST be online to acquire new authenticated peers. New potential peers connect to the the **identity server** and are required to complete the **identity handshake**. If no new peers are required, the **identity server** MAY be shutdown until they are.
-
-The **identity handshake** serves three purposes:
-
-- peer authentication: to determine a potential new peer initiating the handshake with the **identity server** has ownership of the private keys required to derive its claimed onion-service service-id (i.e. to verify the peer is not attempting to impersonate another peer)
-- peer authorisation: once authenticated, to determine if the peer is allowed to connect (e.g. by consulting a block-list, verifying knowledge of a shared secret, calculating of some cryptographic proof-of-work, solving a CAPTCHA, etc)
-- credential negotiation: once authorised, jointly build the configuration required by the peer to access a second onion-service known as the **endpoint server** where the actual application-specific communications occur (e.g. transferring or syncing files, sending chat messages, etc)
-
-The peer authorisation process of the **identity handshake** is customisable to meet the needs of the application. The Gosling protocol MAY be configured to include OPTIONAL attachments on the identity handshake messages in order to implement additional custom authorisation logic.
-
-If the connecting peer and the hosting peer wish to swap roles in the future, during subsequent **identity handshakes** the authorisation portion of the **identity handshake** MAY be short-circuited if appropriate for the application.
-
-After the **identity handshake** completes, the owner of the **identity server** MAY then start an **endpoint server** for the previously connecting peer to connect to. This **endpoint server**'s service-id SHALL be secret and known only to this pair of peers, and its descriptor (information required to connect to it) SHALL be protected using the connecting peer's agreed upon onion-service client-authorisation[^7] keypair. The **endpoint server**'s credentials MUST NOT be shared between multiple peers.
-
-After the **identity handshake** successfully completes, the host MAY start the **endpoint server** using the agreed-upon credentials, and the previously connecting peer MAY now attempt to connect to it. Connecting to the **endpoint server** requires completion of an **endpoint handshake**.
-
-The **endpoint handshake** serves three purposes:
-
-- peer authentication: to verify the peer initiating the handshake with the **endpoint server** has ownership of the private keys required to derive its claimed onion-service service-id (i.e. to verify the peer is not attempting to impersonate another peer)
-- peer authorisation: once authenticated, verify the peer's identity corresponds with the identity associated with this **endpoint server**
-- tcp stream hand-off: upon completion, the underlying tcp connection is returned to the application
-
-This handshake's authorisation is not customisable.
+The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED",  "MAY", and "OPTIONAL" in this document are to be interpreted as described in RFC 2119[^2].
 
 ## Protocol
 
-The Gosling protocol is defined in terms of a remote procedure call (RPC) interface. Specifically, Gosling uses Honk-RPC v0.1.0[^5].
+The Gosling protocol is defined in terms of a remote procedure call (RPC) interface. Specifically, Gosling uses Honk-RPC v0.1.0[^3].
 
-Honk-RPC itself uses BSON[^6] as the wire format for its messages, so the types in the following function definitions are referring to BSON-types. Any type marked `binary` is specifically encoded as the 'Generic binary subtype' (`\x00`). Any type marked `document` is specifically encoded as a BSON document (an encoded set of key/value pairs).
+Honk-RPC itself uses BSON[^4] as the wire format for its messages, so the types in the following function definitions are referring to BSON-types. Any type marked `binary` is specifically encoded as the 'Generic binary subtype' (`\x00`). Any type marked `document` is specifically encoded as a BSON document (an encoded set of key/value pairs).
 
 Calling these functions out of order MUST result in an error being returned and the connection being closed.
 
@@ -214,16 +183,10 @@ A gosling **identity server** MUST verify the validity of the provided signature
 
 Creation of innovative free software needs support. We thank the NGI Assure Fund, a fund established by NLnet with financial support from the European Commission's Next Generation Internet programme, under the aegis of DG Communications Networks, Content and Technology under grant agreement No 957073
 
-[^1]: RFC 2119 [https://www.rfc-editor.org/rfc/rfc2119](https://www.rfc-editor.org/rfc/rfc2119)
+[^1]: Gosling Design and Adversary Model [https://gosling.technology/design-doc.xhtml](design-doc.xhtml)
 
-[^2]: onion-routing [https://en.wikipedia.org/wiki/Onion_routing](https://en.wikipedia.org/wiki/Onion_routing)
+[^2]: RFC 2119 [https://www.rfc-editor.org/rfc/rfc2119](https://www.rfc-editor.org/rfc/rfc2119)
 
-[^3]: Tor [https://support.torproject.org/about/](https://support.torproject.org/about/)
+[^3]: Honk-RPC v0.1.0 specification [https://gosling.technology/honk-rpc-spec.xtml](honk-rpc-spec.xhtml)
 
-[^4]: onion-services [https://community.torproject.org/onion-services/overview/](https://community.torproject.org/onion-services/overview/)
-
-[^5]: Honk-RPC v0.1.0 specification [https://gosling.technology/honk-rpc-spec.xtml](honk-rpc-spec.xhtml)
-
-[^6]: BSON specification [https://bsonspec.org/spec.html](https://bsonspec.org/spec.html)
-
-[^7]: onion-service client-authorization [https://community.torproject.org/onion-services/advanced/client-auth/](https://community.torproject.org/onion-services/advanced/client-auth/)
+[^4]: BSON specification [https://bsonspec.org/spec.html](https://bsonspec.org/spec.html)

@@ -29,10 +29,11 @@ if (BUILD_PAGES)
 
     # our source markdown files
     set(page_sources
+        design-doc.md
+        gosling-spec.md
+        honk-rpc-spec.md
         index.md
         news.md
-        honk-rpc-spec.md
-        gosling-spec.md
         security-reviews.md)
 
     # page titles for each
