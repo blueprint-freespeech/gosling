@@ -47,6 +47,10 @@ body {
   padding-inline: 1.0em;
 }
 
+.content sup {
+  font-size: 0.9em;
+  line-height: 0;
+}
 
 code {
   background-color: #EEE;
