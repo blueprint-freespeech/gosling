@@ -6,7 +6,8 @@ if (BUILD_EXAMPLES AND ENABLE_LEGACY_TOR_PROVIDER)
 
     set(example_chat_rs_sources
         Cargo.toml
-        src/main.rs)
+        src/main.rs
+        src/terminal.rs)
 
     set(example_chat_rs_outputs
         ${CMAKE_CURRENT_BINARY_DIR}/${CARGO_PROFILE}/example_chat_rs${CMAKE_EXECUTABLE_SUFFIX})
