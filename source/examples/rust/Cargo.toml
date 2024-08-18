@@ -1,0 +1,9 @@
+[package]
+name = "example_chat_rs"
+authors = ["Morgan <morgan@torproject.org>"]
+version = "0.1.0"
+rust-version = "1.70"
+edition = "2021"
+license = "BSD-3-Clause"
+description = "An example anonymous chat-client using Gosling"
+repository = "https://github.com/blueprint-freespeech/gosling"
