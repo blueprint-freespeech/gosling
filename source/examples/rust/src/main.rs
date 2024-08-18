@@ -2,10 +2,17 @@
 mod terminal;
 
 // std
-use std::default;
 
-fn main() {
-    println!("Hello World!");
-    let term: terminal::Terminal = Default::default();
+// extern
+use anyhow::Result;
 
+fn main() -> Result<()> {
+    let mut term = terminal::Terminal::new()?;
+
+    // event loop
+    loop  {
+        term.update()?;
+    }
+
+    Ok(())
 }

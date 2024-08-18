@@ -9,4 +9,5 @@ description = "An example anonymous chat-client using Gosling"
 repository = "https://github.com/blueprint-freespeech/gosling"
 
 [dependencies]
+anyhow = "1.0"
 crossterm = "0.28"
