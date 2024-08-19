@@ -120,6 +120,7 @@ namespace example {
         TERM.write_line(ss.str());
 
         // init context
+        TERM.write_line("creating context");
         unique_ptr<gosling_context> context;
         ::gosling_context_init(out(context), tor_provider.release(), 1120, 401, identity_private_key.get(), throw_on_error());
 
@@ -131,7 +132,7 @@ namespace example {
         TERM.write_line("beginning bootstrap");
         ::gosling_context_bootstrap_tor(context.get(), throw_on_error());
 
-        // save off our ocntext
+        // save off our context
         GOSLING_CONTEXT = std::move(context);
     }
 
