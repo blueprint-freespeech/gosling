@@ -407,6 +407,7 @@ name = "example_chat_rs"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bson",
  "crossterm",
  "gosling",
  "tor-interface",
