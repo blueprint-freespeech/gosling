@@ -39,6 +39,7 @@ fn main() -> Result<()> {
         if let Some(context) = globals.context.as_mut() {
             for event in context.update()?.drain(..) {
                 match event {
+                    // tor events
                     ContextEvent::TorBootstrapStatusReceived {
                         progress,
                         tag: _,
@@ -51,6 +52,13 @@ fn main() -> Result<()> {
                             globals.term.write_line("  bootstrap complete!");
                         }
                     }
+                    // identity server events
+                    ContextEvent::IdentityServerPublished => {
+                        if !globals.identity_server_published {
+                            globals.identity_server_published = true;
+                            globals.term.write_line("  identity server published");
+                        }
+                    },
                     _ => {},
                 }
             }

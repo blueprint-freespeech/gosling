@@ -149,11 +149,21 @@ pub fn init_context(globals: &mut Globals, args: &Vec<String>) -> Result<()> {
     Ok(())
 }
 
+// start the identity server
 pub fn start_identity(globals: &mut Globals, args: &Vec<String>) -> Result<()> {
     if !args.is_empty() {
         return help(globals, &vec!["start-identity".to_string()]);
     }
-    bail!("not implemented");
+
+    match globals.context.as_mut() {
+        None => bail!("context not yet initialised"),
+        Some(context) => {
+            globals.term.write_line("starting identity server");
+            context.identity_server_start()?;
+        }
+    }
+
+    Ok(())
 }
 
 pub fn stop_identity(globals: &mut Globals, args: &Vec<String>) -> Result<()> {
