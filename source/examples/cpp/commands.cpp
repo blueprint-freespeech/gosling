@@ -152,7 +152,7 @@ namespace hw {
         ::gosling_context_start_identity_server(GOSLING_CONTEXT.get(), throw_on_error());
     }
 
-    // stop the identity serve
+    // stop the identity server
     void stop_identity(const vector<string>& args) {
         if (args.size() != 0) {
             help({"stop-identity"});

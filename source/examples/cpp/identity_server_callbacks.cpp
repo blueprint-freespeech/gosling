@@ -110,7 +110,7 @@ namespace hw {
             }
         }, throw_on_error());
 
-    // callback for the identit server to populate the challenge object to send to  client
+    // callback for the identity server to populate the challenge object to send to client
     ::gosling_context_set_identity_server_build_challenge_callback(context,
         [](gosling_context*,
            gosling_handshake_handle_t handle,
