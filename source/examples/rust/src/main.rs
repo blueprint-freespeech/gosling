@@ -10,6 +10,8 @@ use anyhow::Result;
 
 fn main() -> Result<()> {
     let mut globals = globals::Globals::new()?;
+    globals.term.write_line("Welcome to example_chat_rs!");
+    globals.term.write_line("Type help for a list of commands");
     // event loop
     while !globals.exit_requested {
         if let Some(cmd) = globals.term.update()? {
