@@ -9,7 +9,7 @@ using namespace hw;
 int main() try {
 
     ::gosling_library_init(out(LIBRARY), throw_on_error());
-
+    TERM.write_line("Welcome to example_chat_cpp!");
     TERM.write_line("Type help for a list of commands");
     TERM.register_command("init-context", hw::init_context);
     TERM.register_command("start-identity", hw::start_identity);
