@@ -11,6 +11,7 @@ namespace example {
     void help(const vector<string>& args) {
         if (args.empty() || args.front() == "help") {
             TERM.write_line("Available commands:");
+            TERM.write_line("  help COMMAND             Print help for COMMAND");
             TERM.write_line("  init-context             Initialise the gosling context");
             TERM.write_line("  start-identity           Start the identity onion-service");
             TERM.write_line("  stop-identity            Stop the identity onion-service");
@@ -19,10 +20,9 @@ namespace example {
             TERM.write_line("  stop-endpoint            Stop an endpoint onion-service");
             TERM.write_line("  connect-endpoint         Connect to a peer's endpoint onion-service");
             TERM.write_line("  drop-peer                Drop a connection to a peer");
+            TERM.write_line("  list-peers               List all of the currently connected peers");
             TERM.write_line("  chat                     Send a message to a connected peer");
-            TERM.write_line("  help COMMAND             Print help for COMMAND");
             TERM.write_line("  exit                     Quits the program");
-            return;
         }
         else {
             const auto& command = args.front();
@@ -64,18 +64,20 @@ namespace example {
                 TERM.write_line("Drop an existing peer connection");
                 TERM.write_line();
                 TERM.write_line("  SERVICE_ID               The remote peer's identity service id");
+            } else if (command == "list-peers") {
+                TERM.write_line("usage: list-peers");
+                TERM.write_line("Print list of connected peers we can chat with");
             } else if (command == "chat") {
                 TERM.write_line("usage: chat SERVICE_ID MESSAGE...");
                 TERM.write_line("Send a message to a connected peer");
                 TERM.write_line();
                 TERM.write_line("  SERVICE_ID               The remote peer's identity service id");
                 TERM.write_line("  MESSAGE...               A message to send to the remote peer");
-            } else if (command == "list-peers") {
-                TERM.write_line("usage: list-peers");
-                TERM.write_line("Print list of connected peers we can chat with");
             } else if (command == "exit") {
                 TERM.write_line("usage: exit");
                 TERM.write_line("Quits the program");
+            } else {
+                TERM.write_line("Unknown command");
             }
         }
     }
