@@ -1,6 +1,6 @@
 #pragma once
 
-namespace hw {
+namespace example {
     void help(const vector<string>& args);
     void init_context(const vector<string>& args);
     void start_identity(const vector<string>& args);

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace hw {
+namespace example {
 
     // Some state flags
     inline bool EXIT_REQUESTED{false};
@@ -16,8 +16,8 @@ namespace hw {
     //
     // Handshake Constants
     //
-    inline const string ENDPOINT_NAME{"hello-world-endpoint"};
-    inline const string CHANNEL_NAME{"hello-world-channel"};
+    inline const string ENDPOINT_NAME{"example-endpoint"};
+    inline const string CHANNEL_NAME{"example-channel"};
 
     //
     // In-Progress Handshake Data

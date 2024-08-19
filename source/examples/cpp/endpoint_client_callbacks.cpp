@@ -2,9 +2,9 @@ using namespace std;
 using namespace gosling;
 
 #include "terminal.hpp"
-#include "hello_world.hpp"
+#include "globals.hpp"
 
-namespace hw {
+namespace example {
     void register_endpoint_client_callbacks(gosling_context* context) {
         // callback for when the endpoint client handshake completes successfully
         ::gosling_context_set_endpoint_client_handshake_completed_callback(context,

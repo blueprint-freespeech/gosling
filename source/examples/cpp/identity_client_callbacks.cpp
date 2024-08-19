@@ -2,9 +2,9 @@ using namespace std;
 using namespace gosling;
 
 #include "terminal.hpp"
-#include "hello_world.hpp"
+#include "globals.hpp"
 
-namespace hw {
+namespace example {
     void register_identity_client_callbacks(gosling_context* context) {
         // return the required size of identity callback challenge response
         ::gosling_context_set_identity_client_challenge_response_size_callback(context,

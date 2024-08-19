@@ -1,6 +1,6 @@
 using namespace std;
 
-namespace hw {
+namespace example {
 
     class terminal {
     public:

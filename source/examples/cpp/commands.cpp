@@ -2,12 +2,12 @@ using namespace std;
 using namespace gosling;
 
 #include "terminal.hpp"
-#include "hello_world.hpp"
+#include "globals.hpp"
 #include "callbacks.hpp"
 
 
 
-namespace hw {
+namespace example {
     void help(const vector<string>& args) {
         if (args.empty() || args.front() == "help") {
             TERM.write_line("Available commands:");

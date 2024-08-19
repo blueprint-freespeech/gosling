@@ -2,9 +2,9 @@ using namespace std;
 using namespace gosling;
 
 #include "terminal.hpp"
-#include "hello_world.hpp"
+#include "globals.hpp"
 
-namespace hw {
+namespace example {
     void register_endpoint_server_callbacks(gosling_context* context) {
         // callback for signalling to the server that a client has connected and an endpoint
         // handshake is starting

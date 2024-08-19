@@ -2,7 +2,7 @@ using namespace std;
 
 #include "terminal.hpp"
 
-namespace hw {
+namespace example {
     terminal::terminal() {
         // Initialize ncurses
         ::initscr();

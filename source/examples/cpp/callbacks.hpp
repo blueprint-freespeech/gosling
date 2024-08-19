@@ -1,6 +1,6 @@
 #pragma once
 
-namespace hw {
+namespace example {
     void register_identity_server_callbacks(gosling_context* context);
     void register_identity_client_callbacks(gosling_context* context);
     void register_endpoint_server_callbacks(gosling_context* context);

@@ -1,28 +1,28 @@
 #include "terminal.hpp"
-#include "hello_world.hpp"
+#include "globals.hpp"
 #include "commands.hpp"
 
 using namespace std;
 using namespace gosling;
-using namespace hw;
+using namespace example;
 
 int main() try {
 
     ::gosling_library_init(out(LIBRARY), throw_on_error());
-
+    TERM.write_line("Welcome to example_chat_cpp!");
     TERM.write_line("Type help for a list of commands");
-    TERM.register_command("init-context", hw::init_context);
-    TERM.register_command("start-identity", hw::start_identity);
-    TERM.register_command("stop-identity", hw::stop_identity);
-    TERM.register_command("request-endpoint", hw::request_endpoint);
-    TERM.register_command("start-endpoint", hw::start_endpoint);
-    TERM.register_command("stop-endpoint", hw::stop_endpoint);
-    TERM.register_command("connect-endpoint", hw::connect_endpoint);
-    TERM.register_command("drop-peer", hw::drop_peer);
-    TERM.register_command("list-peers", hw::list_peers);
-    TERM.register_command("chat", hw::chat);
-    TERM.register_command("help", hw::help);
-    TERM.register_command("exit", hw::exit);
+    TERM.register_command("init-context", example::init_context);
+    TERM.register_command("start-identity", example::start_identity);
+    TERM.register_command("stop-identity", example::stop_identity);
+    TERM.register_command("request-endpoint", example::request_endpoint);
+    TERM.register_command("start-endpoint", example::start_endpoint);
+    TERM.register_command("stop-endpoint", example::stop_endpoint);
+    TERM.register_command("connect-endpoint", example::connect_endpoint);
+    TERM.register_command("drop-peer", example::drop_peer);
+    TERM.register_command("list-peers", example::list_peers);
+    TERM.register_command("chat", example::chat);
+    TERM.register_command("help", example::help);
+    TERM.register_command("exit", example::exit);
 
     while (!EXIT_REQUESTED) {
         if (GOSLING_CONTEXT) {

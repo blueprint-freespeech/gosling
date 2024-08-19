@@ -2,9 +2,9 @@ using namespace std;
 using namespace gosling;
 
 #include "terminal.hpp"
-#include "hello_world.hpp"
+#include "globals.hpp"
 
-namespace hw {
+namespace example {
     void register_identity_server_callbacks(gosling_context* context) {
 
         // it takes some time before an onion service is published to the tor netork
