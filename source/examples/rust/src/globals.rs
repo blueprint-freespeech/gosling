@@ -16,6 +16,7 @@ pub struct Globals {
     pub context: Option<Context>,
     pub identity_service_id: Option<V3OnionServiceId>,
     pub bootstrap_complete: bool,
+    pub identity_server_published: bool,
 }
 
 impl Globals {
@@ -26,6 +27,7 @@ impl Globals {
             context: None,
             identity_service_id: None,
             bootstrap_complete: false,
+            identity_server_published: false,
         })
     }
 }
