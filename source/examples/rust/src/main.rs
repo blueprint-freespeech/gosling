@@ -7,6 +7,7 @@ mod terminal;
 
 // extern
 use anyhow::Result;
+use gosling::context::*;
 
 fn main() -> Result<()> {
     let mut globals = globals::Globals::new()?;
@@ -31,6 +32,27 @@ fn main() -> Result<()> {
                 invalid => Ok(globals.term.write_line(format!("invalid command: {invalid}").as_str()))
             } {
                 globals.term.write_line(format!("error: {:?}", err).as_str());
+            }
+        }
+
+        // update the gosling context and handle events
+        if let Some(context) = globals.context.as_mut() {
+            for event in context.update()?.drain(..) {
+                match event {
+                    ContextEvent::TorBootstrapStatusReceived {
+                        progress,
+                        tag: _,
+                        summary,
+                    } => {
+                        globals.term.write_line(
+                            format!("  bootstrap progress: {progress}% - {summary}").as_ref());
+                        if progress == 100u32 {
+                            globals.bootstrap_complete = true;
+                            globals.term.write_line("  bootstrap complete!");
+                        }
+                    }
+                    _ => {},
+                }
             }
         }
     }
