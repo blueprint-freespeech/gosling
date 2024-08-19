@@ -8,7 +8,7 @@ use tor_interface::legacy_tor_client::*;
 use tor_interface::tor_crypto::*;
 
 // local
-use crate::globals::Globals;
+use crate::globals::*;
 
 pub fn help(globals: &mut Globals, args: &Vec<String>) -> Result<()> {
     if args.is_empty() || args[0] == "help" {
@@ -184,11 +184,24 @@ pub fn stop_identity(globals: &mut Globals, args: &Vec<String>) -> Result<()> {
     Ok(())
 }
 
+// request an endpoint from a remote identity server
 pub fn request_endpoint(globals: &mut Globals, args: &Vec<String>) -> Result<()> {
     if args.len() != 1 {
         return help(globals, &vec!["request-endpoint".to_string()]);
     }
-    bail!("not implemented");
+
+    match globals.context.as_mut() {
+        None => bail!("context not yet initialised"),
+        Some(context) => {
+            let onion_service_id = V3OnionServiceId::from_string(&args[0])?;
+            globals.term.write_line(format!("requesting endpoint from {onion_service_id}").as_str());
+
+            let endpoint_name = ENDPOINT_NAME.to_string();
+            let _handshake_handle = context.identity_client_begin_handshake(onion_service_id, endpoint_name)?;
+        }
+    }
+
+    Ok(())
 }
 
 pub fn start_endpoint(globals: &mut Globals, args: &Vec<String>) -> Result<()> {

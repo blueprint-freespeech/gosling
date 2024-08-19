@@ -10,6 +10,7 @@ repository = "https://github.com/blueprint-freespeech/gosling"
 
 [dependencies]
 anyhow = "1.0"
+bson = "2.0"
 crossterm = "0.28"
 gosling = { path = "../../gosling/crates/gosling"}
 tor-interface = { path = "../../gosling/crates/tor-interface", features = ["legacy-tor-provider"]}
