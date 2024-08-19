@@ -166,11 +166,22 @@ pub fn start_identity(globals: &mut Globals, args: &Vec<String>) -> Result<()> {
     Ok(())
 }
 
+// stop the identity server
 pub fn stop_identity(globals: &mut Globals, args: &Vec<String>) -> Result<()> {
     if !args.is_empty() {
         return help(globals, &vec!["stop-identity".to_string()]);
     }
-    bail!("not implemented");
+
+    match globals.context.as_mut() {
+        None => bail!("context not yet initialised"),
+        Some(context) => {
+            context.identity_server_stop()?;
+            globals.identity_server_published = false;
+            globals.term.write_line("stopped identity server");
+        }
+    }
+
+    Ok(())
 }
 
 pub fn request_endpoint(globals: &mut Globals, args: &Vec<String>) -> Result<()> {
