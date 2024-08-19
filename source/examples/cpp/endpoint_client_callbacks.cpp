@@ -28,8 +28,8 @@ namespace hw {
                     conn.first->second.socket.assign(boost::asio::ip::tcp::v4(), stream);
                     conn.first->second.socket.non_blocking(true);
 
-                    TERM.write_line("  client endpoint handshake succeeded!");
-                    TERM.write_line(string("  may now chat to connected endpoint: ") + peer_service_id);
+                    TERM.write_line("  endpoint client handshake succeeded!");
+                    TERM.write_line(string("  may now chat to connected endpoint server: ") + peer_service_id);
                 } catch (const std::exception& ex) {
                     TERM.write_line("endpoint_client_handshake_completed callback threw exception");
                     TERM.write_line(ex.what());
@@ -48,7 +48,7 @@ namespace hw {
                     // handshake over erase
                     ENDPOINT_CLIENT_HANDSHAKES.erase(it);
 
-                    TERM.write_line("  client endpoint handshake failed!");
+                    TERM.write_line("  endpoint client handshake failed!");
 
                     ostringstream ss;
                     ss << "error: " << error;

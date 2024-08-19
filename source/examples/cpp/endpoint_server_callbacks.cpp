@@ -12,7 +12,7 @@ namespace hw {
             [](gosling_context*,
                gosling_handshake_handle_t handle) -> void {
                 try {
-                    TERM.write_line("  endpoint handshake starting");
+                    TERM.write_line("  endpoint server handshake starting");
 
                     // initialise state data for this handshake
                     endpoint_server_handshake data;
@@ -73,7 +73,7 @@ namespace hw {
                     conn.first->second.socket.non_blocking(true);
 
                     TERM.write_line("  endpoint server endpoint handshake succeeded!");
-                    TERM.write_line(string("  may now chat to connected client: ") + to_string(client_service_id));
+                    TERM.write_line(string("  may now chat to connected endpoint client: ") + to_string(client_service_id));
                 } catch (std::exception& ex) {
                     TERM.write_line("endpoint_server_handshake_completed callback threw exception");
                     TERM.write_line(ex.what());
@@ -92,7 +92,7 @@ namespace hw {
                     // handshake over erase
                     ENDPOINT_SERVER_HANDSHAKES.erase(it);
 
-                    TERM.write_line("  server endpoint handshake failed!");
+                    TERM.write_line("  endpoint server handshake failed!");
 
                     ostringstream ss;
                     ss << "error: " << error;
