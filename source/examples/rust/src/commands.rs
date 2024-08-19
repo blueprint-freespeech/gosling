@@ -1,7 +1,11 @@
 // std
+use std::time::Duration;
 
 // extern
 use anyhow::{bail, Result};
+use gosling::context::Context;
+use tor_interface::legacy_tor_client::*;
+use tor_interface::tor_crypto::*;
 
 // local
 use crate::globals::Globals;
@@ -92,11 +96,57 @@ pub fn help(globals: &mut Globals, args: &Vec<String>) -> Result<()> {
     Ok(())
 }
 
+// initialise a new gosling context, launch tor and bootstrap
 pub fn init_context(globals: &mut Globals, args: &Vec<String>) -> Result<()> {
     if args.len() != 1 {
         return help(globals, &vec!["init-context".to_string()]);
     }
-    bail!("not implemented");
+
+    if globals.context.is_some() {
+        bail!("context already initialised");
+    }
+
+    let tor_working_directory = &args[0];
+
+    // initialise a tor provider for our gosling context
+    let tor_bin_path = which::which("tor")?;
+    let data_directory = std::path::Path::new(tor_working_directory).to_path_buf();
+    let tor_config = LegacyTorClientConfig::BundledTor {
+        tor_bin_path,
+        data_directory,
+        proxy_settings: None,
+        allowed_ports: None,
+        pluggable_transports: None,
+        bridge_lines: None,
+    };
+    let tor_client = Box::new(LegacyTorClient::new(tor_config)?);
+
+    globals.term.write_line("generating new identity key");
+    let identity_private_key = Ed25519PrivateKey::generate();
+    let identity_service_id = V3OnionServiceId::from_private_key(&identity_private_key);
+
+    globals.term.write_line(format!("  identity onion service id: {identity_service_id}").as_str());
+    globals.identity_service_id = Some(identity_service_id);
+
+    // init context
+    globals.term.write_line("creating context");
+    let mut context = Context::new(
+        tor_client,
+        1120, // identity port
+        401, // endpoint port
+        Duration::from_secs(60), // identity timeout
+        4096, // max Gosling message siez
+        Some(Duration::from_secs(60)), // endpoint timeout
+        identity_private_key)?;
+
+    // connect to the tor network
+    globals.term.write_line("beginning bootstrap");
+    context.bootstrap()?;
+
+    // save off our context
+    globals.context = Some(context);
+
+    Ok(())
 }
 
 pub fn start_identity(globals: &mut Globals, args: &Vec<String>) -> Result<()> {
