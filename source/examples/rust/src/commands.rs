@@ -269,7 +269,20 @@ pub fn drop_peer(globals: &mut Globals, args: &Vec<String>) -> Result<()> {
     if args.len() != 1 {
         return help(globals, &vec!["drop-peer".to_string()]);
     }
-    bail!("not implemented");
+
+    let peer_service_id = &args[0];
+
+    if let None = globals.context.as_mut() {
+        bail!("context not yet initialised");
+    }
+
+    if let Some(_) = globals.connected_peers.remove(peer_service_id.as_str()) {
+        globals.term.write_line(format!("removed {peer_service_id}").as_str());
+    } else {
+        globals.term.write_line(format!("no such peer: {peer_service_id}").as_str());
+    }
+
+    Ok(())
 }
 
 pub fn list_peers(globals: &mut Globals, args: &Vec<String>) -> Result<()> {
