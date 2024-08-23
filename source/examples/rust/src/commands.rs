@@ -249,7 +249,20 @@ pub fn connect_endpoint(globals: &mut Globals, args: &Vec<String>) -> Result<()>
     if args.len() != 1 {
         return help(globals, &vec!["connect-endpoint".to_string()]);
     }
-    bail!("not implemented");
+
+    let client_service_id = &args[0];
+
+    match globals.context.as_mut() {
+        None => bail!("context not yet initialised"),
+        Some(context) => {
+            if let Some((endpoint_service_id, client_auth_private)) = globals.endpoint_client_credentials.get(client_service_id.as_str()) {
+                let _handshake_handle = context.endpoint_client_begin_handshake(endpoint_service_id.clone(), client_auth_private.clone(), ENDPOINT_CHANNEL.to_string())?;
+                globals.term.write_line(format!("  connecting to endpoint {client_service_id}").as_str());
+            }
+        }
+    }
+
+    Ok(())
 }
 
 pub fn drop_peer(globals: &mut Globals, args: &Vec<String>) -> Result<()> {

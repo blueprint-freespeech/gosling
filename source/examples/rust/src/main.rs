@@ -171,6 +171,34 @@ fn main() -> Result<()> {
                         globals.term.write_line(format!("error: {:?}", reason).as_str());
                     }
                     // endpoint client events
+                    ContextEvent::EndpointClientHandshakeCompleted {
+                        handle: _,
+                        endpoint_service_id,
+                        channel_name: _,
+                        stream,
+                    } => {
+                        // find the associated identity service id of the endpoint server
+                        // this client has connected to
+                        for (identity_service_id, endpoint_client_credential ) in globals.endpoint_client_credentials.iter() {
+                            if endpoint_client_credential.0 == endpoint_service_id {
+                                let read: Box<dyn BufRead> = Box::new(BufReader::new(stream.try_clone()?));
+                                let write: Box<dyn Write> = Box::new(stream) as Box<dyn Write>;
+                                globals.connected_peers.insert(identity_service_id.clone(), (read, write));
+
+                                globals.term.write_line("  endpoint client handshake succeeded!");
+                                globals.term.write_line(format!("  may now chat to connected endpoint server: {identity_service_id}").as_str());
+                                break;
+                            }
+                        }
+
+                    },
+                    ContextEvent::EndpointClientHandshakeFailed {
+                        handle: _,
+                        reason,
+                    } => {
+                        globals.term.write_line("  endpoint client handshake failed!");
+                        globals.term.write_line(format!("error: {:?}", reason).as_str());
+                    },
                     _ => {},
                 }
             }
