@@ -4,6 +4,7 @@ mod globals;
 mod terminal;
 
 // std
+use std::io::{BufRead, BufReader, Write};
 
 // extern
 use anyhow::Result;
@@ -130,6 +131,45 @@ fn main() -> Result<()> {
                         globals.endpoint_client_credentials.insert(identity_service_id.to_string(), (endpoint_service_id, client_auth_private_key));
                     },
                     // endpoint server events
+                    ContextEvent::EndpointServerHandshakeStarted {
+                        handle: _,
+                    } => {
+                        // remote endpoint client has connected and an endpoint handshake is starting
+                        globals.term.write_line("  endpoint server handshake starting");
+                    },
+                    ContextEvent::EndpointServerChannelRequestReceived {
+                        handle,
+                        client_service_id: _,
+                        requested_channel,
+                    } => {
+                        // an endpoint may support multiple different channels
+                        // in this example we assume channel_name must be CHANNEL_NAME but one could
+                        // have logic here based on the connecting user
+                        context.endpoint_server_handle_channel_request_received(
+                            handle,
+                            requested_channel == ENDPOINT_CHANNEL)?;
+                    },
+                    ContextEvent::EndpointServerHandshakeCompleted {
+                        handle: _,
+                        endpoint_service_id: _,
+                        client_service_id,
+                        channel_name: _,
+                        stream,
+                    } => {
+                        let read: Box<dyn BufRead> = Box::new(BufReader::new(stream.try_clone()?));
+                        let write: Box<dyn Write> = Box::new(stream) as Box<dyn Write>;
+                        globals.connected_peers.insert(client_service_id.to_string(), (read, write));
+
+                        globals.term.write_line("  endpoint server handshake succeeded!");
+                        globals.term.write_line(format!("  may now chat to connected client: {client_service_id}").as_str());
+                    },
+                    ContextEvent::EndpointServerHandshakeFailed {
+                        handle: _,
+                        reason
+                    } => {
+                        globals.term.write_line("  endpoint server handshake failed!");
+                        globals.term.write_line(format!("error: {:?}", reason).as_str());
+                    }
                     // endpoint client events
                     _ => {},
                 }

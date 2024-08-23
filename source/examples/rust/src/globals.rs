@@ -13,6 +13,8 @@ use crate::terminal;
 pub type EndpointServerCredentials = (Ed25519PrivateKey, V3OnionServiceId, X25519PublicKey);
 // credentials needed to cnnnect to an endpoint server
 pub type EndpointClientCredentials = (V3OnionServiceId, X25519PrivateKey);
+// streams for reading/writing from/to peers
+pub type ConnectedPeer = (Box<dyn std::io::BufRead>, Box<dyn std::io::Write>);
 
 pub struct Globals {
     pub exit_requested: bool,
@@ -25,9 +27,12 @@ pub struct Globals {
     pub endpoint_server_credentials: BTreeMap<String, EndpointServerCredentials>,
     /// key is the String'fiied associated server identity V3OnionServiceId
     pub endpoint_client_credentials: BTreeMap<String, EndpointClientCredentials>,
+    /// open connections to endpoint peers
+    pub connected_peers: BTreeMap<String, ConnectedPeer>,
 }
 
 pub(crate) const ENDPOINT_NAME: &str = "example-endpoint";
+pub(crate) const ENDPOINT_CHANNEL: &str = "example-channel";
 
 impl Globals {
     pub fn new() -> Result<Self> {
@@ -40,6 +45,7 @@ impl Globals {
             identity_server_published: false,
             endpoint_server_credentials: Default::default(),
             endpoint_client_credentials: Default::default(),
+            connected_peers: Default::default(),
         })
     }
 }

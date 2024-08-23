@@ -208,7 +208,21 @@ pub fn start_endpoint(globals: &mut Globals, args: &Vec<String>) -> Result<()> {
     if args.len() != 1 {
         return help(globals, &vec!["start-endpoint".to_string()]);
     }
-    bail!("not implemented");
+
+    let client_service_id = &args[0];
+
+    match globals.context.as_mut() {
+        None => bail!("context not yet initialised"),
+        Some(context) => {
+            if let Some((endpoint_private_key, client_service_id, x25519_public_key)) = globals.endpoint_server_credentials.get(client_service_id.as_str()) {
+                context.endpoint_server_start(endpoint_private_key.clone(), ENDPOINT_NAME.to_string(), client_service_id.clone(), x25519_public_key.clone())?;
+            } else {
+                bail!("config for {client_service_id} not found");
+            }
+        }
+    }
+
+    Ok(())
 }
 
 pub fn stop_endpoint(globals: &mut Globals, args: &Vec<String>) -> Result<()> {
