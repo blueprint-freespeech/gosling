@@ -290,7 +290,20 @@ pub fn list_peers(globals: &mut Globals, args: &Vec<String>) -> Result<()> {
         return help(globals, &vec!["list-peers".to_string()]);
     }
 
-    bail!("not implemented");
+    if let None = globals.context.as_mut() {
+        bail!("context not yet initialised");
+    }
+
+    if globals.connected_peers.is_empty() {
+        globals.term.write_line("no peers connected");
+    } else {
+        globals.term.write_line("available peers:");
+        for service_id in globals.connected_peers.keys() {
+            globals.term.write_line(format!("  {service_id}").as_str());
+        }
+    }
+
+    Ok(())
 }
 
 pub fn chat(globals: &mut Globals, args: &Vec<String>) -> Result<()> {
