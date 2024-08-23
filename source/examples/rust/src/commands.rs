@@ -229,7 +229,20 @@ pub fn stop_endpoint(globals: &mut Globals, args: &Vec<String>) -> Result<()> {
     if args.len() != 1 {
         return help(globals, &vec!["stop-endpoint".to_string()]);
     }
-    bail!("not implemented");
+
+    let client_service_id = &args[0];
+
+    match globals.context.as_mut() {
+        None => bail!("context not yet initialised"),
+        Some(context) => {
+            if let Some((endpoint_private_key, _, _)) = globals.endpoint_server_credentials.get(client_service_id.as_str()) {
+                let client_service_id = V3OnionServiceId::from_private_key(endpoint_private_key);
+                context.endpoint_server_stop(client_service_id)?;
+            }
+        }
+    }
+
+    Ok(())
 }
 
 pub fn connect_endpoint(globals: &mut Globals, args: &Vec<String>) -> Result<()> {
