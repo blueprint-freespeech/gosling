@@ -202,13 +202,15 @@ The following additional dependencies are required for this configure option:
 cmake -DBUILD_EXAMPLES=ON
 ```
 
-Builds a cgosling-based C++ example program.
+Builds a Gosling-based Rust example chat application and the equivalent (and interoperable) cgosling-based C++ example chat application.
 
 The following additional dependencies are required for this configure option:
 
 - [boost >= 1.66](https://www.boost.org/)
 - [ncurses](https://invisible-mirror.net/ncurses/ncurses.html)
 - [nlohmann::json](https://github.com/nlohmann/json/releases/tag/v3.11.3)
+
+It is also dependent on the **ENABLE_LEGACY_TOR_PROVIDER** config option.
 
 ### BUILD_DEBIAN_SOURCE_PACKAGE
 
