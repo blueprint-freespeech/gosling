@@ -306,11 +306,27 @@ pub fn list_peers(globals: &mut Globals, args: &Vec<String>) -> Result<()> {
     Ok(())
 }
 
-pub fn chat(globals: &mut Globals, args: &Vec<String>) -> Result<()> {
+pub fn chat(globals: &mut Globals, args: &mut Vec<String>) -> Result<()> {
     if args.len() < 2 {
         return help(globals, &vec!["chat".to_string()]);
     }
-    bail!("not implemented");
+
+    if let None = globals.context.as_mut() {
+        bail!("context not yet initialised");
+    }
+
+    let peer_service_id = args.remove(0);
+    let mut message = args.join(" ");
+    message.push('\n');
+
+    if let Some((_reader, writer)) = globals.connected_peers.get_mut(peer_service_id.as_str()) {
+        writer.write(message.as_bytes())?;
+        writer.flush()?;
+    } else {
+        globals.term.write_line(format!("no connection found for {peer_service_id}").as_str());
+    }
+
+    Ok(())
 }
 
 pub fn exit(globals: &mut Globals, _args: &Vec<String>) -> Result<()> {

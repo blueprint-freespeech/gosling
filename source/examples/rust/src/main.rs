@@ -19,7 +19,7 @@ fn main() -> Result<()> {
     globals.term.write_line("Type help for a list of commands");
     // event loop
     while !globals.exit_requested {
-        if let Some(cmd) = globals.term.update()? {
+        if let Some(mut cmd) = globals.term.update()? {
             if let Err(err) = match cmd.command.as_str() {
                 "help" => commands::help(&mut globals, &cmd.arguments),
                 "init-context" => commands::init_context(&mut globals, &cmd.arguments),
@@ -31,7 +31,7 @@ fn main() -> Result<()> {
                 "connect-endpoint" => commands::connect_endpoint(&mut globals, &cmd.arguments),
                 "drop-peer" => commands::drop_peer(&mut globals, &cmd.arguments),
                 "list-peers" => commands::list_peers(&mut globals, &cmd.arguments),
-                "chat" => commands::chat(&mut globals, &cmd.arguments),
+                "chat" => commands::chat(&mut globals, &mut cmd.arguments),
                 "exit" => commands::exit(&mut globals, &cmd.arguments),
                 invalid => Ok(globals.term.write_line(format!("invalid command: {invalid}").as_str()))
             } {
@@ -156,6 +156,7 @@ fn main() -> Result<()> {
                         channel_name: _,
                         stream,
                     } => {
+                        stream.set_nonblocking(true)?;
                         let read: Box<dyn BufRead> = Box::new(BufReader::new(stream.try_clone()?));
                         let write: Box<dyn Write> = Box::new(stream) as Box<dyn Write>;
                         globals.connected_peers.insert(client_service_id.to_string(), (read, write));
@@ -181,6 +182,7 @@ fn main() -> Result<()> {
                         // this client has connected to
                         for (identity_service_id, endpoint_client_credential ) in globals.endpoint_client_credentials.iter() {
                             if endpoint_client_credential.0 == endpoint_service_id {
+                                stream.set_nonblocking(true)?;
                                 let read: Box<dyn BufRead> = Box::new(BufReader::new(stream.try_clone()?));
                                 let write: Box<dyn Write> = Box::new(stream) as Box<dyn Write>;
                                 globals.connected_peers.insert(identity_service_id.clone(), (read, write));
@@ -203,6 +205,31 @@ fn main() -> Result<()> {
                 }
             }
         }
+
+        // handle reads from connect peers
+        globals.connected_peers.retain(|peer_service_id, (ref mut reader, _writer)| -> bool {
+            let mut message: String = Default::default();
+            match reader.read_line(&mut message) {
+                // no more bytes to read EOF
+                Ok(0) => {
+                    globals.term.write_line(format!("{peer_service_id}'s stream reached EOF ").as_str());
+                    false
+                },
+                // message read
+                Ok(_) => {
+                    globals.term.write_line(format!("chat from {peer_service_id}:").as_str());
+                    globals.term.write_line(format!("< {message}").as_str());
+                    true
+                },
+                Err(err) => match err.kind() {
+                    std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut => true,
+                    _ => {
+                        globals.term.write_line(format!("error reading from {peer_service_id}: {:?}", err).as_str());
+                        false
+                    }
+                }
+            }
+        });
     }
     Ok(())
 }
