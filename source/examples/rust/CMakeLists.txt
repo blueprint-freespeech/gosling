@@ -28,7 +28,7 @@ if (BUILD_EXAMPLES AND ENABLE_LEGACY_TOR_PROVIDER)
     # Install example_chat_rs binary
     #
 
-    install(FILES
+    install(PROGRAMS
         ${example_chat_rs_outputs}
         TYPE BIN)
 endif()
