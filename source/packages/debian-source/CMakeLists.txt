@@ -32,7 +32,7 @@ if (BUILD_DEBIAN_SOURCE_PACKAGE)
         ${CMAKE_CURRENT_BINARY_DIR}/README.md)
 
     add_custom_command(
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/debian ${CMAKE_CURRENT_SOURCE_DIR}/README.md
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/debian/* ${CMAKE_CURRENT_SOURCE_DIR}/README.md
         OUTPUT ${cgosling_debian_source_package_outputs}
         # build source tree
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${GOSLING_TARBALL_DIR}
