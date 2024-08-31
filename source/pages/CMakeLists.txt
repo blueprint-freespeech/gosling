@@ -4,6 +4,7 @@ if (BUILD_PAGES)
     find_program(MUSTACHE_EXECUTABLE NAMES mustache)
     find_program(PLANTUML_EXECUTABLE NAMES plantuml)
     find_program(TIDY_EXECUTABLE NAMES tidy)
+    find_program(GIT_EXECUTABLE NAMES git)
 
     if (NOT PANDOC_EXECUTABLE)
         message(FATAL_ERROR "pandoc not found; required to build pages")
@@ -68,11 +69,17 @@ if (BUILD_PAGES)
             COMMAND pandoc -f markdown -t html5 ${CMAKE_CURRENT_SOURCE_DIR}/content/${file_md} -o ${file_inc_xhtml})
         # create .yml file for title
         set(file_yml "${file}.yml")
+        if  (GIT_EXECUTABLE)
+            execute_process(COMMAND git log -1 --pretty=format:%cs ${CMAKE_CURRENT_SOURCE_DIR}/content/${file_md} OUTPUT_VARIABLE modified_date)
+        else ()
+            set(modified_date "unknown")
+        endif()
+
         add_custom_command(
             OUTPUT ${file_yml}
             COMMAND echo "title: ${title}" > ${file_yml}
             COMMAND echo "year: ${year}" >> ${file_yml}
-            COMMAND git log -1 --pretty=\"format:modified-date: %cs\" ${CMAKE_CURRENT_SOURCE_DIR}/content/${file_md} >> ${file_yml})
+            COMMAND echo "modified-date: ${modified_date}" >> ${file_yml})
 
         # generate .xhtml from template and sources
         set(file_xhtml "${file}.xhtml")
