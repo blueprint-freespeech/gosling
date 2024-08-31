@@ -1,0 +1,186 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>Gosling | Usage Guide</title>
+  <link rel="icon" type="image/x-icon" href="images/favicon.png" />
+  <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="navigation">
+      <div class="logo">
+        <a href="index.xhtml"><img src="images/gosling-square-small-opt.svg" alt="Gosling Icon" /></a>
+      </div>
+      <h2>Navigation</h2>
+      <ul>
+        <li><a href="news.xhtml">News</a></li>
+        <li><a href="https://github.com/blueprint-freespeech/gosling">GitHub</a></li>
+        <li><a href="design-doc.xhtml">Design Document</a></li>
+        <li><a href="usage-guide.xhtml">Usage Guide</a></li>
+        <li>Source Documentation
+          <ul>
+            <li><a href="cgosling/index.html">cgosling (C/C++)</a></li>
+            <li><a href="crates/gosling/index.html">gosling</a></li>
+            <li><a href="crates/tor_interface/index.html">tor-interface</a></li>
+            <li><a href="crates/honk_rpc/index.html">honk-rpc</a></li>
+          </ul>
+        </li>
+        <li>Protocol Specifications
+          <ul>
+            <li><a href="gosling-spec.xhtml">Gosling</a></li>
+            <li><a href="honk-rpc-spec.xhtml">Honk-RPC</a></li>
+          </ul>
+        </li>
+        <li><a href="coverage.html">Test Coverage</a></li>
+        <li><a href="security-reviews.xhtml">Security Reviews</a></li>
+      </ul>
+    </div>
+    <div class="content">
+<h1 id="usage-guide">Usage Guide</h1>
+<h4 id="morgan-morgantorproject.org">Morgan &lt;<a href="mailto:morgan@torproject.org">morgan@torproject.org</a>&gt;</h4>
+<hr />
+<p><strong>NOTE</strong>: A high-level understanding of the Gosling protocol and participants is presumed. If you are new, you will most likely want to read the <a href="design-doc.xhtml">Design Document</a> first.</p>
+<p>The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in this document are to be interpreted as described in RFC 2119<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>.</p>
+<h2 id="overview">Overview</h2>
+<p>This is a guide for using the <a href="../gosling/crates/gosling/index.html"><code>gosling</code></a> Rust crate. Additional information about consuming Gosling through the <code>libcgosling</code> C-FFI can be found in the <a href="#libcgosling">libcgosling</a> section. The toy applications in the <a href="https://github.com/blueprint-freespeech/gosling/tree/main/source/examples"><code>/source/examples</code></a> directory provide bare-bones examples for how to interact with both of these libraries.</p>
+<p>The primary types in the <code>gosling</code> crate are the <a href="../gosling/crates/gosling/context/struct.Context.html"><code>Context</code></a> and the <a href="../gosling/crates/gosling/context/enum.ContextEvent.html"><code>ContextEvent</code></a>.</p>
+<p>A <code>Context</code> encapsulates everything about a peer in a Gosling-based peer-to-peer network. It manages the Tor Network connectivity, Gosling handshakes, and other implementation details.</p>
+<p>Forward progress is handled via the <a href="../gosling/crates/gosling/context/struct.Context.html#method.update"><code>Context::update()</code></a> method. This method returns a list of <code>ContextEvent</code> objects to be handled by the application. If <code>Context::update()</code> is not called, then the internal state-machine will not progress.</p>
+<p>The <code>ContextEvent</code> objects may be purely informative (e.g. tor logs), or may signal some action needed by the application (e.g. to progress a Gosling handshake).</p>
+<p>The general life-cycle of a <code>Context</code> object is its initial creation, a request for bootstrap, and repeated calls to <code>Context::update()</code>. During this update cycle, the identity server or endpoint servers can be started and stopped, and connections to peers can be made.</p>
+<h2 id="connecting-to-the-tor-network">Connecting to the Tor Network</h2>
+<p>A <code>Context</code> uses a <a href="../gosling/crates/tor_interface/tor_provider/trait.TorProvider.html"><code>TorProvder</code></a> object to handle Tor Network connectivity. Currently, only a wrapper around the ‘little-t’ tor daemon is fully supported via the <a href="../gosling/crates/tor_interface/legacy_tor_client/struct.LegacyTorClient.html"><code>LegacyTorClient</code></a> type.</p>
+<p>Arti support is under development.</p>
+<h3 id="legacy-tor-client">Legacy Tor Client</h3>
+<p>The <code>LegacyTorClient</code> has two modes of operation, which can be configured using a <a href="../gosling/crates/tor_interface/legacy_tor_client/enum.LegacyTorClientConfig.html"><code>LegacyTorClientConfig</code></a> enum. To construct a Gosling context, a <code>TorProvider</code> impl</p>
+<h4 id="bundled-tor">Bundled Tor</h4>
+<p>A ‘bundled’ tor is a new instance of the tor daemon which is wholly owned and configured by its parent process (the Gosling-using application in this instance). As such, there are various configuration options available.</p>
+<p>This is the typical way tor-using applications (e.g. Tor Browser, Ricochet-Refresh, cwtch, OnionShare, etc) access the tor network. These applications also build and package their own tor daemon executable, but that is beyond the scope of Gosling.</p>
+<h4 id="system-tor">System Tor</h4>
+<p>A ‘system’ tor is a global instance which is used and shared by multiple applications, or even the entire system (e.g. in the Tails operating system).</p>
+<h2 id="identityendpoint-server-and-client-usage">Identity+Endpoint Server and Client Usage</h2>
+<p>For a detailed description of the underlying Gosling protocol and stages of the identity and endpoint handshakes, please see the <a href="gosling-spec.xhtml">Gosling Protocol specification</a></p>
+<h3 id="hosting-an-identity-server">Hosting an identity server</h3>
+<p>All of the identity server functions have the form <code>Context::identity_server_*</code>.</p>
+<p>A Gosling peer’s identity server can be started and stopped using the <a href="../gosling/crates/gosling/context/struct.Context.html#method.identity_server_start"><code>Context::identity_server_start()</code></a> and <a href="../gosling/crates/gosling/context/struct.Context.html#method.identity_server_stop"><code>Context::identity_server_stop()</code></a> methods.</p>
+<p>Once an identity server is running and published, the Gosling consumer will receive a <a href="../gosling/crates/gosling/context/enum.ContextEvent.html#variant.IdentityServerPublished"><code>ContextEvent::IdentityServerPublished</code></a> event. After this event is received, it is possible for remote peers to connect and begin the identity handshake to request endpoint credentials.</p>
+<p>The general flow of an identity server handshake follows:</p>
+<ul>
+<li><p>Receive <a href="../gosling/crates/gosling/context/enum.ContextEvent.html#variant.IdentityServerHandshakeStarted"><code>ContextEvent::IdentityServerHandshakeStarted</code></a> - Signals that a peer has connected to identity server, but not yet started identity handshake. A <code>HandshakeHandle</code> is provided so the Gosling consumer can associate future events with each other.</p></li>
+<li><p>Receive <a href="../gosling/crates/gosling/context/enum.ContextEvent.html#variant.IdentityServerEndpointRequestReceived"><code>ContextEvent::IdentityServerEndpointRequestReceived</code></a> - Signals a connected peer has started the identity handshake. To progress this handshake, the Gosling consumer must invoke the <a href="../gosling/crates/gosling/context/struct.Context.html#method.identity_server_handle_endpoint_request_received"><code>Context::identity_server_handle_endpoint_request_received()</code></a> method.</p>
+<p>The purpose of this method is to indicate to the handshake machinery whether the connecting peer is permitted to to request an endpoint (based on their provided service-id), whether the endpoint the connecting peer is requesting is valid, and finally to construct and send an endpoint challenge.</p>
+<p>This endpoint challenge is an application-specific BSON document which is sent to the requesting client. It is up to the Gosling consumer to determine if/how this challenge is used, responded to, and verified.</p></li>
+<li><p>Receive <a href="../gosling/crates/gosling/context/enum.ContextEvent.html#variant.IdentityServerChallengeResponseReceived"><code>ContextEvent::IdentityServerChallengeResponseReceived</code></a> - Signals that a peer has received the server’s endpoint challenge, and has crafted a response. To progress this handshake, the Gosling consumer must invoke the <a href="../gosling/crates/gosling/context/struct.Context.html#method.identity_server_handle_challenge_response_received"><code>Context::identity_server_handle_challenge_response_received()</code></a> method.</p>
+<p>The purpose of this method is to verify the identity client’s crafted endpoint challenge-response object, and determine whether the handshake should continue successfully, or if the endpoint request should be rejected.</p></li>
+<li><p>Receive <a href="../gosling/crates/gosling/context/enum.ContextEvent.html#variant.IdentityServerHandshakeCompleted"><code>ContextEvent::IdentityServerHandshakeCompleted</code></a> - Signals that this identity handshake successfully completed and a configuration for an endpoint server has been negotiated and delivered to the connected peer. This event contains several members which must be saved in-order to start the endpoint-server for this peer.</p>
+<p><strong>OR</strong></p></li>
+<li><p>Receive <a href="../gosling/crates/gosling/context/enum.ContextEvent.html#variant.IdentityServerHandshakeRejected"><code>ContextEvent::IdentityServerHandshakeRejected</code></a> - Signals that the identity handshake successfully completed, but due to at least one of the provided reasons, the client’s request was rejected.</p></li>
+</ul>
+<p>It should also be noted that at any point in the handshake the server may receive a <a href="../gosling/crates/gosling/context/enum.ContextEvent.html#variant.IdentityServerHandshakeFailed"><code>ContextEvent::IdentityServerHandshakeFailed</code></a> containing reason for failure.</p>
+<h3 id="requesting-an-endpoint-from-an-identity-server">Requesting an endpoint from an identity server</h3>
+<p>All of the identity client functions have the form <code>Context::identity_client_*</code>.</p>
+<p>A Gosling peer can initiate an endpoint request with the <a href="../gosling/crates/gosling/context/struct.Context.html#method.identity_client_begin_handshake"><code>Context::identity_client_begin_handshake()</code></a> method.</p>
+<p>The general flow of an identity client handshake follows:</p>
+<ul>
+<li><p>Receive <a href="../gosling/crates/gosling/context/enum.ContextEvent.html#variant.IdentityClientChallengeReceived"><code>ContextEvent::IdentityClientChallengeReceived</code></a> - Signals that the connected identity server has sent the client an endpoint challenge and the client must now construct and send an endpoint challenge-response. To progress this handshake, the Gosling consumer must invoke the <a href="../gosling/crates/gosling/context/struct.Context.html#method.identity_client_handle_challenge_received"><code>Context::identity_client_handle_challenge_received()</code></a> method.</p>
+<p>The purpose of this method is indicate to the handshake machinery what response to send in reply to the endpoint challenge.</p>
+<p>The endpoint challenge-response is an application-specific BSON document which is sent to and verified by the identity server. The identity server’s verification method is also application-specific. If the server rejects the endpoint challenge-response the endpoint request will be rejected.</p></li>
+<li><p>Receive <a href="../gosling/crates/gosling/context/enum.ContextEvent.html#variant.IdentityClientHandshakeCompleted"><code>ContextEvent::IdentityClientHandshakeCompleted</code></a> - Signals that this identity handshake successfully completed and credentials for an endpoint server have been negotiated and delivered to this peer. This event contains several members which must be saved in-order to connect to the remote peer’s endpoint server.</p>
+<p><strong>NOTE</strong> The remote peer will still need to start their endpoint server before this peer can connect,</p></li>
+</ul>
+<p>It should also be noted that at any point in the handshake the client may receive a <a href="../gosling/crates/gosling/context/enum.ContextEvent.html#variant.IdentityClientHandshakeFailed"><code>ContextEvent::IdentityClientHandshakeFailed</code></a> containing reason for failure.</p>
+<p>At any point an identity client handshake can be aborted using the <a href="../gosling/crates/gosling/context/struct.Context.html#method.identity_client_abort_handshake"><code>Context::identity_client_abort_handshake()</code></a> method.</p>
+<h3 id="hosting-an-endpoint-server">Hosting an endpoint server</h3>
+<p>All of the endpoint server functions have the form <code>Context::endpoint_server_*</code>.</p>
+<p>A Gosling peer’s endpoint server can be started and stopped using the <a href="../gosling/crates/gosling/context/struct.Context.html#method.endpoint_server_start"><code>Context::endpoint_server_start()</code></a> and <a href="../gosling/crates/gosling/context/struct.Context.html#method.endpoint_server_stop"><code>Context::endpoint_server_stop()</code></a> methods.</p>
+<!--Once an endpoint server is running and published, the Gosling consumer will receive a [`ContextEvent::IdentityServerPublished`](../gosling/crates/gosling/context/enum.ContextEvent.html#variant.EndpointServerPublished) event. After this event is received, it is possible for remote peers to connect and begin the endpoint handshake to request a channel.-->
+<p>The general of an endpoint server handshake follows:</p>
+<ul>
+<li><p>Receive <a href="../gosling/crates/gosling/context/enum.ContextEvent.html#variant.EndpointServerHandshakeStarted"><code>ContextEvent::EndpointServerHandshakeStarted</code></a> - Signals that a peer has connected to endpoint server, but not yet started endpoint handshake. A <code>HandshakeHandle</code> is provided so the Gosling consumer can associate future events with each other.</p></li>
+<li><p>Receive <a href="../gosling/crates/gosling/context/enum.ContextEvent.html#variant.EndpointServerChannelRequestReceived"><code>ContextEvent::EndpointServerChannelRequestReceived</code></a> - Signals a connected peer has started the endpoint handshake. To progress this handshake, the Gosling consumer must invoke the <a href="../gosling/crates/gosling/context/struct.Context.html#method.endpoint_server_handle_channel_request_received"><code>Context::endpoint_server_handle_channel_request_received()</code></a> method.</p>
+<p>The purpose of this method is to indicate to the handshake machinery whether the connecting peer is permitted to connect to the provided channel.</p></li>
+<li><p>Receive <a href="../gosling/crates/gosling/context/enum.ContextEvent.html#variant.EndpointServerHandshakeCompleted"><code>ContextEvent::EndpointServerHandshakeCompleted</code></a> - Signals that this endpoint handshake successfully completed and a channel has been opened to the connected peer. This event includes a <code>TcpStream</code> which the Gosling consumer may now use for application-specific communications with the connected peer.</p>
+<p><strong>OR</strong></p></li>
+<li><p>Receive <a href="../gosling/crates/gosling/context/enum.ContextEvent.html#variant.EndpointServerHandshakeRejected"><code>ContextEvent::EndpointServerHandshakeRejected</code></a> - Signals that the endpoint handshake successfully completed, but due to at least one of the provided reasons, the client’s request was rejected.</p></li>
+</ul>
+<p>It should also be noted that at any point in the handshake the server may receive a <a href="../gosling/crates/gosling/context/enum.ContextEvent.html#variant.EndpointServerHandshakeRejected"><code>ContextEvent::EndpointServerHandshakeFailed</code></a> containing reason for failure.</p>
+<h3 id="requesting-a-channel-from-an-endpoint-server">Requesting a channel from an endpoint server</h3>
+<p>All of the endpoint client functions have the form <code>Context::endpoint_client_*</code>.</p>
+<p>A Gosling peer can initiate a channel request with the <a href="../gosling/crates/gosling/context/struct.Context.html#method.endpoint_client_begin_handshake"><code>Context::endpoint_client_begin_handshake()</code></a> method.</p>
+<p>The general flow of an endpoint client handshake follows:</p>
+<ul>
+<li>Receive <a href="../gosling/crates/gosling/context/enum.ContextEvent.html#variant.EndpointClientHandshakeCompleted"><code>ContextEvent::EndpointClientHandshakeCompleted</code></a> - Signals that this endpoint handshake successfully completed and a channel has been oepend to the connected peer. This event includes a <code>TcpStream</code> which the Gosling consumer may now use for application-specific communications with the connected peer.</li>
+</ul>
+<p>It should also be noted that at any point in the handshake the client may receive a <a href="../gosling/crates/gosling/context/enum.ContextEvent.html#variant.EndpointClientHandshakeFailed"><code>ContextEvent::EndpointClientHandshakeFailed</code></a> containing reason for failure.</p>
+<p>At any point an endpoint client handshake can be aborted using the <a href="../gosling/crates/gosling/context/struct.Context.html#method.endpoint_client_abort_handshake"><code>Context::endpoint_client_abort_handshake()</code></a> method.</p>
+<h2 id="cryptographic-types">Cryptographic Types</h2>
+<p>The Gosling protocol and crate builds upon Tor and its various cryptographic types. These types are outlined and their purposes within Gosling are described here. The implementation for these types lives in the <a href="../gosling/crates/tor_interface/index.html"><code>tor-interface</code></a> crate.</p>
+<p>Consumers of Gosling will need to handle safely using and storing these keys.</p>
+<h3 id="ed25519-private-key">ed25519 private key</h3>
+<p>This type of cryptographic key is required to publish an onion-service.</p>
+<p>In the Gosling protocol, a peer’s long-term identity is derived from a securely-generated, secret ed25519 private key. This key is used to publish a peer’s identity server and as part of identity client authentication process.</p>
+<p>A peer will also have an ed25519 private key for each of the remote peers which have successfully requested endpoint server credentials from it. These keys are used to publish endpoint servers for these peers to connect to.</p>
+<p>Gosling also uses this type of key internally in the protocol to sign messages to prove ownership of this key, but consumers of the <code>gosling</code> crate do not need to worry about this.</p>
+<p>Consumers of Gosling will use this type when starting identity or endpoint servers. They will also need to securely create an ed25519 private key when creating an intial identity for a peer using the <a href="../gosling/crates/tor_interface/tor_crypto/struct.Ed25519PrivateKey.html#method.generate"><code>Ed25519PrivateKey::generate()</code></a> method.</p>
+<p>The associated <code>tor-interface</code> type is the <a href="../gosling/crates/tor_interface/tor_crypto/struct.Ed25519PrivateKey.html"><code>Ed25519PrivateKey</code></a>.</p>
+<h4 id="warning">⚠ Warning ⚠</h4>
+<p>An ed25519 private key MUST never be shared or distributed. It is strongly RECOMMENDED that this type of key be encrypted when stored on disk.</p>
+<p>If an adversary were to acquire another Gosling peer’s ed25519 private key, then they would be able to impersonate that peer.</p>
+<h3 id="ed25519-public-key">ed25519 public key</h3>
+<p>This type of cryptographic key is the public-key counterpart to the ed25119 private key. This type is used internally in the Gosling handshakes for verifying cryptographic proofs signed with a counter-parts ed25519 private key.</p>
+<p>Consumers of Gosling will not use this type.</p>
+<p>The associated <code>tor-interface</code> type is the <a href="../gosling/crates/tor_interface/tor_crypto/struct.Ed25519PublicKey.html"><code>Ed25519PublicKey</code></a>.</p>
+<h3 id="v3-onion-service-service-id">v3 onion-service service-id</h3>
+<p>This type is fundamentally an alternate (and equivalent) representation of an ed25519 public key.</p>
+<p>A v3 onion-service service-id is in some ways similar to a domain name, as it is the primary type needed by a Tor client to connect to a v3 onion-service.</p>
+<p>In Gosling there are two types of v3 onion-service service-ids:</p>
+<ul>
+<li>identity server service-ids</li>
+<li>endpoint server service-ids</li>
+</ul>
+<p>As described in the design document, a peer has a single identity server. This server’s v3 onion-service service-id serves as a peer’s long-term identity.</p>
+<p>A peer also has (potentially) many associated endpoint server service-ids, one for each of the remote peers which it has requested endpoint credentials for. The endpoint server service-id is <em>one</em> of the credentials required to connect to an authorised endpoint server.</p>
+<p>Consumers of Gosling will encounter this type when attempting to connect to an identity server or endpoint server, and after successfully completing an endpoint request.</p>
+<p>The associated <code>tor-interface</code> type is the <a href="../gosling/crates/tor_interface/tor_crypto/struct.V3OnionServiceId.html"><code>V3OnionServiceId</code></a>.</p>
+<h4 id="warning-1">⚠ Warning ⚠</h4>
+<p>An identity server’s v3 onion-service service-id <em>has</em> to be shared in-order for the peer to complete endpoint requests.</p>
+<p>Any adversary which knows a peer’s identity server v3 onion-service id will be able to secretly collect the online/offline status metadata about that identity server. However, it should be noted that the identity server does not need to be online to connect to authorised peers, as they connect through secret endpoint servers.</p>
+<p>An endpoint server’s v3 onion-service service-id MUST NOT be shared.</p>
+<p>If an adversary were to learn an endpoint server’s v3 onion-service service-id, then they would also be able to secretly collect the online/offline status metadata about that endpoint server.</p>
+<h3 id="x25519-private-key">x25519 private key</h3>
+<p>This type is used by Gosling as part of v3 onion-service client authorisation. In Gosling, endpoint server’s v3 onion-service descriptors are encrypted using an x25519 public key, such that only the associated x25519 private key holder can read them. The x25519 private key holder is therefore the only party which can connect to their associated endpoint server.</p>
+<p>Consumers of Gosling will encounter this type after successfully completing an endpoint request. It will need to be saved and used whenever the peer connects to the associated endpoint server.</p>
+<p>Consumers of Gosling do not need to worry about creating x25519 private keys, as the Gosling <code>Context</code> takes care of that.</p>
+<p>The associated <code>tor-interface</code> type is the <a href="../gosling/crates/tor_interface/tor_crypto/struct.X25519PrivateKey.html"><code>X25519PrivateKey</code></a>.</p>
+<h4 id="warning-2">⚠ Warning ⚠</h4>
+<p>An x25519 private key MUST never be shared or distributed. It is strongly RECOMMENDED that this type of key be encrypted when stored on disk. It is also strongly RECOMMENDED that x25519 key-pairs not be re-used across unrelated v3 onion-services.</p>
+<p>If an adversary were to acquire the x25519 private key used to encrypt the onion-service descriptors for a particular onion-service, then they would be able connect to that onion-service (presuming the adversary <em>also</em> had the associated onion-service service-id).</p>
+<p>If a peer were to re-use an x25519 key-pair for client authorisation, then the multiple identities re-using said key-pair would be linked or associated if an adversary were to discover the key re-use.</p>
+<h3 id="x25519-public-key">x25519 public key</h3>
+<p>This type of cryptographic key is the public-key counterpart to the x25119 private key. This type is used by Gosling as part of v3 onion-service client authorisation. In Gosling, an endpoint server needs the endpoint client’s x25519 public key to encrypt the v3 onion-service descriptors. This x25519 public key is sent by the identity client when requesting an endpoint server.</p>
+<p>Consumers of Gosling will encounter this type after successfully completing an endpoint request. It will need to be saved and used whenever the peer starts the associated endpoint server.</p>
+<p>The associated <code>tor-interface</code> type is the <a href="../gosling/crates/tor_interface/tor_crypto/struct.X25519PublicKey.html"><code>X25519PublicKey</code></a>.</p>
+<h4 id="warning-3">⚠ Warning ⚠</h4>
+<p>It is strongly RECOMMENDED that x25519 key-pairs not be re-used across unrelated v3 onion-services.</p>
+<p>If a peer were to re-use an x25519 key-pair for client authorisation, then the multiple identities re-using said key-pair would be linked or associated if an adversary were to discover the key re-use.</p>
+<h2 id="libcgosling">libcgosling</h2>
+<p>The <code>libcgosling</code> library wraps the <code>gosling</code> crate in a C-FFI. It can be built as either a static or shared library. All non-Rust (e.g. C/C++, Java, Python, etc) bindings to the <code>gosling</code> crate ultimately goes through <code>libcgosling</code>.</p>
+<p>Most of the various (required) Rust types used in the <code>gosling</code> and <code>tor-interface</code> crates have equivalent C types. In general, a Rust type <code>Foo</code> maps to a C struct <code>gosling_foo_t</code>.</p>
+<p>One major exception to this is the <code>ContextEvent</code> type. Rather than directly exposing <code>Context::update()</code> and returning a list of <code>gosling_context_event_t</code>s, <code>libcgosling</code> instead depends on a callback mechanism inspired by the GLFW library. The <code>libcgosling</code> consumer must register callbacks to handle events which are called during the execution of the <code>gosling_context_poll_events()</code> function.</p>
+<section class="footnotes" role="doc-endnotes">
+<hr />
+<ol>
+<li id="fn1" role="doc-endnote"><p>RFC 2119 <a href="https://www.rfc-editor.org/rfc/rfc2119">https://www.rfc-editor.org/rfc/rfc2119</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+      <hr/>
+      <footer>
+        <p>&copy; 2023-2024 <a href="https://www.blueprintforfreespeech.net">Blueprint for Free Speech</a>. All rights reserved.</p>
+        <p><i>Page last modified date: 2024-08-31</i></p>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>
+
