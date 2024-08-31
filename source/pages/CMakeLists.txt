@@ -35,6 +35,7 @@ if (BUILD_PAGES)
         index.md
         news.md
         security-reviews.md)
+    list(LENGTH page_sources page_sources_count)
 
     # page titles for each
     set(page_titles
@@ -44,6 +45,12 @@ if (BUILD_PAGES)
         "Main"
         "News"
         "Security Review")
+    list(LENGTH page_titles page_titles_count)
+
+    # ensure we are not missing titles or pages
+    if(NOT page_sources_count EQUAL page_titles_count)
+        message(FATAL_ERROR "mismatch in number of page sources and page titles")
+    endif()
 
     # get current year for copyright notice
     string(TIMESTAMP year "%Y")
