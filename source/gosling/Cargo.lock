@@ -444,7 +444,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "cgosling"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "anyhow",
  "bson",
@@ -1341,7 +1341,7 @@ checksum = "9985c9503b412198aa4197559e9a318524ebc4519c229bfa05a535828c950b9d"
 
 [[package]]
 name = "gosling"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "bson",
@@ -1455,7 +1455,7 @@ dependencies = [
 
 [[package]]
 name = "honk-rpc"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "bson",
@@ -3877,7 +3877,7 @@ dependencies = [
 
 [[package]]
 name = "tor-interface"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "arti-client",
