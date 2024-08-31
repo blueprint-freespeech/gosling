@@ -69,7 +69,9 @@ if (BUILD_PAGES)
         add_custom_command(
             OUTPUT ${file_yml}
             COMMAND echo "title: ${title}" > ${file_yml}
-            COMMAND echo "year: ${year}" >> ${file_yml})
+            COMMAND echo "year: ${year}" >> ${file_yml}
+            COMMAND git log -1 --pretty=\"format:modified-date: %cs\" ${CMAKE_CURRENT_SOURCE_DIR}/content/${file_md} >> ${file_yml})
+
         # generate .xhtml from template and sources
         set(file_xhtml "${file}.xhtml")
         add_custom_command(
