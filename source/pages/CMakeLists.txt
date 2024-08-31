@@ -34,7 +34,8 @@ if (BUILD_PAGES)
         honk-rpc-spec.md
         index.md
         news.md
-        security-reviews.md)
+        security-reviews.md
+        usage-guide.md)
     list(LENGTH page_sources page_sources_count)
 
     # page titles for each
@@ -44,7 +45,8 @@ if (BUILD_PAGES)
         "Honk-RPC Protocol Specification"
         "Main"
         "News"
-        "Security Review")
+        "Security Review"
+        "Usage Guide")
     list(LENGTH page_titles page_titles_count)
 
     # ensure we are not missing titles or pages
