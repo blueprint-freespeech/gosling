@@ -38,10 +38,12 @@ if (BUILD_PAGES)
 
     # page titles for each
     set(page_titles
-        Main
-        News
-        "Honk-RPC Specification"
-        "Gosling Specification")
+        "Design Document"
+        "Gosling Protocol Specification"
+        "Honk-RPC Protocol Specification"
+        "Main"
+        "News"
+        "Security Review")
 
     # get current year for copyright notice
     string(TIMESTAMP year "%Y")
