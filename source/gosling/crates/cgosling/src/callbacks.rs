@@ -69,7 +69,7 @@ pub(crate) struct EventCallbacks {
 /// @param tag: the null-terminated short name of the current bootstrap stage
 /// @param tag_length: the number of chrs in tag not including any null-terminator
 /// @param summary: the null-terminated description of the current bootstra stage
-/// @param summmary_length: the number of chars in summary not including the null-terminator
+/// @param summary_length: the number of chars in summary not including the null-terminator
 pub type GoslingTorBootstrapStatusReceivedCallback = Option<
     extern "C" fn(
         context: *mut GoslingContext,
@@ -125,10 +125,6 @@ pub type GoslingIdentityClientHandshakeChallengeResponseSizeCallback = Option<
 ///
 /// @param context: the context associated with this event
 /// @param handshake_handle: the handshake handle this callback is associated with
-/// @param endpoint_name: a null-terminated ASCII string containing the name of the
-///  endpoint being requested
-/// @param endpoint_name_length: the number of chars in endpoint_name, not
-///  including the null-terminator
 /// @param challenge_buffer: the source buffer containing a BSON document received
 ///  from the  identity server to serve as an endpoint request challenge
 /// @param challenge_buffer_size: the number of bytes in challenge_buffer
@@ -303,7 +299,7 @@ pub type GoslingIdentityServerHandshakeVerifyChallengeResponseCallback = Option<
 /// @param handshake_handle: the handshake handle this callback is associated with
 /// @param endpoint_private_key: the ed25519 private key of the endpoint server to host
 ///  for the client
-/// @param endoint_name: the null-terminated name of the new endpoint server
+/// @param endpoint_name: the null-terminated name of the new endpoint server
 /// @param endpoint_name_length: the length of the endpoint_name string not including
 ///  the null-terminator
 /// @param client_service_id: the onion service id of the client we have granted
@@ -413,7 +409,7 @@ pub type GoslingEndpointClientHandshakeFailedCallback = Option<
 pub type GoslingEndpointServerPublishedCallback = Option<
     extern "C" fn(
         context: *mut GoslingContext,
-        enpdoint_service_id: *const GoslingV3OnionServiceId,
+        endpoint_service_id: *const GoslingV3OnionServiceId,
         endpoint_name: *const c_char,
         endpoint_name_length: usize,
     ) -> (),

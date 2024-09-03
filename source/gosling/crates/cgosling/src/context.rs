@@ -377,6 +377,7 @@ pub extern "C" fn gosling_context_abort_identity_client_handshake(
 ///  onion service descriptor
 /// @param channel_name: the ascii-encoded name of the channel to open
 /// @param channel_name_length: the number of chars in channel name not including any null-terminator
+/// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_begin_endpoint_handshake(

@@ -33,13 +33,13 @@ pub struct GoslingProxyConfig;
 #[cfg(feature = "legacy-tor-provider")]
 define_registry! {ProxyConfig}
 
-/// Pluggable transports settings object used by tor provider to launch pluggable transports
+/// Pluggable transports settings object used by tor provider to launch pluggable-transports
 #[cfg(feature = "legacy-tor-provider")]
 pub struct GoslingPluggableTransportConfig;
 #[cfg(feature = "legacy-tor-provider")]
 define_registry! {PluggableTransportConfig}
 
-/// Bridge line to use with particular pluggable transport when connecting to the tor network
+/// Bridge line to use with particular pluggable-transport when connecting to the tor network
 #[cfg(feature = "legacy-tor-provider")]
 pub struct GoslingBridgeLine;
 #[cfg(feature = "legacy-tor-provider")]
@@ -67,7 +67,7 @@ define_registry! {TorProvider}
 
 /// Frees a gosling_proxy_config
 ///
-/// @param in_proxy: the proxy settings object to free
+/// @param in_proxy_config: the proxy config object to free
 #[no_mangle]
 #[cfg(feature = "legacy-tor-provider")]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
@@ -77,7 +77,7 @@ pub extern "C" fn gosling_proxy_config_free(in_proxy_config: *mut GoslingProxyCo
 
 /// Frees a gosling_pluggable_transport_config
 ///
-/// @param in_pluggable_transport: the pluggable transport object to free
+/// @param in_pluggable_transport_config: the pluggable-transport object to free
 #[no_mangle]
 #[cfg(feature = "legacy-tor-provider")]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
@@ -153,7 +153,7 @@ pub unsafe extern "C" fn gosling_proxy_config_new_socks4(
 
 /// Create a socks5 proxy definition
 ///
-/// @param out_proxy: returned proxy config object
+/// @param out_proxy_config: returned proxy config object
 /// @param proxy_address: the host address of the proxy, must not be an onion service
 /// @param username: username to authenticate with socks5 proxy
 /// @param username_length: number of characters in username, not counting any null-
@@ -269,15 +269,16 @@ pub unsafe extern "C" fn gosling_proxy_config_new_https(
 // Pluggable Transport
 //
 
-/// Create a new pluggable transport config object
+/// Create a new pluggable-transport config object
 ///
-/// @param out_pluggable_transport_config: returned pluggable transport object
-/// @param transports: comma-delimited list of transports this pluggable transport
+/// @param out_pluggable_transport_config: returned pluggable-transport object
+/// @param transports: comma-delimited list of transports this pluggable-transport
 ///  supports
 /// @param transports_length: number of characters in transports, not counting any
 ///  null-terminator
-/// @param path_to_binary: path to the pluggable transport binary, either absolute or
+/// @param path_to_binary: path to the pluggable-transport binary, either absolute or
 ///  relative to the tor daemon process
+/// @param path_to_binary_length: number of characters in path_to_binary, not counting any null-terminator
 /// @param error: filled on error
 #[no_mangle]
 #[cfg(feature = "legacy-tor-provider")]
@@ -316,10 +317,10 @@ pub unsafe extern "C" fn gosling_pluggable_transport_config_new(
     })
 }
 
-/// Add a command-line option to be used when launching the pluggable transport
+/// Add a command-line option to be used when launching the pluggable-transport
 ///
-/// @param pluggable_transport_config: the pluggable transport ocnfig object to update
-/// @param option: cmd-line option or flag to pass to the pluggable transport on launch
+/// @param pluggable_transport_config: the pluggable-transport ocnfig object to update
+/// @param option: cmd-line option or flag to pass to the pluggable-transport on launch
 /// @param option_length: number of characters in option, not counting any null-
 ///  terminator
 /// @param error: filled on error
@@ -357,7 +358,7 @@ pub unsafe extern "C" fn gosling_pluggable_transport_config_add_cmdline_option(
 /// Construct bridge line from string
 ///
 /// @param out_bridge_line: returned bridge line object
-/// @param bridge_line: a bridge address to connect to using a pluggable transport. For
+/// @param bridge_line: a bridge address to connect to using a pluggable-transport. For
 ///  more information, see: https://tb-manual.torproject.org/bridges/
 /// @param bridge_line_length: number of characters in bridge_line, not counting any
 ///  null-terminator
@@ -393,7 +394,7 @@ pub unsafe extern "C" fn gosling_bridge_line_from_string(
 
 /// Create a tor provider config to build a mock no-internet tor provider for testing.
 ///
-/// @param out_tor_provider: returned tor provider
+/// @param out_tor_provider_config: returned tor provider
 /// @param error: filled on error
 #[no_mangle]
 #[cfg(feature = "mock-tor-provider")]
@@ -633,8 +634,8 @@ pub unsafe extern "C" fn gosling_tor_provider_config_set_allowed_ports(
         Ok(())
     })
 }
-/// Add a pluggable transport config to a tor provider config. A tor provider config
-/// does not need to support pluggable transport configuration, so this function may
+/// Add a pluggable-transport config to a tor provider config. A tor provider config
+/// does not need to support pluggable-transport configuration, so this function may
 /// fail as a result. The currently supported tor provider configs are:
 /// - Legacy Bundled Client
 ///
@@ -642,7 +643,7 @@ pub unsafe extern "C" fn gosling_tor_provider_config_set_allowed_ports(
 /// configured with multiple pluggable-transports.
 ///
 /// @param tor_provider_config: the tor provider config to update
-/// @param pluggable_transport_config: the pluggable transport config to add to the tor
+/// @param pluggable_transport_config: the pluggable-transport config to add to the tor
 ///  provider config; must not be null
 /// @param error: filled on error
 #[no_mangle]
@@ -686,17 +687,16 @@ pub unsafe extern "C" fn gosling_tor_provider_config_add_pluggable_transport_con
     })
 }
 
-/// Add a pluggable transport config to a tor provider config. A tor provider config
-/// does not need to support pluggable transport configuration, so this function may
-/// fail as a result. The currently supported tor provider configs are:
+/// Add a bridge line to a tor provider config. A tor provider config does not need
+/// to support bridge lines, so this function may fail as a result. The currently
+/// supported tor provider configs are:
 /// - Legacy Bundled Client
 ///
 /// This function may be called multiple times allowing a tor provider config to be
-/// configured with multiple pluggable-transports.
+/// configured with multiple bridge lines.
 ///
 /// @param tor_provider_config: the tor provider config to update
-/// @param pluggable_transport_config: the pluggabel transport config to add to the tor
-///  provider config
+/// @param bridge_line: the bridge lin to add to the tor provider config
 /// @param error: filled on error
 #[no_mangle]
 #[cfg(feature = "legacy-tor-provider")]
@@ -741,6 +741,7 @@ pub unsafe extern "C" fn gosling_tor_provider_config_add_bridge_line(
 /// @param tor_provider_config: tor provider configuration
 /// @param error: filled on error
 #[no_mangle]
+#[cfg(any(feature = "mock-tor-provider", feature = "legacy-tor-provider"))]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_tor_provider_from_tor_provider_config(
     out_tor_provider: *mut *mut GoslingTorProvider,
@@ -758,13 +759,14 @@ pub unsafe extern "C" fn gosling_tor_provider_from_tor_provider_config(
                     TorProviderConfig::MockTorClientConfig => {
                         let tor_provider: MockTorClient = Default::default();
                         Box::new(tor_provider)
-                    }
+                    },
                     #[cfg(feature = "legacy-tor-provider")]
                     TorProviderConfig::LegacyTorClientConfig(legacy_tor_config) => {
                         let tor_provider: LegacyTorClient =
                             LegacyTorClient::new(legacy_tor_config.clone())?;
                         Box::new(tor_provider)
-                    }
+                    },
+                    _ => panic!("unknown tor_provider_config type"),
                 },
                 None => bail_invalid_handle!(tor_provider_config),
             };

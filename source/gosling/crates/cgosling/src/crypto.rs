@@ -53,7 +53,7 @@ pub extern "C" fn gosling_x25519_private_key_free(in_private_key: *mut GoslingX2
 
 /// Frees a gosling_x25519_public_key object
 ///
-/// @param public_key: the public key to free
+/// @param in_public_key: the public key to free
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_x25519_public_key_free(in_public_key: *mut GoslingX25519PublicKey) {
