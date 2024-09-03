@@ -54,30 +54,67 @@ struct Data {
     functions: Vec<Function>,
 }
 
-fn preprocess_header(source: &str) -> String {
-    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
-    let platform_pattern = Regex::new(r"(?m)#if \(defined\(GOSLING_PLATFORM_LINUX\) \|\| defined\(GOSLING_PLATFORM_MACOS\)\)([^#].*\n)+#endif").unwrap();
+fn preprocess_any(source: String, features: &Vec<&str>) -> String {
 
-    #[cfg(not(target_os = "windows"))]
-    let platform_pattern =
-        Regex::new(r"(?m)#if defined\(GOSLING_PLATFORM_WINDOWS\)([^#].*\n)+#endif").unwrap();
+    let block_regex = Regex::new(r"(?m)(?<anyblock>#if \(?(defined\(([A-Z_]+)\)( \|\| )?)+\)?([^#]*\n)*#endif\n\n)").unwrap();
 
-    let source = platform_pattern.replace_all(source, "").to_string();
+    if !block_regex.is_match(&source) {
+        return source;
+    }
 
-    #[cfg(not(feature = "mock-tor-provider"))]
-    let source = {
-        let feature_pattern =
-            Regex::new(r"(?m)#if defined\(GOSLING_HAVE_MOCK_TOR_PROVIDER\)([^#].*\n)+#endif")
-                .unwrap();
-        feature_pattern.replace_all(source.as_str(), "").to_string()
-    };
-    #[cfg(not(feature = "legacy-tor-provider"))]
-    let source = {
-        let feature_pattern =
-            Regex::new(r"(?m)#if defined\(GOSLING_HAVE_LEGACY_TOR_PROVIDER\)([^#].*\n)+#endif")
-                .unwrap();
-        feature_pattern.replace_all(source.as_str(), "").to_string()
-    };
+    let mut cleared_blocks: Vec<String> = Default::default();
+
+    let feature_regex = Regex::new(r"defined\((?<feature>[A-Z0-9_]+)\)").unwrap();
+    let mut preprocessed_source = source.clone();
+    for caps in block_regex.captures_iter(source.as_str()) {
+        let anyblock = caps.name("anyblock").unwrap().as_str();
+
+        let mut clear_block: bool = true;
+        for caps in feature_regex.captures_iter(anyblock) {
+            let feature = caps.name("feature").unwrap().as_str();
+            if features.contains(&feature) {
+                clear_block = false;
+                break;
+            }
+        }
+        if clear_block {
+            preprocessed_source = preprocessed_source.replace(&anyblock, "");
+            cleared_blocks.push(anyblock.to_string());
+        }
+    }
+    preprocessed_source
+}
+
+fn preprocess_all(source: String, _features: &Vec<&str>) -> String {
+    let block_regex = Regex::new(r"(?m)(?<anyblock>#if \((defined\(([A-Z_]+)\)( && )?)+\)([^#]*\n)*#endif)").unwrap();
+
+    if block_regex.is_match(&source) {
+        panic!("unexpected #[cfg(all(..))]");
+        return source;
+    }
+
+    source
+}
+
+fn preprocess_header(source: String) -> String {
+    let mut features: Vec<&str> = Default::default();
+
+    // OS features
+    #[cfg(target_os = "windows")]
+    features.push("GOSLING_PLATFORM_WINDOWS");
+    #[cfg(target_os = "macos")]
+    features.push("GOSLING_PLATFORM_MACOS");
+    #[cfg(target_os = "linux")]
+    features.push("GOSLING_PLATFORM_LINUX");
+
+    // tor-provider implementations
+    #[cfg(feature = "mock-tor-provider")]
+    features.push("GOSLING_HAVE_MOCK_TOR_PROVIDER");
+    #[cfg(feature = "legacy-tor-provider")]
+    features.push("GOSLING_HAVE_LEGACY_TOR_PROVIDER");
+
+    let mut source = preprocess_any(source.to_string(), &features);
+    let mut source = preprocess_all(source, &features);
 
     source
 }
@@ -252,7 +289,7 @@ fn main() {
 
         // pre-process and re-write header
         let source = std::fs::read_to_string(header_file_path.clone()).unwrap();
-        let source = preprocess_header(&source);
+        let source = preprocess_header(source);
         std::fs::write(header_file_path, source.clone()).unwrap();
 
         // convert generated header to json IDL
