@@ -44,7 +44,8 @@ const GOSLING_LIBRARY_HANDLE: usize = {
 /// Initializes the Gosling library. This function must be called before using any of the
 /// other Gosling functions.
 ///
-/// @return: returns 0 on success
+/// @param out_library: returned gosling library handle
+/// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_library_init(
@@ -67,6 +68,7 @@ pub unsafe extern "C" fn gosling_library_init(
 
 /// Frees all resources associated with the Gosling library. No-op if the library
 /// is not initialized or if it has already been freed
+/// @param in_library: gosling library handle to free
 #[no_mangle]
 #[allow(unused_variables)]
 #[cfg_attr(feature = "impl-lib", rename_impl)]

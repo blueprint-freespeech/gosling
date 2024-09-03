@@ -127,6 +127,7 @@ pub unsafe extern "C" fn gosling_target_address_clone(
 /// Connect to a target address using the provided gosling context's tor provider.
 ///
 /// @param context: the context to use to connect with
+/// @param out_tcp_socket: returned connected tcp socket
 /// @param target_address: the destination address to connect to
 /// @param circuit_token: the circuit isolation token
 /// @param error: filled on error

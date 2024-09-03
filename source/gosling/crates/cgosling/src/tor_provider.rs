@@ -741,6 +741,7 @@ pub unsafe extern "C" fn gosling_tor_provider_config_add_bridge_line(
 /// @param tor_provider_config: tor provider configuration
 /// @param error: filled on error
 #[no_mangle]
+#[cfg(any(feature = "mock-tor-provider", feature = "legacy-tor-provider"))]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_tor_provider_from_tor_provider_config(
     out_tor_provider: *mut *mut GoslingTorProvider,
@@ -758,13 +759,14 @@ pub unsafe extern "C" fn gosling_tor_provider_from_tor_provider_config(
                     TorProviderConfig::MockTorClientConfig => {
                         let tor_provider: MockTorClient = Default::default();
                         Box::new(tor_provider)
-                    }
+                    },
                     #[cfg(feature = "legacy-tor-provider")]
                     TorProviderConfig::LegacyTorClientConfig(legacy_tor_config) => {
                         let tor_provider: LegacyTorClient =
                             LegacyTorClient::new(legacy_tor_config.clone())?;
                         Box::new(tor_provider)
-                    }
+                    },
+                    _ => panic!("unknown tor_provider_config type"),
                 },
                 None => bail_invalid_handle!(tor_provider_config),
             };
