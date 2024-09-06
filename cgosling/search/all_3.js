@@ -59,7 +59,7 @@ var searchData=
   ['gosling_5fendpoint_5fserver_5fhandshake_5ffailed_5fcallback_5ft_80',['gosling_endpoint_server_handshake_failed_callback_t',['../cgosling_8h.html#a0c9a3cd6cca74560d39e982c365789b5',1,'cgosling.h']]],
   ['gosling_5fendpoint_5fserver_5fhandshake_5frejected_5fcallback_5ft_81',['gosling_endpoint_server_handshake_rejected_callback_t',['../cgosling_8h.html#af1b34974ee89a19168aedb8e9a5cb28b',1,'cgosling.h']]],
   ['gosling_5fendpoint_5fserver_5fhandshake_5fstarted_5fcallback_5ft_82',['gosling_endpoint_server_handshake_started_callback_t',['../cgosling_8h.html#ac11ad875dc8cdef20c9ef760ea39f72f',1,'cgosling.h']]],
-  ['gosling_5fendpoint_5fserver_5fpublished_5fcallback_5ft_83',['gosling_endpoint_server_published_callback_t',['../cgosling_8h.html#a0c44a2d305fd1d1d477c23431b02be00',1,'cgosling.h']]],
+  ['gosling_5fendpoint_5fserver_5fpublished_5fcallback_5ft_83',['gosling_endpoint_server_published_callback_t',['../cgosling_8h.html#ab7a3d67563f72b754d45f29edfaaf5b6',1,'cgosling.h']]],
   ['gosling_5ferror_84',['gosling_error',['../cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f',1,'cgosling.h']]],
   ['gosling_5ferror_5fclone_85',['gosling_error_clone',['../cgosling_8h.html#a1baa22c86d24f86fc11a8b55814ef462',1,'cgosling.h']]],
   ['gosling_5ferror_5ffree_86',['gosling_error_free',['../cgosling_8h.html#a214442d2ce26a8221fc211d38544966b',1,'cgosling.h']]],

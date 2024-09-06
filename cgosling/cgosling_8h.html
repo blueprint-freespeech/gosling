@@ -194,8 +194,8 @@ Typedefs</h2></td></tr>
 <tr class="separator:a34ca0a3d9cb2a8c0bf5e28e8d5680161"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a458bd3dc3614d79fb979a8240875f930"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a458bd3dc3614d79fb979a8240875f930">gosling_endpoint_client_handshake_failed_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> *error)</td></tr>
 <tr class="separator:a458bd3dc3614d79fb979a8240875f930"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0c44a2d305fd1d1d477c23431b02be00"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a0c44a2d305fd1d1d477c23431b02be00">gosling_endpoint_server_published_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *enpdoint_service_id, const char *endpoint_name, size_t endpoint_name_length)</td></tr>
-<tr class="separator:a0c44a2d305fd1d1d477c23431b02be00"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab7a3d67563f72b754d45f29edfaaf5b6"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ab7a3d67563f72b754d45f29edfaaf5b6">gosling_endpoint_server_published_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *endpoint_service_id, const char *endpoint_name, size_t endpoint_name_length)</td></tr>
+<tr class="separator:ab7a3d67563f72b754d45f29edfaaf5b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac11ad875dc8cdef20c9ef760ea39f72f"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ac11ad875dc8cdef20c9ef760ea39f72f">gosling_endpoint_server_handshake_started_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle)</td></tr>
 <tr class="separator:ac11ad875dc8cdef20c9ef760ea39f72f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a270f7bd7435c53f30f94cef2a0fe87b8"><td class="memItemLeft" align="right" valign="top">typedef bool(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a270f7bd7435c53f30f94cef2a0fe87b8">gosling_endpoint_server_channel_supported_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *client_service_id, const char *channel_name, size_t channel_name_length)</td></tr>
@@ -267,7 +267,7 @@ Functions</h2></td></tr>
 <tr class="separator:ab73b2e4ff4ec09eeff3665454055fe90"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9ccc17994b96a6656ca1704d44618a75"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a9ccc17994b96a6656ca1704d44618a75">gosling_context_set_endpoint_client_handshake_failed_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a458bd3dc3614d79fb979a8240875f930">gosling_endpoint_client_handshake_failed_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
 <tr class="separator:a9ccc17994b96a6656ca1704d44618a75"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3360fa772f589ffb134ee141e86cad17"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a3360fa772f589ffb134ee141e86cad17">gosling_context_set_endpoint_server_published_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a0c44a2d305fd1d1d477c23431b02be00">gosling_endpoint_server_published_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="memitem:a3360fa772f589ffb134ee141e86cad17"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a3360fa772f589ffb134ee141e86cad17">gosling_context_set_endpoint_server_published_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#ab7a3d67563f72b754d45f29edfaaf5b6">gosling_endpoint_server_published_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
 <tr class="separator:a3360fa772f589ffb134ee141e86cad17"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a30da67ab13178485d7cb7d92e7368171"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a30da67ab13178485d7cb7d92e7368171">gosling_context_set_endpoint_server_handshake_started_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#ac11ad875dc8cdef20c9ef760ea39f72f">gosling_endpoint_server_handshake_started_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
 <tr class="separator:a30da67ab13178485d7cb7d92e7368171"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -626,7 +626,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Bridge line to use with particular pluggable transport when connecting to the tor network </p>
+<p>Bridge line to use with particular pluggable-transport when connecting to the tor network </p>
 
 </div>
 </div>
@@ -847,14 +847,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a0c44a2d305fd1d1d477c23431b02be00"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0c44a2d305fd1d1d477c23431b02be00">&#9670;&nbsp;</a></span>gosling_endpoint_server_published_callback_t</h2>
+<a id="ab7a3d67563f72b754d45f29edfaaf5b6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab7a3d67563f72b754d45f29edfaaf5b6">&#9670;&nbsp;</a></span>gosling_endpoint_server_published_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* gosling_endpoint_server_published_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *enpdoint_service_id, const char *endpoint_name, size_t endpoint_name_length)</td>
+          <td class="memname">typedef void(* gosling_endpoint_server_published_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *endpoint_service_id, const char *endpoint_name, size_t endpoint_name_length)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -917,8 +917,6 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
-    <tr><td class="paramname">endpoint_name</td><td>a null-terminated ASCII string containing the name of the endpoint being requested </td></tr>
-    <tr><td class="paramname">endpoint_name_length</td><td>the number of chars in endpoint_name, not including the null-terminator </td></tr>
     <tr><td class="paramname">challenge_buffer</td><td>the source buffer containing a BSON document received from the identity server to serve as an endpoint request challenge </td></tr>
     <tr><td class="paramname">challenge_buffer_size</td><td>the number of bytes in challenge_buffer </td></tr>
     <tr><td class="paramname">out_challenge_response_buffer</td><td>the destination buffer for the callback to write a BSON document representing the endpoint request challenge response object </td></tr>
@@ -1117,7 +1115,7 @@ Functions</h2></td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
     <tr><td class="paramname">endpoint_private_key</td><td>the ed25519 private key of the endpoint server to host for the client </td></tr>
-    <tr><td class="paramname">endoint_name</td><td>the null-terminated name of the new endpoint server </td></tr>
+    <tr><td class="paramname">endpoint_name</td><td>the null-terminated name of the new endpoint server </td></tr>
     <tr><td class="paramname">endpoint_name_length</td><td>the length of the endpoint_name string not including the null-terminator </td></tr>
     <tr><td class="paramname">client_service_id</td><td>the onion service id of the client we have granted access to </td></tr>
     <tr><td class="paramname">client_auth_public_key</td><td>the x25519 public key to use to encrypt the endpoint server's service descriptor as provided by the connecting client </td></tr>
@@ -1286,7 +1284,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Pluggable transports settings object used by tor provider to launch pluggable transports </p>
+<p>Pluggable transports settings object used by tor provider to launch pluggable-transports </p>
 
 </div>
 </div>
@@ -1375,7 +1373,7 @@ Functions</h2></td></tr>
     <tr><td class="paramname">tag</td><td>the null-terminated short name of the current bootstrap stage </td></tr>
     <tr><td class="paramname">tag_length</td><td>the number of chrs in tag not including any null-terminator </td></tr>
     <tr><td class="paramname">summary</td><td>the null-terminated description of the current bootstra stage </td></tr>
-    <tr><td class="paramname">summmary_length</td><td>the number of chars in summary not including the null-terminator </td></tr>
+    <tr><td class="paramname">summary_length</td><td>the number of chars in summary not including the null-terminator </td></tr>
   </table>
   </dd>
 </dl>
@@ -1587,7 +1585,7 @@ Functions</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">out_bridge_line</td><td>returned bridge line object </td></tr>
-    <tr><td class="paramname">bridge_line</td><td>a bridge address to connect to using a pluggable transport. For more information, see: <a href="https://tb-manual.torproject.org/bridges/">https://tb-manual.torproject.org/bridges/</a> </td></tr>
+    <tr><td class="paramname">bridge_line</td><td>a bridge address to connect to using a pluggable-transport. For more information, see: <a href="https://tb-manual.torproject.org/bridges/">https://tb-manual.torproject.org/bridges/</a> </td></tr>
     <tr><td class="paramname">bridge_line_length</td><td>number of characters in bridge_line, not counting any null-terminator </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
@@ -1739,6 +1737,7 @@ Functions</h2></td></tr>
     <tr><td class="paramname">client_auth_private_key</td><td>the x25519 clienth authorization key needed to decrypt the endpoint server's onion service descriptor </td></tr>
     <tr><td class="paramname">channel_name</td><td>the ascii-encoded name of the channel to open </td></tr>
     <tr><td class="paramname">channel_name_length</td><td>the number of chars in channel name not including any null-terminator </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
 </dl>
@@ -1885,6 +1884,7 @@ Functions</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to use to connect with </td></tr>
+    <tr><td class="paramname">out_tcp_socket</td><td>returned connected tcp socket </td></tr>
     <tr><td class="paramname">target_address</td><td>the destination address to connect to </td></tr>
     <tr><td class="paramname">circuit_token</td><td>the circuit isolation token </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
@@ -2414,7 +2414,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#a0c44a2d305fd1d1d477c23431b02be00">gosling_endpoint_server_published_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#ab7a3d67563f72b754d45f29edfaaf5b6">gosling_endpoint_server_published_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
         </tr>
         <tr>
@@ -3896,7 +3896,12 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Frees all resources associated with the Gosling library. No-op if the library is not initialized or if it has already been freed </p>
+<p>Frees all resources associated with the Gosling library. No-op if the library is not initialized or if it has already been freed </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">in_library</td><td>gosling library handle to free </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -3926,7 +3931,13 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <p>Initializes the Gosling library. This function must be called before using any of the other Gosling functions.</p>
-<dl class="section return"><dt>Returns</dt><dd>: returns 0 on success </dd></dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">out_library</td><td>returned gosling library handle </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -3967,11 +3978,11 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Add a command-line option to be used when launching the pluggable transport</p>
+<p>Add a command-line option to be used when launching the pluggable-transport</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">pluggable_transport_config</td><td>the pluggable transport ocnfig object to update </td></tr>
-    <tr><td class="paramname">option</td><td>cmd-line option or flag to pass to the pluggable transport on launch </td></tr>
+    <tr><td class="paramname">pluggable_transport_config</td><td>the pluggable-transport ocnfig object to update </td></tr>
+    <tr><td class="paramname">option</td><td>cmd-line option or flag to pass to the pluggable-transport on launch </td></tr>
     <tr><td class="paramname">option_length</td><td>number of characters in option, not counting any null- terminator </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
@@ -3998,7 +4009,7 @@ Functions</h2></td></tr>
 <p>Frees a gosling_pluggable_transport_config</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">in_pluggable_transport</td><td>the pluggable transport object to free </td></tr>
+    <tr><td class="paramname">in_pluggable_transport_config</td><td>the pluggable-transport object to free </td></tr>
   </table>
   </dd>
 </dl>
@@ -4054,13 +4065,14 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Create a new pluggable transport config object</p>
+<p>Create a new pluggable-transport config object</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">out_pluggable_transport_config</td><td>returned pluggable transport object </td></tr>
-    <tr><td class="paramname">transports</td><td>comma-delimited list of transports this pluggable transport supports </td></tr>
+    <tr><td class="paramname">out_pluggable_transport_config</td><td>returned pluggable-transport object </td></tr>
+    <tr><td class="paramname">transports</td><td>comma-delimited list of transports this pluggable-transport supports </td></tr>
     <tr><td class="paramname">transports_length</td><td>number of characters in transports, not counting any null-terminator </td></tr>
-    <tr><td class="paramname">path_to_binary</td><td>path to the pluggable transport binary, either absolute or relative to the tor daemon process </td></tr>
+    <tr><td class="paramname">path_to_binary</td><td>path to the pluggable-transport binary, either absolute or relative to the tor daemon process </td></tr>
+    <tr><td class="paramname">path_to_binary_length</td><td>number of characters in path_to_binary, not counting any null-terminator </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -4086,7 +4098,7 @@ Functions</h2></td></tr>
 <p>Frees a gosling_proxy_config</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">in_proxy</td><td>the proxy settings object to free </td></tr>
+    <tr><td class="paramname">in_proxy_config</td><td>the proxy config object to free </td></tr>
   </table>
   </dd>
 </dl>
@@ -4265,7 +4277,7 @@ Functions</h2></td></tr>
 <p>Create a socks5 proxy definition</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">out_proxy</td><td>returned proxy config object </td></tr>
+    <tr><td class="paramname">out_proxy_config</td><td>returned proxy config object </td></tr>
     <tr><td class="paramname">proxy_address</td><td>the host address of the proxy, must not be an onion service </td></tr>
     <tr><td class="paramname">username</td><td>username to authenticate with socks5 proxy </td></tr>
     <tr><td class="paramname">username_length</td><td>number of characters in username, not counting any null- terminator </td></tr>
@@ -4677,14 +4689,14 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Add a pluggable transport config to a tor provider config. A tor provider config does not need to support pluggable transport configuration, so this function may fail as a result. The currently supported tor provider configs are:</p><ul>
+<p>Add a bridge line to a tor provider config. A tor provider config does not need to support bridge lines, so this function may fail as a result. The currently supported tor provider configs are:</p><ul>
 <li>Legacy Bundled Client</li>
 </ul>
-<p>This function may be called multiple times allowing a tor provider config to be configured with multiple pluggable-transports.</p>
+<p>This function may be called multiple times allowing a tor provider config to be configured with multiple bridge lines.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">tor_provider_config</td><td>the tor provider config to update </td></tr>
-    <tr><td class="paramname">pluggable_transport_config</td><td>the pluggabel transport config to add to the tor provider config </td></tr>
+    <tr><td class="paramname">bridge_line</td><td>the bridge lin to add to the tor provider config </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -4723,14 +4735,14 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Add a pluggable transport config to a tor provider config. A tor provider config does not need to support pluggable transport configuration, so this function may fail as a result. The currently supported tor provider configs are:</p><ul>
+<p>Add a pluggable-transport config to a tor provider config. A tor provider config does not need to support pluggable-transport configuration, so this function may fail as a result. The currently supported tor provider configs are:</p><ul>
 <li>Legacy Bundled Client</li>
 </ul>
 <p>This function may be called multiple times allowing a tor provider config to be configured with multiple pluggable-transports.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">tor_provider_config</td><td>the tor provider config to update </td></tr>
-    <tr><td class="paramname">pluggable_transport_config</td><td>the pluggable transport config to add to the tor provider config; must not be null </td></tr>
+    <tr><td class="paramname">pluggable_transport_config</td><td>the pluggable-transport config to add to the tor provider config; must not be null </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -4855,7 +4867,7 @@ Functions</h2></td></tr>
 <p>Create a tor provider config to build a mock no-internet tor provider for testing.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">out_tor_provider</td><td>returned tor provider </td></tr>
+    <tr><td class="paramname">out_tor_provider_config</td><td>returned tor provider </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -5546,7 +5558,7 @@ Functions</h2></td></tr>
 <p>Frees a gosling_x25519_public_key object</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">public_key</td><td>the public key to free </td></tr>
+    <tr><td class="paramname">in_public_key</td><td>the public key to free </td></tr>
   </table>
   </dd>
 </dl>

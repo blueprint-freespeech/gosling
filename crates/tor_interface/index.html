@@ -14,7 +14,7 @@
 <h3 id="usage"><a class="doc-anchor" href="#usage">§</a>Usage</h3>
 <p>The following code snippet creates a <code>LegacyTorClient</code> which starts a bundled tor daemon, bootstraps, and attempts to connect to <a href="www.example.com">www.example.com</a>.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// construct legacy tor client config
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="comment">// construct legacy tor client config
 </span><span class="kw">let </span>tor_path = std::path::PathBuf::from_str(<span class="string">"/usr/bin/tor"</span>).unwrap();
 <span class="kw">let </span><span class="kw-2">mut </span>data_path = std::env::temp_dir();
 data_path.push(<span class="string">"tor_data"</span>);
