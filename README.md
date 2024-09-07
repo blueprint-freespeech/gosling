@@ -103,9 +103,10 @@ cmake -DENABLE_TESTS=ON
 Enables the following ctest test targets (internet access is only required when a non-mock tor provider is enabled):
 
 - honk_rpc_cargo_test
+- tor_interface_crypto_cargo_test
+- tor_interface_tor_provider_cargo_test
 - tor_interface_arti_client_bootstrap_cargo_test
 - tor_interface_arti_client_onion_service_cargo_test
-- tor_interface_crypto_cargo_test
 - tor_interface_legacy_authenticated_onion_service_cargo_test
 - tor_interface_legacy_bootstrap_cargo_test
 - tor_interface_legacy_onion_service_cargo_test
@@ -114,6 +115,7 @@ Enables the following ctest test targets (internet access is only required when 
 - tor_interface_mock_authenticated_onion_service_cargo_test
 - tor_interface_mock_bootstrap_cargo_test
 - tor_interface_mock_onion_service_cargo_test
+- tor_interface_cargo_test
 - gosling_cargo_test
 - cgosling_cargo_test
 - gosling_functional_test
