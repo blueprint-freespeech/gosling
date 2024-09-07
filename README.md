@@ -112,6 +112,7 @@ Enables the following ctest test targets (internet access is only required when 
 - tor_interface_legacy_onion_service_cargo_test
 - tor_interface_mixed_arti_client_legacy_bootstrap_cargo_test
 - tor_interface_mixed_legacy_arti_client_bootstrap_cargo_test
+- tor_interface_mixed_arti_client_legacy_authenticated_onion_service_cargo_test
 - tor_interface_mock_authenticated_onion_service_cargo_test
 - tor_interface_mock_bootstrap_cargo_test
 - tor_interface_mock_onion_service_cargo_test
