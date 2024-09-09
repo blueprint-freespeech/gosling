@@ -14,6 +14,26 @@ set(gosling_outputs
     ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/libgosling.rlib)
 
 #
+# gosling crate feature flags
+#
+
+set(GOSLING_FEATURE_LIST)
+if (ENABLE_MOCK_TOR_PROVIDER)
+    list(APPEND GOSLING_FEATURE_LIST "mock-tor-provider")
+endif()
+if (ENABLE_LEGACY_TOR_PROVIDER)
+    list(APPEND GOSLING_FEATURE_LIST "legacy-tor-provider")
+endif()
+# if (ENABLE_ARTI_CLIENT_TOR_PROVIDER)
+#     list(APPEND GOSLING_FEATURE_LIST "arti-client-tor-provider")
+# endif()
+
+list(JOIN GOSLING_FEATURE_LIST "," GOSLING_FEATURES)
+if (GOSLING_FEATURES)
+    set(GOSLING_FEATURES "--features" "${GOSLING_FEATURES}")
+endif()
+
+#
 # build target
 #
 add_custom_command(
@@ -31,7 +51,7 @@ add_dependencies(gosling_target honk_rpc_target tor_interface_target)
 #
 if (ENABLE_TESTS)
     add_test(NAME gosling_cargo_test
-        COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo test ${CARGO_FLAGS} -- --nocapture
+        COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo test ${CARGO_FLAGS} ${GOSLING_FEATURES} -- --nocapture
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
 endif()
