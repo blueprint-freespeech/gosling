@@ -140,7 +140,7 @@ dependencies = [
  "derive_builder_fork_arti",
  "derive_more",
  "educe",
- "fs-mistrust 0.8.0",
+ "fs-mistrust",
  "futures",
  "hostname-validator",
  "humantime",
@@ -1179,21 +1179,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e13624c2627564efccf4934284bdd98cbaa14e79b0b5a141218e507b3a823456"
 dependencies = [
  "percent-encoding",
-]
-
-[[package]]
-name = "fs-mistrust"
-version = "0.7.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43de34e45ddb3fc314aeae5c5b078b8e3549980cd45836f8364d7cca8d85aead"
-dependencies = [
- "derive_builder_fork_arti",
- "dirs",
- "libc",
- "once_cell",
- "pwd-grp",
- "thiserror",
- "walkdir",
 ]
 
 [[package]]
@@ -3692,7 +3677,7 @@ dependencies = [
  "educe",
  "either",
  "figment",
- "fs-mistrust 0.8.0",
+ "fs-mistrust",
  "futures",
  "itertools 0.13.0",
  "notify",
@@ -3767,7 +3752,7 @@ dependencies = [
  "digest",
  "educe",
  "event-listener",
- "fs-mistrust 0.8.0",
+ "fs-mistrust",
  "fslock",
  "futures",
  "hex",
@@ -3948,7 +3933,7 @@ dependencies = [
  "derive_more",
  "digest",
  "educe",
- "fs-mistrust 0.8.0",
+ "fs-mistrust",
  "futures",
  "growable-bloom-filter",
  "hex",
@@ -4000,7 +3985,6 @@ dependencies = [
  "data-encoding",
  "data-encoding-macro",
  "domain",
- "fs-mistrust 0.7.13",
  "idna 1.0.2",
  "rand",
  "rand_core",
@@ -4016,11 +4000,9 @@ dependencies = [
  "tokio-stream",
  "tor-cell",
  "tor-config",
- "tor-hscrypto",
  "tor-hsservice",
  "tor-keymgr",
  "tor-llcrypto",
- "tor-persist",
  "tor-proto",
  "tor-rtcompat",
  "which",
@@ -4058,7 +4040,7 @@ dependencies = [
  "derive_more",
  "downcast-rs",
  "dyn-clone",
- "fs-mistrust 0.8.0",
+ "fs-mistrust",
  "glob-match",
  "humantime",
  "inventory",
@@ -4264,7 +4246,7 @@ dependencies = [
  "derive-deftly",
  "derive_more",
  "filetime",
- "fs-mistrust 0.8.0",
+ "fs-mistrust",
  "fslock",
  "fslock-guard",
  "futures",
