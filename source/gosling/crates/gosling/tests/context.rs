@@ -6,6 +6,8 @@ use std::net::TcpStream;
 use anyhow::bail;
 use bson::doc;
 use serial_test::serial;
+#[cfg(feature = "arti-client-tor-provider")]
+use tor_interface::arti_client_tor_client::*;
 #[cfg(feature = "legacy-tor-provider")]
 use tor_interface::legacy_tor_client::*;
 #[cfg(feature = "mock-tor-provider")]
@@ -55,6 +57,23 @@ fn test_legacy_client_gosling_context() -> anyhow::Result<()> {
         bridge_lines: None,
     };
     let pat_tor_client = Box::new(LegacyTorClient::new(tor_config)?);
+
+    gosling_context_test(alice_tor_client, pat_tor_client)
+}
+
+#[test]
+#[serial]
+#[cfg(feature = "arti-client-tor-provider")]
+fn test_arti_client_gosling_context() -> anyhow::Result<()> {
+    let runtime: std::sync::Arc<tokio::runtime::Runtime> = std::sync::Arc::new(tokio::runtime::Runtime::new().unwrap());
+
+    let mut data_path = std::env::temp_dir();
+    data_path.push("test_arti_client_gosling_context_alice");
+    let alice_tor_client = Box::new(ArtiClientTorClient::new(runtime.clone(), &data_path)?);
+
+    let mut data_path = std::env::temp_dir();
+    data_path.push("test_arti_client_gosling_context_pat");
+    let pat_tor_client = Box::new(ArtiClientTorClient::new(runtime.clone(), &data_path)?);
 
     gosling_context_test(alice_tor_client, pat_tor_client)
 }

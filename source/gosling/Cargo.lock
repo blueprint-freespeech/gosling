@@ -1371,6 +1371,7 @@ dependencies = [
  "rand",
  "serial_test",
  "thiserror",
+ "tokio",
  "tor-interface",
  "which",
 ]
