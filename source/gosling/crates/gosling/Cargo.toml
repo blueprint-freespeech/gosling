@@ -22,7 +22,9 @@ tor-interface = { version = "0.4", path = "../tor-interface" }
 anyhow = "1.0"
 serial_test = "0.9"
 which = "4.4"
+tokio = { version = "1", features = ["macros"]}
 
 [features]
+arti-client-tor-provider = ["tor-interface/arti-client-tor-provider"]
 mock-tor-provider = ["tor-interface/mock-tor-provider"]
 legacy-tor-provider = ["tor-interface/legacy-tor-provider"]
