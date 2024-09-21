@@ -1,11 +1,16 @@
 // standard
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpStream;
+#[cfg(feature = "arti-client-tor-provider")]
+use std::sync::Arc;
+
 
 // extern crates
 use anyhow::bail;
 use bson::doc;
 use serial_test::serial;
+#[cfg(feature = "arti-client-tor-provider")]
+use tokio::runtime;
 #[cfg(feature = "arti-client-tor-provider")]
 use tor_interface::arti_client_tor_client::*;
 #[cfg(feature = "legacy-tor-provider")]
@@ -15,10 +20,53 @@ use tor_interface::mock_tor_client::*;
 use tor_interface::tor_crypto::*;
 use tor_interface::tor_provider::*;
 
+
 // internal crates
 use gosling::context::*;
 
 const INVALID_HANDSHAKE_HANDLE: HandshakeHandle = !0usize;
+
+#[test]
+#[cfg(feature = "mock-tor-provider")]
+fn test_mock_client_gosling_context_bootstrap() -> anyhow::Result<()> {
+    let tor_client = Box::new(MockTorClient::new());
+    gosling_context_bootstrap_test(tor_client)
+}
+
+#[test]
+#[serial]
+#[cfg(feature = "legacy-tor-provider")]
+fn test_legacy_client_gosling_context_bootstrap() -> anyhow::Result<()> {
+    let tor_path = which::which("tor")?;
+
+    let mut data_path = std::env::temp_dir();
+    data_path.push("test_legacy_client_gosling_context_bootstrap");
+    let tor_config = LegacyTorClientConfig::BundledTor {
+        tor_bin_path: tor_path.clone(),
+        data_directory: data_path,
+        proxy_settings: None,
+        allowed_ports: None,
+        pluggable_transports: None,
+        bridge_lines: None,
+    };
+    let tor_client = Box::new(LegacyTorClient::new(tor_config)?);
+    gosling_context_bootstrap_test(tor_client)
+}
+
+
+#[test]
+#[serial]
+#[cfg(feature = "arti-client-tor-provider")]
+fn test_arti_client_gosling_context_bootstrap() -> anyhow::Result<()> {
+    let runtime: Arc<runtime::Runtime> = Arc::new(runtime::Runtime::new()?);
+
+    let mut data_path = std::env::temp_dir();
+    data_path.push("test_arti_client_gosling_context_bootstrap");
+    let tor_client = Box::new(ArtiClientTorClient::new(runtime, &data_path)?);
+
+    gosling_context_bootstrap_test(tor_client)
+}
+
 
 #[test]
 #[cfg(feature = "mock-tor-provider")]
@@ -61,6 +109,7 @@ fn test_legacy_client_gosling_context() -> anyhow::Result<()> {
     gosling_context_test(alice_tor_client, pat_tor_client)
 }
 
+
 #[test]
 #[serial]
 #[cfg(feature = "arti-client-tor-provider")]
@@ -76,6 +125,57 @@ fn test_arti_client_gosling_context() -> anyhow::Result<()> {
     let pat_tor_client = Box::new(ArtiClientTorClient::new(runtime.clone(), &data_path)?);
 
     gosling_context_test(alice_tor_client, pat_tor_client)
+}
+
+#[cfg(test)]
+fn gosling_context_bootstrap_test(
+    mut tor_client: Box<dyn TorProvider>,
+) -> anyhow::Result<()> {
+    // Bootstrap
+    let private_key = Ed25519PrivateKey::generate();
+    let service_id = V3OnionServiceId::from_private_key(&private_key);
+
+    println!(
+        "Starting gosling context ({})",
+        service_id.to_string()
+    );
+
+    let mut context = Context::new(
+        tor_client,
+        420,
+        420,
+        std::time::Duration::from_secs(60),
+        4096,
+        None,
+        private_key,
+    )?;
+    context.bootstrap()?;
+
+    let mut bootstrap_complete = false;
+    while !bootstrap_complete {
+        for event in context.update()?.drain(..) {
+            match event {
+                ContextEvent::TorBootstrapStatusReceived {
+                    progress,
+                    tag,
+                    summary,
+                } => println!(
+                    "BootstrapStatus: {{ progress: {}, tag: {}, summary: '{}' }}",
+                    progress, tag, summary
+                ),
+                ContextEvent::TorBootstrapCompleted => {
+                    println!("Bootstrap Complete!");
+                    bootstrap_complete = true;
+                }
+                ContextEvent::TorLogReceived { line } => {
+                    println!("--- CONTEXT --- {}", line);
+                }
+                _ => {}
+            }
+        }
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
