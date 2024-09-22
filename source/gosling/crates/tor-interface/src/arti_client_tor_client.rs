@@ -81,6 +81,7 @@ pub struct ArtiClientTorClient {
     tokio_runtime: Arc<runtime::Runtime>,
     arti_client: TorClient<PreferredRuntime>,
     pending_events: Arc<Mutex<Vec<TorEvent>>>,
+    bootstrapped: Arc<AtomicBool>,
 }
 
 // used to forward traffic to/from arti to local tcp streams
@@ -192,6 +193,7 @@ impl ArtiClientTorClient {
             tokio_runtime,
             arti_client,
             pending_events,
+            bootstrapped: Arc::new(AtomicBool::new(false)),
         })
     }
 }
@@ -211,8 +213,12 @@ impl TorProvider for ArtiClientTorClient {
         // save progress events
         let mut bootstrap_events = self.arti_client.bootstrap_events();
         let pending_events = self.pending_events.clone();
+        let bootstrapped = self.bootstrapped.clone();
         self.tokio_runtime.spawn(async move {
             while let Some(evt) = bootstrap_events.next().await {
+                if bootstrapped.load(Ordering::Relaxed) {
+                    break;
+                }
                 match pending_events.lock() {
                     Ok(mut pending_events) => {
                         pending_events.push(TorEvent::BootstrapStatus {
@@ -232,11 +238,18 @@ impl TorProvider for ArtiClientTorClient {
         // initiate bootstrap
         let arti_client = self.arti_client.clone();
         let pending_events = self.pending_events.clone();
+        let bootstrapped = self.bootstrapped.clone();
         self.tokio_runtime.spawn(async move {
             match arti_client.bootstrap().await {
                 Ok(()) => match pending_events.lock() {
                     Ok(mut pending_events) => {
+                        pending_events.push(TorEvent::BootstrapStatus {
+                            progress: 100,
+                            tag: "no-tag".to_string(),
+                            summary: "no summary".to_string(),
+                        });
                         pending_events.push(TorEvent::BootstrapComplete);
+                        bootstrapped.store(true, Ordering::Relaxed);
                         return;
                     }
                     Err(_) => unreachable!(
