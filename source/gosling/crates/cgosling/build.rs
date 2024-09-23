@@ -108,10 +108,13 @@ fn preprocess_header(source: String) -> String {
     features.push("GOSLING_PLATFORM_LINUX");
 
     // tor-provider implementations
-    #[cfg(feature = "mock-tor-provider")]
-    features.push("GOSLING_HAVE_MOCK_TOR_PROVIDER");
+    #[cfg(feature = "arti-client-tor-provider")]
+    features.push("GOSLING_HAVE_ARTI_CLIENT_TOR_PROVIDER");
     #[cfg(feature = "legacy-tor-provider")]
     features.push("GOSLING_HAVE_LEGACY_TOR_PROVIDER");
+    #[cfg(feature = "mock-tor-provider")]
+    features.push("GOSLING_HAVE_MOCK_TOR_PROVIDER");
+
 
     let source = preprocess_any(source.to_string(), &features);
     let source = preprocess_all(source, &features);
@@ -173,14 +176,19 @@ fn parse_header(source: &str) -> Data {
     let mut functions: Vec<Function> = Default::default();
 
     config_flags.push(ConfigFlag {
-        comments: vec!["Defined if cgosling is built with mock tor-provider support".to_string()],
-        name: "GOSLING_HAVE_MOCK_TOR_PROVIDER".to_string(),
-        enabled: cfg!(feature = "mock-tor-provider"),
+        comments: vec!["Defined if cgosling is built with arti-client tor-provider support".to_string()],
+        name: "GOSLING_HAVE_ARTI_CLIENT_TOR_PROVIDER".to_string(),
+        enabled: cfg!(feature = "arti-client-tor-provider"),
     });
     config_flags.push(ConfigFlag {
         comments: vec!["Defined if cgosling is built with legacy tor-provider support".to_string()],
         name: "GOSLING_HAVE_LEGACY_TOR_PROVIDER".to_string(),
         enabled: cfg!(feature = "legacy-tor-provider"),
+    });
+    config_flags.push(ConfigFlag {
+        comments: vec!["Defined if cgosling is built with mock tor-provider support".to_string()],
+        name: "GOSLING_HAVE_MOCK_TOR_PROVIDER".to_string(),
+        enabled: cfg!(feature = "mock-tor-provider"),
     });
 
     for commmented_source in commented_source_pattern.captures_iter(source) {
