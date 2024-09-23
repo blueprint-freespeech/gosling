@@ -21,6 +21,7 @@ cgosling-proc-macros = { path = "../cgosling-proc-macros" }
 gosling = { path = "../gosling" }
 paste = "1.0"
 static_assertions = "1.1"
+tokio = { version = "1", features = ["full"], optional = true }
 tor-interface = { path = "../tor-interface" }
 which = "4.4"
 
@@ -33,5 +34,6 @@ crate-type = ["staticlib" ,"rlib"]
 
 [features]
 impl-lib = []
+arti-client-tor-provider = ["tokio", "tor-interface/arti-client-tor-provider"]
 mock-tor-provider = ["tor-interface/mock-tor-provider"]
 legacy-tor-provider = ["tor-interface/legacy-tor-provider"]

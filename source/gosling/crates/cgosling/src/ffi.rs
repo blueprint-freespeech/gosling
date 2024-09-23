@@ -92,6 +92,15 @@ pub extern "C" fn gosling_library_free(in_library: *mut GoslingLibrary) {
         clear_tor_provider_config_registry();
         clear_context_tuple_registry();
 
+        #[cfg(feature = "arti-client-tor-provider")]
+        match TOKIO_RUNTIME.lock() {
+            Ok(mut runtime) => {
+                *runtime = None;
+            },
+            Err(_) => unreachable!(
+                "another thread paniccked while holding the TOKIO_RUNTIME mutex"),
+        };
+
         GOSLING_LIBRARY_INITED.store(false, Ordering::Relaxed);
     }
 }
