@@ -1,3 +1,5 @@
+import java.io.File;
+import java.nio.file.Files;
 import net.blueprintforfreespeech.gosling.Gosling;
 import net.blueprintforfreespeech.gosling.Gosling.Error;
 import net.blueprintforfreespeech.gosling.Gosling.*;
@@ -224,15 +226,26 @@ public class Example {
             assert bobIdKey != null;
 
             System.out.println("Start Tor Clients");
+            Out<TorProviderConfig> outAliceTorProviderConfig = new Out<TorProviderConfig>();
+            Gosling.torProviderConfigNewBundledLegacyClientConfig(outAliceTorProviderConfig, null, Files.createTempDirectory("java-test-alice").toString(), outError);
+            handleOutError(outError);
+            TorProviderConfig aliceTorProviderConfig = outAliceTorProviderConfig.get();
+            assert aliceTorProviderConfig != null;
 
             Out<TorProvider> outAliceTorProvider = new Out<TorProvider>();
-            Gosling.torProviderNewLegacyClient(outAliceTorProvider, null, "/tmp/java-test-alice", outError);
+            Gosling.torProviderFromTorProviderConfig(outAliceTorProvider, aliceTorProviderConfig, outError);
             handleOutError(outError);
             TorProvider aliceTorProvider = outAliceTorProvider.get();
             assert aliceTorProvider != null;
 
+            Out<TorProviderConfig> outBobTorProviderConfig = new Out<TorProviderConfig>();
+            Gosling.torProviderConfigNewBundledLegacyClientConfig(outBobTorProviderConfig, null, Files.createTempDirectory("java-test-bob").toString(), outError);
+            handleOutError(outError);
+            TorProviderConfig bobTorProviderConfig = outBobTorProviderConfig.get();
+            assert bobTorProviderConfig != null;
+
             Out<TorProvider> outBobTorProvider = new Out<TorProvider>();
-            Gosling.torProviderNewLegacyClient(outBobTorProvider, null, "/tmp/java-test-bob", outError);
+            Gosling.torProviderFromTorProviderConfig(outBobTorProvider, bobTorProviderConfig, outError);
             handleOutError(outError);
             TorProvider bobTorProvider = outBobTorProvider.get();
             assert bobTorProvider != null;
