@@ -39,7 +39,11 @@
     <div class="content">
 <h1 id="news">News</h1>
 <hr />
-<h2 id="new-minor-features-and-configuration-options">2024-07-06 - New minor features and configuration options</h2>
+<h2 class="news-title" id="ngi-assure-interview-posted">2024-09-24 - NGI Assure interview posted</h2>
+<h3 class="news-author" id="morgan">morgan</h3>
+<p>One of Blueprint for Free Speech’s funders is NLnet, who have funded development work for both Gosling and <a href="https://ricochetrefresh.net">Ricochet-Refresh</a>. A few months back, they sent out a questionnaire to various NLnet-funded projects. My answers seem to have been posted a few weeks ago! It’s a fairly short read, so please go take a look! It should give some insight into why we do the work we do, and how we think about software and user security+privacy: - <a href="https://ngi.eu/ngi-interviews/interview-with-morgan/">https://ngi.eu/ngi-interviews/interview-with-morgan/</a></p>
+<h2 class="news-title" id="new-minor-features-and-configuration-options">2024-07-06 - New minor features and configuration options</h2>
+<h3 class="news-author" id="by-richard">by richard</h3>
 <p>The work for the past month or so has been focused on implementing various features unrelated to the Gosling protocol itself.</p>
 <p>We anticipate developers of gosling-using applications may also want to connect to other third party domains or onion services. To mitigate anonymity and linkability concerns, we have introduced a <code>connect</code> function on the gosling and cgosling interfaces. This will allow developers to connect to domains anonymously through the packaged tor daemon. Some use cases may be for anonymous update pings or for accessing 3rd party services.</p>
 <p>Users or application packagers are also very likely going to want to have the option to use a system tor daemon for their gosling-using applications (rather than launching and managing their own tor instance). To enable this, we have generalised the idea of building a <code>gosling_tor_provider</code> by instead building a <code>gosling_tor_provider_config</code>, and then generating a <code>gosling_tor_provider</code> through that config.</p>
@@ -50,20 +54,23 @@
 <li><strong>mock tor client</strong>: this provides a fake in-process tor network to use for testing</li>
 </ul>
 <p>Finally, users need the ability to set various configuration options to use tor or bypass censorship. The bundled legacy tor daemon configuration now has options for the proxy, open firewall ports, pluggable transports, and bridges.</p>
-<h2 id="initial-arti-client-integration">2024-05-25 - Initial <code>arti-client</code> integration</h2>
+<h2 class="news-title" id="initial-arti-client-integration">2024-05-25 - Initial <code>arti-client</code> integration</h2>
+<h3 class="news-author" id="by-richard-1">by richard</h3>
 <p><a href="https://blog.torproject.org/announcing-arti/">Arti</a> is the Tor Project’s pure-Rust tor implementation. This effort has been on-going for a few years, but it has not been until relatively recently that we could begin the work of adding Arti support to Gosling.</p>
 <p>The first part of this work actually happened last summer with the implementation of the MockTorClient. This client implements the <a href="crates/tor_interface/tor_provider/index.html">TorProvider</a> trait using local sockets and testing the Gosling protocol easier and much more rigorous.</p>
 <p>Once the entire stack was updated to use a generic TorProvider, implementing more became a much easier task. The <a href="crates/tor_interface/arti_client_tor_client/index.html">ArtiClientTorClient</a> integrates and wraps the same backend crates used by the Tor Project’s <a href="https://crates.io/crates/arti">arti crate</a>.</p>
 <p>This tor implementation runs in the same process as Gosling itself, and there is no need for a SOCKS5 proxy or a control port controller. For now, this (and all of the implementations of TorProvider) are gated behind a Rust feature-flag. When building with CMAKE, these flags may be enabled using config options. See the root REAMDE for more details.</p>
 <p>For now, this feature is not available for use in Gosling itself, due to arti’s missing implementation of client authentication. Client auth prevents tor clients from connecting to an onion service, unless they have a particular private key which allows them to decrypt the so-called ‘descriptor’ which contains required routing information. Client auth is used by Gosling’s endpoint servers as a security-in-depth feature to prevent DDOS in the event the onion service id leaks.</p>
 <p>We expect client auth to be implemented upstream in the relatively near future. When it is available, we will do the remaining integration work in the tor-interface crate and plumbing through to cgosling’s C-FFI.</p>
-<h2 id="some-cargo-annoyances">2024-03-27 - Some Cargo Annoyances</h2>
+<h2 class="news-title" id="some-cargo-annoyances">2024-03-27 - Some Cargo Annoyances</h2>
+<h3 class="news-author" id="by-richard-2">by richard</h3>
 <p>So in the previous post I mentioned using patchelf to set the <a href="https://en.wikipedia.org/wiki/Soname">SONAME</a> attribute on the libcgosling.so shared library to facilitate proper debian packaging. I further mentioned this was due to an upstream cargo issue. Well, it turns out a similar issue exists for macOS binaries. Rather than playing whack-a-mole and manually fixing every single eventual build target, I took a step back and re-thought my approach and what could be done that would be most maintainable long term.</p>
 <p>The end-result is <a href="https://github.com/blueprint-freespeech/gosling/commit/9ae019efd3c5e5565287b963d09868c4ffaf5891">this</a>.</p>
 <p>To summarise, rather than manually patching and generally futzing with build outputs, I am instead only building cgosling as a static lib, and then building a shared lib using each platforms C tooling. This way, we can lean on CMake to do the heavy lifting when it comes to platform-specific metadata, symbolic-links, naming, etc. Unfortunately there is no standard way using cmake to just build a shared library which exports all of a static libraries public symbols.</p>
 <p>As a result, I’ve had to do some <em>interesting</em> engineering in the cgosling crate using proc macros. Without going into too much detail, we are now building two copies of the cgosling static library, one for direct consumption by downstream projects, and another <code>_impl</code> suffixed copy whose functions have also been renamed to include an <code>_impl</code> suffix. Then, using our existing code-generation pipeline, a cgosling shared library is written which defines public functions with the names found in the generated header, which simply pass-through all arguments to the <code>_impl</code> versions. <em>Hopefully</em> the compilers will optimise away this little overhead but if not I would be surprised if it is actually a big deal.</p>
 <p>This work has allowed me to pretty rapidly and confidently implement both an <a href="https://github.com/blueprint-freespeech/gosling/commit/1435386ba6f826dd73096fa4dbaa4cc8f460af6e">Homebrew Formula</a> for macOS (and Linux) and a <a href="https://github.com/blueprint-freespeech/gosling/commit/b3e59159da503da2d37efd948843681667979ce3">PKGBUILD</a> script for msys2 Windows environments.</p>
-<h2 id="debian-source-packages">2024-02-28 - Debian Source Packages</h2>
+<h2 class="news-title" id="debian-source-packages">2024-02-28 - Debian Source Packages</h2>
+<h3 class="news-author" id="by-richard-3">by richard</h3>
 <p>This past week I’ve been diving into the wonderful world of debian packaging. Specifically, constructing a debian source package via CMake which can be used to build the cgosling library from source, and generate both binary and dev packages.</p>
 <p>This exercise has been a bit difficult for a few reasons:</p>
 <ul>
@@ -75,16 +82,18 @@
 <p>To work around this, I have added a patchelf step which updates this soname field manually for Linux builds. I have also renamed the Linux shared-library target to include full semantic version at the end (libcgosling.so.0.2.1) and added symlinks to this library in the standard format (libcsogling.so and libcgosling.so.0) to play nicely in actual deployments.</p>
 <p>As part of this, I have also moved the crate’s semantic version definition out of its Cargo.toml file, and instead into the CMake part of the build-system. This way, we can generate all the various files (Cargo.toml, debian/control, debian/rules, etc) which need the semantic and major versions.</p>
 <p>With commit <a href="https://github.com/blueprint-freespeech/gosling/commit/7944370a122905b52640d87b5a8e17b2f3e5c53a">5ae906c</a>, we are now able to build debian source packages, and end-users can build binary and dev packages. This is the first step in eventually getting cgosling into debian. Hopefully it will be all the easier by having a properly formatted (with no lintian errors!) source package to start from.</p>
-<h2 id="fosdem">2024-02-01 - FOSDEM!</h2>
+<h2 class="news-title" id="fosdem">2024-02-01 - FOSDEM!</h2>
+<h3 class="news-author" id="by-richard-4">by richard</h3>
 <p>The Blueprint for Free Speech’s Gosling and Ricochet Refresh team is going to Brussels to attend one of the world’s largest free software events – <a href="https://fosdem.org/2024/">FOSDEM 2024</a></p>
 <p>We’ll be sharing our progress on Gosling and <a href="https://ricochetrefresh.net">Ricochet Refresh</a>, as well as exploring what the rest of the community is busy building.</p>
 <p>Drop by if you can to FOSDEM - it’s free!</p>
-<h2 id="no-news-is-good-news">2023-07-04 - No news is good news!</h2>
+<h2 class="news-title" id="no-news-is-good-news">2023-07-04 - No news is good news!</h2>
+<h3 class="news-author" id="by-richard-5">by richard</h3>
 <p>Nothing to report here.</p>
       <hr/>
       <footer>
         <p>&copy; 2023-2024 <a href="https://www.blueprintforfreespeech.net">Blueprint for Free Speech</a>. All rights reserved.</p>
-        <p><i>Page last modified date: 2024-07-06</i></p>
+        <p><i>Page last modified date: 2024-09-27</i></p>
       </footer>
     </div>
   </div>
