@@ -2,6 +2,12 @@
 
 ---
 
+## 2024-09-24 - NGI Assure interview posted {.news-title}
+### by morgan {.news-author}
+
+One of Blueprint for Free Speech's funders is NLnet, who have funded development work for both Gosling and [Ricochet-Refresh](https://ricochetrefresh.net). A few months back, they sent out a questionnaire to various NLnet-funded projects. My answers seem to have been posted a few weeks ago! It's a fairly short read, so please go take a look! It should give some insight into why we do the work we do, and how we think about software and user security+privacy:
+- [https://ngi.eu/ngi-interviews/interview-with-morgan/](https://ngi.eu/ngi-interviews/interview-with-morgan/)
+
 ## 2024-07-06 - New minor features and configuration options {.news-title}
 ### by richard {.news-author}
 
