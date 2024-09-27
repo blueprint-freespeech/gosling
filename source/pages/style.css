@@ -66,3 +66,12 @@ pre code {
   width: 100%;
   padding: 0.75em;
 }
+
+h2.news-title {
+  margin-bottom: 0;
+}
+
+h3.news-author {
+  margin-top: 0;
+  font-size: 0.9em;
+}

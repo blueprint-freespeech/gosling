@@ -2,7 +2,8 @@
 
 ---
 
-## 2024-07-06 - New minor features and configuration options
+## 2024-07-06 - New minor features and configuration options {.news-title}
+### by richard {.news-author}
 
 The work for the past month or so has been focused on implementing various features unrelated to the Gosling protocol itself.
 
@@ -18,7 +19,8 @@ This change in API surface means we won't need to worry as much about API breaka
 
 Finally, users need the ability to set various configuration options to use tor or bypass censorship. The bundled legacy tor daemon configuration now has options for the proxy, open firewall ports, pluggable transports, and bridges.
 
-## 2024-05-25 - Initial `arti-client` integration
+## 2024-05-25 - Initial `arti-client` integration {.news-title}
+### by richard {.news-author}
 
 [Arti](https://blog.torproject.org/announcing-arti/) is the Tor Project's pure-Rust tor implementation. This effort has been on-going for a few years, but it has not been until relatively recently that we could begin the work of adding Arti support to Gosling.
 
@@ -32,7 +34,8 @@ For now, this feature is not available for use in Gosling itself, due to arti's 
 
 We expect client auth to be implemented upstream in the relatively near future. When it is available, we will do the remaining integration work in the tor-interface crate and plumbing through to cgosling's C-FFI.
 
-## 2024-03-27 - Some Cargo Annoyances
+## 2024-03-27 - Some Cargo Annoyances {.news-title}
+### by richard {.news-author}
 
 So in the previous post I mentioned using patchelf to set the [SONAME](https://en.wikipedia.org/wiki/Soname) attribute on the libcgosling.so shared library to facilitate proper debian packaging. I further mentioned this was due to an upstream cargo issue. Well, it turns out a similar issue exists for macOS binaries. Rather than playing whack-a-mole and manually fixing every single eventual build target, I took a step back and re-thought my approach and what could be done that would be most maintainable long term.
 
@@ -44,7 +47,8 @@ As a result, I've had to do some *interesting* engineering in the cgosling crate
 
 This work has allowed me to pretty rapidly and confidently implement both an [Homebrew Formula](https://github.com/blueprint-freespeech/gosling/commit/1435386ba6f826dd73096fa4dbaa4cc8f460af6e) for macOS (and Linux) and a [PKGBUILD](https://github.com/blueprint-freespeech/gosling/commit/b3e59159da503da2d37efd948843681667979ce3) script for msys2 Windows environments.
 
-## 2024-02-28 - Debian Source Packages
+## 2024-02-28 - Debian Source Packages {.news-title}
+### by richard {.news-author}
 
 This past week I've been diving into the wonderful world of debian packaging. Specifically, constructing a debian source package via CMake which can be used to build the cgosling library from source, and generate both binary and dev packages.
 
@@ -62,7 +66,8 @@ As part of this, I have also moved the crate's semantic version definition out o
 
 With commit [5ae906c](https://github.com/blueprint-freespeech/gosling/commit/7944370a122905b52640d87b5a8e17b2f3e5c53a), we are now able to build debian source packages, and end-users can build binary and dev packages. This is the first step in eventually getting cgosling into debian. Hopefully it will be all the easier by having a properly formatted (with no lintian errors!) source package to start from.
 
-## 2024-02-01 - FOSDEM!
+## 2024-02-01 - FOSDEM! {.news-title}
+### by richard {.news-author}
 
 The Blueprint for Free Speech's Gosling and Ricochet Refresh team is going to Brussels to attend one of the world's largest free software events – [FOSDEM 2024](https://fosdem.org/2024/)
 
@@ -70,6 +75,7 @@ We'll be sharing our progress on Gosling and [Ricochet Refresh](https://ricochet
 
 Drop by if you can to FOSDEM  - it's free!
 
-## 2023-07-04 - No news is good news!
+## 2023-07-04 - No news is good news! {.news-title}
+### by richard {.news-author}
 
 Nothing to report here.
