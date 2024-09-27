@@ -36,7 +36,10 @@ def main():
     tor_working_directory = "/tmp/python-test"
     tor_working_directory_c_str = create_string_buffer(tor_working_directory.encode('utf-8'))
     tor_working_directory_c_str_len = c_size_t(len(tor_working_directory))
-    gosling_tor_provider_new_legacy_client(pointer(tor_provider), None, 0, tor_working_directory_c_str, tor_working_directory_c_str_len, pointer(err))
+    tor_provider_config = GoslingTorProviderConfigPtr()
+    gosling_tor_provider_config_new_bundled_legacy_client_config(pointer(tor_provider_config), None, 0, tor_working_directory_c_str, tor_working_directory_c_str_len, pointer(err))
+    handle_error(err)
+    gosling_tor_provider_from_tor_provider_config(pointer(tor_provider), tor_provider_config, pointer(err))
     handle_error(err)
 
     identity_private_key = GoslingEd25519PrivateKeyPtr()
