@@ -9,21 +9,24 @@ jobs:
       matrix:
         test:
           - honk_rpc_cargo_test
-          - tor_interface_arti_client_bootstrap_cargo_test
-          - tor_interface_arti_client_onion_service_cargo_test
           - tor_interface_crypto_cargo_test
-          - tor_interface_legacy_authenticated_onion_service_cargo_test
-          - tor_interface_legacy_bootstrap_cargo_test
-          - tor_interface_legacy_onion_service_cargo_test
-          - tor_interface_mixed_arti_client_legacy_authenticated_onion_service
-          - tor_interface_mixed_arti_client_legacy_bootstrap_cargo_test
-          - tor_interface_mixed_legacy_arti_client_bootstrap_cargo_test
+          - tor_interface_tor_provider_cargo_test
           - tor_interface_mock_authenticated_onion_service_cargo_test
           - tor_interface_mock_bootstrap_cargo_test
           - tor_interface_mock_onion_service_cargo_test
+          - tor_interface_arti_authenticated_onion_service_cargo_test
+          - tor_interface_arti_client_bootstrap_cargo_test
+          - tor_interface_arti_client_onion_service_cargo_test
+          - tor_interface_legacy_authenticated_onion_service_cargo_test
+          - tor_interface_legacy_bootstrap_cargo_test
+          - tor_interface_legacy_onion_service_cargo_test
+          - tor_interface_legacy_pluggable_transport_bootstrap_cargo_test
           - tor_interface_system_legacy_authenticated_onion_service_cargo_test
           - tor_interface_system_legacy_onion_service_cargo_test
-          - tor_interface_tor_provider_cargo_test
+          - tor_interface_mixed_arti_client_legacy_authenticated_onion_service_cargo_test
+          - tor_interface_mixed_arti_client_legacy_bootstrap_cargo_test
+          - tor_interface_mixed_legacy_arti_client_authenticated_onion_service_cargo_test
+          - tor_interface_mixed_legacy_arti_client_bootstrap_cargo_test
           - gosling_cargo_test
           - gosling_functional_test
           - gosling_unit_test
@@ -50,22 +53,24 @@ jobs:
       matrix:
         test:
           - honk_rpc_cargo_test
+          - tor_interface_crypto_cargo_test
+          - tor_interface_tor_provider_cargo_test
+          - tor_interface_mock_authenticated_onion_service_cargo_test
+          - tor_interface_mock_bootstrap_cargo_test
+          - tor_interface_mock_onion_service_cargo_test
+          - tor_interface_arti_authenticated_onion_service_cargo_test
           - tor_interface_arti_client_bootstrap_cargo_test
           - tor_interface_arti_client_onion_service_cargo_test
-          - tor_interface_crypto_cargo_test
           - tor_interface_legacy_authenticated_onion_service_cargo_test
           - tor_interface_legacy_bootstrap_cargo_test
           - tor_interface_legacy_onion_service_cargo_test
           - tor_interface_legacy_pluggable_transport_bootstrap_cargo_test
-          - tor_interface_mixed_arti_client_legacy_bootstrap_cargo_test
-          - tor_interface_mixed_legacy_arti_client_bootstrap_cargo_test
-          - tor_interface_mixed_arti_client_legacy_authenticated_onion_service
-          - tor_interface_mock_authenticated_onion_service_cargo_test
-          - tor_interface_mock_bootstrap_cargo_test
-          - tor_interface_mock_onion_service_cargo_test
           - tor_interface_system_legacy_authenticated_onion_service_cargo_test
           - tor_interface_system_legacy_onion_service_cargo_test
-          - tor_interface_tor_provider_cargo_test
+          - tor_interface_mixed_arti_client_legacy_authenticated_onion_service_cargo_test
+          - tor_interface_mixed_arti_client_legacy_bootstrap_cargo_test
+          - tor_interface_mixed_legacy_arti_client_authenticated_onion_service_cargo_test
+          - tor_interface_mixed_legacy_arti_client_bootstrap_cargo_test
           - gosling_cargo_test
           - gosling_functional_test
           - gosling_unit_test
@@ -106,22 +111,24 @@ jobs:
       matrix:
         test:
           - honk_rpc_cargo_test
+          - tor_interface_crypto_cargo_test
+          - tor_interface_tor_provider_cargo_test
+          - tor_interface_mock_authenticated_onion_service_cargo_test
+          - tor_interface_mock_bootstrap_cargo_test
+          - tor_interface_mock_onion_service_cargo_test
+          - tor_interface_arti_authenticated_onion_service_cargo_test
           - tor_interface_arti_client_bootstrap_cargo_test
           - tor_interface_arti_client_onion_service_cargo_test
-          - tor_interface_crypto_cargo_test
           - tor_interface_legacy_authenticated_onion_service_cargo_test
           - tor_interface_legacy_bootstrap_cargo_test
           - tor_interface_legacy_onion_service_cargo_test
           - tor_interface_legacy_pluggable_transport_bootstrap_cargo_test
-          - tor_interface_mixed_arti_client_legacy_bootstrap_cargo_test
-          - tor_interface_mixed_legacy_arti_client_bootstrap_cargo_test
-          - tor_interface_mixed_arti_client_legacy_authenticated_onion_service
-          - tor_interface_mock_authenticated_onion_service_cargo_test
-          - tor_interface_mock_bootstrap_cargo_test
-          - tor_interface_mock_onion_service_cargo_test
           - tor_interface_system_legacy_authenticated_onion_service_cargo_test
           - tor_interface_system_legacy_onion_service_cargo_test
-          - tor_interface_tor_provider_cargo_test
+          - tor_interface_mixed_arti_client_legacy_authenticated_onion_service_cargo_test
+          - tor_interface_mixed_arti_client_legacy_bootstrap_cargo_test
+          - tor_interface_mixed_legacy_arti_client_authenticated_onion_service_cargo_test
+          - tor_interface_mixed_legacy_arti_client_bootstrap_cargo_test
           - gosling_cargo_test
           - gosling_functional_test
           - gosling_unit_test
