@@ -88,7 +88,9 @@ Enable the arti-client TorProvider implementation. This allows Gosling to connec
 
 The following additional dependencies are required for this configure option:
 
+- [OpenSSL >= 3.0.0](https://openssl-library.org/)
 - [SQLite >= 3.0](https://www.sqlite.org/index.html)
+- [liblzma >= 5.0.0](https://tukaani.org/xz/)
 
 ## Additional Configuration Options and Optional Dependencies
 
