@@ -1,5 +1,23 @@
 include(CheckLinkerFlag)
 
+if (ENABLE_ARTI_CLIENT_TOR_PROVIDER)
+    include(FindOpenSSL)
+    find_package(OpenSSL 3.0.0 REQUIRED)
+    include(FindSQLite3)
+    include(FindLibLZMA)
+    find_package(LibLZMA 5.0.0 REQUIRED)
+
+    if (NOT OPENSSL_FOUND)
+        message(FATAL_ERROR "OpenSSL 3.0.0 or newer not found; required for gosling_c_static_bindings and gosling_c_shared_bindings")
+    elseif (NOT SQLite3_FOUND)
+        message(FATAL_ERROR "SQLite3 not found; required for gosling_c_static_bindings  and gosling_c_shared_bindings")
+    elseif (NOT LIBLZMA_FOUND)
+        message(FATAL_ERROR "liblzma not found; required for gosling_c_static_bindings  and gosling_c_shared_bindings")
+    elseif (LIBLZMA_VERSION_STRING STREQUAL "5.6.0" OR LIBLZMA_VERSION_STRING STREQUAL "5.6.1")
+        message(FATAL_ERROR "backdoored liblzma version \"${LIBLZMA_VERSION_STRING}\" found; upgrade to at least version 5.6.2. For background info, see: https://en.wikipedia.org/wiki/XZ_Utils_backdoor")
+    endif()
+endif()
+
 #
 # Generate cgosling.h
 #
@@ -47,11 +65,29 @@ set_target_properties(gosling_c_static_bindings PROPERTIES
     IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/${CGOSLING_STATIC}
 )
 
+if (ENABLE_ARTI_CLIENT_TOR_PROVIDER)
+    target_link_libraries(gosling_c_static_bindings INTERFACE OpenSSL::SSL)
+    target_link_libraries(gosling_c_static_bindings INTERFACE SQLite::SQLite3)
+    target_link_libraries(gosling_c_static_bindings INTERFACE LibLZMA::LibLZMA)
+endif()
+
 if(WINDOWS)
     target_link_libraries(gosling_c_static_bindings INTERFACE ws2_32)
     target_link_libraries(gosling_c_static_bindings INTERFACE userenv)
     target_link_libraries(gosling_c_static_bindings INTERFACE bcrypt)
     target_link_libraries(gosling_c_static_bindings INTERFACE ntdll)
+    if (ENABLE_ARTI_CLIENT_TOR_PROVIDER)
+        target_link_libraries(gosling_c_static_bindings INTERFACE crypt32)
+        target_link_libraries(gosling_c_static_bindings INTERFACE ncrypt)
+        target_link_libraries(gosling_c_static_bindings INTERFACE secur32)
+    endif()
+endif()
+
+if (MACOS)
+    if (ENABLE_ARTI_CLIENT_TOR_PROVIDER)
+        target_link_libraries(gosling_c_static_bindings INTERFACE "-framework CoreFoundation")
+        target_link_libraries(gosling_c_static_bindings INTERFACE "-framework Security")
+    endif()
 endif()
 
 add_custom_target(gosling_c_static_bindings_target ALL
@@ -90,12 +126,32 @@ set_target_properties(gosling_c_shared_bindings
     VERSION ${CGOSLING_VERSION}
     SOVERSION ${CGOSLING_MAJOR_VERSION})
 target_link_libraries(gosling_c_shared_bindings PRIVATE ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_IMPL_STATIC})
+
+if (ENABLE_ARTI_CLIENT_TOR_PROVIDER)
+    target_link_libraries(gosling_c_shared_bindings PRIVATE OpenSSL::SSL)
+    target_link_libraries(gosling_c_shared_bindings PRIVATE SQLite::SQLite3)
+    target_link_libraries(gosling_c_shared_bindings PRIVATE LibLZMA::LibLZMA)
+endif()
+
 if(WINDOWS)
     target_link_libraries(gosling_c_shared_bindings PRIVATE ws2_32)
     target_link_libraries(gosling_c_shared_bindings PRIVATE userenv)
     target_link_libraries(gosling_c_shared_bindings PRIVATE bcrypt)
     target_link_libraries(gosling_c_shared_bindings PRIVATE ntdll)
+    if (ENABLE_ARTI_CLIENT_TOR_PROVIDER)
+        target_link_libraries(gosling_c_shared_bindings PRIVATE crypt32)
+        target_link_libraries(gosling_c_shared_bindings PRIVATE ncrypt)
+        target_link_libraries(gosling_c_shared_bindings PRIVATE secur32)
+    endif()
 endif()
+
+if (MACOS)
+    if (ENABLE_ARTI_CLIENT_TOR_PROVIDER)
+        target_link_libraries(gosling_c_shared_bindings PRIVATE "-framework CoreFoundation")
+        target_link_libraries(gosling_c_shared_bindings PRIVATE "-framework Security")
+    endif()
+endif()
+
 
 # check if the --exclude-libs flag is supported by the linker
 check_linker_flag(C "-Wl,--exclude-libs,ALL" LINKER_SUPPORTS_EXCLUDE_LIBS)
