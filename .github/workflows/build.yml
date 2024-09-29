@@ -78,18 +78,10 @@ jobs:
             msys-env: clang-x86_64
             java-arch: x64
             teb-target: windows-x86_64
-          - msystem: clang32
-            msys-env: clang-i686
-            java-arch: x86
-            teb-target: windows-i686
           - msystem: mingw64
             msys-env: x86_64
             java-arch: x86_64
             teb-target: windows-x86_64
-          - msystem: mingw32
-            msys-env: i686
-            java-arch: x86
-            teb-target: windows-i686
     runs-on: windows-latest
     defaults:
       run:
@@ -109,7 +101,7 @@ jobs:
             mingw-w64-${{ matrix.msys-env }}-cmake
             mingw-w64-${{ matrix.msys-env }}-clang
             mingw-w64-${{ matrix.msys-env }}-rust
-            mingw-w64-boost
+            mingw-w64-${{ matrix.msys-env }}-boost
             mingw-w64-${{ matrix.msys-env }}-ncurses
       - name: Install Java
         uses: actions/setup-java@v4
