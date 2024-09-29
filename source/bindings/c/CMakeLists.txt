@@ -156,10 +156,16 @@ endif()
 
 # check if the --exclude-libs flag is supported by the linker
 check_linker_flag(C "-Wl,--exclude-libs,ALL" LINKER_SUPPORTS_EXCLUDE_LIBS)
-
 if(LINKER_SUPPORTS_EXCLUDE_LIBS)
     # prevents the result .so from re-exporting all of the static libs symbols out of the shared library
     target_link_options(gosling_c_shared_bindings PRIVATE "-Wl,--exclude-libs,ALL")
+endif()
+
+# check if the --exclude-all-symbols flag is supported by the linker (mingw clang+lld toolchain)
+check_linker_flag(C "-Wl,--exclude-all-symbols" LINKER_SUPPORTS_EXCLUDE_ALL_SYMBOLS)
+if (LINKER_SUPPORTS_EXCLUDE_ALL_SYMBOLS)
+    # prevents the result .so from re-exporting all of the static libs symbols out of the shared library
+    target_link_options(gosling_c_shared_bindings PRIVATE "-Wl,--exclude-all-symbols")
 endif()
 
 target_include_directories(gosling_c_shared_bindings PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
