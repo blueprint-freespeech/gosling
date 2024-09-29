@@ -124,7 +124,8 @@ set_target_properties(gosling_c_shared_bindings
     PROPERTIES
     OUTPUT_NAME cgosling
     VERSION ${CGOSLING_VERSION}
-    SOVERSION ${CGOSLING_MAJOR_VERSION})
+    SOVERSION ${CGOSLING_MAJOR_VERSION}
+    C_VISIBILITY_PRESET hidden)
 target_link_libraries(gosling_c_shared_bindings PRIVATE ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_IMPL_STATIC})
 
 if (ENABLE_ARTI_CLIENT_TOR_PROVIDER)
