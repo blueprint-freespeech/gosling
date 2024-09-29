@@ -31,7 +31,7 @@ jobs:
           sudo dpkg --add-architecture ${{ matrix.debian-arch }}
           sudo apt-get update
           sudo apt install -y gcc-multilib g++-multilib
-          sudo apt-get install -y libc6:${{ matrix.debian-arch }} libstdc++6:${{ matrix.debian-arch }} libboost-all-dev:${{ matrix.debian-arch }} libncurses-dev:${{ matrix.debian-arch }} default-jdk:${{ matrix.debian-arch }} dpkg-dev
+          sudo apt-get install -y libc6:${{ matrix.debian-arch }} libstdc++6:${{ matrix.debian-arch }} libboost-all-dev:${{ matrix.debian-arch }} libncurses-dev:${{ matrix.debian-arch }} default-jdk:${{ matrix.debian-arch }} dpkg-dev libssl-dev:${{ matrix.debian-arch }} libsqlite3-dev:${{ matrix.debian-arch }} liblzma-dev:${{ matrix.debian-arch }}
       - name: Configure Rust
         run: |
           rustup target add ${{ matrix.rust-target }}
@@ -52,7 +52,7 @@ jobs:
           path: dist/gosling-linux-gnu-${{ matrix.arch }}-debug.tar
       - name: Build Release
         run: |
-          cmake -S . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=dist/release -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_DEBIAN_SOURCE_PACKAGE=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }} -DCMAKE_C_FLAGS="${{ matrix.cflags }}" -DCMAKE_CXX_FLAGS="${{ matrix.cxxflags }}" -DCMAKE_FIND_ROOT_PATH=${{ matrix.cmake-find-root-path }}
+          cmake -S . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=dist/release -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_DEBIAN_SOURCE_PACKAGE=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }} -DCMAKE_C_FLAGS="${{ matrix.cflags }}" -DCMAKE_CXX_FLAGS="${{ matrix.cxxflags }}" -DCMAKE_FIND_ROOT_PATH=${{ matrix.cmake-find-root-path }}
           cmake --build build
           cmake --install build
       - name: Archive Release
@@ -103,6 +103,9 @@ jobs:
             mingw-w64-${{ matrix.msys-env }}-rust
             mingw-w64-${{ matrix.msys-env }}-boost
             mingw-w64-${{ matrix.msys-env }}-ncurses
+            mingw-w64-${{ matrix.msys-env }}-openssl
+            mingw-w64-${{ matrix.msys-env }}-sqlite3
+            mingw-w64-${{ matrix.msys-env }}-xz
       - name: Install Java
         uses: actions/setup-java@v4
         with:
@@ -110,12 +113,14 @@ jobs:
           java-version: '17'
           architecture: ${{ matrix.java-arch }}
       - name: Build Debug
+        env:
+          CC: clang
         run: |
           # manually add java bins to PATH >:[
           export PATH=$(cygpath -u ${JAVA_HOME})/bin:$PATH
           mkdir -p build/debug
           cd build/debug
-          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../../dist/debug -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_MSYS2_PKGBUILD=ON  -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
+          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../../dist/debug -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_MSYS2_PKGBUILD=ON  -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
           make
           make install
       - name: Archive Debug
@@ -128,12 +133,14 @@ jobs:
           name: gosling-windows-mingw-w64-${{ matrix.msys-env }}-debug.tar
           path: dist/gosling-windows-mingw-w64-${{ matrix.msys-env }}-debug.tar
       - name: Build Release
+        env:
+          CC: clang
         run: |
           # manually add java bins to PATH >:[
           export PATH=$(cygpath -u ${JAVA_HOME})/bin:$PATH
           mkdir -p build/release
           cd build/release
-          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist/release -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_MSYS2_PKGBUILD=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
+          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist/release -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_MSYS2_PKGBUILD=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
           make
           make install
       - name: Archive Release
@@ -155,10 +162,12 @@ jobs:
             platform: x64
             rust-target: x86_64-pc-windows-msvc
             teb-target: windows-x86_64
+            vcpkg-triplet: x64-windows
           - java-arch: x86
             platform: Win32
             rust-target: i686-pc-windows-msvc
             teb-target: windows-x86_64
+            vcpkg-triplet: x86-windows
     runs-on: windows-latest
     steps:
       - name: Checkout Gosling
@@ -178,6 +187,11 @@ jobs:
             boost_version: 1.78.0
             platform_version: 2022
             toolset: msvc
+      - name: Install Dependencies
+        env:
+          VCPKG_DEFAULT_TRIPLET: ${{ matrix.vcpkg-triplet }}
+        run: |
+          vcpkg install openssl sqlite3 liblzma
       - name: Configure Rust
         run: |
           rustup target add ${{ matrix.rust-target }}
@@ -186,7 +200,7 @@ jobs:
         env:
           BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
         run: |
-          cmake -S . -B build/debug -DCMAKE_BUILD_TYPE=Debug -A ${{ matrix.platform }} -DCMAKE_INSTALL_PREFIX=dist/debug -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
+          cmake -S . -B build/debug -DCMAKE_BUILD_TYPE=Debug -A ${{ matrix.platform }} -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_INSTALL_PREFIX=dist/debug -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
           cmake --build build/debug --config Debug
           cmake --install build/debug --config Debug
       - name: Upload Debug
@@ -198,7 +212,7 @@ jobs:
         env:
           BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
         run: |
-          cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release -A ${{ matrix.platform }} -DCMAKE_INSTALL_PREFIX=dist/release -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
+          cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release -A ${{ matrix.platform }} -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_INSTALL_PREFIX=dist/release -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
           cmake --build build/release --config Release
           cmake --install build/release --config Release
       - name: Upload Release
@@ -228,14 +242,14 @@ jobs:
           submodules: true
       - name: Install Dependencies
         run: |
-          brew install boost
+          brew install boost openssl sqlite xz
       - name: Build Debug
         env:
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macosx-deployment-target }}
         run: |
           mkdir -p build/debug
           cd build/debug
-          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../../dist/debug -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_HOMEBREW_FORMULA=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
+          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../../dist/debug -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_HOMEBREW_FORMULA=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
           make
           make install
       - name: Archive Debug
@@ -253,7 +267,7 @@ jobs:
         run: |
           mkdir -p build/release
           cd build/release
-          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist/release -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_HOMEBREW_FORMULA=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
+          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist/release -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_HOMEBREW_FORMULA=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
           make
           make install
       - name: Archive Release
