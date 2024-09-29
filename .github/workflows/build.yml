@@ -109,7 +109,7 @@ jobs:
             mingw-w64-${{ matrix.msys-env }}-cmake
             mingw-w64-${{ matrix.msys-env }}-clang
             mingw-w64-${{ matrix.msys-env }}-rust
-            mingw-w64-${{ matrix.msys-env }}-boost
+            mingw-w64-boost
             mingw-w64-${{ matrix.msys-env }}-ncurses
       - name: Install Java
         uses: actions/setup-java@v4
