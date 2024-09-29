@@ -109,7 +109,7 @@ jobs:
             mingw-w64-${{ matrix.msys-env }}-cmake
             mingw-w64-${{ matrix.msys-env }}-clang
             mingw-w64-${{ matrix.msys-env }}-rust
-            mingw-w64-${{ matrix.msys-env }}-boost
+            mingw-w64-boost
             mingw-w64-${{ matrix.msys-env }}-ncurses
             mingw-w64-${{ matrix.msys-env }}-openssl
             mingw-w64-${{ matrix.msys-env }}-sqlite3
