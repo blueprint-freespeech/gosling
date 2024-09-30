@@ -18,6 +18,8 @@ if (ENABLE_ARTI_CLIENT_TOR_PROVIDER)
     endif()
 endif()
 
+message(WARNING "LIBLZMA_LIBRARIES: " ${LIBLZMA_LIBRARIES})
+
 #
 # Generate cgosling.h
 #
@@ -111,6 +113,7 @@ add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cgosling.c
     # generate c source
     COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo run ${CARGO_FLAGS} --bin build_c_bindings ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/cgosling.json cgosling.c.handlebars ${CMAKE_CURRENT_BINARY_DIR}/cgosling.c
+    COMMAND cat ${LIBLZMA_LIBRARIES}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 add_custom_target(gosling_c_shared_sources_target ALL
