@@ -226,10 +226,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runs-on: macos-12
+          - runs-on: macos-13
             arch: x86_64
             teb-target: macos-x86_64
-            macosx-deployment-target: 12.7
+            macosx-deployment-target: 13.0
           - runs-on: macos-14
             arch: aarch64
             teb-target: macos-aarch64
