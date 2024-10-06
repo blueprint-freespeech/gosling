@@ -524,55 +524,6 @@
 <a href="#524" id="524">524</a>
 <a href="#525" id="525">525</a>
 <a href="#526" id="526">526</a>
-<a href="#527" id="527">527</a>
-<a href="#528" id="528">528</a>
-<a href="#529" id="529">529</a>
-<a href="#530" id="530">530</a>
-<a href="#531" id="531">531</a>
-<a href="#532" id="532">532</a>
-<a href="#533" id="533">533</a>
-<a href="#534" id="534">534</a>
-<a href="#535" id="535">535</a>
-<a href="#536" id="536">536</a>
-<a href="#537" id="537">537</a>
-<a href="#538" id="538">538</a>
-<a href="#539" id="539">539</a>
-<a href="#540" id="540">540</a>
-<a href="#541" id="541">541</a>
-<a href="#542" id="542">542</a>
-<a href="#543" id="543">543</a>
-<a href="#544" id="544">544</a>
-<a href="#545" id="545">545</a>
-<a href="#546" id="546">546</a>
-<a href="#547" id="547">547</a>
-<a href="#548" id="548">548</a>
-<a href="#549" id="549">549</a>
-<a href="#550" id="550">550</a>
-<a href="#551" id="551">551</a>
-<a href="#552" id="552">552</a>
-<a href="#553" id="553">553</a>
-<a href="#554" id="554">554</a>
-<a href="#555" id="555">555</a>
-<a href="#556" id="556">556</a>
-<a href="#557" id="557">557</a>
-<a href="#558" id="558">558</a>
-<a href="#559" id="559">559</a>
-<a href="#560" id="560">560</a>
-<a href="#561" id="561">561</a>
-<a href="#562" id="562">562</a>
-<a href="#563" id="563">563</a>
-<a href="#564" id="564">564</a>
-<a href="#565" id="565">565</a>
-<a href="#566" id="566">566</a>
-<a href="#567" id="567">567</a>
-<a href="#568" id="568">568</a>
-<a href="#569" id="569">569</a>
-<a href="#570" id="570">570</a>
-<a href="#571" id="571">571</a>
-<a href="#572" id="572">572</a>
-<a href="#573" id="573">573</a>
-<a href="#574" id="574">574</a>
-<a href="#575" id="575">575</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::net::SocketAddr;
 <span class="kw">use </span>std::ops::DerefMut;
@@ -584,19 +535,17 @@
 <span class="comment">//extern
 </span><span class="kw">use </span>arti_client::config::{CfgPath, TorClientConfigBuilder};
 <span class="kw">use </span>arti_client::{BootstrapBehavior, DangerouslyIntoTorAddr, IntoTorAddr, TorClient};
-<span class="kw">use </span>fs_mistrust::Mistrust;
 <span class="kw">use </span>tokio::io::{AsyncReadExt, AsyncWriteExt};
 <span class="kw">use </span>tokio::net::{TcpListener, TcpStream};
 <span class="kw">use </span>tokio::runtime;
 <span class="kw">use </span>tokio_stream::StreamExt;
 <span class="kw">use </span>tor_cell::relaycell::msg::Connected;
-<span class="kw">use </span>tor_hscrypto::pk::HsIdKeypair;
+<span class="kw">use </span>tor_config::ExplicitOrAuto;
+<span class="kw">use </span>tor_llcrypto::pk::ed25519::ExpandedKeypair;
 <span class="kw">use </span>tor_hsservice::config::OnionServiceConfigBuilder;
 <span class="kw">use </span>tor_hsservice::config::restricted_discovery::HsClientNickname;
-<span class="kw">use </span>tor_hsservice::{HsIdKeypairSpecifier, HsNickname, OnionServiceBuilder, RunningOnionService};
-<span class="kw">use </span>tor_keymgr::{ArtiEphemeralKeystore, KeyMgrBuilder, KeystoreSelector};
-<span class="kw">use </span>tor_llcrypto::pk::ed25519::ExpandedKeypair;
-<span class="kw">use </span>tor_persist::state_dir::StateDirectory;
+<span class="kw">use </span>tor_hsservice::{HsNickname, RunningOnionService};
+<span class="kw">use </span>tor_keymgr::{config::arti::ArtiKeystoreKind, KeystoreSelector};
 <span class="kw">use </span>tor_proto::stream::IncomingStreamRequest;
 <span class="kw">use </span>tor_rtcompat::PreferredRuntime;
 
@@ -635,25 +584,14 @@
     <span class="attr">#[error(<span class="string">"arti-client tor-addr error: {0}"</span>)]
     </span>ArtiClientTorAddrError(<span class="attr">#[source] </span>arti_client::TorAddrError),
 
+    <span class="attr">#[error(<span class="string">"arti-client onion-service startup error: {0}"</span>)]
+    </span>ArtiClientOnionServiceLaunchError(<span class="attr">#[source] </span>arti_client::Error),
+
     <span class="attr">#[error(<span class="string">"tor-keymgr error: {0}"</span>)]
     </span>TorKeyMgrError(<span class="attr">#[source] </span>tor_keymgr::Error),
 
-    <span class="comment">// TODO: the 'real' error (tor_keymgr::mgr::KeyMgrBuilderError) isn't
-    // actually defined anywhere from what I can tell
-    </span><span class="attr">#[error(<span class="string">"failed to build KeyMgr"</span>)]
-    </span>TorKeyMgrBuilderError(),
-
-    <span class="attr">#[error(<span class="string">"unexpected key found when inserting HsIdKeypair"</span>)]
-    </span>KeyMgrInsertionFailure(),
-
     <span class="attr">#[error(<span class="string">"onion-service config-builder error: {0}"</span>)]
     </span>OnionServiceConfigBuilderError(<span class="attr">#[source] </span>tor_config::ConfigBuildError),
-
-    <span class="attr">#[error(<span class="string">"tor-persist error: {0}"</span>)]
-    </span>TorPersistError(<span class="attr">#[source] </span>tor_persist::Error),
-
-    <span class="attr">#[error(<span class="string">"tor-hsservice startup error: {0}"</span>)]
-    </span>TorHsServiceStartupError(<span class="attr">#[source] </span>tor_hsservice::StartupError),
 }
 
 <span class="kw">impl </span>From&lt;Error&gt; <span class="kw">for </span><span class="kw">crate</span>::tor_provider::Error {
@@ -668,8 +606,6 @@
 </span><span class="kw">pub struct </span>ArtiClientTorClient {
     tokio_runtime: Arc&lt;runtime::Runtime&gt;,
     arti_client: TorClient&lt;PreferredRuntime&gt;,
-    state_dir: PathBuf,
-    fs_mistrust: Mistrust,
     pending_events: Arc&lt;Mutex&lt;Vec&lt;TorEvent&gt;&gt;&gt;,
     bootstrapped: Arc&lt;AtomicBool&gt;,
 }
@@ -742,13 +678,15 @@
         cache_dir.push(<span class="string">"cache"</span>);
         config_builder
             .storage()
-            .cache_dir(CfgPath::new_literal(cache_dir));
+            .cache_dir(CfgPath::new_literal(cache_dir))
+            .keystore()
+            .primary().kind(ExplicitOrAuto::Explicit(ArtiKeystoreKind::Ephemeral));
 
         <span class="kw">let </span><span class="kw-2">mut </span>state_dir = PathBuf::from(root_data_directory);
         state_dir.push(<span class="string">"state"</span>);
         config_builder
             .storage()
-            .state_dir(CfgPath::new_literal(state_dir.clone()));
+            .state_dir(CfgPath::new_literal(state_dir));
 
         <span class="comment">// disable access to clearnet addresses and enable access to onion services
         </span>config_builder
@@ -760,8 +698,6 @@
             <span class="prelude-val">Ok</span>(config) =&gt; config,
             <span class="prelude-val">Err</span>(err) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(err).map_err(Error::ArtiClientConfigBuilderError),
         };
-
-        <span class="kw">let </span>fs_mistrust = config.fs_mistrust().clone();
 
         <span class="kw">let </span>arti_client = tokio_runtime.block_on(<span class="kw">async </span>{
             TorClient::builder()
@@ -782,8 +718,6 @@
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             tokio_runtime,
             arti_client,
-            state_dir,
-            fs_mistrust,
             pending_events,
             bootstrapped: Arc::new(AtomicBool::new(<span class="bool-val">false</span>)),
         })
@@ -859,17 +793,27 @@
 
     <span class="kw">fn </span>add_client_auth(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        _service_id: <span class="kw-2">&amp;</span>V3OnionServiceId,
-        _client_auth: <span class="kw-2">&amp;</span>X25519PrivateKey,
+        service_id: <span class="kw-2">&amp;</span>V3OnionServiceId,
+        client_auth: <span class="kw-2">&amp;</span>X25519PrivateKey,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), tor_provider::Error&gt; {
-        <span class="prelude-val">Err</span>(Error::NotImplemented().into())
+        <span class="kw">let </span>ed25519_public = Ed25519PublicKey::from_service_id(service_id).unwrap();
+        <span class="kw">let </span>hs_id = ed25519_public.as_bytes().clone();
+
+        <span class="self">self</span>.arti_client.insert_service_discovery_key(KeystoreSelector::Primary, hs_id.into(), client_auth.inner().clone().into()).map_err(Error::ArtiClientError)<span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(())
     }
 
     <span class="kw">fn </span>remove_client_auth(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        _service_id: <span class="kw-2">&amp;</span>V3OnionServiceId,
+        service_id: <span class="kw-2">&amp;</span>V3OnionServiceId,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), tor_provider::Error&gt; {
-        <span class="prelude-val">Err</span>(Error::NotImplemented().into())
+        <span class="kw">let </span>ed25519_public = Ed25519PublicKey::from_service_id(service_id).unwrap();
+        <span class="kw">let </span>hs_id = ed25519_public.as_bytes().clone();
+
+        <span class="self">self</span>.arti_client.remove_service_discovery_key(KeystoreSelector::Primary, hs_id.into()).map_err(Error::ArtiClientError)<span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(())
     }
 
     <span class="kw">fn </span>connect(
@@ -967,17 +911,6 @@
             .local_addr()
             .map_err(Error::TcpListenerLocalAddrFailed)<span class="question-mark">?</span>;
 
-        <span class="comment">// create a new ephemeral store for storing our onion service keys
-        </span><span class="kw">let </span>ephemeral_store: ArtiEphemeralKeystore =
-            ArtiEphemeralKeystore::new(<span class="string">"ephemeral"</span>.to_string());
-        <span class="kw">let </span>keymgr = <span class="kw">match </span>KeyMgrBuilder::default()
-            .default_store(Box::new(ephemeral_store))
-            .build()
-        {
-            <span class="prelude-val">Ok</span>(keymgr) =&gt; keymgr,
-            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::TorKeyMgrBuilderError().into()),
-        };
-
         <span class="comment">// generate a nickname to identify this onion service
         </span><span class="kw">let </span>service_id = V3OnionServiceId::from_private_key(private_key);
         <span class="kw">let </span>hs_nickname = <span class="kw">match </span>HsNickname::new(service_id.to_string()) {
@@ -986,27 +919,16 @@
                 <span class="macro">panic!</span>(<span class="string">"v3 onion service id string representation should be a valid HsNickname"</span>)
             }
         };
-
-        <span class="kw">let </span>hs_id_spec = HsIdKeypairSpecifier::new(hs_nickname.clone());
         <span class="comment">// generate a new HsIdKeypair (from an Ed25519PrivateKey)
         // clone() isn't implemented for ExpandedKeypair &gt;:[
         </span><span class="kw">let </span>secret_key_bytes = private_key.inner().to_secret_key_bytes();
-        <span class="kw">let </span>expanded_keypair = ExpandedKeypair::from_secret_key_bytes(secret_key_bytes)
-            .unwrap()
-            .into();
-
-        <span class="comment">// write the HsIdKeypair to keymgr
-        // TODO: for now this should return Ok(None) unless we persist the ephemeral store longer-term (ie for client auth keys in the future)
-        </span><span class="kw">match </span>keymgr.insert::&lt;HsIdKeypair&gt;(expanded_keypair, <span class="kw-2">&amp;</span>hs_id_spec, KeystoreSelector::Default)
-        {
-            <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; (), <span class="comment">// expected
-            </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="kw">_</span>)) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::KeyMgrInsertionFailure().into()),
-            <span class="prelude-val">Err</span>(err) =&gt; <span class="prelude-val">Err</span>(err).map_err(Error::TorKeyMgrError)<span class="question-mark">?</span>,
-        }
+        <span class="kw">let </span>hs_id_keypair = ExpandedKeypair::from_secret_key_bytes(secret_key_bytes)
+            .unwrap();
 
         <span class="comment">// create an OnionServiceConfig with the ephemeral nickname
         </span><span class="kw">let </span><span class="kw-2">mut </span>onion_service_config_builder = OnionServiceConfigBuilder::default();
-        onion_service_config_builder.nickname(hs_nickname);
+        onion_service_config_builder
+            .nickname(hs_nickname);
 
         <span class="comment">// add authorised client keys if they exist
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(authorized_clients) = authorized_clients {
@@ -1034,42 +956,21 @@
             <span class="prelude-val">Err</span>(err) =&gt; <span class="prelude-val">Err</span>(err).map_err(Error::OnionServiceConfigBuilderError)<span class="question-mark">?</span>,
         };
 
-        <span class="comment">// create OnionService
-        </span><span class="kw">let </span>state_dir = <span class="kw">match </span>StateDirectory::new(<span class="self">self</span>.state_dir.as_path(), <span class="kw-2">&amp;</span><span class="self">self</span>.fs_mistrust) {
-            <span class="prelude-val">Ok</span>(state_dir) =&gt; state_dir,
-            <span class="prelude-val">Err</span>(err) =&gt; <span class="prelude-val">Err</span>(err).map_err(Error::TorPersistError)<span class="question-mark">?</span>,
-        };
-
-        <span class="kw">let </span>onion_service = <span class="kw">match </span>OnionServiceBuilder::default()
-            .config(onion_service_config)
-            .keymgr(Arc::new(keymgr))
-            .state_dir(state_dir)
-            .build()
-        {
-            <span class="prelude-val">Ok</span>(onion_service) =&gt; onion_service,
-            <span class="prelude-val">Err</span>(err) =&gt; <span class="prelude-val">Err</span>(err).map_err(Error::TorHsServiceStartupError)<span class="question-mark">?</span>,
-        };
-
-        <span class="kw">let </span>onion_addr = OnionAddr::V3(OnionAddrV3::new(service_id.clone(), virt_port));
-
-        <span class="comment">// launch the OnionService and get a Stream of RendRequest
-        </span><span class="kw">let </span>runtime = <span class="self">self</span>.arti_client.runtime().clone();
-        <span class="kw">let </span>dirmgr = <span class="self">self</span>.arti_client.dirmgr().clone().upcast_arc();
-        <span class="kw">let </span>hs_circ_pool = <span class="self">self</span>.arti_client.hs_circ_pool().clone();
-
-        <span class="kw">let </span>(onion_service, <span class="kw-2">mut </span>rend_requests) = onion_service
-            .launch(runtime, dirmgr, hs_circ_pool)
-            .map_err(Error::TorHsServiceStartupError)<span class="question-mark">?</span>;
+        <span class="kw">let </span>(onion_service, <span class="kw-2">mut </span>rend_requests) = <span class="self">self</span>.arti_client
+            .launch_onion_service_with_hsid(onion_service_config, hs_id_keypair.into())
+            .map_err(Error::ArtiClientOnionServiceLaunchError)<span class="question-mark">?</span>;
 
         <span class="comment">// start a task to signal onion service published
         </span><span class="kw">let </span>pending_events = <span class="self">self</span>.pending_events.clone();
         <span class="kw">let </span><span class="kw-2">mut </span>status_events = onion_service.status_events();
+        <span class="kw">let </span>service_id_clone = service_id.clone();
+
         <span class="self">self</span>.tokio_runtime.spawn(<span class="kw">async move </span>{
             <span class="kw">while let </span><span class="prelude-val">Some</span>(evt) = status_events.next().<span class="kw">await </span>{
                 <span class="kw">match </span>evt.state() {
                     tor_hsservice::status::State::Running =&gt; <span class="kw">match </span>pending_events.lock() {
                         <span class="prelude-val">Ok</span>(<span class="kw-2">mut </span>pending_events) =&gt; {
-                            pending_events.push(TorEvent::OnionServicePublished { service_id });
+                            pending_events.push(TorEvent::OnionServicePublished { service_id: service_id_clone });
                             <span class="kw">return</span>;
                         }
                         <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="macro">unreachable!</span>(
@@ -1138,6 +1039,7 @@
             }
         });
 
+        <span class="kw">let </span>onion_addr = OnionAddr::V3(OnionAddrV3::new(service_id, virt_port));
         <span class="comment">// onion-service is torn down when `onion_service` is dropped
         </span><span class="prelude-val">Ok</span>(OnionListener::new::&lt;Arc&lt;RunningOnionService&gt;&gt;(listener, onion_addr, onion_service, |<span class="kw">_</span>|{}))
     }

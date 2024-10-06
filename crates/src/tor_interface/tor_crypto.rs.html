@@ -818,6 +818,11 @@
 <a href="#818" id="818">818</a>
 <a href="#819" id="819">819</a>
 <a href="#820" id="820">820</a>
+<a href="#821" id="821">821</a>
+<a href="#822" id="822">822</a>
+<a href="#823" id="823">823</a>
+<a href="#824" id="824">824</a>
+<a href="#825" id="825">825</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::convert::TryInto;
 <span class="kw">use </span>std::str;
@@ -1430,6 +1435,11 @@
     <span class="doccomment">/// Convert this private key to an array of bytes.
     </span><span class="kw">pub fn </span>to_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; [u8; X25519_PRIVATE_KEY_SIZE] {
         <span class="self">self</span>.secret_key.to_bytes()
+    }
+
+    <span class="attr">#[cfg(feature = <span class="string">"arti-client-tor-provider"</span>)]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>pk::curve25519::StaticSecret {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.secret_key
     }
 }
 
