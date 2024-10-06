@@ -812,6 +812,12 @@
 <a href="#812" id="812">812</a>
 <a href="#813" id="813">813</a>
 <a href="#814" id="814">814</a>
+<a href="#815" id="815">815</a>
+<a href="#816" id="816">816</a>
+<a href="#817" id="817">817</a>
+<a href="#818" id="818">818</a>
+<a href="#819" id="819">819</a>
+<a href="#820" id="820">820</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::convert::TryInto;
 <span class="kw">use </span>std::str;
@@ -1504,6 +1510,12 @@
     </span><span class="kw">pub fn </span>as_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8; X25519_PUBLIC_KEY_SIZE] {
         <span class="self">self</span>.public_key.as_bytes()
     }
+
+    <span class="attr">#[cfg(feature = <span class="string">"arti-client-tor-provider"</span>)]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>pk::curve25519::PublicKey {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.public_key
+    }
+
 }
 
 <span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>X25519PublicKey {
