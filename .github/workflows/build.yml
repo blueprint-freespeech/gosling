@@ -249,7 +249,7 @@ jobs:
         run: |
           mkdir -p build/debug
           cd build/debug
-          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../../dist/debug -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_HOMEBREW_FORMULA=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
+          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$(brew --prefix)" -DCMAKE_INSTALL_PREFIX=../../dist/debug -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_HOMEBREW_FORMULA=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
           make
           make install
       - name: Archive Debug
@@ -267,7 +267,7 @@ jobs:
         run: |
           mkdir -p build/release
           cd build/release
-          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist/release -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_HOMEBREW_FORMULA=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
+          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix)" -DCMAKE_INSTALL_PREFIX=../../dist/release -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_HOMEBREW_FORMULA=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
           make
           make install
       - name: Archive Release
