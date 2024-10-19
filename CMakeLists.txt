@@ -15,7 +15,8 @@ endif()
 # Feature flags
 option(ENABLE_MOCK_TOR_PROVIDER "Enable mocked tor support for tests" ON)
 option(ENABLE_LEGACY_TOR_PROVIDER "Enable legacy c-tor daemon support" ON)
-option(ENABLE_ARTI_CLIENT_TOR_PROVIDER "Enable experimental arti-client tor support" OFF)
+option(ENABLE_ARTI_CLIENT_TOR_PROVIDER "Enable experimental in-process arti-client support" OFF)
+option(ENABLE_ARTI_TOR_PROVIDER "Enable experimental out-of-process arti daemon support" OFF)
 
 # Test options
 option(ENABLE_TESTS "Enable tests" OFF)
