@@ -93,6 +93,8 @@ This graph shows which files directly or indirectly include this file:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
 Macros</h2></td></tr>
+<tr class="memitem:aa71ef38be5b1f8e3116c9e0563d4764b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#aa71ef38be5b1f8e3116c9e0563d4764b">GOSLING_HAVE_ARTI_CLIENT_TOR_PROVIDER</a>&#160;&#160;&#160;1</td></tr>
+<tr class="separator:aa71ef38be5b1f8e3116c9e0563d4764b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1712696dc8330f74a94a3d71635d2888"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a1712696dc8330f74a94a3d71635d2888">GOSLING_HAVE_LEGACY_TOR_PROVIDER</a>&#160;&#160;&#160;1</td></tr>
 <tr class="separator:a1712696dc8330f74a94a3d71635d2888"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a900dfc96e2dfed148b39a3ae9c540cca"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a900dfc96e2dfed148b39a3ae9c540cca">GOSLING_HAVE_MOCK_TOR_PROVIDER</a>&#160;&#160;&#160;1</td></tr>
@@ -373,6 +375,8 @@ Functions</h2></td></tr>
 <tr class="separator:ac60f3387ca496cfba04587f4cda4eea4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac98a228a73a413604175ad5cd4970340"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ac98a228a73a413604175ad5cd4970340">gosling_bridge_line_from_string</a> (<a class="el" href="cgosling_8h.html#a64109152ac09494701d99de4412a6c7f">gosling_bridge_line</a> **out_bridge_line, const char *bridge_line, size_t bridge_line_length, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
 <tr class="separator:ac98a228a73a413604175ad5cd4970340"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2a54c9bc7ef13ca58e422fb79aa0f24c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a2a54c9bc7ef13ca58e422fb79aa0f24c">gosling_tor_provider_config_new_arti_client_tor_client_config</a> (<a class="el" href="cgosling_8h.html#abec8f2cc63e29490aee0e06a29d2c53a">gosling_tor_provider_config</a> **out_tor_provider_config, const char *arti_client_data_directory, size_t arti_client_data_directory_length, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:a2a54c9bc7ef13ca58e422fb79aa0f24c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7861ff72d36fb076fc90764142e616f4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a7861ff72d36fb076fc90764142e616f4">gosling_tor_provider_config_new_mock_client_config</a> (<a class="el" href="cgosling_8h.html#abec8f2cc63e29490aee0e06a29d2c53a">gosling_tor_provider_config</a> **out_tor_provider_config, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
 <tr class="separator:a7861ff72d36fb076fc90764142e616f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a335a414b52e3795d108d62eb0c632f04"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a335a414b52e3795d108d62eb0c632f04">gosling_tor_provider_config_new_bundled_legacy_client_config</a> (<a class="el" href="cgosling_8h.html#abec8f2cc63e29490aee0e06a29d2c53a">gosling_tor_provider_config</a> **out_tor_provider_config, const char *tor_bin_path, size_t tor_bin_path_length, const char *tor_working_directory, size_t tor_working_directory_length, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
@@ -479,6 +483,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="aa71ef38be5b1f8e3116c9e0563d4764b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa71ef38be5b1f8e3116c9e0563d4764b">&#9670;&nbsp;</a></span>GOSLING_HAVE_ARTI_CLIENT_TOR_PROVIDER</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define GOSLING_HAVE_ARTI_CLIENT_TOR_PROVIDER&#160;&#160;&#160;1</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Defined if cgosling is built with arti-client tor-provider support </p>
+
+</div>
+</div>
 <a id="a1712696dc8330f74a94a3d71635d2888"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1712696dc8330f74a94a3d71635d2888">&#9670;&nbsp;</a></span>GOSLING_HAVE_LEGACY_TOR_PROVIDER</h2>
 
@@ -490,7 +509,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Defined if cgosling is built with arti-client tor-provider support Defined if cgosling is built with legacy tor-provider support </p>
+<p>Defined if cgosling is built with legacy tor-provider support </p>
 
 </div>
 </div>
@@ -4769,6 +4788,56 @@ Functions</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">in_tor_provider_config</td><td>the tor provider config object to free </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a2a54c9bc7ef13ca58e422fb79aa0f24c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2a54c9bc7ef13ca58e422fb79aa0f24c">&#9670;&nbsp;</a></span>gosling_tor_provider_config_new_arti_client_tor_client_config()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void gosling_tor_provider_config_new_arti_client_tor_client_config </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#abec8f2cc63e29490aee0e06a29d2c53a">gosling_tor_provider_config</a> **&#160;</td>
+          <td class="paramname"><em>out_tor_provider_config</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>arti_client_data_directory</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>arti_client_data_directory_length</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **&#160;</td>
+          <td class="paramname"><em>error</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Create a tor provider config to build an in-process arti-cient based tor provider.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">out_tor_provider_config</td><td>returned tor provider </td></tr>
+    <tr><td class="paramname">arti_client_data_directory</td><td>the file system path to store arti-client's state </td></tr>
+    <tr><td class="paramname">arti_client_data_directory_length</td><td>the number of chars in arti_client_data_directory not including any null-terminator </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
 </dl>

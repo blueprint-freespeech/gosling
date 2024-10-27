@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['gosling_205',['gosling',['../namespacegosling.html',1,'']]]
+  ['gosling_207',['gosling',['../namespacegosling.html',1,'']]]
 ];
