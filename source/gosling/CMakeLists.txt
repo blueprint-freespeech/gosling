@@ -87,6 +87,25 @@ if (BUILD_PAGES)
     install(DIRECTORY ${CARGO_TARGET_DIR}/doc/
         DESTINATION ${CMAKE_INSTALL_DOCDIR}/crates)
 
+    #
+    # Build software bill of materials (SBOM) using cargo-sbom:
+    # - https://docs.rs/crate/cargo-sbom/latest
+    #
+    add_custom_command(
+        OUTPUT ${CARGO_TARGET_DIR}/gosling.spdx.json
+        COMMAND cargo install cargo-sbom
+        COMMAND cargo sbom > ${CARGO_TARGET_DIR}/gosling.spdx.json
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    add_custom_target(gosling_cargo_sbom_target ALL
+        DEPENDS ${CARGO_TARGET_DIR}/gosling.spdx.json
+    )
+
+    #
+    # Instal sbom
+    #
+    install(FILES ${CARGO_TARGET_DIR}/gosling.spdx.json
+        DESTINATION ${CMAKE_INSTALL_DOCDIR})
+
 endif()
 
 if (ENABLE_LINTING)
