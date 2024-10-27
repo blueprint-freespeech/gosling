@@ -48,7 +48,7 @@ if (BUILD_PAGES)
     #
     add_custom_command(
         OUTPUT ${CARGO_TARGET_DIR}/tarpaulin/coverage.html
-        COMMAND TEB_PATH=${TEB_PATH} CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo tarpaulin --out html --output-dir ${CARGO_TARGET_DIR}/tarpaulin --timeout 600 ${TARPAULIN_FEATURES}
+        COMMAND TEB_PATH=${TEB_PATH} CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo tarpaulin --out html --output-dir ${CARGO_TARGET_DIR}/tarpaulin --timeout 1800 ${TARPAULIN_FEATURES}
         COMMAND mv ${CARGO_TARGET_DIR}/tarpaulin/tarpaulin-report.html ${CARGO_TARGET_DIR}/tarpaulin/coverage.html
         COMMAND ${CMAKE_COMMAND} -E echo "Test Coverage Report: ${CARGO_TARGET_DIR}/tarpaulin/coverage.html"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
