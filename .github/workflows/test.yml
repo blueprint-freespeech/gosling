@@ -31,6 +31,7 @@ jobs:
           - gosling_functional_test
           - gosling_unit_test
           - cgosling_cargo_test
+          - gosling_java_bindings_test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Gosling
@@ -44,7 +45,7 @@ jobs:
       - name: Test
         run: |
           mkdir build
-          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_TOR_EXPERT_BUNDLE=ON
+          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DBUILD_JAVA_BINDINGS=ON
           cd build
           ctest --verbose -R ^${{matrix.test}}
   windows:
@@ -75,6 +76,7 @@ jobs:
           - gosling_functional_test
           - gosling_unit_test
           - cgosling_cargo_test
+          - gosling_java_bindings_test
     runs-on: windows-latest
     defaults:
       run:
@@ -84,7 +86,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
-      - name: Install Dependencies
+      - name: Install MSYS2 Dependencies
         uses: msys2/setup-msys2@v2
         with:
           msystem: clang64
@@ -97,12 +99,19 @@ jobs:
             mingw-w64-clang-x86_64-boost
             mingw-w64-clang-x86_64-tor
             mingw-w64-clang-x86_64-sqlite3
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          architecture: x86_64
       - name: Test
         env:
           CC: clang
         run: |
+          export PATH=$(cygpath -u ${JAVA_HOME})/bin:$PATH
           mkdir build
-          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_TOR_EXPERT_BUNDLE=ON
+          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DBUILD_JAVA_BINDINGS=ON
           cd build
           ctest --verbose -R ^${{matrix.test}}
   macos:
@@ -133,6 +142,7 @@ jobs:
           - gosling_functional_test
           - gosling_unit_test
           - cgosling_cargo_test
+          - gosling_java_bindings_test
     runs-on: macos-latest
     steps:
       - name: Checkout Gosling
@@ -145,6 +155,6 @@ jobs:
       - name: Test
         run: |
           mkdir build
-          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_TOR_EXPERT_BUNDLE=ON
+          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DBUILD_JAVA_BINDINGS=ON
           cd build
           ctest --verbose -R ^${{matrix.test}}
