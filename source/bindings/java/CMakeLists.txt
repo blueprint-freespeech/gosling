@@ -80,4 +80,8 @@ if (BUILD_JAVA_BINDINGS)
     if (ENABLE_LINTING)
         add_dependencies(linting goslingjni)
     endif()
+
+    if (ENABLE_TESTS)
+        add_subdirectory(test)
+    endif()
 endif()
