@@ -1,4 +1,5 @@
 set(gosling_java_bindings_test_target_sources
+    GoslingHandshake.java
     GoslingTest.java
 )
 
