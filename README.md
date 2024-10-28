@@ -123,6 +123,7 @@ Enables the following ctest test targets (internet access is only required when 
 - cgosling_cargo_test
 - gosling_functional_test
 - gosling_unit_test
+- gosling_java_bindings_test (depends on BUILD_JAVA_BINDINGS option)
 
 The following additional dependencies are required for this configure option:
 
