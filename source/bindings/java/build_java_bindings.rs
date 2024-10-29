@@ -24,6 +24,10 @@ struct Function {
     input_params: Vec<Param>,
 }
 
+handlebars_helper!(goslingJniName: |*args|{
+    std::env::args().collect::<Vec<_>>()[1].to_string()
+});
+
 handlebars_helper!(aliasToClassName: |name: String| {
     assert!(name.starts_with("gosling_"));
     let name = &name[8..];
@@ -629,11 +633,12 @@ handlebars_helper!(marshallJNIResults: |return_type: String, input_params: Vec<P
 fn main() {
 
     let args: Vec<String> = std::env::args().collect();
-    assert_eq!(args.len(), 4);
+    assert_eq!(args.len(), 5);
 
-    let source = &args[1];
-    let template = &args[2];
-    let dest = &args[3];
+    let _library_name = &args[1];
+    let source = &args[2];
+    let template = &args[3];
+    let dest = &args[4];
 
     let source = std::fs::read_to_string(source).unwrap();
     let source: Value = serde_json::from_str(source.as_str()).unwrap();
@@ -641,6 +646,7 @@ fn main() {
     let mut handlebars = Handlebars::new();
 
     // .java helpers
+    handlebars.register_helper("goslingJniName", Box::new(goslingJniName));
     handlebars.register_helper("aliasToClassName", Box::new(aliasToClassName));
     handlebars.register_helper("functionToNativeMethodName", Box::new(functionToNativeMethodName));
     handlebars.register_helper("aliasToNativeFreeMethodName", Box::new(aliasToNativeFreeMethodName));
