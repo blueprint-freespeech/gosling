@@ -174,9 +174,7 @@ public:
         b(std::move(b)) {}
 
         boost::asio::ip::tcp::socket a;
-        std::vector<uint8_t> a_buffer;
         boost::asio::ip::tcp::socket b;
-        std::vector<uint8_t> b_buffer;
     };
     std::vector<tcp_proxy> tcp_proxies{};
 
@@ -194,32 +192,41 @@ public:
                 // forward reads from reader as writes to writer
                 auto forward_traffic = [](
                     boost::asio::ip::tcp::socket& reader,
-                    std::vector<uint8_t>& buffer,
                     boost::asio::ip::tcp::socket& writer) ->  boost::system::error_code {
+                    // allocate static socket read/write buffer
+                    // NOTE: forward traffic is only called from a single thread
+                    // if we ever switch to a more complicated priority/scheduling scheme
+                    // we will need to dynamically allocate this per-thread
+                    constexpr size_t READ_BUFFER_SIZE = 4096;
+                    static uint8_t READ_BUFFER[READ_BUFFER_SIZE] = {0};
+
                     boost::system::error_code ec{};
                     // read bytes from reader
-                    boost::asio::read(reader, boost::asio::dynamic_buffer(buffer), ec);
+                    const size_t bytes_read = boost::asio::read(reader, boost::asio::mutable_buffer(READ_BUFFER, READ_BUFFER_SIZE), ec);
                     // would_block is only acceptable error
                     if (ec && ec != boost::asio::error::would_block) {
                         return ec;
                     }
-                    // forward data to writer
-                    const size_t bytes_written = boost::asio::write(writer, boost::asio::buffer(buffer.data(), buffer.size()), ec);
-                    // would_block is only acceptable error
-                    if (ec && ec != boost::asio::error::would_block) {
-                        return ec;
-                    }
-                    // erase written bytes
-                    if (bytes_written) {
-                        std::cout << "write " << bytes_written << " bytes" << std::endl;
-                        buffer.erase(buffer.begin(), buffer.begin() + bytes_written);
+
+                    // forward any read bytes
+                    if (bytes_read > 0) {
+                        // std::cout << "read " << bytes_read << " bytes" << std::endl;
+                        // forward data to writer
+                        const size_t bytes_written = boost::asio::write(writer, boost::asio::buffer(READ_BUFFER, bytes_read), ec);
+                        // would_block is only acceptable error
+                        if (ec && ec != boost::asio::error::would_block) {
+                            return ec;
+                        }
+                        // std::cout << "write " << bytes_written << " bytes" << std::endl;
+                    } else {
+                        // std::cout << "would_block" << std::endl;
                     }
 
                     return {};
                 };
-                if (forward_traffic(it->a, it->a_buffer, it->b)) {
+                if (forward_traffic(it->a, it->b)) {
                     it = g_jni_glue->tcp_proxies.erase(it);
-                } else if (forward_traffic(it->b, it->b_buffer, it->a)) {
+                } else if (forward_traffic(it->b, it->a)) {
                     it = g_jni_glue->tcp_proxies.erase(it);
                 } else {
                     ++it;
