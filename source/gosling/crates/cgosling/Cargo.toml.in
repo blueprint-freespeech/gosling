@@ -7,7 +7,6 @@ version = "@CGOSLING_VERSION@"
 rust-version = "1.70"
 edition = "2021"
 publish = false
-lto = "fat"
 
 [build-dependencies]
 cbindgen = { version = "0.26", default-features = false }
