@@ -87,8 +87,8 @@ if (BUILD_PAGES)
         #
         # Install
         #
-        install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cgosling
-            DESTINATION ${CMAKE_INSTALL_DOCDIR})
+        install(DIRECTORY ${doxygen_output}/
+            DESTINATION ${CMAKE_INSTALL_DOCDIR}/bindings/cgosling)
 
     endif()
 endif()

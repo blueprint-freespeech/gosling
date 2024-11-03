@@ -84,4 +84,33 @@ if (BUILD_JAVA_BINDINGS)
     if (ENABLE_TESTS)
         add_subdirectory(test)
     endif()
+
+    if (BUILD_PAGES)
+        # Javadoc documentation
+        find_program(javadoc_executable NAMES javadoc)
+
+        if (NOT javadoc_executable)
+            message(FATAL_ERROR "javadoc not found; required to generate Java documentation")
+        else()
+            set(javadoc_depends
+                ${CMAKE_CURRENT_BINARY_DIR}/src/net/blueprintforfreespeech/gosling/Gosling.java)
+            set(javadoc_output
+                ${CMAKE_CURRENT_BINARY_DIR}/javadoc)
+
+            # javadoc command
+            add_custom_command(
+                DEPENDS ${javadoc_depends}
+                OUTPUT ${javadoc_output}
+                COMMAND ${javadoc_executable} -d ${javadoc_output} ${javadoc_depends}
+                )
+            # make target
+            add_custom_target(gosling_java_bindings_javadoc_target ALL
+                DEPENDS ${javadoc_output})
+            add_dependencies(gosling_java_bindings_javadoc_target gosling_java_bindings_target)
+
+            # install
+            install(DIRECTORY ${javadoc_output}/
+                DESTINATION ${CMAKE_INSTALL_DOCDIR}/bindings/goslingjni)
+        endif()
+    endif()
 endif()
