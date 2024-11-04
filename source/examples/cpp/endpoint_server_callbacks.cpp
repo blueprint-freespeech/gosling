@@ -20,7 +20,7 @@ namespace example {
                 } catch (...) {
                     TERM.write_line("endpoint_server_handshake_started callback threw exception");
                 }
-            }, throw_on_error());
+            }, nullptr, throw_on_error());
 
         // callback for testing if a requested channel is allowed for the given user
         ::gosling_context_set_endpoint_server_channel_supported_callback(context,
@@ -47,7 +47,7 @@ namespace example {
                     TERM.write_line("endpoint_server_channel_supported callback threw exception");
                     return false;
                 }
-            }, throw_on_error());
+            }, nullptr, throw_on_error());
 
         // callback for when the endoint server handshake completes successfully
         ::gosling_context_set_endpoint_server_handshake_completed_callback(context,
@@ -78,7 +78,7 @@ namespace example {
                     TERM.write_line("endpoint_server_handshake_completed callback threw exception");
                     TERM.write_line(ex.what());
                 }
-            }, throw_on_error());
+            }, nullptr, throw_on_error());
 
         // callback for when the endpoint server handshake fails
         ::gosling_context_set_endpoint_server_handshake_failed_callback(context,
@@ -100,6 +100,6 @@ namespace example {
                 } catch (...) {
                     TERM.write_line("endpoint_server_handshake_failed callback threw exception");
                 }
-            }, throw_on_error());
+            }, nullptr, throw_on_error());
     }
 }

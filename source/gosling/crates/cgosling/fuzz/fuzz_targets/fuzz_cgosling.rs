@@ -537,8 +537,8 @@ macro_rules! impl_set_callback {
         let mut error: *mut GoslingError = ptr::null_mut();
         let out_error = phandle_to_out_pointer($out_error, &mut error);
         match $callback {
-            Callback::Null => $setter(context, None, out_error),
-            Callback::Valid => $setter(context, Some($func), out_error),
+            Callback::Null => $setter(context, None, std::ptr::null_mut(), out_error),
+            Callback::Valid => $setter(context, Some($func), std::ptr::null_mut(), out_error),
         }
         if !error.is_null() {
             $errors.push(error);

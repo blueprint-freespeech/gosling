@@ -98,6 +98,13 @@ handlebars_helper!(inputParamsToJavaParams: |params: Vec<Param>| {
             "const uint8_t*" => "byte[]".to_string(),
             "uint8_t*" => "byte[]".to_string(),
             "const uint16_t*" => "int[]".to_string(),
+            "void*" => {
+                if param.name == "callback_data" {
+                    continue;
+                } else {
+                    panic!("unhandled param: {}", param.name);
+                }
+            }
             "gosling_handshake_handle_t" => "long".to_string(),
             "gosling_tcp_socket_t" => "java.net.Socket".to_string(),
             "gosling_tcp_socket_t*" => "Out<java.net.Socket>".to_string(),
@@ -163,6 +170,13 @@ handlebars_helper!(inputParamsToJNIParams: |params: Vec<Param>| {
             }
             "char*" => "jobject".to_string(),
             "const char*" => "jstring".to_string(),
+            "void*" => {
+                if param.name == "callback_data" {
+                    continue;
+                } else {
+                    panic!("unhandled param: {}", param.name);
+                }
+            }
             "gosling_handshake_handle_t" | "gosling_circuit_token_t" => "jlong".to_string(),
             other => {
                 let other = if other.starts_with("const ") {
@@ -247,6 +261,13 @@ handlebars_helper!(marshallJNIParams: |function_name: String, params: Vec<Param>
                     panic!("unhandled argument => {name}: {typename}");
                 }
             },
+            "void*" => {
+                if param.name == "callback_data" {
+                    cpp_src!("void* {name}_native = nullptr;");
+                } else {
+                    panic!("unhandled param: {}", param.name);
+                }
+            }
             "gosling_handshake_handle_t" => cpp_src!("const gosling_handshake_handle_t {name}_native = static_cast<gosling_handshake_handle_t>({name});"),
             "gosling_circuit_token_t" => cpp_src!("const gosling_circuit_token_t {name}_native = static_cast<gosling_circuit_token_t>({name});"),
             "gosling_tcp_socket_t*" => {
@@ -367,6 +388,7 @@ handlebars_helper!(marshallNativeResults: |return_type: String, params: Vec<Para
                 if const_gosling_pointer_pattern.is_match(&typename) ||
                    gosling_pointer_pattern.is_match(&typename) {
                     // nothing to do here
+                    continue;
                 } else if out_gosling_pointer_pattern.is_match(&typename) {
                     let caps = out_gosling_pointer_pattern.captures(&typename).unwrap();
                     let java_typename = caps.name("java_typename").unwrap().as_str();
@@ -375,6 +397,10 @@ handlebars_helper!(marshallNativeResults: |return_type: String, params: Vec<Para
                     cpp_src!("g_jni_glue->set_out_jobject_handle(env, {name}, \"net/blueprintforfreespeech/gosling/Gosling${java_typename}\", {name}_dest);");
                 } else if gosling_callback_pattern.is_match(&typename) {
                     // nothing to do here
+                    continue;
+                } else if name == "callback_data" {
+                    // nothing to do here
+                    continue;
                 } else {
                     panic!("unhandled argument => {name}: {typename}");
                 }

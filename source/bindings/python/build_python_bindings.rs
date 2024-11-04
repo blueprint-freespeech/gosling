@@ -79,17 +79,24 @@ handlebars_helper!(nativeTypeToPythonType: |native_type: String| {
         }
     };
 
-    let python_type = if python_type == "c_char" {
-        match pointer_count {
+    let python_type = match python_type.as_ref() {
+        "c_char" => match pointer_count {
             0 => python_type,
             1 => {
                 pointer_count = 0;
                 "c_char_p".to_string()
             },
             count => panic!("unexpected char**"),
-        }
-    } else {
-        python_type
+        },
+        "None" => match pointer_count {
+            0 => python_type,
+            1 => {
+                pointer_count = 0;
+                "py_object".to_string()
+            },
+            count => panic!("unexpected void**"),
+        },
+        _ => python_type
     };
 
     match pointer_count {

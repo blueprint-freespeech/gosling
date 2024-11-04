@@ -34,7 +34,7 @@ namespace example {
                     TERM.write_line("endpoint_client_handshake_completed callback threw exception");
                     TERM.write_line(ex.what());
                 }
-            }, throw_on_error());
+            }, nullptr, throw_on_error());
 
         // callback for when the endpoint client handshake fails
         ::gosling_context_set_endpoint_client_handshake_failed_callback(context,
@@ -56,6 +56,6 @@ namespace example {
                 } catch (...) {
                     TERM.write_line("endpoint_client_handshake_failed callback threw exception");
                 }
-            }, throw_on_error());
+            }, nullptr, throw_on_error());
     }
 }
