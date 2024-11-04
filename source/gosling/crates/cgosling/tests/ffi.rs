@@ -2,7 +2,7 @@
 use std::ffi::{CStr, CString};
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpStream;
-use std::os::raw::c_char;
+use std::os::raw::{c_char, c_void};
 #[cfg(unix)]
 use std::os::unix::io::{FromRawFd, RawFd};
 #[cfg(windows)]
@@ -59,6 +59,7 @@ static CHANNEL_NAME: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"chan
 
 fn create_client_identity_handshake(context: *mut GoslingContext) -> anyhow::Result<()> {
     extern "C" fn challenge_response_size_callback(
+        _callback_data: *mut c_void,
         context: *mut GoslingContext,
         _handshake_handle: usize,
         _challenge_buffer: *const u8,
@@ -78,6 +79,7 @@ fn create_client_identity_handshake(context: *mut GoslingContext) -> anyhow::Res
     );
 
     extern "C" fn build_challenge_response_callback(
+        _callback_data: *mut c_void,
         context: *mut GoslingContext,
         _handshake_handle: usize,
         challenge_buffer: *const u8,
@@ -115,6 +117,7 @@ fn create_client_identity_handshake(context: *mut GoslingContext) -> anyhow::Res
 
 fn create_server_identity_handshake(context: *mut GoslingContext) -> anyhow::Result<()> {
     extern "C" fn client_allowed_callback(
+        _callback_data: *mut c_void,
         context: *mut GoslingContext,
         _handshake_handle: usize,
         client_service_id: *const GoslingV3OnionServiceId,
@@ -131,6 +134,7 @@ fn create_server_identity_handshake(context: *mut GoslingContext) -> anyhow::Res
     ));
 
     extern "C" fn endpoint_supported_callback(
+        _callback_data: *mut c_void,
         context: *mut GoslingContext,
         _handshake_handle: usize,
         endpoint_name: *const c_char,
@@ -153,6 +157,7 @@ fn create_server_identity_handshake(context: *mut GoslingContext) -> anyhow::Res
     );
 
     extern "C" fn challenge_size_callback(
+        _callback_data: *mut c_void,
         context: *mut GoslingContext,
         _handshake_handle: usize,
     ) -> usize {
@@ -166,6 +171,7 @@ fn create_server_identity_handshake(context: *mut GoslingContext) -> anyhow::Res
     ));
 
     extern "C" fn build_challenge_callback(
+        _callback_data: *mut c_void,
         context: *mut GoslingContext,
         _handshake_handle: usize,
         out_challenge_buffer: *mut u8,
@@ -189,6 +195,7 @@ fn create_server_identity_handshake(context: *mut GoslingContext) -> anyhow::Res
     );
 
     extern "C" fn verify_challenge_response_callback(
+        _callback_data: *mut c_void,
         context: *mut GoslingContext,
         _handshake_handle: usize,
         challenge_response_buffer: *const u8,
@@ -221,6 +228,7 @@ fn create_server_identity_handshake(context: *mut GoslingContext) -> anyhow::Res
 
 fn create_server_endpoint_handshake(context: *mut GoslingContext) -> anyhow::Result<()> {
     extern "C" fn channel_supported_callback(
+        _callback_data: *mut c_void,
         context: *mut GoslingContext,
         _handshake_handle: usize,
         client_service_id: *const GoslingV3OnionServiceId,
@@ -542,7 +550,9 @@ fn test_gosling_ffi_handshake_impl(
     static ALICE_BOOTSTRAP_COMPLETE: AtomicBool = AtomicBool::new(false);
     ALICE_BOOTSTRAP_COMPLETE.store(false, Ordering::Relaxed);
 
-    extern "C" fn alice_bootstrap_complete_callback(context: *mut GoslingContext) -> () {
+    extern "C" fn alice_bootstrap_complete_callback(
+        _callback_data: *mut c_void,
+        context: *mut GoslingContext) -> () {
         assert!(!context.is_null());
         ALICE_BOOTSTRAP_COMPLETE.store(true, Ordering::Relaxed);
         println!("--- alice bootstraped");
@@ -563,7 +573,9 @@ fn test_gosling_ffi_handshake_impl(
     static ALICE_IDENTITY_SERVER_READY: AtomicBool = AtomicBool::new(false);
     ALICE_IDENTITY_SERVER_READY.store(false, Ordering::Relaxed);
 
-    extern "C" fn alice_identity_server_published_callback(context: *mut GoslingContext) -> () {
+    extern "C" fn alice_identity_server_published_callback(
+        _callback_data: *mut c_void,
+        context: *mut GoslingContext) -> () {
         assert!(!context.is_null());
         println!("--- alice identity server published");
 
@@ -587,7 +599,9 @@ fn test_gosling_ffi_handshake_impl(
     static PAT_BOOTSTRAP_COMPLETE: AtomicBool = AtomicBool::new(false);
     PAT_BOOTSTRAP_COMPLETE.store(false, Ordering::Relaxed);
 
-    extern "C" fn pat_bootstrap_complete_callback(context: *mut GoslingContext) -> () {
+    extern "C" fn pat_bootstrap_complete_callback(
+        _callback_data: *mut c_void,
+        context: *mut GoslingContext) -> () {
         assert!(!context.is_null());
 
         println!("--- pat bootstrapped");
@@ -618,6 +632,7 @@ fn test_gosling_ffi_handshake_impl(
     }
 
     extern "C" fn pat_identity_client_handshake_completed_callback(
+        _callback_data: *mut c_void,
         context: *mut GoslingContext,
         _handshake_handle: usize,
         identity_service_id: *const GoslingV3OnionServiceId,
@@ -680,6 +695,7 @@ fn test_gosling_ffi_handshake_impl(
     );
 
     extern "C" fn pat_identity_client_handshake_failed_callback(
+        _callback_data: *mut c_void,
         context: *mut GoslingContext,
         _handshake_handle: usize,
         error: *const GoslingError,
@@ -714,6 +730,7 @@ fn test_gosling_ffi_handshake_impl(
     }
 
     extern "C" fn alice_identity_server_handshake_completed_callback(
+        _callback_data: *mut c_void,
         context: *mut GoslingContext,
         _handshake_handle: usize,
         endpoint_private_key: *const GoslingEd25519PrivateKey,
@@ -790,6 +807,7 @@ fn test_gosling_ffi_handshake_impl(
     );
 
     extern "C" fn alice_identity_server_handshake_failed_callback(
+        _callback_data: *mut c_void,
         context: *mut GoslingContext,
         _handshake_handle: usize,
         error: *const GoslingError,
@@ -853,6 +871,7 @@ fn test_gosling_ffi_handshake_impl(
     }
 
     extern "C" fn alice_endpoint_server_published_callback(
+        _callback_data: *mut c_void,
         context: *mut GoslingContext,
         endpoint_service_id: *const GoslingV3OnionServiceId,
         endpoint_name: *const c_char,
@@ -903,6 +922,7 @@ fn test_gosling_ffi_handshake_impl(
     }
 
     extern "C" fn pat_enpdoint_client_handshake_completed_callback(
+        _callback_data: *mut c_void,
         context: *mut GoslingContext,
         _handshake_handle: usize,
         endpoint_service_id: *const GoslingV3OnionServiceId,
@@ -931,6 +951,7 @@ fn test_gosling_ffi_handshake_impl(
     );
 
     extern "C" fn pat_endpoint_client_handshake_failed_callback(
+        _callback_data: *mut c_void,
         context: *mut GoslingContext,
         _handshake_handle: usize,
         error: *const GoslingError,
@@ -954,6 +975,7 @@ fn test_gosling_ffi_handshake_impl(
     );
 
     extern "C" fn alice_endpoint_server_handshake_completed_callback(
+        _callback_data: *mut c_void,
         context: *mut GoslingContext,
         _handshake_handle: usize,
         endpoint_service_id: *const GoslingV3OnionServiceId,
@@ -982,6 +1004,7 @@ fn test_gosling_ffi_handshake_impl(
     );
 
     extern "C" fn alice_endpoint_server_handshake_failed_callback(
+        _callback_data: *mut c_void,
         context: *mut GoslingContext,
         _handshake_handle: usize,
         error: *const GoslingError,

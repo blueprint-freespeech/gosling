@@ -72,6 +72,7 @@ pub(crate) struct EventCallbacks {
 /// @param summary_length: the number of chars in summary not including the null-terminator
 pub type GoslingTorBootstrapStatusReceivedCallback = Option<
     extern "C" fn(
+        callback_data: *mut c_void,
         context: *mut GoslingContext,
         progress: u32,
         tag: *const c_char,
@@ -86,7 +87,9 @@ pub type GoslingTorBootstrapStatusReceivedCallback = Option<
 ///
 /// @param context: the context associated with this event
 pub type GoslingTorBootstrapCompletedCallback =
-    Option<extern "C" fn(context: *mut GoslingContext) -> ()>;
+    Option<extern "C" fn(
+        callback_data: *mut c_void,
+        context: *mut GoslingContext) -> ()>;
 
 /// The function pointer type for the tor log received callback. This callback is called
 /// whenever the context's tor daemon prints new log lines.
@@ -95,7 +98,11 @@ pub type GoslingTorBootstrapCompletedCallback =
 /// @param line: the null-terminated received log line
 /// @param line_length: the number of chars in line not including the null-terminator
 pub type GoslingTorLogReceivedCallback = Option<
-    extern "C" fn(context: *mut GoslingContext, line: *const c_char, line_length: usize) -> (),
+    extern "C" fn(
+        callback_data: *mut c_void,
+        context: *mut GoslingContext,
+        line: *const c_char,
+        line_length: usize) -> (),
 >;
 
 /// The function pointer type for the client handshake challenge response size
@@ -112,6 +119,7 @@ pub type GoslingTorLogReceivedCallback = Option<
 /// @return the number of bytes required to store the challenge response object
 pub type GoslingIdentityClientHandshakeChallengeResponseSizeCallback = Option<
     extern "C" fn(
+        callback_data: *mut c_void,
         context: *mut GoslingContext,
         handshake_handle: GoslingHandshakeHandle,
         challenge_buffer: *const u8,
@@ -135,6 +143,7 @@ pub type GoslingIdentityClientHandshakeChallengeResponseSizeCallback = Option<
 ///  out_challenge_response_buffer
 pub type GoslingIdentityClientHandshakeBuildChallengeResponseCallback = Option<
     extern "C" fn(
+        callback_data: *mut c_void,
         context: *mut GoslingContext,
         handshake_handle: GoslingHandshakeHandle,
         challenge_buffer: *const u8,
@@ -161,6 +170,7 @@ pub type GoslingIdentityClientHandshakeBuildChallengeResponseCallback = Option<
 ///  the provided endpoint server
 pub type GoslingIdentityClientHandshakeCompletedCallback = Option<
     extern "C" fn(
+        callback_data: *mut c_void,
         context: *mut GoslingContext,
         handshake_handle: GoslingHandshakeHandle,
         identity_service_id: *const GoslingV3OnionServiceId,
@@ -179,6 +189,7 @@ pub type GoslingIdentityClientHandshakeCompletedCallback = Option<
 /// @param error: error associated with this failure
 pub type GoslingIdentityClientHandshakeFailedCallback = Option<
     extern "C" fn(
+        callback_data: *mut c_void,
         context: *mut GoslingContext,
         handshake_handle: GoslingHandshakeHandle,
         error: *const GoslingError,
@@ -190,8 +201,11 @@ pub type GoslingIdentityClientHandshakeFailedCallback = Option<
 /// context is published and should be reachable by clients.
 ///
 /// @param context: the context associated with this event
-pub type GoslingIdentityServerPublishedCallback =
-    Option<extern "C" fn(context: *mut GoslingContext) -> ()>;
+pub type GoslingIdentityServerPublishedCallback = Option<
+    extern "C" fn(
+        callback_data: *mut c_void,
+        context: *mut GoslingContext) -> (),
+>;
 
 /// The function pointer type of the identity server handshake started callback. This callback
 /// is called whenever the identity server is initially connected to.
@@ -199,7 +213,10 @@ pub type GoslingIdentityServerPublishedCallback =
 /// @param context: the context associated with this event
 /// @param handshake_handle: the handshake handle this callback is associated with
 pub type GoslingIdentityServerHandshakeStartedCallback = Option<
-    extern "C" fn(context: *mut GoslingContext, handshake_handle: GoslingHandshakeHandle) -> (),
+    extern "C" fn(
+        callback_data: *mut c_void,
+        context: *mut GoslingContext,
+        handshake_handle: GoslingHandshakeHandle) -> (),
 >;
 
 /// The function pointer type of the identity server handshake client allowed callback.
@@ -214,6 +231,7 @@ pub type GoslingIdentityServerHandshakeStartedCallback = Option<
 /// @return true if the server wants to allow the requesting client to connect client may complete the handshake, false otherwise
 pub type GoslingIdentityServerHandshakeClientAllowedCallback = Option<
     extern "C" fn(
+        callback_data: *mut c_void,
         context: *mut GoslingContext,
         handshake_handle: GoslingHandshakeHandle,
         client_service_id: *const GoslingV3OnionServiceId,
@@ -235,6 +253,7 @@ pub type GoslingIdentityServerHandshakeClientAllowedCallback = Option<
 ///  false otherwise
 pub type GoslingIdentityServerEndpointSupportedCallback = Option<
     extern "C" fn(
+        callback_data: *mut c_void,
         context: *mut GoslingContext,
         handshake_handle: GoslingHandshakeHandle,
         endpoint_name: *const c_char,
@@ -250,7 +269,10 @@ pub type GoslingIdentityServerEndpointSupportedCallback = Option<
 /// @param handshake_handle: the handshake handle this callback is associated with
 /// @return the number of bytes required to store the challenge object
 pub type GoslingIdentityServerHandshakeChallengeSizeCallback = Option<
-    extern "C" fn(context: *mut GoslingContext, handshake_handle: GoslingHandshakeHandle) -> usize,
+    extern "C" fn(
+        callback_data: *mut c_void,
+        context: *mut GoslingContext,
+        handshake_handle: GoslingHandshakeHandle) -> usize,
 >;
 
 /// The function pointer type for the server handshake build challenge callback.
@@ -264,6 +286,7 @@ pub type GoslingIdentityServerHandshakeChallengeSizeCallback = Option<
 ///  out_challenge_buffer
 pub type GoslingIdentityServerHandshakeBuildChallengeCallback = Option<
     extern "C" fn(
+        callback_data: *mut c_void,
         context: *mut GoslingContext,
         handshake_handle: GoslingHandshakeHandle,
         out_challenge_buffer: *mut u8,
@@ -284,6 +307,7 @@ pub type GoslingIdentityServerHandshakeBuildChallengeCallback = Option<
 /// @return the result of the challenge response verification
 pub type GoslingIdentityServerHandshakeVerifyChallengeResponseCallback = Option<
     extern "C" fn(
+        callback_data: *mut c_void,
         context: *mut GoslingContext,
         handshake_handle: GoslingHandshakeHandle,
         challenge_response_buffer: *const u8,
@@ -308,6 +332,7 @@ pub type GoslingIdentityServerHandshakeVerifyChallengeResponseCallback = Option<
 ///  server's service descriptor as provided by the connecting client
 pub type GoslingIdentityServerHandshakeCompletedCallback = Option<
     extern "C" fn(
+        callback_data: *mut c_void,
         context: *mut GoslingContext,
         handshake_handle: GoslingHandshakeHandle,
         endpoint_private_key: *const GoslingEd25519PrivateKey,
@@ -335,6 +360,7 @@ pub type GoslingIdentityServerHandshakeCompletedCallback = Option<
 ///  response was accepted by the server, false otherwise
 pub type GoslingIdentityServerHandshakeRejectedCallback = Option<
     extern "C" fn(
+        callback_data: *mut c_void,
         context: *mut GoslingContext,
         handshake_handle: GoslingHandshakeHandle,
         client_allowed: bool,
@@ -353,6 +379,7 @@ pub type GoslingIdentityServerHandshakeRejectedCallback = Option<
 /// @param error: error associated with this failure
 pub type GoslingIdentityServerHandshakeFailedCallback = Option<
     extern "C" fn(
+        callback_data: *mut c_void,
         context: *mut GoslingContext,
         handshake_handle: GoslingHandshakeHandle,
         error: *const GoslingError,
@@ -374,6 +401,7 @@ pub type GoslingIdentityServerHandshakeFailedCallback = Option<
 ///  endpoint server
 pub type GoslingEndpointClientHandshakeCompletedCallback = Option<
     extern "C" fn(
+        callback_data: *mut c_void,
         context: *mut GoslingContext,
         handshake_handle: GoslingHandshakeHandle,
         endpoint_service_id: *const GoslingV3OnionServiceId,
@@ -391,6 +419,7 @@ pub type GoslingEndpointClientHandshakeCompletedCallback = Option<
 /// @param error: error associated with this failure
 pub type GoslingEndpointClientHandshakeFailedCallback = Option<
     extern "C" fn(
+        callback_data: *mut c_void,
         context: *mut GoslingContext,
         handshake_handle: GoslingHandshakeHandle,
         error: *const GoslingError,
@@ -408,6 +437,7 @@ pub type GoslingEndpointClientHandshakeFailedCallback = Option<
 ///  null-terminator
 pub type GoslingEndpointServerPublishedCallback = Option<
     extern "C" fn(
+        callback_data: *mut c_void,
         context: *mut GoslingContext,
         endpoint_service_id: *const GoslingV3OnionServiceId,
         endpoint_name: *const c_char,
@@ -421,7 +451,10 @@ pub type GoslingEndpointServerPublishedCallback = Option<
 /// @param context: the context associated with this event
 /// @param handshake_handle: the handshake handle this callback is associated with
 pub type GoslingEndpointServerHandshakeStartedCallback = Option<
-    extern "C" fn(context: *mut GoslingContext, handshake_handle: GoslingHandshakeHandle) -> (),
+    extern "C" fn(
+        callback_data: *mut c_void,
+        context: *mut GoslingContext,
+        handshake_handle: GoslingHandshakeHandle) -> (),
 >;
 
 /// The function pointer type of the endpoint server channel supported callback. This
@@ -440,6 +473,7 @@ pub type GoslingEndpointServerHandshakeStartedCallback = Option<
 ///  false otherwise
 pub type GoslingEndpointServerChannelSupportedCallback = Option<
     extern "C" fn(
+        callback_data: *mut c_void,
         context: *mut GoslingContext,
         handshake_handle: GoslingHandshakeHandle,
         client_service_id: *const GoslingV3OnionServiceId,
@@ -464,6 +498,7 @@ pub type GoslingEndpointServerChannelSupportedCallback = Option<
 ///  endpoint client
 pub type GoslingEndpointServerHandshakeCompletedCallback = Option<
     extern "C" fn(
+        callback_data: *mut c_void,
         context: *mut GoslingContext,
         handshake_handle: GoslingHandshakeHandle,
         endpoint_service_id: *const GoslingV3OnionServiceId,
@@ -487,6 +522,7 @@ pub type GoslingEndpointServerHandshakeCompletedCallback = Option<
 ///  signed the endpoint proof, false otherwise
 pub type GoslingEndpointServerHandshakeRejectedCallback = Option<
     extern "C" fn(
+        callback_data: *mut c_void,
         context: *mut GoslingContext,
         handshake_handle: GoslingHandshakeHandle,
         client_allowed: bool,
@@ -503,6 +539,7 @@ pub type GoslingEndpointServerHandshakeRejectedCallback = Option<
 /// @param error: error associated with this failure
 pub type GoslingEndpointServerHandshakeFailedCallback = Option<
     extern "C" fn(
+        callback_data: *mut c_void,
         context: *mut GoslingContext,
         handshake_handle: GoslingHandshakeHandle,
         error: *const GoslingError,

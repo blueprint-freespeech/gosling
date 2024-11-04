@@ -9,7 +9,8 @@ namespace example {
         // callback for signalling to the server that a client has connected and an endpoint
         // handshake is starting
         ::gosling_context_set_endpoint_server_handshake_started_callback(context,
-            [](gosling_context*,
+            [](void*,
+               gosling_context*,
                gosling_handshake_handle_t handle) -> void {
                 try {
                     TERM.write_line("  endpoint server handshake starting");
@@ -24,7 +25,8 @@ namespace example {
 
         // callback for testing if a requested channel is allowed for the given user
         ::gosling_context_set_endpoint_server_channel_supported_callback(context,
-            [](gosling_context*,
+            [](void*,
+               gosling_context*,
                gosling_handshake_handle_t handle,
                const gosling_v3_onion_service_id* client_service_id,
                const char* channel_name,
@@ -51,7 +53,8 @@ namespace example {
 
         // callback for when the endoint server handshake completes successfully
         ::gosling_context_set_endpoint_server_handshake_completed_callback(context,
-            [](gosling_context* context,
+            [](void*,
+               gosling_context* context,
                gosling_handshake_handle_t handle,
                const gosling_v3_onion_service_id* endpoint_service_id,
                const gosling_v3_onion_service_id* client_service_id,
@@ -82,7 +85,8 @@ namespace example {
 
         // callback for when the endpoint server handshake fails
         ::gosling_context_set_endpoint_server_handshake_failed_callback(context,
-            [](gosling_context* context,
+            [](void*,
+               gosling_context* context,
                gosling_handshake_handle_t handle,
                const gosling_error* error) -> void {
                 try {

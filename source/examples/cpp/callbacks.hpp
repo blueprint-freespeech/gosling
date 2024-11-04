@@ -9,7 +9,8 @@ namespace example {
     inline void register_callbacks(gosling_context* context) {
         // register callback for tor bootstrap updates
         ::gosling_context_set_tor_bootstrap_status_received_callback(context,
-            [](gosling_context*,
+            [](void*,
+               gosling_context*,
                uint32_t progress,
                const char* tag,
                size_t tag_length,
