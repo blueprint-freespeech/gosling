@@ -12,52 +12,70 @@ use crate::crypto::*;
 use crate::error::*;
 use crate::macros::*;
 
+// Each of these _data  members are actually *mut c_void provided by the cgosling consumer.
+// They are basically weak-references to some external object, cgosling consumers are completely
+// responsible for ensuring they point to valid memory and are consumed correctly in callbacks.
 #[derive(Default, Clone)]
 pub(crate) struct EventCallbacks {
     // tor events
     pub tor_bootstrap_status_received_callback: GoslingTorBootstrapStatusReceivedCallback,
+    pub tor_bootstrap_status_received_callback_data: usize,
     pub tor_bootstrap_completed_callback: GoslingTorBootstrapCompletedCallback,
+    pub tor_bootstrap_completed_callback_data: usize,
     pub tor_log_received_callback: GoslingTorLogReceivedCallback,
+    pub tor_log_received_callback_data: usize,
 
     // identity client events
-    pub identity_client_challenge_response_size_callback:
-        GoslingIdentityClientHandshakeChallengeResponseSizeCallback,
-    pub identity_client_build_challenge_response_callback:
-        GoslingIdentityClientHandshakeBuildChallengeResponseCallback,
-    pub identity_client_handshake_completed_callback:
-        GoslingIdentityClientHandshakeCompletedCallback,
+    pub identity_client_challenge_response_size_callback: GoslingIdentityClientHandshakeChallengeResponseSizeCallback,
+    pub identity_client_challenge_response_size_callback_data: usize,
+    pub identity_client_build_challenge_response_callback: GoslingIdentityClientHandshakeBuildChallengeResponseCallback,
+    pub identity_client_build_challenge_response_callback_data: usize,
+    pub identity_client_handshake_completed_callback: GoslingIdentityClientHandshakeCompletedCallback,
+    pub identity_client_handshake_completed_callback_data: usize,
     pub identity_client_handshake_failed_callback: GoslingIdentityClientHandshakeFailedCallback,
+    pub identity_client_handshake_failed_callback_data: usize,
 
     // identity server events
     pub identity_server_published_callback: GoslingIdentityServerPublishedCallback,
+    pub identity_server_published_callback_data: usize,
     pub identity_server_handshake_started_callback: GoslingIdentityServerHandshakeStartedCallback,
-    pub identity_server_client_allowed_callback:
-        GoslingIdentityServerHandshakeClientAllowedCallback,
+    pub identity_server_handshake_started_callback_data: usize,
+    pub identity_server_client_allowed_callback: GoslingIdentityServerHandshakeClientAllowedCallback,
+    pub identity_server_client_allowed_callback_data: usize,
     pub identity_server_endpoint_supported_callback: GoslingIdentityServerEndpointSupportedCallback,
-    pub identity_server_challenge_size_callback:
-        GoslingIdentityServerHandshakeChallengeSizeCallback,
-    pub identity_server_build_challenge_callback:
-        GoslingIdentityServerHandshakeBuildChallengeCallback,
-    pub identity_server_verify_challenge_response_callback:
-        GoslingIdentityServerHandshakeVerifyChallengeResponseCallback,
-    pub identity_server_handshake_completed_callback:
-        GoslingIdentityServerHandshakeCompletedCallback,
+    pub identity_server_endpoint_supported_callback_data: usize,
+    pub identity_server_challenge_size_callback: GoslingIdentityServerHandshakeChallengeSizeCallback,
+    pub identity_server_challenge_size_callback_data: usize,
+    pub identity_server_build_challenge_callback: GoslingIdentityServerHandshakeBuildChallengeCallback,
+    pub identity_server_build_challenge_callback_data: usize,
+    pub identity_server_verify_challenge_response_callback: GoslingIdentityServerHandshakeVerifyChallengeResponseCallback,
+    pub identity_server_verify_challenge_response_callback_data: usize,
+    pub identity_server_handshake_completed_callback: GoslingIdentityServerHandshakeCompletedCallback,
+    pub identity_server_handshake_completed_callback_data: usize,
     pub identity_server_handshake_rejected_callback: GoslingIdentityServerHandshakeRejectedCallback,
+    pub identity_server_handshake_rejected_callback_data: usize,
     pub identity_server_handshake_failed_callback: GoslingIdentityServerHandshakeFailedCallback,
+    pub identity_server_handshake_failed_callback_data: usize,
 
     // endpoint client events
-    pub endpoint_client_handshake_completed_callback:
-        GoslingEndpointClientHandshakeCompletedCallback,
+    pub endpoint_client_handshake_completed_callback: GoslingEndpointClientHandshakeCompletedCallback,
+    pub endpoint_client_handshake_completed_callback_data: usize,
     pub endpoint_client_handshake_failed_callback: GoslingEndpointClientHandshakeFailedCallback,
+    pub endpoint_client_handshake_failed_callback_data: usize,
 
     // endpoint server events
     pub endpoint_server_published_callback: GoslingEndpointServerPublishedCallback,
+    pub endpoint_server_published_callback_data: usize,
     pub endpoint_server_handshake_started_callback: GoslingEndpointServerHandshakeStartedCallback,
+    pub endpoint_server_handshake_started_callback_data: usize,
     pub endpoint_server_channel_supported_callback: GoslingEndpointServerChannelSupportedCallback,
-    pub endpoint_server_handshake_completed_callback:
-        GoslingEndpointServerHandshakeCompletedCallback,
+    pub endpoint_server_channel_supported_callback_data: usize,
+    pub endpoint_server_handshake_completed_callback: GoslingEndpointServerHandshakeCompletedCallback,
+    pub endpoint_server_handshake_completed_callback_data: usize,
     pub endpoint_server_handshake_rejected_callback: GoslingEndpointServerHandshakeRejectedCallback,
+    pub endpoint_server_handshake_rejected_callback_data: usize,
     pub endpoint_server_handshake_failed_callback: GoslingEndpointServerHandshakeFailedCallback,
+    pub endpoint_server_handshake_failed_callback_data: usize,
 }
 
 /// The function pointer type for the tor bootstrap status received callback. This
@@ -547,7 +565,7 @@ pub type GoslingEndpointServerHandshakeFailedCallback = Option<
 >;
 
 macro_rules! impl_callback_setter {
-    ($callback_type:tt, $context:expr, $callback:expr, $error:expr) => {
+    ($callback_type:tt, $context:expr, $callback:expr, $callback_data:expr, $error:expr) => {
         paste::paste! {
             translate_failures((), $error, || -> anyhow::Result<()> {
                 let mut context_tuple_registry = get_context_tuple_registry();
@@ -558,6 +576,7 @@ macro_rules! impl_callback_setter {
                     }
                 };
                 context.1.[<$callback_type>] = $callback;
+                context.1.[<$callback_type _data>] = $callback_data as usize;
                 Ok(())
             })
         }
@@ -582,6 +601,7 @@ pub extern "C" fn gosling_context_set_tor_bootstrap_status_received_callback(
         tor_bootstrap_status_received_callback,
         context,
         callback,
+        callback_data,
         error
     );
 }
@@ -600,7 +620,7 @@ pub extern "C" fn gosling_context_set_tor_bootstrap_completed_callback(
     callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
-    impl_callback_setter!(tor_bootstrap_completed_callback, context, callback, error);
+    impl_callback_setter!(tor_bootstrap_completed_callback, context, callback, callback_data, error);
 }
 
 /// Sets the tor log received callback for the specified context.
@@ -617,7 +637,7 @@ pub extern "C" fn gosling_context_set_tor_log_received_callback(
     callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
-    impl_callback_setter!(tor_log_received_callback, context, callback, error);
+    impl_callback_setter!(tor_log_received_callback, context, callback, callback_data, error);
 }
 
 /// Sets the identity challenge challenge response size callback for the specified
@@ -639,6 +659,7 @@ pub extern "C" fn gosling_context_set_identity_client_challenge_response_size_ca
         identity_client_challenge_response_size_callback,
         context,
         callback,
+        callback_data,
         error
     );
 }
@@ -661,6 +682,7 @@ pub extern "C" fn gosling_context_set_identity_client_build_challenge_response_c
         identity_client_build_challenge_response_callback,
         context,
         callback,
+        callback_data,
         error
     );
 }
@@ -683,6 +705,7 @@ pub extern "C" fn gosling_context_set_identity_client_handshake_completed_callba
         identity_client_handshake_completed_callback,
         context,
         callback,
+        callback_data,
         error
     );
 }
@@ -705,6 +728,7 @@ pub extern "C" fn gosling_context_set_identity_client_handshake_failed_callback(
         identity_client_handshake_failed_callback,
         context,
         callback,
+        callback_data,
         error
     );
 }
@@ -723,7 +747,7 @@ pub extern "C" fn gosling_context_set_identity_server_published_callback(
     callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
-    impl_callback_setter!(identity_server_published_callback, context, callback, error);
+    impl_callback_setter!(identity_server_published_callback, context, callback, callback_data, error);
 }
 
 /// Set the identity server handshake started callback for the specified context.
@@ -744,6 +768,7 @@ pub extern "C" fn gosling_context_set_identity_server_handshake_started_callback
         identity_server_handshake_started_callback,
         context,
         callback,
+        callback_data,
         error
     );
 }
@@ -766,6 +791,7 @@ pub extern "C" fn gosling_context_set_identity_server_client_allowed_callback(
         identity_server_client_allowed_callback,
         context,
         callback,
+        callback_data,
         error
     );
 }
@@ -789,6 +815,7 @@ pub extern "C" fn gosling_context_set_identity_server_endpoint_supported_callbac
         context,
         callback,
 
+        callback_data,
         error
     );
 }
@@ -811,6 +838,7 @@ pub extern "C" fn gosling_context_set_identity_server_challenge_size_callback(
         identity_server_challenge_size_callback,
         context,
         callback,
+        callback_data,
         error
     );
 }
@@ -833,6 +861,7 @@ pub extern "C" fn gosling_context_set_identity_server_build_challenge_callback(
         identity_server_build_challenge_callback,
         context,
         callback,
+        callback_data,
         error
     );
 }
@@ -855,6 +884,7 @@ pub extern "C" fn gosling_context_set_identity_server_verify_challenge_response_
         identity_server_verify_challenge_response_callback,
         context,
         callback,
+        callback_data,
         error
     );
 }
@@ -877,6 +907,7 @@ pub extern "C" fn gosling_context_set_identity_server_handshake_completed_callba
         identity_server_handshake_completed_callback,
         context,
         callback,
+        callback_data,
         error
     );
 }
@@ -899,6 +930,7 @@ pub extern "C" fn gosling_context_set_identity_server_handshake_rejected_callbac
         identity_server_handshake_rejected_callback,
         context,
         callback,
+        callback_data,
         error
     );
 }
@@ -921,6 +953,7 @@ pub extern "C" fn gosling_context_set_identity_server_handshake_failed_callback(
         identity_server_handshake_failed_callback,
         context,
         callback,
+        callback_data,
         error
     );
 }
@@ -943,6 +976,7 @@ pub extern "C" fn gosling_context_set_endpoint_client_handshake_completed_callba
         endpoint_client_handshake_completed_callback,
         context,
         callback,
+        callback_data,
         error
     );
 }
@@ -965,6 +999,7 @@ pub extern "C" fn gosling_context_set_endpoint_client_handshake_failed_callback(
         endpoint_client_handshake_failed_callback,
         context,
         callback,
+        callback_data,
         error
     );
 }
@@ -983,7 +1018,7 @@ pub extern "C" fn gosling_context_set_endpoint_server_published_callback(
     callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
-    impl_callback_setter!(endpoint_server_published_callback, context, callback, error);
+    impl_callback_setter!(endpoint_server_published_callback, context, callback, callback_data, error);
 }
 
 /// Set the endpoint server handshake started callback for the specified context.
@@ -1004,6 +1039,7 @@ pub extern "C" fn gosling_context_set_endpoint_server_handshake_started_callback
         endpoint_server_handshake_started_callback,
         context,
         callback,
+        callback_data,
         error
     );
 }
@@ -1026,6 +1062,7 @@ pub extern "C" fn gosling_context_set_endpoint_server_channel_supported_callback
         endpoint_server_channel_supported_callback,
         context,
         callback,
+        callback_data,
         error
     );
 }
@@ -1048,6 +1085,7 @@ pub extern "C" fn gosling_context_set_endpoint_server_handshake_completed_callba
         endpoint_server_handshake_completed_callback,
         context,
         callback,
+        callback_data,
         error
     );
 }
@@ -1070,6 +1108,7 @@ pub extern "C" fn gosling_context_set_endpoint_server_handshake_rejected_callbac
         endpoint_server_handshake_rejected_callback,
         context,
         callback,
+        callback_data,
         error
     );
 }
@@ -1092,6 +1131,7 @@ pub extern "C" fn gosling_context_set_endpoint_server_handshake_failed_callback(
         endpoint_server_handshake_failed_callback,
         context,
         callback,
+        callback_data,
         error
     );
 }
