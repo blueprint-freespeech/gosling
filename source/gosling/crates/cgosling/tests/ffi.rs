@@ -72,7 +72,8 @@ fn create_client_identity_handshake(context: *mut GoslingContext) -> anyhow::Res
     require_noerror!(
         gosling_context_set_identity_client_challenge_response_size_callback(
             context,
-            Some(challenge_response_size_callback)
+            Some(challenge_response_size_callback),
+            ptr::null_mut()
         )
     );
 
@@ -104,7 +105,8 @@ fn create_client_identity_handshake(context: *mut GoslingContext) -> anyhow::Res
     require_noerror!(
         gosling_context_set_identity_client_build_challenge_response_callback(
             context,
-            Some(build_challenge_response_callback)
+            Some(build_challenge_response_callback),
+            ptr::null_mut()
         )
     );
 
@@ -124,7 +126,8 @@ fn create_server_identity_handshake(context: *mut GoslingContext) -> anyhow::Res
     }
     require_noerror!(gosling_context_set_identity_server_client_allowed_callback(
         context,
-        Some(client_allowed_callback)
+        Some(client_allowed_callback),
+        ptr::null_mut()
     ));
 
     extern "C" fn endpoint_supported_callback(
@@ -144,7 +147,8 @@ fn create_server_identity_handshake(context: *mut GoslingContext) -> anyhow::Res
     require_noerror!(
         gosling_context_set_identity_server_endpoint_supported_callback(
             context,
-            Some(endpoint_supported_callback)
+            Some(endpoint_supported_callback),
+            ptr::null_mut()
         )
     );
 
@@ -157,7 +161,8 @@ fn create_server_identity_handshake(context: *mut GoslingContext) -> anyhow::Res
     }
     require_noerror!(gosling_context_set_identity_server_challenge_size_callback(
         context,
-        Some(challenge_size_callback)
+        Some(challenge_size_callback),
+        ptr::null_mut()
     ));
 
     extern "C" fn build_challenge_callback(
@@ -178,7 +183,8 @@ fn create_server_identity_handshake(context: *mut GoslingContext) -> anyhow::Res
     require_noerror!(
         gosling_context_set_identity_server_build_challenge_callback(
             context,
-            Some(build_challenge_callback)
+            Some(build_challenge_callback),
+            ptr::null_mut()
         )
     );
 
@@ -205,7 +211,8 @@ fn create_server_identity_handshake(context: *mut GoslingContext) -> anyhow::Res
     require_noerror!(
         gosling_context_set_identity_server_verify_challenge_response_callback(
             context,
-            Some(verify_challenge_response_callback)
+            Some(verify_challenge_response_callback),
+            ptr::null_mut()
         )
     );
 
@@ -233,7 +240,8 @@ fn create_server_endpoint_handshake(context: *mut GoslingContext) -> anyhow::Res
     require_noerror!(
         gosling_context_set_endpoint_server_channel_supported_callback(
             context,
-            Some(channel_supported_callback)
+            Some(channel_supported_callback),
+            ptr::null_mut()
         )
     );
 
@@ -541,7 +549,8 @@ fn test_gosling_ffi_handshake_impl(
     }
     require_noerror!(gosling_context_set_tor_bootstrap_completed_callback(
         alice_context,
-        Some(alice_bootstrap_complete_callback)
+        Some(alice_bootstrap_complete_callback),
+        ptr::null_mut()
     ));
 
     println!("--- begin alice bootstrap");
@@ -562,7 +571,8 @@ fn test_gosling_ffi_handshake_impl(
     }
     require_noerror!(gosling_context_set_identity_server_published_callback(
         alice_context,
-        Some(alice_identity_server_published_callback)
+        Some(alice_identity_server_published_callback),
+        ptr::null_mut()
     ));
 
     println!("--- start alice identity server");
@@ -586,7 +596,8 @@ fn test_gosling_ffi_handshake_impl(
     }
     require_noerror!(gosling_context_set_tor_bootstrap_completed_callback(
         pat_context,
-        Some(pat_bootstrap_complete_callback)
+        Some(pat_bootstrap_complete_callback),
+        ptr::null_mut()
     ));
 
     println!("--- begin pat bootstrap");
@@ -663,7 +674,8 @@ fn test_gosling_ffi_handshake_impl(
     require_noerror!(
         gosling_context_set_identity_client_handshake_completed_callback(
             pat_context,
-            Some(pat_identity_client_handshake_completed_callback)
+            Some(pat_identity_client_handshake_completed_callback),
+            ptr::null_mut()
         )
     );
 
@@ -685,7 +697,8 @@ fn test_gosling_ffi_handshake_impl(
     require_noerror!(
         gosling_context_set_identity_client_handshake_failed_callback(
             pat_context,
-            Some(pat_identity_client_handshake_failed_callback)
+            Some(pat_identity_client_handshake_failed_callback),
+            ptr::null_mut()
         )
     );
 
@@ -771,7 +784,8 @@ fn test_gosling_ffi_handshake_impl(
     require_noerror!(
         gosling_context_set_identity_server_handshake_completed_callback(
             alice_context,
-            Some(alice_identity_server_handshake_completed_callback)
+            Some(alice_identity_server_handshake_completed_callback),
+            ptr::null_mut()
         )
     );
 
@@ -793,7 +807,8 @@ fn test_gosling_ffi_handshake_impl(
     require_noerror!(
         gosling_context_set_identity_server_handshake_failed_callback(
             alice_context,
-            Some(alice_identity_server_handshake_failed_callback)
+            Some(alice_identity_server_handshake_failed_callback),
+            ptr::null_mut()
         )
     );
 
@@ -856,7 +871,8 @@ fn test_gosling_ffi_handshake_impl(
     }
     require_noerror!(gosling_context_set_endpoint_server_published_callback(
         alice_context,
-        Some(alice_endpoint_server_published_callback)
+        Some(alice_endpoint_server_published_callback),
+        ptr::null_mut()
     ));
 
     println!("--- start init alice endpoint server");
@@ -909,7 +925,8 @@ fn test_gosling_ffi_handshake_impl(
     require_noerror!(
         gosling_context_set_endpoint_client_handshake_completed_callback(
             pat_context,
-            Some(pat_enpdoint_client_handshake_completed_callback)
+            Some(pat_enpdoint_client_handshake_completed_callback),
+            ptr::null_mut()
         )
     );
 
@@ -931,7 +948,8 @@ fn test_gosling_ffi_handshake_impl(
     require_noerror!(
         gosling_context_set_endpoint_client_handshake_failed_callback(
             pat_context,
-            Some(pat_endpoint_client_handshake_failed_callback)
+            Some(pat_endpoint_client_handshake_failed_callback),
+            ptr::null_mut()
         )
     );
 
@@ -958,7 +976,8 @@ fn test_gosling_ffi_handshake_impl(
     require_noerror!(
         gosling_context_set_endpoint_server_handshake_completed_callback(
             alice_context,
-            Some(alice_endpoint_server_handshake_completed_callback)
+            Some(alice_endpoint_server_handshake_completed_callback),
+            ptr::null_mut()
         )
     );
 
@@ -980,7 +999,8 @@ fn test_gosling_ffi_handshake_impl(
     require_noerror!(
         gosling_context_set_endpoint_server_handshake_failed_callback(
             alice_context,
-            Some(alice_endpoint_server_handshake_failed_callback)
+            Some(alice_endpoint_server_handshake_failed_callback),
+            ptr::null_mut()
         )
     );
 

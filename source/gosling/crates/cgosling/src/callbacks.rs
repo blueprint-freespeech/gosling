@@ -1,5 +1,5 @@
 // standard
-use std::os::raw::c_char;
+use std::os::raw::{c_char, c_void};
 
 // extern crates
 use anyhow::bail;
@@ -531,12 +531,14 @@ macro_rules! impl_callback_setter {
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
+/// @param callback_data: the custom data to pass to this callback
 /// @param  error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_tor_bootstrap_status_received_callback(
     context: *mut GoslingContext,
     callback: GoslingTorBootstrapStatusReceivedCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
@@ -551,12 +553,14 @@ pub extern "C" fn gosling_context_set_tor_bootstrap_status_received_callback(
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
-/// @param  error: filled on error
+/// @param callback_data: the custom data to pass to this callback
+/// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_tor_bootstrap_completed_callback(
     context: *mut GoslingContext,
     callback: GoslingTorBootstrapCompletedCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(tor_bootstrap_completed_callback, context, callback, error);
@@ -566,12 +570,14 @@ pub extern "C" fn gosling_context_set_tor_bootstrap_completed_callback(
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
-/// @param  error: filled on error
+/// @param callback_data: the custom data to pass to this callback
+/// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_tor_log_received_callback(
     context: *mut GoslingContext,
     callback: GoslingTorLogReceivedCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(tor_log_received_callback, context, callback, error);
@@ -582,12 +588,14 @@ pub extern "C" fn gosling_context_set_tor_log_received_callback(
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
-/// @param  error: filled on error
+/// @param callback_data: the custom data to pass to this callback
+/// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_client_challenge_response_size_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityClientHandshakeChallengeResponseSizeCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
@@ -602,12 +610,14 @@ pub extern "C" fn gosling_context_set_identity_client_challenge_response_size_ca
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
-/// @param  error: filled on error
+/// @param callback_data: the custom data to pass to this callback
+/// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_client_build_challenge_response_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityClientHandshakeBuildChallengeResponseCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
@@ -622,12 +632,14 @@ pub extern "C" fn gosling_context_set_identity_client_build_challenge_response_c
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
-/// @param  error: filled on error
+/// @param callback_data: the custom data to pass to this callback
+/// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_client_handshake_completed_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityClientHandshakeCompletedCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
@@ -642,12 +654,14 @@ pub extern "C" fn gosling_context_set_identity_client_handshake_completed_callba
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
-/// @param  error: filled on error
+/// @param callback_data: the custom data to pass to this callback
+/// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_client_handshake_failed_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityClientHandshakeFailedCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
@@ -662,12 +676,14 @@ pub extern "C" fn gosling_context_set_identity_client_handshake_failed_callback(
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
-/// @param  error: filled on error
+/// @param callback_data: the custom data to pass to this callback
+/// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_server_published_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerPublishedCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(identity_server_published_callback, context, callback, error);
@@ -677,12 +693,14 @@ pub extern "C" fn gosling_context_set_identity_server_published_callback(
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
-/// @param  error: filled on error
+/// @param callback_data: the custom data to pass to this callback
+/// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_server_handshake_started_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeStartedCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
@@ -697,12 +715,14 @@ pub extern "C" fn gosling_context_set_identity_server_handshake_started_callback
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
-/// @param  error: filled on error
+/// @param callback_data: the custom data to pass to this callback
+/// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_server_client_allowed_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeClientAllowedCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
@@ -717,18 +737,21 @@ pub extern "C" fn gosling_context_set_identity_server_client_allowed_callback(
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
-/// @param  error: filled on error
+/// @param callback_data: the custom data to pass to this callback
+/// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_server_endpoint_supported_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerEndpointSupportedCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
         identity_server_endpoint_supported_callback,
         context,
         callback,
+
         error
     );
 }
@@ -737,12 +760,14 @@ pub extern "C" fn gosling_context_set_identity_server_endpoint_supported_callbac
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
-/// @param  error: filled on erro
+/// @param callback_data: the custom data to pass to this callback
+/// @param error: filled on erro
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_server_challenge_size_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeChallengeSizeCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
@@ -757,12 +782,14 @@ pub extern "C" fn gosling_context_set_identity_server_challenge_size_callback(
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
-/// @param  error: filled on erro
+/// @param callback_data: the custom data to pass to this callback
+/// @param error: filled on erro
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_server_build_challenge_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeBuildChallengeCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
@@ -777,12 +804,14 @@ pub extern "C" fn gosling_context_set_identity_server_build_challenge_callback(
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
-/// @param  error: filled on erro
+/// @param callback_data: the custom data to pass to this callback
+/// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_server_verify_challenge_response_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeVerifyChallengeResponseCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
@@ -797,12 +826,14 @@ pub extern "C" fn gosling_context_set_identity_server_verify_challenge_response_
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
-/// @param  error: filled on error
+/// @param callback_data: the custom data to pass to this callback
+/// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_server_handshake_completed_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeCompletedCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
@@ -817,12 +848,14 @@ pub extern "C" fn gosling_context_set_identity_server_handshake_completed_callba
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
-/// @param  error: filled on error
+/// @param callback_data: the custom data to pass to this callback
+/// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_server_handshake_rejected_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeRejectedCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
@@ -837,12 +870,14 @@ pub extern "C" fn gosling_context_set_identity_server_handshake_rejected_callbac
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
-/// @param  error: filled on error
+/// @param callback_data: the custom data to pass to this callback
+/// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_identity_server_handshake_failed_callback(
     context: *mut GoslingContext,
     callback: GoslingIdentityServerHandshakeFailedCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
@@ -857,12 +892,14 @@ pub extern "C" fn gosling_context_set_identity_server_handshake_failed_callback(
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
-/// @param  error: filled on error
+/// @param callback_data: the custom data to pass to this callback
+/// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_endpoint_client_handshake_completed_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointClientHandshakeCompletedCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
@@ -877,12 +914,14 @@ pub extern "C" fn gosling_context_set_endpoint_client_handshake_completed_callba
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
-/// @param  error: filled on error
+/// @param callback_data: the custom data to pass to this callback
+/// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_endpoint_client_handshake_failed_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointClientHandshakeFailedCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
@@ -897,12 +936,14 @@ pub extern "C" fn gosling_context_set_endpoint_client_handshake_failed_callback(
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
-/// @param  error: filled on error
+/// @param callback_data: the custom data to pass to this callback
+/// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_endpoint_server_published_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointServerPublishedCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(endpoint_server_published_callback, context, callback, error);
@@ -912,12 +953,14 @@ pub extern "C" fn gosling_context_set_endpoint_server_published_callback(
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
-/// @param  error: filled on error
+/// @param callback_data: the custom data to pass to this callback
+/// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_endpoint_server_handshake_started_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointServerHandshakeStartedCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
@@ -932,12 +975,14 @@ pub extern "C" fn gosling_context_set_endpoint_server_handshake_started_callback
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
-/// @param  error: filled on error
+/// @param callback_data: the custom data to pass to this callback
+/// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_endpoint_server_channel_supported_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointServerChannelSupportedCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
@@ -952,12 +997,14 @@ pub extern "C" fn gosling_context_set_endpoint_server_channel_supported_callback
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
-/// @param  error: filled on error
+/// @param callback_data: the custom data to pass to this callback
+/// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_endpoint_server_handshake_completed_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointServerHandshakeCompletedCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
@@ -972,12 +1019,14 @@ pub extern "C" fn gosling_context_set_endpoint_server_handshake_completed_callba
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
-/// @param  error: filled on error
+/// @param callback_data: the custom data to pass to this callback
+/// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_endpoint_server_handshake_rejected_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointServerHandshakeRejectedCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(
@@ -992,12 +1041,14 @@ pub extern "C" fn gosling_context_set_endpoint_server_handshake_rejected_callbac
 ///
 /// @param context: the context to register the callback to
 /// @param callback: the callback to register
-/// @param  error: filled on error
+/// @param callback_data: the custom data to pass to this callback
+/// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub extern "C" fn gosling_context_set_endpoint_server_handshake_failed_callback(
     context: *mut GoslingContext,
     callback: GoslingEndpointServerHandshakeFailedCallback,
+    callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
     impl_callback_setter!(

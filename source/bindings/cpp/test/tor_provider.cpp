@@ -46,7 +46,7 @@ static void create_client_identity_handshake(unique_ptr<gosling_context> &ctx) {
 
   REQUIRE_NOTHROW(
       ::gosling_context_set_identity_client_challenge_response_size_callback(
-          ctx.get(), challenge_response_size_callback, throw_on_error()));
+          ctx.get(), challenge_response_size_callback, nullptr, throw_on_error()));
 
   const auto build_challenge_response_callback =
       [](gosling_context *context, size_t handshake_handle,
@@ -71,7 +71,7 @@ static void create_client_identity_handshake(unique_ptr<gosling_context> &ctx) {
 
   REQUIRE_NOTHROW(
       ::gosling_context_set_identity_client_build_challenge_response_callback(
-          ctx.get(), build_challenge_response_callback, throw_on_error()));
+          ctx.get(), build_challenge_response_callback, nullptr, throw_on_error()));
 }
 
 static void create_server_identity_handshake(unique_ptr<gosling_context> &ctx) {
@@ -87,7 +87,7 @@ static void create_server_identity_handshake(unique_ptr<gosling_context> &ctx) {
   };
 
   REQUIRE_NOTHROW(::gosling_context_set_identity_server_client_allowed_callback(
-      ctx.get(), client_allowed_callback, throw_on_error()));
+      ctx.get(), client_allowed_callback, nullptr, throw_on_error()));
 
   const auto endpoint_supported_callback =
       [](gosling_context *context, size_t handshake_handle,
@@ -105,7 +105,7 @@ static void create_server_identity_handshake(unique_ptr<gosling_context> &ctx) {
 
   REQUIRE_NOTHROW(
       ::gosling_context_set_identity_server_endpoint_supported_callback(
-          ctx.get(), endpoint_supported_callback, throw_on_error()));
+          ctx.get(), endpoint_supported_callback, nullptr, throw_on_error()));
 
   const auto challenge_size_callback = [](gosling_context *context,
                                           size_t handshake_handle) -> size_t {
@@ -116,7 +116,7 @@ static void create_server_identity_handshake(unique_ptr<gosling_context> &ctx) {
   };
 
   REQUIRE_NOTHROW(::gosling_context_set_identity_server_challenge_size_callback(
-      ctx.get(), challenge_size_callback, throw_on_error()));
+      ctx.get(), challenge_size_callback, nullptr, throw_on_error()));
 
   const auto build_challenge_callback =
       [](gosling_context *context, size_t handshake_handle,
@@ -134,7 +134,7 @@ static void create_server_identity_handshake(unique_ptr<gosling_context> &ctx) {
 
   REQUIRE_NOTHROW(
       ::gosling_context_set_identity_server_build_challenge_callback(
-          ctx.get(), build_challenge_callback, throw_on_error()));
+          ctx.get(), build_challenge_callback, nullptr, throw_on_error()));
 
   const auto verify_challenge_response_callback =
       [](gosling_context *context, size_t handshake_handle,
@@ -161,7 +161,7 @@ static void create_server_identity_handshake(unique_ptr<gosling_context> &ctx) {
 
   REQUIRE_NOTHROW(
       ::gosling_context_set_identity_server_verify_challenge_response_callback(
-          ctx.get(), verify_challenge_response_callback, throw_on_error()));
+          ctx.get(), verify_challenge_response_callback, nullptr, throw_on_error()));
 }
 
 static void create_server_endpoint_handshake(unique_ptr<gosling_context> &ctx) {
@@ -185,7 +185,7 @@ static void create_server_endpoint_handshake(unique_ptr<gosling_context> &ctx) {
 
   REQUIRE_NOTHROW(
       ::gosling_context_set_endpoint_server_channel_supported_callback(
-          ctx.get(), channel_supported_callback, throw_on_error()));
+          ctx.get(), channel_supported_callback, nullptr, throw_on_error()));
 }
 
 enum gosling_tor_provider_type {
@@ -267,6 +267,7 @@ void gosling_cpp_demo_impl(
         alice_bootstrap_complete = true;
         cout << "--- alice bootstrapped" << endl;
       },
+      nullptr,
       throw_on_error()));
 
   cout << "--- begin alice bootstrap" << endl;
@@ -286,6 +287,7 @@ void gosling_cpp_demo_impl(
         alice_identity_server_ready = true;
         cout << "--- alice identity server published" << endl;
       },
+      nullptr,
       throw_on_error()));
 
   cout << "--- start alice identity server" << endl;
@@ -305,6 +307,7 @@ void gosling_cpp_demo_impl(
         pat_bootstrap_complete = true;
         cout << "--- pat bootstrapped" << endl;
       },
+      nullptr,
       throw_on_error()));
   cout << "--- begin pat bootstrap" << endl;
   REQUIRE_NOTHROW(
@@ -344,6 +347,7 @@ void gosling_cpp_demo_impl(
             pat_endpoint_request_complete = true;
             cout << "--- pat identity handshake completed" << endl;
           },
+          nullptr,
           throw_on_error()));
 
   REQUIRE_NOTHROW(
@@ -355,6 +359,7 @@ void gosling_cpp_demo_impl(
                  << gosling_error_get_message(error) << endl;
             REQUIRE(false);
           },
+          nullptr,
           throw_on_error()));
 
   static bool alice_endpoint_request_complete = false;
@@ -385,6 +390,7 @@ void gosling_cpp_demo_impl(
             alice_endpoint_request_complete = true;
             cout << "--- alice identity handshake completed" << endl;
           },
+          nullptr,
           throw_on_error()));
   REQUIRE_NOTHROW(
       ::gosling_context_set_identity_server_handshake_failed_callback(
@@ -395,6 +401,7 @@ void gosling_cpp_demo_impl(
                  << gosling_error_get_message(error) << endl;
             REQUIRE(false);
           },
+          nullptr,
           throw_on_error()));
 
   bool pat_begin_identity_handshake_succeeded = false;
@@ -430,6 +437,7 @@ void gosling_cpp_demo_impl(
         alice_endpoint_published = true;
         cout << "--- alice endpoint server published" << endl;
       },
+      nullptr,
       throw_on_error()));
 
   cout << "--- alice endpoint server start" << endl;
@@ -468,6 +476,7 @@ void gosling_cpp_demo_impl(
             pat_channel_request_complete = true;
             pat_socket.assign(boost::asio::ip::tcp::v4(), stream);
           },
+          nullptr,
           throw_on_error()));
   REQUIRE_NOTHROW(
       ::gosling_context_set_endpoint_client_handshake_failed_callback(
@@ -478,6 +487,7 @@ void gosling_cpp_demo_impl(
                  << gosling_error_get_message(error) << endl;
             REQUIRE(false);
           },
+          nullptr,
           throw_on_error()));
 
   REQUIRE_NOTHROW(
@@ -493,6 +503,7 @@ void gosling_cpp_demo_impl(
             alice_channel_request_complete = true;
             alice_socket.assign(boost::asio::ip::tcp::v4(), stream);
           },
+          nullptr,
           throw_on_error()));
   REQUIRE_NOTHROW(
       ::gosling_context_set_endpoint_server_handshake_failed_callback(
@@ -503,6 +514,7 @@ void gosling_cpp_demo_impl(
                  << gosling_error_get_message(error) << endl;
             REQUIRE(false);
           },
+          nullptr,
           throw_on_error()));
 
   // pat opens chanel to alice's endpoint

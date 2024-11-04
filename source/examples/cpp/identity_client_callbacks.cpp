@@ -30,7 +30,7 @@ namespace example {
                     TERM.write_line("identity_client_challenge_response_size callback threw exception");
                     return 0;
                 }
-            }, throw_on_error());
+            }, nullptr, throw_on_error());
 
         // provide the client with a challenge response
         ::gosling_context_set_identity_client_build_challenge_response_callback(context,
@@ -53,7 +53,7 @@ namespace example {
                 } catch (...) {
                     TERM.write_line("identity_client_build_challenge_response callback threw exception");
                 }
-            }, throw_on_error());
+            }, nullptr, throw_on_error());
 
         // callback for signalling to identity client handshake succeeded
         ::gosling_context_set_identity_client_handshake_completed_callback(context,
@@ -86,7 +86,7 @@ namespace example {
                 } catch (...) {
                     TERM.write_line("identity_client_handshake_completed callback threw exception");
                 }
-            }, throw_on_error());
+            }, nullptr, throw_on_error());
         // callback for signalling to identity client the handshake failed
         ::gosling_context_set_identity_client_handshake_failed_callback(context,
             [](gosling_context*,
@@ -107,6 +107,6 @@ namespace example {
                 } catch (...) {
                     TERM.write_line("identity_client_handshake_failed callback threw exception");
                 }
-            }, throw_on_error());
+            }, nullptr, throw_on_error());
     }
 }

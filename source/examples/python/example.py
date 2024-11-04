@@ -54,10 +54,10 @@ def main():
     gosling_context_init(pointer(context), tor_provider, 1120, 401, identity_private_key, pointer(err))
     handle_error(err)
 
-    gosling_context_set_tor_bootstrap_status_received_callback(context, bootstrap_status_c_callback, pointer(err))
+    gosling_context_set_tor_bootstrap_status_received_callback(context, bootstrap_status_c_callback, None, pointer(err))
     handle_error(err)
 
-    gosling_context_set_tor_bootstrap_completed_callback(context, bootstrap_complete_c_callback, pointer(err))
+    gosling_context_set_tor_bootstrap_completed_callback(context, bootstrap_complete_c_callback, None, pointer(err))
     handle_error(err)
 
     print("begin bootstrap")

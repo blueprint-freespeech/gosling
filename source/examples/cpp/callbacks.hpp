@@ -27,7 +27,7 @@ namespace example {
                 } catch (...) {
                     TERM.write_line("tor_bootstrap_status_received callback threw exception");
                 }
-            }, throw_on_error());
+            }, nullptr, throw_on_error());
 
         register_identity_server_callbacks(context);
         register_identity_client_callbacks(context);

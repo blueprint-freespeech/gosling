@@ -23,7 +23,7 @@ namespace example {
                 } catch (...) {
                     TERM.write_line("identity_server_published callback threw exception");
                 }
-            }, throw_on_error());
+            }, nullptr, throw_on_error());
 
     // callback fires when a client attempts to make a connection
     ::gosling_context_set_identity_server_handshake_started_callback(context,
@@ -37,7 +37,7 @@ namespace example {
             } catch (...) {
                 TERM.write_line("identity_server_handshake_started callback threw exception");
             }
-        }, throw_on_error());
+        }, nullptr, throw_on_error());
 
     // callback for checking to see if a connecting client is allowed (ie that
     // they have not been banned, rate-limited, etc)
@@ -61,7 +61,7 @@ namespace example {
                 TERM.write_line("identity_server_client_allowed callback threw exception");
                 return false;
             }
-        }, throw_on_error());
+        }, nullptr, throw_on_error());
 
     // callback for checking to see if a requested endpoint is supported
     ::gosling_context_set_identity_server_endpoint_supported_callback(context,
@@ -85,7 +85,7 @@ namespace example {
                 TERM.write_line("identity_server_endpoint_supported callback threw exception");
                 return false;
             }
-        }, throw_on_error());
+        }, nullptr, throw_on_error());
 
     // callback for getting the required size of a challenge object
     ::gosling_context_set_identity_server_challenge_size_callback(context,
@@ -108,7 +108,7 @@ namespace example {
                 TERM.write_line(string("ex.what(): ") + ex.what());
                 return 0;
             }
-        }, throw_on_error());
+        }, nullptr, throw_on_error());
 
     // callback for the identity server to populate the challenge object to send to client
     ::gosling_context_set_identity_server_build_challenge_callback(context,
@@ -128,7 +128,7 @@ namespace example {
             } catch (...) {
                 TERM.write_line("identity_server_build_challenge callback threw exception");
             }
-        }, throw_on_error());
+        }, nullptr, throw_on_error());
 
     // callback for the identity server to verify the client's challenge response
     ::gosling_context_set_identity_server_verify_challenge_response_callback(context,
@@ -151,7 +151,7 @@ namespace example {
                 TERM.write_line("identity_server_verify_challenge_response threw exception");
                 return false;
             }
-        }, throw_on_error());
+        }, nullptr, throw_on_error());
 
     // callback for signaling to identity server handshake has succeeded
     ::gosling_context_set_identity_server_handshake_completed_callback(context,
@@ -181,7 +181,7 @@ namespace example {
             } catch (...) {
                 TERM.write_line("identity_server_handshake_completed callback threw exception");
             }
-        }, throw_on_error());
+        }, nullptr, throw_on_error());
 
     // callback for signalling to identity server that a handshake has been rejected
     ::gosling_context_set_identity_server_handshake_rejected_callback(context,
@@ -209,7 +209,7 @@ namespace example {
             } catch (...) {
                 TERM.write_line("identity_server_handshake_rejected callback threw exception");
             }
-        }, throw_on_error());
+        }, nullptr, throw_on_error());
 
     // callback for signalling to identity server handshake failure
     ::gosling_context_set_identity_server_handshake_failed_callback(context,
@@ -231,6 +231,6 @@ namespace example {
             } catch (...) {
                 TERM.write_line("identity_server_handshake_failed callback threw exception");
             }
-        }, throw_on_error());
+        }, nullptr, throw_on_error());
     }
 }
