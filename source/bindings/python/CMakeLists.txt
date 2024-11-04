@@ -20,7 +20,7 @@ if (BUILD_PYTHON_BINDINGS)
     )
     add_custom_target(gosling_python_bindings_target ALL
         DEPENDS ${gosling_python_bindings_outputs})
-    add_dependencies(gosling_python_bindings_target cgosling_target)
+    add_dependencies(gosling_python_bindings_target gosling_c_shared_bindings)
 
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cgosling.py
         DESTINATION ${CMAKE_INSTALL_DATADIR}/gosling/bindings/python
