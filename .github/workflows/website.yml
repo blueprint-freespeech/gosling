@@ -24,7 +24,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=../dist -DBUILD_PAGES=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_TOR_EXPERT_BUNDLE=ON
+          cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=../dist -DBUILD_PAGES=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DBUILD_JAVA_BINDINGS=ON
           make
           make install
           echo "gosling.technology" > ../dist/share/doc/gosling/CNAME
