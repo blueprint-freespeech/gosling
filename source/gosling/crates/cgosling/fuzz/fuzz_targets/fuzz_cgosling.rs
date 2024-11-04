@@ -1,6 +1,6 @@
 #![no_main]
 
-use std::ffi::{c_char, c_int};
+use std::ffi::{c_char, c_int, c_void};
 use std::ptr;
 
 use libfuzzer_sys::fuzz_target;
@@ -548,105 +548,105 @@ macro_rules! impl_set_callback {
 
 // no-op (or minimal op) callbacks for setters
 
-extern "C" fn bootstrap_status_received(_context: *mut GoslingContext, _progress: u32, _tag: *const c_char, _tag_length: usize, _summary: *const c_char, _summary_length: usize) {
+extern "C" fn bootstrap_status_received(_callback_data: *mut c_void, _context: *mut GoslingContext, _progress: u32, _tag: *const c_char, _tag_length: usize, _summary: *const c_char, _summary_length: usize) {
 
 }
 
-extern "C" fn bootstrap_complete(_context: *mut GoslingContext) -> () {
+extern "C" fn bootstrap_complete(_callback_data: *mut c_void, _context: *mut GoslingContext) -> () {
 
 }
 
-extern "C" fn tor_log_received(_context: *mut GoslingContext, _line: *const c_char, _line_length: usize) {
+extern "C" fn tor_log_received(_callback_data: *mut c_void, _context: *mut GoslingContext, _line: *const c_char, _line_length: usize) {
 
 }
 
-extern "C" fn identity_client_handshake_challenge_response_size(_context: *mut GoslingContext, _handshake_handle: usize, _challenge_buffer: *const u8, _challenge_buffer_size: usize) -> usize {
+extern "C" fn identity_client_handshake_challenge_response_size(_callback_data: *mut c_void, _context: *mut GoslingContext, _handshake_handle: usize, _challenge_buffer: *const u8, _challenge_buffer_size: usize) -> usize {
     return 0;
 }
 
-extern "C" fn identity_client_handshake_build_challenge_response(_context: *mut GoslingContext, _handshake_handle: usize, _challenge_buffer: *const u8, _challenge_buffer_size: usize, _out_challenge_response_buffer: *mut u8, _challenge_response_buffer_size: usize) {
+extern "C" fn identity_client_handshake_build_challenge_response(_callback_data: *mut c_void, _context: *mut GoslingContext, _handshake_handle: usize, _challenge_buffer: *const u8, _challenge_buffer_size: usize, _out_challenge_response_buffer: *mut u8, _challenge_response_buffer_size: usize) {
 
 }
 
-extern "C" fn identity_client_handshake_completed(_context: *mut GoslingContext, _handshake_handle: usize, _identity_service_id: *const GoslingV3OnionServiceId, _endpoint_service_id: *const GoslingV3OnionServiceId, _endpoint_name: *const c_char, _endpoint_name_length: usize, _client_auth_private_key: *const GoslingX25519PrivateKey) {
+extern "C" fn identity_client_handshake_completed(_callback_data: *mut c_void, _context: *mut GoslingContext, _handshake_handle: usize, _identity_service_id: *const GoslingV3OnionServiceId, _endpoint_service_id: *const GoslingV3OnionServiceId, _endpoint_name: *const c_char, _endpoint_name_length: usize, _client_auth_private_key: *const GoslingX25519PrivateKey) {
 
 }
 
-extern "C" fn identity_client_handshake_failed(_context: *mut GoslingContext, _handshake_handle: usize, _error: *const GoslingError) {
+extern "C" fn identity_client_handshake_failed(_callback_data: *mut c_void, _context: *mut GoslingContext, _handshake_handle: usize, _error: *const GoslingError) {
 
 }
 
-extern "C" fn identity_server_published(_context: *mut GoslingContext) {
+extern "C" fn identity_server_published(_callback_data: *mut c_void, _context: *mut GoslingContext) {
 
 }
 
-extern "C" fn identity_server_handshake_started(_context: *mut GoslingContext, _handshake_handle: usize) {
+extern "C" fn identity_server_handshake_started(_callback_data: *mut c_void, _context: *mut GoslingContext, _handshake_handle: usize) {
 
 }
 
-extern "C" fn identity_server_handshake_client_allowed(_context: *mut GoslingContext, _handshake_handle: usize, _client_service_id: *const GoslingV3OnionServiceId) -> bool {
+extern "C" fn identity_server_handshake_client_allowed(_callback_data: *mut c_void, _context: *mut GoslingContext, _handshake_handle: usize, _client_service_id: *const GoslingV3OnionServiceId) -> bool {
     true
 }
 
-extern "C" fn identity_server_endpoint_supported(_context: *mut GoslingContext, _handshake_handle: usize, _endpoint_name: *const c_char, _endpoint_name_length: usize) -> bool {
+extern "C" fn identity_server_endpoint_supported(_callback_data: *mut c_void, _context: *mut GoslingContext, _handshake_handle: usize, _endpoint_name: *const c_char, _endpoint_name_length: usize) -> bool {
     true
 }
 
-extern "C" fn identity_server_handshake_challenge_size(_context: *mut GoslingContext, _handshake_handle: usize) -> usize {
+extern "C" fn identity_server_handshake_challenge_size(_callback_data: *mut c_void, _context: *mut GoslingContext, _handshake_handle: usize) -> usize {
     0usize
 }
 
-extern "C" fn identity_server_handshake_build_challenge(_context: *mut GoslingContext, _handshake_handle: usize, _out_challenge_buffer: *mut u8, _challenge_buffer_size: usize) {
+extern "C" fn identity_server_handshake_build_challenge(_callback_data: *mut c_void, _context: *mut GoslingContext, _handshake_handle: usize, _out_challenge_buffer: *mut u8, _challenge_buffer_size: usize) {
 
 }
 
-extern "C" fn identity_server_handshake_verify_challenge_response(_context: *mut GoslingContext, _handshake_handle: usize, _challenge_response_buffer: *const u8, _challenge_response_buffer_size: usize) -> bool {
+extern "C" fn identity_server_handshake_verify_challenge_response(_callback_data: *mut c_void, _context: *mut GoslingContext, _handshake_handle: usize, _challenge_response_buffer: *const u8, _challenge_response_buffer_size: usize) -> bool {
     true
 }
 
-extern "C" fn identity_server_handshake_completed(_context: *mut GoslingContext, _handshake_handle: usize, _endpoint_private_key: *const GoslingEd25519PrivateKey, _endpoint_name: *const c_char, _endpoint_name_length: usize, _client_service_id: *const GoslingV3OnionServiceId, _client_auth_public_key: *const GoslingX25519PublicKey) {
+extern "C" fn identity_server_handshake_completed(_callback_data: *mut c_void, _context: *mut GoslingContext, _handshake_handle: usize, _endpoint_private_key: *const GoslingEd25519PrivateKey, _endpoint_name: *const c_char, _endpoint_name_length: usize, _client_service_id: *const GoslingV3OnionServiceId, _client_auth_public_key: *const GoslingX25519PublicKey) {
 
 }
 
-extern "C" fn identity_server_handshake_rejected(_context: *mut GoslingContext, _handshake_handle: usize, _client_allowed: bool, _client_requested_endpoint_valid: bool, _client_proof_signature_valid: bool, _client_auth_signature_valid: bool, _challenge_response_valid: bool) {
+extern "C" fn identity_server_handshake_rejected(_callback_data: *mut c_void, _context: *mut GoslingContext, _handshake_handle: usize, _client_allowed: bool, _client_requested_endpoint_valid: bool, _client_proof_signature_valid: bool, _client_auth_signature_valid: bool, _challenge_response_valid: bool) {
 
 }
 
-extern "C" fn identity_server_handshake_failed(_cntext: *mut GoslingContext, _handshake_handle: usize, _error: *const GoslingError) {
+extern "C" fn identity_server_handshake_failed(_callback_data: *mut c_void, _context: *mut GoslingContext, _handshake_handle: usize, _error: *const GoslingError) {
 
 }
 
-extern "C" fn endpoint_client_handhsake_completed(_context: *mut GoslingContext, _handshake_handle: usize, _endpoint_service_id: *const GoslingV3OnionServiceId, _channel_name: *const c_char, _channel_name_length: usize, _stream: c_int) {
+extern "C" fn endpoint_client_handhsake_completed(_callback_data: *mut c_void, _context: *mut GoslingContext, _handshake_handle: usize, _endpoint_service_id: *const GoslingV3OnionServiceId, _channel_name: *const c_char, _channel_name_length: usize, _stream: c_int) {
 
 }
 
-extern "C" fn endpoint_client_handshake_failed(_context: *mut GoslingContext,
+extern "C" fn endpoint_client_handshake_failed(_callback_data: *mut c_void, _context: *mut GoslingContext,
     _handshake_handle: usize, _error: *const GoslingError) {
 
 }
 
-extern "C" fn endpoint_server_published(_context: *mut GoslingContext, _endpoint_service_id: *const GoslingV3OnionServiceId, _endpoint_name: *const c_char, _endpoint_name_length: usize) {
+extern "C" fn endpoint_server_published(_callback_data: *mut c_void, _context: *mut GoslingContext, _endpoint_service_id: *const GoslingV3OnionServiceId, _endpoint_name: *const c_char, _endpoint_name_length: usize) {
 
 }
 
-extern "C" fn endpoint_server_handshake_started(_context: *mut GoslingContext, _handshake_handle: usize) {
+extern "C" fn endpoint_server_handshake_started(_callback_data: *mut c_void, _context: *mut GoslingContext, _handshake_handle: usize) {
 
 }
 
-extern "C" fn endpoint_server_channel_supported(_context: *mut GoslingContext,
+extern "C" fn endpoint_server_channel_supported(_callback_data: *mut c_void, _context: *mut GoslingContext,
 _handshake_handle: usize, _client_service_id: *const GoslingV3OnionServiceId, _channel_name: *const c_char, _channel_name_length: usize) -> bool {
     true
 }
 
-extern "C" fn endpoint_server_handshake_completed(_context: *mut GoslingContext, _handshake_handle: usize, _endpoint_service_id: *const GoslingV3OnionServiceId, _client_service_id: *const GoslingV3OnionServiceId, _channel_name: *const c_char, _channel_name_length: usize, _stream: c_int) {
+extern "C" fn endpoint_server_handshake_completed(_callback_data: *mut c_void, _context: *mut GoslingContext, _handshake_handle: usize, _endpoint_service_id: *const GoslingV3OnionServiceId, _client_service_id: *const GoslingV3OnionServiceId, _channel_name: *const c_char, _channel_name_length: usize, _stream: c_int) {
 
 }
 
-extern "C" fn endpoint_server_handshake_rejected(_context: *mut GoslingContext, _handshake_handle: usize, _client_allowed: bool, _client_requested_channel_valid: bool, _client_proof_signature_valid: bool) {
+extern "C" fn endpoint_server_handshake_rejected(_callback_data: *mut c_void, _context: *mut GoslingContext, _handshake_handle: usize, _client_allowed: bool, _client_requested_channel_valid: bool, _client_proof_signature_valid: bool) {
 
 }
 
-extern "C" fn endpoint_server_handshake_failed(_context: *mut GoslingContext,
+extern "C" fn endpoint_server_handshake_failed(_callback_data: *mut c_void, _context: *mut GoslingContext,
     _handshake_handle: usize, _error: *const GoslingError) {
 
 }

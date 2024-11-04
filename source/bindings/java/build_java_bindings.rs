@@ -476,6 +476,13 @@ handlebars_helper!(marshallNativeParams: |input_params: Vec<Param>| {
                 cpp_src!("std::fill({name}_jni_buffer, {name}_jni_buffer + {name}_size, jbyte(0));");
                 cpp_src!("env->ReleaseByteArrayElements({name}_jni, {name}_jni_buffer, 0);");
             },
+            "void*" => {
+                if param.name == "callback_data" {
+                    continue;
+                } else {
+                    panic!("unhandled param: {}", param.name);
+                }
+            },
             "gosling_handshake_handle_t" => cpp_src!("const jlong {name}_jni = static_cast<jlong>({name});"),
             "gosling_tcp_socket_t" => {
                 cpp_src!("jobject {name}_jni = g_jni_glue->tcp_stream_to_java_socket(env, {name});");
@@ -554,7 +561,14 @@ handlebars_helper!(callJavaCallback: |name: String, return_type: String, input_p
                 } else {
                     panic!("unhandled param -> {name}: {typename}");
                 }
-            }
+            },
+            "void*" => {
+                if param.name == "callback_data" {
+                    continue;
+                } else {
+                    panic!("unhandled param: {}", param.name);
+                }
+            },
             _ => {
                 assert!(typename.starts_with("gosling_") || typename.starts_with("const gosling_"));
                 assert!(!typename.ends_with("**"));
@@ -589,11 +603,19 @@ handlebars_helper!(callJavaCallback: |name: String, return_type: String, input_p
     for param in &input_params {
         let typename: &str = param.typename.as_ref();
         let name: &str = param.name.as_ref();
-        if typename == "size_t" {
-            assert!(name.ends_with("_length") || name.ends_with("_size"));
-            continue;
-        } else {
-            call_method_params.push(format!("{name}_jni"));
+        match typename.as_ref() {
+            "size_t" => {
+                assert!(name.ends_with("_length") || name.ends_with("_size"));
+                continue;
+            },
+            "void*" => {
+                if param.name == "callback_data" {
+                    continue;
+                } else {
+                    panic!("unhandled param: {}", param.name);
+                }
+            }
+            _ => call_method_params.push(format!("{name}_jni"))
         }
     }
     let call_method_params = call_method_params.join(", ");
@@ -634,6 +656,13 @@ handlebars_helper!(marshallJNIResults: |return_type: String, input_params: Vec<P
                 cpp_src!("env->ReleaseByteArrayElements({name}_jni, {name}_jni_buffer, JNI_ABORT);");
                 cpp_src!("env->DeleteLocalRef({name}_jni);");
             }
+            "void*" => {
+                if param.name == "callback_data" {
+                    continue;
+                } else {
+                    panic!("unhandled param: {}", param.name);
+                }
+            },
             "gosling_tcp_socket_t" => cpp_src!("env->DeleteLocalRef({name}_jni);"),
             _ => {
                 assert!(typename.starts_with("gosling_") || typename.starts_with("const gosling_"));

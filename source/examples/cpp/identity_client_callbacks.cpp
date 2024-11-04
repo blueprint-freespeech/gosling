@@ -8,7 +8,8 @@ namespace example {
     void register_identity_client_callbacks(gosling_context* context) {
         // return the required size of identity callback challenge response
         ::gosling_context_set_identity_client_challenge_response_size_callback(context,
-            [](gosling_context*,
+            [](void*,
+               gosling_context*,
                gosling_handshake_handle_t handle,
                const uint8_t* challenge_buffer,
                size_t challenge_buffer_size) -> size_t {
@@ -34,7 +35,8 @@ namespace example {
 
         // provide the client with a challenge response
         ::gosling_context_set_identity_client_build_challenge_response_callback(context,
-            [](gosling_context*,
+            [](void*,
+               gosling_context*,
                gosling_handshake_handle_t handle,
                const uint8_t* challenge_buffer,
                size_t challenge_buffer_size,
@@ -57,7 +59,8 @@ namespace example {
 
         // callback for signalling to identity client handshake succeeded
         ::gosling_context_set_identity_client_handshake_completed_callback(context,
-            [](gosling_context*,
+            [](void*,
+               gosling_context*,
                gosling_handshake_handle_t handle,
                const gosling_v3_onion_service_id* identity_server,
                const gosling_v3_onion_service_id* endpoint_server,
@@ -89,7 +92,8 @@ namespace example {
             }, nullptr, throw_on_error());
         // callback for signalling to identity client the handshake failed
         ::gosling_context_set_identity_client_handshake_failed_callback(context,
-            [](gosling_context*,
+            [](void*,
+               gosling_context*,
                gosling_handshake_handle_t handle,
                const gosling_error* error) -> void {
                 try {

@@ -8,7 +8,8 @@ namespace example {
     void register_endpoint_client_callbacks(gosling_context* context) {
         // callback for when the endpoint client handshake completes successfully
         ::gosling_context_set_endpoint_client_handshake_completed_callback(context,
-            [](gosling_context* context,
+            [](void*,
+               gosling_context* context,
                gosling_handshake_handle_t handle,
                const gosling_v3_onion_service_id* endpoint_service_id,
                const char* channel_name,
@@ -38,7 +39,8 @@ namespace example {
 
         // callback for when the endpoint client handshake fails
         ::gosling_context_set_endpoint_client_handshake_failed_callback(context,
-            [](gosling_context* context,
+            [](void*,
+               gosling_context* context,
                gosling_handshake_handle_t handle,
                const gosling_error* error) -> void {
                 try {

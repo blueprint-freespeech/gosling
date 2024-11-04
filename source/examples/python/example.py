@@ -8,11 +8,11 @@ def handle_error(err):
 
 bootstrap_complete = False;
 
-def bootstrap_status_callback(context, progress, tag, tag_length, summary, summary_length):
+def bootstrap_status_callback(callback_data, context, progress, tag, tag_length, summary, summary_length):
     print("python: bootstrap_status_callback", progress)
 bootstrap_status_c_callback = GoslingTorBootstrapStatusReceivedCallback(bootstrap_status_callback)
 
-def bootstrap_complete_callback(context):
+def bootstrap_complete_callback(callback_data, context):
     print("python: bootstrap_complete_callback")
     global bootstrap_complete
     bootstrap_complete = True
