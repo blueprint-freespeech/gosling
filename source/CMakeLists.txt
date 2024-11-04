@@ -34,7 +34,6 @@ endif()
 
 add_subdirectory(gosling)
 add_subdirectory(extern)
-add_subdirectory(test)
 add_subdirectory(pages)
 add_subdirectory(bindings)
 add_subdirectory(examples)

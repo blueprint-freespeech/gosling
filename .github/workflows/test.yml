@@ -28,9 +28,8 @@ jobs:
           - tor_interface_mixed_legacy_arti_client_authenticated_onion_service_cargo_test
           - tor_interface_mixed_legacy_arti_client_bootstrap_cargo_test
           - gosling_cargo_test
-          - gosling_functional_test
-          - gosling_unit_test
           - cgosling_cargo_test
+          - gosling_cpp_bindings_test
           - gosling_java_bindings_test
     runs-on: ubuntu-latest
     steps:
@@ -73,9 +72,8 @@ jobs:
           - tor_interface_mixed_legacy_arti_client_authenticated_onion_service_cargo_test
           - tor_interface_mixed_legacy_arti_client_bootstrap_cargo_test
           - gosling_cargo_test
-          - gosling_functional_test
-          - gosling_unit_test
           - cgosling_cargo_test
+          - gosling_cpp_bindings_test
           - gosling_java_bindings_test
     runs-on: windows-latest
     defaults:
@@ -139,9 +137,8 @@ jobs:
           - tor_interface_mixed_legacy_arti_client_authenticated_onion_service_cargo_test
           - tor_interface_mixed_legacy_arti_client_bootstrap_cargo_test
           - gosling_cargo_test
-          - gosling_functional_test
-          - gosling_unit_test
           - cgosling_cargo_test
+          - gosling_cpp_bindings_test
           - gosling_java_bindings_test
     runs-on: macos-latest
     steps:

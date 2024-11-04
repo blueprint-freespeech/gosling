@@ -54,6 +54,10 @@ add_dependencies(gosling_cpp_shared_bindings_target gosling_cpp_shared_bindings)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cgosling.hpp
     TYPE INCLUDE)
 
+if (ENABLE_TESTS)
+    add_subdirectory(test)
+endif()
+
 if (BUILD_PAGES)
     #
     # cgosling documentation
