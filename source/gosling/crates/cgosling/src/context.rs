@@ -2,12 +2,11 @@
 use std::collections::VecDeque;
 use std::ffi::CString;
 use std::io::Cursor;
-use std::os::raw::c_char;
+use std::os::raw::{c_char, c_void};
 #[cfg(unix)]
 use std::os::unix::io::{IntoRawFd, RawFd};
 #[cfg(windows)]
 use std::os::windows::io::{IntoRawSocket, RawSocket};
-use std::ptr;
 use std::time::Duration;
 
 // extern crates
@@ -463,6 +462,14 @@ pub extern "C" fn gosling_context_abort_endpoint_client_handshake(
     })
 }
 
+macro_rules! get_callback {
+    ($callbacks:expr, $callback_type:tt) => {
+        paste::paste! {
+            ($callbacks.[<$callback_type>], $callbacks.[<$callback_type _data>] as *mut c_void)
+        }
+    }
+}
+
 fn handle_context_event(
     event: ContextEvent,
     context: *mut GoslingContext,
@@ -477,7 +484,7 @@ fn handle_context_event(
             tag,
             summary,
         } => {
-            if let Some(callback) = callbacks.tor_bootstrap_status_received_callback {
+            if let (Some(callback), data) = get_callback!(callbacks, tor_bootstrap_status_received_callback) {
                 let tag0 = CString::new(tag.as_str()).expect(
                     "bootstrap status tag string should not have an intermediate null byte",
                 );
@@ -485,7 +492,7 @@ fn handle_context_event(
                     "bootstrap status summary string should not have an intermediate null byte",
                 );
                 callback(
-                    ptr::null_mut(),
+                    data,
                     context,
                     progress,
                     tag0.as_ptr(),
@@ -496,15 +503,15 @@ fn handle_context_event(
             }
         }
         ContextEvent::TorBootstrapCompleted => {
-            if let Some(callback) = callbacks.tor_bootstrap_completed_callback {
-                callback(ptr::null_mut(), context);
+            if let (Some(callback), data) = get_callback!(callbacks, tor_bootstrap_completed_callback) {
+                callback(data, context);
             }
         }
         ContextEvent::TorLogReceived { line } => {
-            if let Some(callback) = callbacks.tor_log_received_callback {
+            if let (Some(callback), data) = get_callback!(callbacks, tor_log_received_callback) {
                 let line0 = CString::new(line.as_str())
                     .expect("tor log line string should not have an intermediate null byte");
-                callback(ptr::null_mut(), context, line0.as_ptr(), line.len());
+                callback(data, context, line0.as_ptr(), line.len());
             }
         }
         //
@@ -516,18 +523,18 @@ fn handle_context_event(
         } => {
             // construct challenge response
             let challenge_response = if let (
-                Some(challenge_response_size_callback),
-                Some(build_challenge_response_callback),
+                (Some(challenge_response_size_callback), challenge_response_size_data),
+                (Some(build_challenge_response_callback), build_challenge_response_data),
             ) = (
-                callbacks.identity_client_challenge_response_size_callback,
-                callbacks.identity_client_build_challenge_response_callback,
+                get_callback!(callbacks, identity_client_challenge_response_size_callback),
+                get_callback!(callbacks, identity_client_build_challenge_response_callback),
             ) {
                 let mut endpoint_challenge_buffer: Vec<u8> = Default::default();
                 endpoint_challenge.to_writer(&mut endpoint_challenge_buffer).expect("endpoint_challenge should be a valid bson::document::Document and therefore serializable to Vec<u8>");
 
                 // get the size of challenge response bson blob
                 let challenge_response_size = challenge_response_size_callback(
-                    ptr::null_mut(),
+                    challenge_response_size_data,
                     context,
                     handle,
                     endpoint_challenge_buffer.as_ptr(),
@@ -541,7 +548,7 @@ fn handle_context_event(
                 // get the challenge response bson blob
                 let mut challenge_response_buffer: Vec<u8> = vec![0u8; challenge_response_size];
                 build_challenge_response_callback(
-                    ptr::null_mut(),
+                    build_challenge_response_data,
                     context,
                     handle,
                     endpoint_challenge_buffer.as_ptr(),
@@ -574,7 +581,7 @@ fn handle_context_event(
             endpoint_name,
             client_auth_private_key,
         } => {
-            if let Some(callback) = callbacks.identity_client_handshake_completed_callback {
+            if let (Some(callback), data) = get_callback!(callbacks, identity_client_handshake_completed_callback) {
                 let (identity_service_id, endpoint_service_id) = {
                     let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
                     let identity_service_id =
@@ -591,7 +598,7 @@ fn handle_context_event(
                     get_x25519_private_key_registry().insert(client_auth_private_key);
 
                 callback(
-                    ptr::null_mut(),
+                    data,
                     context,
                     handle,
                     identity_service_id as *const GoslingV3OnionServiceId,
@@ -613,9 +620,9 @@ fn handle_context_event(
             }
         }
         ContextEvent::IdentityClientHandshakeFailed { handle, reason } => {
-            if let Some(callback) = callbacks.identity_client_handshake_failed_callback {
+            if let (Some(callback), data) = get_callback!(callbacks, identity_client_handshake_failed_callback) {
                 let key = get_error_registry().insert(Error::new(format!("{:?}", reason).as_str()));
-                callback(ptr::null_mut(), context, handle, key as *const GoslingError);
+                callback(data, context, handle, key as *const GoslingError);
                 get_error_registry().remove(key);
             }
         }
@@ -623,13 +630,13 @@ fn handle_context_event(
         // Identity Server Events
         //
         ContextEvent::IdentityServerPublished => {
-            if let Some(callback) = callbacks.identity_server_published_callback {
-                callback(ptr::null_mut(), context);
+            if let (Some(callback), data) = get_callback!(callbacks, identity_server_published_callback) {
+                callback(data, context);
             }
         }
         ContextEvent::IdentityServerHandshakeStarted { handle } => {
-            if let Some(callback) = callbacks.identity_server_handshake_started_callback {
-                callback(ptr::null_mut(), context, handle);
+            if let (Some(callback), data) = get_callback!(callbacks, identity_server_handshake_started_callback) {
+                callback(data, context, handle);
             }
         }
         ContextEvent::IdentityServerEndpointRequestReceived {
@@ -637,44 +644,42 @@ fn handle_context_event(
             client_service_id,
             requested_endpoint,
         } => {
-            let client_allowed = match callbacks.identity_server_client_allowed_callback {
-                Some(callback) => {
-                    let client_service_id =
-                        get_v3_onion_service_id_registry().insert(client_service_id);
-                    callback(
-                        ptr::null_mut(),
-                        context,
-                        handle,
-                        client_service_id as *const GoslingV3OnionServiceId,
-                    )
-                }
-                None => bail!("missing required identity_server_client_allowed() callback"),
+            let client_allowed = if let (Some(callback), data) = get_callback!(callbacks, identity_server_client_allowed_callback) {
+                let client_service_id =
+                    get_v3_onion_service_id_registry().insert(client_service_id);
+                callback(
+                    data,
+                    context,
+                    handle,
+                    client_service_id as *const GoslingV3OnionServiceId,
+                )
+            } else {
+                bail!("missing required identity_server_client_allowed() callback");
             };
 
-            let endpoint_supported = match callbacks.identity_server_endpoint_supported_callback {
-                Some(callback) => {
-                    let requested_endpoint0 = CString::new(requested_endpoint.as_str()).expect(
-                        "requested_endpoint should be a valid ASCII string and not have an intermediate null byte",
-                    );
-                    callback(
-                        ptr::null_mut(),
-                        context,
-                        handle,
-                        requested_endpoint0.as_ptr(),
-                        requested_endpoint.len(),
-                    )
-                }
-                None => bail!("missing required identity_server_endpoint_supported() callback"),
+            let endpoint_supported = if let (Some(callback), data) = get_callback!(callbacks, identity_server_endpoint_supported_callback) {
+                let requested_endpoint0 = CString::new(requested_endpoint.as_str()).expect(
+                    "requested_endpoint should be a valid ASCII string and not have an intermediate null byte",
+                );
+                callback(
+                    data,
+                    context,
+                    handle,
+                    requested_endpoint0.as_ptr(),
+                    requested_endpoint.len(),
+                )
+            } else {
+                bail!("missing required identity_server_endpoint_supported() callback");
             };
             let endpoint_challenge = if let (
-                Some(challenge_size_callback),
-                Some(build_challenge_callback),
+                (Some(challenge_size_callback), challenge_size_callback_data),
+                (Some(build_challenge_callback), build_challenge_callback_data),
             ) = (
-                callbacks.identity_server_challenge_size_callback,
-                callbacks.identity_server_build_challenge_callback,
+                get_callback!(callbacks, identity_server_challenge_size_callback),
+                get_callback!(callbacks, identity_server_build_challenge_callback),
             ) {
                 // get the challenge size in bytes
-                let challenge_size = challenge_size_callback(ptr::null_mut(), context, handle);
+                let challenge_size = challenge_size_callback(challenge_size_callback_data, context, handle);
 
                 if challenge_size < SMALLEST_BSON_DOC_SIZE {
                     bail!("identity_server_challenge_size_callback returned an impossibly small size '{}', smallest possible is {}", challenge_size, SMALLEST_BSON_DOC_SIZE);
@@ -683,7 +688,7 @@ fn handle_context_event(
                 // construct challenge object into buffer
                 let mut challenge_buffer = vec![0u8; challenge_size];
                 build_challenge_callback(
-                    ptr::null_mut(),
+                    build_challenge_callback_data,
                     context,
                     handle,
                     challenge_buffer.as_mut_ptr(),
@@ -713,26 +718,21 @@ fn handle_context_event(
             handle,
             challenge_response,
         } => {
-            let challenge_response_valid = match callbacks
-                .identity_server_verify_challenge_response_callback
-            {
-                Some(callback) => {
-                    // get response as bytes
-                    let mut challenge_response_buffer: Vec<u8> = Default::default();
-                    challenge_response
-                            .to_writer(&mut challenge_response_buffer).expect("challenge_response should be a valid bson::document::Document and therefore serializable to Vec<u8>");
+            let challenge_response_valid = if let (Some(callback), data) = get_callback!(callbacks,
+                identity_server_verify_challenge_response_callback) {
+                let mut challenge_response_buffer: Vec<u8> = Default::default();
+                challenge_response
+                        .to_writer(&mut challenge_response_buffer).expect("challenge_response should be a valid bson::document::Document and therefore serializable to Vec<u8>");
 
-                    callback(
-                        ptr::null_mut(),
-                        context,
-                        handle,
-                        challenge_response_buffer.as_ptr(),
-                        challenge_response_buffer.len(),
-                    )
-                }
-                None => {
-                    bail!("missing required identity_server_verify_challenge_response() callback()")
-                }
+                callback(
+                    data,
+                    context,
+                    handle,
+                    challenge_response_buffer.as_ptr(),
+                    challenge_response_buffer.len(),
+                )
+            } else {
+                bail!("missing required identity_server_verify_challenge_response() callback()")
             };
 
             match get_context_tuple_registry().get_mut(context as usize) {
@@ -752,7 +752,7 @@ fn handle_context_event(
             client_service_id,
             client_auth_public_key,
         } => {
-            if let Some(callback) = callbacks.identity_server_handshake_completed_callback {
+            if let (Some(callback), data) = get_callback!(callbacks, identity_server_handshake_completed_callback) {
                 let endpoint_private_key = {
                     let mut ed25519_private_key_registry = get_ed25519_private_key_registry();
                     ed25519_private_key_registry.insert(endpoint_private_key)
@@ -772,7 +772,7 @@ fn handle_context_event(
                 };
 
                 callback(
-                    ptr::null_mut(),
+                    data,
                     context,
                     handle,
                     endpoint_private_key as *const GoslingEd25519PrivateKey,
@@ -798,9 +798,9 @@ fn handle_context_event(
             client_auth_signature_valid,
             challenge_response_valid,
         } => {
-            if let Some(callback) = callbacks.identity_server_handshake_rejected_callback {
+            if let (Some(callback), data) = get_callback!(callbacks, identity_server_handshake_rejected_callback) {
                 callback(
-                    ptr::null_mut(),
+                    data,
                     context,
                     handle,
                     client_allowed,
@@ -812,9 +812,9 @@ fn handle_context_event(
             }
         }
         ContextEvent::IdentityServerHandshakeFailed { handle, reason } => {
-            if let Some(callback) = callbacks.identity_server_handshake_failed_callback {
+            if let (Some(callback), data) = get_callback!(callbacks, identity_server_handshake_failed_callback) {
                 let key = get_error_registry().insert(Error::new(format!("{:?}", reason).as_str()));
-                callback(ptr::null_mut(), context, handle, key as *const GoslingError);
+                callback(data, context, handle, key as *const GoslingError);
                 get_error_registry().remove(key);
             }
         }
@@ -827,7 +827,7 @@ fn handle_context_event(
             channel_name,
             stream,
         } => {
-            if let Some(callback) = callbacks.endpoint_client_handshake_completed_callback {
+            if let (Some(callback), data) = get_callback!(callbacks, endpoint_client_handshake_completed_callback) {
                 let endpoint_service_id = {
                     let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
                     v3_onion_service_id_registry.insert(endpoint_service_id)
@@ -841,7 +841,7 @@ fn handle_context_event(
                 let stream = stream.into_raw_socket();
 
                 callback(
-                    ptr::null_mut(),
+                    data,
                     context,
                     handle,
                     endpoint_service_id as *const GoslingV3OnionServiceId,
@@ -857,9 +857,9 @@ fn handle_context_event(
             }
         }
         ContextEvent::EndpointClientHandshakeFailed { handle, reason } => {
-            if let Some(callback) = callbacks.endpoint_client_handshake_failed_callback {
+            if let (Some(callback), data) = get_callback!(callbacks, endpoint_client_handshake_failed_callback) {
                 let key = get_error_registry().insert(Error::new(format!("{:?}", reason).as_str()));
-                callback(ptr::null_mut(), context, handle, key as *const GoslingError);
+                callback(data, context, handle, key as *const GoslingError);
                 get_error_registry().remove(key);
             }
         }
@@ -870,7 +870,7 @@ fn handle_context_event(
             endpoint_service_id,
             endpoint_name,
         } => {
-            if let Some(callback) = callbacks.endpoint_server_published_callback {
+            if let (Some(callback), data) = get_callback!(callbacks, endpoint_server_published_callback) {
                 let endpoint_service_id = {
                     let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
                     v3_onion_service_id_registry.insert(endpoint_service_id)
@@ -879,7 +879,7 @@ fn handle_context_event(
                     .expect("endpoint_name should be a valid ASCII string and not have an intermediate null byte");
 
                 callback(
-                    ptr::null_mut(),
+                    data,
                     context,
                     endpoint_service_id as *const GoslingV3OnionServiceId,
                     endpoint_name0.as_ptr(),
@@ -891,8 +891,8 @@ fn handle_context_event(
             }
         }
         ContextEvent::EndpointServerHandshakeStarted { handle } => {
-            if let Some(callback) = callbacks.endpoint_server_handshake_started_callback {
-                callback(ptr::null_mut(), context, handle);
+            if let (Some(callback), data) = get_callback!(callbacks, endpoint_server_handshake_started_callback) {
+                callback(data, context, handle);
             }
         }
         ContextEvent::EndpointServerChannelRequestReceived {
@@ -900,29 +900,27 @@ fn handle_context_event(
             client_service_id,
             requested_channel,
         } => {
-            let channel_supported: bool = match callbacks.endpoint_server_channel_supported_callback
-            {
-                Some(callback) => {
-                    let client_service_id = {
-                        let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
-                        v3_onion_service_id_registry.insert(client_service_id)
-                    };
-                    let requested_channel0 = CString::new(requested_channel.as_str()).expect("requested_channel should be a valid ASCII string and not have an intermediate null byte",
-                    );
-                    let channel_supported = callback(
-                        ptr::null_mut(),
-                        context,
-                        handle,
-                        client_service_id as *const GoslingV3OnionServiceId,
-                        requested_channel0.as_ptr(),
-                        requested_channel.len(),
-                    );
+            let channel_supported: bool = if let (Some(callback), data) = get_callback!(callbacks, endpoint_server_channel_supported_callback) {
+                let client_service_id = {
+                    let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
+                    v3_onion_service_id_registry.insert(client_service_id)
+                };
+                let requested_channel0 = CString::new(requested_channel.as_str()).expect("requested_channel should be a valid ASCII string and not have an intermediate null byte",
+                );
+                let channel_supported = callback(
+                    data,
+                    context,
+                    handle,
+                    client_service_id as *const GoslingV3OnionServiceId,
+                    requested_channel0.as_ptr(),
+                    requested_channel.len(),
+                );
 
-                    // cleanup
-                    get_v3_onion_service_id_registry().remove(client_service_id);
-                    channel_supported
-                }
-                None => bail!("missing required endpoint_server_channel_supported() callback"),
+                // cleanup
+                get_v3_onion_service_id_registry().remove(client_service_id);
+                channel_supported
+            } else {
+                bail!("missing required endpoint_server_channel_supported() callback");
             };
 
             match get_context_tuple_registry().get_mut(context as usize) {
@@ -939,7 +937,7 @@ fn handle_context_event(
             channel_name,
             stream,
         } => {
-            if let Some(callback) = callbacks.endpoint_server_handshake_completed_callback {
+            if let (Some(callback), data) = get_callback!(callbacks, endpoint_server_handshake_completed_callback) {
                 let (endpoint_service_id, client_service_id) = {
                     let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
                     let endpoint_service_id =
@@ -957,7 +955,7 @@ fn handle_context_event(
                 let stream = stream.into_raw_socket();
 
                 callback(
-                    ptr::null_mut(),
+                    data,
                     context,
                     handle,
                     endpoint_service_id as *const GoslingV3OnionServiceId,
@@ -983,9 +981,9 @@ fn handle_context_event(
             client_requested_channel_valid,
             client_proof_signature_valid,
         } => {
-            if let Some(callback) = callbacks.endpoint_server_handshake_rejected_callback {
+            if let (Some(callback), data) = get_callback!(callbacks, endpoint_server_handshake_rejected_callback) {
                 callback(
-                    ptr::null_mut(),
+                    data,
                     context,
                     handle,
                     client_allowed,
@@ -995,9 +993,9 @@ fn handle_context_event(
             }
         }
         ContextEvent::EndpointServerHandshakeFailed { handle, reason } => {
-            if let Some(callback) = callbacks.endpoint_server_handshake_failed_callback {
+            if let (Some(callback), data) = get_callback!(callbacks, endpoint_server_handshake_failed_callback) {
                 let key = get_error_registry().insert(Error::new(format!("{:?}", reason).as_str()));
-                callback(ptr::null_mut(), context, handle, key as *const GoslingError);
+                callback(data, context, handle, key as *const GoslingError);
                 get_error_registry().remove(key);
             }
         }
