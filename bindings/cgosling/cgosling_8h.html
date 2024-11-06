@@ -158,56 +158,56 @@ Typedefs</h2></td></tr>
 <tr class="separator:a0ef7c7f71396b2fb8eecafe06dc5777a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1085cafdf52a6f9d82ed3760a4962a24"><td class="memItemLeft" align="right" valign="top">typedef size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a1085cafdf52a6f9d82ed3760a4962a24">gosling_circuit_token_t</a></td></tr>
 <tr class="separator:a1085cafdf52a6f9d82ed3760a4962a24"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae598c09fbd947980317f30c95cea9898"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ae598c09fbd947980317f30c95cea9898">gosling_tor_bootstrap_status_received_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, uint32_t progress, const char *tag, size_t tag_length, const char *summary, size_t summary_length)</td></tr>
-<tr class="separator:ae598c09fbd947980317f30c95cea9898"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9e3ef4bb1793209a0f53e1dcb9e37f6b"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a9e3ef4bb1793209a0f53e1dcb9e37f6b">gosling_tor_bootstrap_completed_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context)</td></tr>
-<tr class="separator:a9e3ef4bb1793209a0f53e1dcb9e37f6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad44bac6a829e0af667d3aec74b1324c8"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ad44bac6a829e0af667d3aec74b1324c8">gosling_tor_log_received_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, const char *line, size_t line_length)</td></tr>
-<tr class="separator:ad44bac6a829e0af667d3aec74b1324c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acf80a6813c3fc36edab59a036aff4b92"><td class="memItemLeft" align="right" valign="top">typedef size_t(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#acf80a6813c3fc36edab59a036aff4b92">gosling_identity_client_handshake_challenge_response_size_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const uint8_t *challenge_buffer, size_t challenge_buffer_size)</td></tr>
-<tr class="separator:acf80a6813c3fc36edab59a036aff4b92"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3011daa82141ba8b9e0a94350f132ae2"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a3011daa82141ba8b9e0a94350f132ae2">gosling_identity_client_handshake_build_challenge_response_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const uint8_t *challenge_buffer, size_t challenge_buffer_size, uint8_t *out_challenge_response_buffer, size_t out_challenge_response_buffer_size)</td></tr>
-<tr class="separator:a3011daa82141ba8b9e0a94350f132ae2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a90f60b1d9e6d0b047b3c64ce6844f21f"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a90f60b1d9e6d0b047b3c64ce6844f21f">gosling_identity_client_handshake_completed_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *identity_service_id, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *endpoint_service_id, const char *endpoint_name, size_t endpoint_name_length, const <a class="el" href="cgosling_8h.html#ae2aaf774700e7b99f052b9d747da20ab">gosling_x25519_private_key</a> *client_auth_private_key)</td></tr>
-<tr class="separator:a90f60b1d9e6d0b047b3c64ce6844f21f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a00d509c6624f3fd3e31a8f0aef5ccb52"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a00d509c6624f3fd3e31a8f0aef5ccb52">gosling_identity_client_handshake_failed_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> *error)</td></tr>
-<tr class="separator:a00d509c6624f3fd3e31a8f0aef5ccb52"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a894cd4533e13cd02214656e944da4935"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a894cd4533e13cd02214656e944da4935">gosling_identity_server_published_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context)</td></tr>
-<tr class="separator:a894cd4533e13cd02214656e944da4935"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a10b93053a19451772e3a2117a6c6e97f"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a10b93053a19451772e3a2117a6c6e97f">gosling_identity_server_handshake_started_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle)</td></tr>
-<tr class="separator:a10b93053a19451772e3a2117a6c6e97f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8bcca27d3dc7ee8718bd44d77f4cce01"><td class="memItemLeft" align="right" valign="top">typedef bool(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a8bcca27d3dc7ee8718bd44d77f4cce01">gosling_identity_server_handshake_client_allowed_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *client_service_id)</td></tr>
-<tr class="separator:a8bcca27d3dc7ee8718bd44d77f4cce01"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3ad4bf48c98d801c448161bb6f64a00b"><td class="memItemLeft" align="right" valign="top">typedef bool(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a3ad4bf48c98d801c448161bb6f64a00b">gosling_identity_server_endpoint_supported_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const char *endpoint_name, size_t endpoint_name_length)</td></tr>
-<tr class="separator:a3ad4bf48c98d801c448161bb6f64a00b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad24edef1efe1850263289c94a9547184"><td class="memItemLeft" align="right" valign="top">typedef size_t(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ad24edef1efe1850263289c94a9547184">gosling_identity_server_handshake_challenge_size_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle)</td></tr>
-<tr class="separator:ad24edef1efe1850263289c94a9547184"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acc312c89701ae704140f8317e5267933"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#acc312c89701ae704140f8317e5267933">gosling_identity_server_handshake_build_challenge_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, uint8_t *out_challenge_buffer, size_t out_challenge_buffer_size)</td></tr>
-<tr class="separator:acc312c89701ae704140f8317e5267933"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abdac8c50bffdc04183216c92482bd308"><td class="memItemLeft" align="right" valign="top">typedef bool(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#abdac8c50bffdc04183216c92482bd308">gosling_identity_server_handshake_verify_challenge_response_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const uint8_t *challenge_response_buffer, size_t challenge_response_buffer_size)</td></tr>
-<tr class="separator:abdac8c50bffdc04183216c92482bd308"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac5b6c012e8b8942479f7de51eb4e2e50"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ac5b6c012e8b8942479f7de51eb4e2e50">gosling_identity_server_handshake_completed_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#a1ce74ce2296552d7587de725370b773c">gosling_ed25519_private_key</a> *endpoint_private_key, const char *endpoint_name, size_t endpoint_name_length, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *client_service_id, const <a class="el" href="cgosling_8h.html#a07b38f7f7cae749babd88245465026c3">gosling_x25519_public_key</a> *client_auth_public_key)</td></tr>
-<tr class="separator:ac5b6c012e8b8942479f7de51eb4e2e50"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6634a81892f235cad1f3fe24b92d0e5e"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a6634a81892f235cad1f3fe24b92d0e5e">gosling_identity_server_handshake_rejected_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, bool client_allowed, bool client_requested_endpoint_valid, bool client_proof_signature_valid, bool client_auth_signature_valid, bool challenge_response_valid)</td></tr>
-<tr class="separator:a6634a81892f235cad1f3fe24b92d0e5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a29ed4ff79587a4c0330aab04adb50e07"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a29ed4ff79587a4c0330aab04adb50e07">gosling_identity_server_handshake_failed_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> *error)</td></tr>
-<tr class="separator:a29ed4ff79587a4c0330aab04adb50e07"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a34ca0a3d9cb2a8c0bf5e28e8d5680161"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a34ca0a3d9cb2a8c0bf5e28e8d5680161">gosling_endpoint_client_handshake_completed_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *endpoint_service_id, const char *channel_name, size_t channel_name_length, <a class="el" href="cgosling_8h.html#a0ef7c7f71396b2fb8eecafe06dc5777a">gosling_tcp_socket_t</a> stream)</td></tr>
-<tr class="separator:a34ca0a3d9cb2a8c0bf5e28e8d5680161"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a458bd3dc3614d79fb979a8240875f930"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a458bd3dc3614d79fb979a8240875f930">gosling_endpoint_client_handshake_failed_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> *error)</td></tr>
-<tr class="separator:a458bd3dc3614d79fb979a8240875f930"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab7a3d67563f72b754d45f29edfaaf5b6"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ab7a3d67563f72b754d45f29edfaaf5b6">gosling_endpoint_server_published_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *endpoint_service_id, const char *endpoint_name, size_t endpoint_name_length)</td></tr>
-<tr class="separator:ab7a3d67563f72b754d45f29edfaaf5b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac11ad875dc8cdef20c9ef760ea39f72f"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ac11ad875dc8cdef20c9ef760ea39f72f">gosling_endpoint_server_handshake_started_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle)</td></tr>
-<tr class="separator:ac11ad875dc8cdef20c9ef760ea39f72f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a270f7bd7435c53f30f94cef2a0fe87b8"><td class="memItemLeft" align="right" valign="top">typedef bool(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a270f7bd7435c53f30f94cef2a0fe87b8">gosling_endpoint_server_channel_supported_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *client_service_id, const char *channel_name, size_t channel_name_length)</td></tr>
-<tr class="separator:a270f7bd7435c53f30f94cef2a0fe87b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6192cf7ae8ac0c889f7bf882ed25d159"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a6192cf7ae8ac0c889f7bf882ed25d159">gosling_endpoint_server_handshake_completed_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *endpoint_service_id, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *client_service_id, const char *channel_name, size_t channel_name_length, <a class="el" href="cgosling_8h.html#a0ef7c7f71396b2fb8eecafe06dc5777a">gosling_tcp_socket_t</a> stream)</td></tr>
-<tr class="separator:a6192cf7ae8ac0c889f7bf882ed25d159"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af1b34974ee89a19168aedb8e9a5cb28b"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#af1b34974ee89a19168aedb8e9a5cb28b">gosling_endpoint_server_handshake_rejected_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, bool client_allowed, bool client_requested_channel_valid, bool client_proof_signature_valid)</td></tr>
-<tr class="separator:af1b34974ee89a19168aedb8e9a5cb28b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0c9a3cd6cca74560d39e982c365789b5"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a0c9a3cd6cca74560d39e982c365789b5">gosling_endpoint_server_handshake_failed_callback_t</a>) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> *error)</td></tr>
-<tr class="separator:a0c9a3cd6cca74560d39e982c365789b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1397d66bac9a89da05d6e900deadf1f9"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a1397d66bac9a89da05d6e900deadf1f9">gosling_tor_bootstrap_status_received_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, uint32_t progress, const char *tag, size_t tag_length, const char *summary, size_t summary_length)</td></tr>
+<tr class="separator:a1397d66bac9a89da05d6e900deadf1f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5d07c893139cad401e1d7e2dcb1eebe3"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a5d07c893139cad401e1d7e2dcb1eebe3">gosling_tor_bootstrap_completed_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context)</td></tr>
+<tr class="separator:a5d07c893139cad401e1d7e2dcb1eebe3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3932ba634bfb3688b150702e37b76c8c"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a3932ba634bfb3688b150702e37b76c8c">gosling_tor_log_received_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, const char *line, size_t line_length)</td></tr>
+<tr class="separator:a3932ba634bfb3688b150702e37b76c8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0bc8658e8e0640f926bdeedf0297c5af"><td class="memItemLeft" align="right" valign="top">typedef size_t(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a0bc8658e8e0640f926bdeedf0297c5af">gosling_identity_client_handshake_challenge_response_size_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const uint8_t *challenge_buffer, size_t challenge_buffer_size)</td></tr>
+<tr class="separator:a0bc8658e8e0640f926bdeedf0297c5af"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf4f24661d4a2af9262d1949bf636a55"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#aaf4f24661d4a2af9262d1949bf636a55">gosling_identity_client_handshake_build_challenge_response_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const uint8_t *challenge_buffer, size_t challenge_buffer_size, uint8_t *out_challenge_response_buffer, size_t out_challenge_response_buffer_size)</td></tr>
+<tr class="separator:aaf4f24661d4a2af9262d1949bf636a55"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adcab310ab7e296b3b0a1aaf9603996d5"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#adcab310ab7e296b3b0a1aaf9603996d5">gosling_identity_client_handshake_completed_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *identity_service_id, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *endpoint_service_id, const char *endpoint_name, size_t endpoint_name_length, const <a class="el" href="cgosling_8h.html#ae2aaf774700e7b99f052b9d747da20ab">gosling_x25519_private_key</a> *client_auth_private_key)</td></tr>
+<tr class="separator:adcab310ab7e296b3b0a1aaf9603996d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a03b6a3f7805f4c7f063efcaf63955599"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a03b6a3f7805f4c7f063efcaf63955599">gosling_identity_client_handshake_failed_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> *error)</td></tr>
+<tr class="separator:a03b6a3f7805f4c7f063efcaf63955599"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a23dc07df62b70f6621afc688a518c89b"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a23dc07df62b70f6621afc688a518c89b">gosling_identity_server_published_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context)</td></tr>
+<tr class="separator:a23dc07df62b70f6621afc688a518c89b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adf5bc0744f7dd4e55f0c34e401e8a3ba"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#adf5bc0744f7dd4e55f0c34e401e8a3ba">gosling_identity_server_handshake_started_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle)</td></tr>
+<tr class="separator:adf5bc0744f7dd4e55f0c34e401e8a3ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a24eb8fef512f5c1ed7c9c46f2b2e9b14"><td class="memItemLeft" align="right" valign="top">typedef bool(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a24eb8fef512f5c1ed7c9c46f2b2e9b14">gosling_identity_server_handshake_client_allowed_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *client_service_id)</td></tr>
+<tr class="separator:a24eb8fef512f5c1ed7c9c46f2b2e9b14"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3b345cf3066aab2891addcd998e8e7d"><td class="memItemLeft" align="right" valign="top">typedef bool(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ae3b345cf3066aab2891addcd998e8e7d">gosling_identity_server_endpoint_supported_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const char *endpoint_name, size_t endpoint_name_length)</td></tr>
+<tr class="separator:ae3b345cf3066aab2891addcd998e8e7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a910aeabb8b007478b39f29a0e289072f"><td class="memItemLeft" align="right" valign="top">typedef size_t(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a910aeabb8b007478b39f29a0e289072f">gosling_identity_server_handshake_challenge_size_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle)</td></tr>
+<tr class="separator:a910aeabb8b007478b39f29a0e289072f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9eb7253004342c15a62d78447e30c4c4"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a9eb7253004342c15a62d78447e30c4c4">gosling_identity_server_handshake_build_challenge_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, uint8_t *out_challenge_buffer, size_t out_challenge_buffer_size)</td></tr>
+<tr class="separator:a9eb7253004342c15a62d78447e30c4c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aba149fe9b43ba90343899bf8aff84ab3"><td class="memItemLeft" align="right" valign="top">typedef bool(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#aba149fe9b43ba90343899bf8aff84ab3">gosling_identity_server_handshake_verify_challenge_response_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const uint8_t *challenge_response_buffer, size_t challenge_response_buffer_size)</td></tr>
+<tr class="separator:aba149fe9b43ba90343899bf8aff84ab3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a44dd479199d2d2291edc7c29dc17b1ce"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a44dd479199d2d2291edc7c29dc17b1ce">gosling_identity_server_handshake_completed_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#a1ce74ce2296552d7587de725370b773c">gosling_ed25519_private_key</a> *endpoint_private_key, const char *endpoint_name, size_t endpoint_name_length, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *client_service_id, const <a class="el" href="cgosling_8h.html#a07b38f7f7cae749babd88245465026c3">gosling_x25519_public_key</a> *client_auth_public_key)</td></tr>
+<tr class="separator:a44dd479199d2d2291edc7c29dc17b1ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a472bc03a71d34b3ef909a0bbcce8cbba"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a472bc03a71d34b3ef909a0bbcce8cbba">gosling_identity_server_handshake_rejected_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, bool client_allowed, bool client_requested_endpoint_valid, bool client_proof_signature_valid, bool client_auth_signature_valid, bool challenge_response_valid)</td></tr>
+<tr class="separator:a472bc03a71d34b3ef909a0bbcce8cbba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0d5bf6a5c8d00b4a8d661e5597a53072"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a0d5bf6a5c8d00b4a8d661e5597a53072">gosling_identity_server_handshake_failed_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> *error)</td></tr>
+<tr class="separator:a0d5bf6a5c8d00b4a8d661e5597a53072"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a13e2be4cc93faf9b14c70436ff812f43"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a13e2be4cc93faf9b14c70436ff812f43">gosling_endpoint_client_handshake_completed_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *endpoint_service_id, const char *channel_name, size_t channel_name_length, <a class="el" href="cgosling_8h.html#a0ef7c7f71396b2fb8eecafe06dc5777a">gosling_tcp_socket_t</a> stream)</td></tr>
+<tr class="separator:a13e2be4cc93faf9b14c70436ff812f43"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aed0e48c5c21fd63cad2c66152c48850b"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#aed0e48c5c21fd63cad2c66152c48850b">gosling_endpoint_client_handshake_failed_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> *error)</td></tr>
+<tr class="separator:aed0e48c5c21fd63cad2c66152c48850b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0df04b21558495ebdefa19c41058deb7"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a0df04b21558495ebdefa19c41058deb7">gosling_endpoint_server_published_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *endpoint_service_id, const char *endpoint_name, size_t endpoint_name_length)</td></tr>
+<tr class="separator:a0df04b21558495ebdefa19c41058deb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a53dd73f3f58a788ddcc6b7cf8ec2254c"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a53dd73f3f58a788ddcc6b7cf8ec2254c">gosling_endpoint_server_handshake_started_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle)</td></tr>
+<tr class="separator:a53dd73f3f58a788ddcc6b7cf8ec2254c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d50496bcf5f3fd3a6857487be56bc53"><td class="memItemLeft" align="right" valign="top">typedef bool(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a4d50496bcf5f3fd3a6857487be56bc53">gosling_endpoint_server_channel_supported_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *client_service_id, const char *channel_name, size_t channel_name_length)</td></tr>
+<tr class="separator:a4d50496bcf5f3fd3a6857487be56bc53"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a883df6f816baa5e73b60b5aedfd67a67"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a883df6f816baa5e73b60b5aedfd67a67">gosling_endpoint_server_handshake_completed_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *endpoint_service_id, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *client_service_id, const char *channel_name, size_t channel_name_length, <a class="el" href="cgosling_8h.html#a0ef7c7f71396b2fb8eecafe06dc5777a">gosling_tcp_socket_t</a> stream)</td></tr>
+<tr class="separator:a883df6f816baa5e73b60b5aedfd67a67"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a435a257e31fdd30ad7a530b4c9f5547f"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a435a257e31fdd30ad7a530b4c9f5547f">gosling_endpoint_server_handshake_rejected_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, bool client_allowed, bool client_requested_channel_valid, bool client_proof_signature_valid)</td></tr>
+<tr class="separator:a435a257e31fdd30ad7a530b4c9f5547f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3243584e7403e943cae3f3978ebf3f1d"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a3243584e7403e943cae3f3978ebf3f1d">gosling_endpoint_server_handshake_failed_callback_t</a>) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> *error)</td></tr>
+<tr class="separator:a3243584e7403e943cae3f3978ebf3f1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
 Enumerations</h2></td></tr>
@@ -231,56 +231,56 @@ Enumerations</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a9a13ceeebfb974f09c903735a1596083"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a9a13ceeebfb974f09c903735a1596083">gosling_context_set_tor_bootstrap_status_received_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#ae598c09fbd947980317f30c95cea9898">gosling_tor_bootstrap_status_received_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:a9a13ceeebfb974f09c903735a1596083"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5c37c209b59c1aeac8123ade786a2061"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a5c37c209b59c1aeac8123ade786a2061">gosling_context_set_tor_bootstrap_completed_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a9e3ef4bb1793209a0f53e1dcb9e37f6b">gosling_tor_bootstrap_completed_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:a5c37c209b59c1aeac8123ade786a2061"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a20d8e2b7d6592de221ba75ca3d95e213"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a20d8e2b7d6592de221ba75ca3d95e213">gosling_context_set_tor_log_received_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#ad44bac6a829e0af667d3aec74b1324c8">gosling_tor_log_received_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:a20d8e2b7d6592de221ba75ca3d95e213"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a776539ff0da719313ea0d42829af4da0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a776539ff0da719313ea0d42829af4da0">gosling_context_set_identity_client_challenge_response_size_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#acf80a6813c3fc36edab59a036aff4b92">gosling_identity_client_handshake_challenge_response_size_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:a776539ff0da719313ea0d42829af4da0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8a5979035f69d50b44a1f0b2639d07b8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a8a5979035f69d50b44a1f0b2639d07b8">gosling_context_set_identity_client_build_challenge_response_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a3011daa82141ba8b9e0a94350f132ae2">gosling_identity_client_handshake_build_challenge_response_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:a8a5979035f69d50b44a1f0b2639d07b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6414b7a6e636e1432b88c8481cba339e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a6414b7a6e636e1432b88c8481cba339e">gosling_context_set_identity_client_handshake_completed_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a90f60b1d9e6d0b047b3c64ce6844f21f">gosling_identity_client_handshake_completed_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:a6414b7a6e636e1432b88c8481cba339e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adf9578b4d022d5427f125267aacc1061"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#adf9578b4d022d5427f125267aacc1061">gosling_context_set_identity_client_handshake_failed_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a00d509c6624f3fd3e31a8f0aef5ccb52">gosling_identity_client_handshake_failed_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:adf9578b4d022d5427f125267aacc1061"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a732240871d4bd8fbe72652ee5cf5dc43"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a732240871d4bd8fbe72652ee5cf5dc43">gosling_context_set_identity_server_published_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a894cd4533e13cd02214656e944da4935">gosling_identity_server_published_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:a732240871d4bd8fbe72652ee5cf5dc43"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aae91d0a70de4b7289bf1f8607f7dbfdd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#aae91d0a70de4b7289bf1f8607f7dbfdd">gosling_context_set_identity_server_handshake_started_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a10b93053a19451772e3a2117a6c6e97f">gosling_identity_server_handshake_started_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:aae91d0a70de4b7289bf1f8607f7dbfdd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae620a2c482a0b3b06bfeb73e6e1d9310"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ae620a2c482a0b3b06bfeb73e6e1d9310">gosling_context_set_identity_server_client_allowed_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a8bcca27d3dc7ee8718bd44d77f4cce01">gosling_identity_server_handshake_client_allowed_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:ae620a2c482a0b3b06bfeb73e6e1d9310"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af685abb01e25ffbd45ba8d7d696d2c42"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#af685abb01e25ffbd45ba8d7d696d2c42">gosling_context_set_identity_server_endpoint_supported_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a3ad4bf48c98d801c448161bb6f64a00b">gosling_identity_server_endpoint_supported_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:af685abb01e25ffbd45ba8d7d696d2c42"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a62ddadb5eb7ff083193c991aa80ee82b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a62ddadb5eb7ff083193c991aa80ee82b">gosling_context_set_identity_server_challenge_size_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#ad24edef1efe1850263289c94a9547184">gosling_identity_server_handshake_challenge_size_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:a62ddadb5eb7ff083193c991aa80ee82b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8439e0e0d704b013e1710fe7b7a1b912"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a8439e0e0d704b013e1710fe7b7a1b912">gosling_context_set_identity_server_build_challenge_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#acc312c89701ae704140f8317e5267933">gosling_identity_server_handshake_build_challenge_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:a8439e0e0d704b013e1710fe7b7a1b912"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afa2077e145be5f606fa00a5966cc017e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#afa2077e145be5f606fa00a5966cc017e">gosling_context_set_identity_server_verify_challenge_response_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#abdac8c50bffdc04183216c92482bd308">gosling_identity_server_handshake_verify_challenge_response_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:afa2077e145be5f606fa00a5966cc017e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac83ebb5324d70d9f9e5323613fb55f92"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ac83ebb5324d70d9f9e5323613fb55f92">gosling_context_set_identity_server_handshake_completed_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#ac5b6c012e8b8942479f7de51eb4e2e50">gosling_identity_server_handshake_completed_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:ac83ebb5324d70d9f9e5323613fb55f92"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a645652353d6e8ad2daa28c8e36503ab0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a645652353d6e8ad2daa28c8e36503ab0">gosling_context_set_identity_server_handshake_rejected_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6634a81892f235cad1f3fe24b92d0e5e">gosling_identity_server_handshake_rejected_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:a645652353d6e8ad2daa28c8e36503ab0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a08d49821f9ab1e4c21051d1bc30d6af9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a08d49821f9ab1e4c21051d1bc30d6af9">gosling_context_set_identity_server_handshake_failed_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a29ed4ff79587a4c0330aab04adb50e07">gosling_identity_server_handshake_failed_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:a08d49821f9ab1e4c21051d1bc30d6af9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab73b2e4ff4ec09eeff3665454055fe90"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ab73b2e4ff4ec09eeff3665454055fe90">gosling_context_set_endpoint_client_handshake_completed_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a34ca0a3d9cb2a8c0bf5e28e8d5680161">gosling_endpoint_client_handshake_completed_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:ab73b2e4ff4ec09eeff3665454055fe90"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9ccc17994b96a6656ca1704d44618a75"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a9ccc17994b96a6656ca1704d44618a75">gosling_context_set_endpoint_client_handshake_failed_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a458bd3dc3614d79fb979a8240875f930">gosling_endpoint_client_handshake_failed_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:a9ccc17994b96a6656ca1704d44618a75"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3360fa772f589ffb134ee141e86cad17"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a3360fa772f589ffb134ee141e86cad17">gosling_context_set_endpoint_server_published_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#ab7a3d67563f72b754d45f29edfaaf5b6">gosling_endpoint_server_published_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:a3360fa772f589ffb134ee141e86cad17"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a30da67ab13178485d7cb7d92e7368171"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a30da67ab13178485d7cb7d92e7368171">gosling_context_set_endpoint_server_handshake_started_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#ac11ad875dc8cdef20c9ef760ea39f72f">gosling_endpoint_server_handshake_started_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:a30da67ab13178485d7cb7d92e7368171"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a28aa258d05880b1ea64f13bb27848f6b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a28aa258d05880b1ea64f13bb27848f6b">gosling_context_set_endpoint_server_channel_supported_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a270f7bd7435c53f30f94cef2a0fe87b8">gosling_endpoint_server_channel_supported_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:a28aa258d05880b1ea64f13bb27848f6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a82b477eed1da13666eed89bd760affc2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a82b477eed1da13666eed89bd760affc2">gosling_context_set_endpoint_server_handshake_completed_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6192cf7ae8ac0c889f7bf882ed25d159">gosling_endpoint_server_handshake_completed_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:a82b477eed1da13666eed89bd760affc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abb73699ed0895241cca00cd6f252e33c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#abb73699ed0895241cca00cd6f252e33c">gosling_context_set_endpoint_server_handshake_rejected_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#af1b34974ee89a19168aedb8e9a5cb28b">gosling_endpoint_server_handshake_rejected_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:abb73699ed0895241cca00cd6f252e33c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa2120ad1cb18b422a7b9e1b7853966ef"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#aa2120ad1cb18b422a7b9e1b7853966ef">gosling_context_set_endpoint_server_handshake_failed_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a0c9a3cd6cca74560d39e982c365789b5">gosling_endpoint_server_handshake_failed_callback_t</a> callback, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
-<tr class="separator:aa2120ad1cb18b422a7b9e1b7853966ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a12e0e27efe22c6b5f8eed4e8a3a4d660"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a12e0e27efe22c6b5f8eed4e8a3a4d660">gosling_context_set_tor_bootstrap_status_received_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a1397d66bac9a89da05d6e900deadf1f9">gosling_tor_bootstrap_status_received_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:a12e0e27efe22c6b5f8eed4e8a3a4d660"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5da1a17e8ea4e9f305507f65b647f02d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a5da1a17e8ea4e9f305507f65b647f02d">gosling_context_set_tor_bootstrap_completed_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a5d07c893139cad401e1d7e2dcb1eebe3">gosling_tor_bootstrap_completed_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:a5da1a17e8ea4e9f305507f65b647f02d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab21982e60f33a0358143708831519abe"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ab21982e60f33a0358143708831519abe">gosling_context_set_tor_log_received_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a3932ba634bfb3688b150702e37b76c8c">gosling_tor_log_received_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:ab21982e60f33a0358143708831519abe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4840b4ea53ea52be9050d1d7a7857f4b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a4840b4ea53ea52be9050d1d7a7857f4b">gosling_context_set_identity_client_challenge_response_size_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a0bc8658e8e0640f926bdeedf0297c5af">gosling_identity_client_handshake_challenge_response_size_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:a4840b4ea53ea52be9050d1d7a7857f4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8341d9ca586002ae2e46b803847fde32"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a8341d9ca586002ae2e46b803847fde32">gosling_context_set_identity_client_build_challenge_response_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#aaf4f24661d4a2af9262d1949bf636a55">gosling_identity_client_handshake_build_challenge_response_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:a8341d9ca586002ae2e46b803847fde32"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad974c2e1c50c6e5af37572957a72a318"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ad974c2e1c50c6e5af37572957a72a318">gosling_context_set_identity_client_handshake_completed_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#adcab310ab7e296b3b0a1aaf9603996d5">gosling_identity_client_handshake_completed_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:ad974c2e1c50c6e5af37572957a72a318"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7b9a00871086951807560431b83ea34b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a7b9a00871086951807560431b83ea34b">gosling_context_set_identity_client_handshake_failed_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a03b6a3f7805f4c7f063efcaf63955599">gosling_identity_client_handshake_failed_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:a7b9a00871086951807560431b83ea34b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a66e45c11b4bf8322a8bca302adb1915a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a66e45c11b4bf8322a8bca302adb1915a">gosling_context_set_identity_server_published_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a23dc07df62b70f6621afc688a518c89b">gosling_identity_server_published_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:a66e45c11b4bf8322a8bca302adb1915a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad02e3fde231506c872e9e80fefe39b49"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ad02e3fde231506c872e9e80fefe39b49">gosling_context_set_identity_server_handshake_started_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#adf5bc0744f7dd4e55f0c34e401e8a3ba">gosling_identity_server_handshake_started_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:ad02e3fde231506c872e9e80fefe39b49"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0c4ed8710007c3fae69b6c313b0818fe"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a0c4ed8710007c3fae69b6c313b0818fe">gosling_context_set_identity_server_client_allowed_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a24eb8fef512f5c1ed7c9c46f2b2e9b14">gosling_identity_server_handshake_client_allowed_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:a0c4ed8710007c3fae69b6c313b0818fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e1e58ab05c6899a3009ad9c1ae91686"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a4e1e58ab05c6899a3009ad9c1ae91686">gosling_context_set_identity_server_endpoint_supported_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#ae3b345cf3066aab2891addcd998e8e7d">gosling_identity_server_endpoint_supported_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:a4e1e58ab05c6899a3009ad9c1ae91686"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a96072b17283ed3d94a879b0bd6310474"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a96072b17283ed3d94a879b0bd6310474">gosling_context_set_identity_server_challenge_size_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a910aeabb8b007478b39f29a0e289072f">gosling_identity_server_handshake_challenge_size_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:a96072b17283ed3d94a879b0bd6310474"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2ed2705124747b9f5bc527285776c92a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a2ed2705124747b9f5bc527285776c92a">gosling_context_set_identity_server_build_challenge_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a9eb7253004342c15a62d78447e30c4c4">gosling_identity_server_handshake_build_challenge_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:a2ed2705124747b9f5bc527285776c92a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6b3c972a2edc116678d6a5efeb7941c9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a6b3c972a2edc116678d6a5efeb7941c9">gosling_context_set_identity_server_verify_challenge_response_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#aba149fe9b43ba90343899bf8aff84ab3">gosling_identity_server_handshake_verify_challenge_response_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:a6b3c972a2edc116678d6a5efeb7941c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab1186da6cec763a1519c00f995e2ca4b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ab1186da6cec763a1519c00f995e2ca4b">gosling_context_set_identity_server_handshake_completed_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a44dd479199d2d2291edc7c29dc17b1ce">gosling_identity_server_handshake_completed_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:ab1186da6cec763a1519c00f995e2ca4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb40805431901322e49f1b1061798eca"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#afb40805431901322e49f1b1061798eca">gosling_context_set_identity_server_handshake_rejected_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a472bc03a71d34b3ef909a0bbcce8cbba">gosling_identity_server_handshake_rejected_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:afb40805431901322e49f1b1061798eca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a367da98533c633797638c99ec5cbe157"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a367da98533c633797638c99ec5cbe157">gosling_context_set_identity_server_handshake_failed_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a0d5bf6a5c8d00b4a8d661e5597a53072">gosling_identity_server_handshake_failed_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:a367da98533c633797638c99ec5cbe157"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac6d3525731f10f2ea03fe8d8d4509381"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ac6d3525731f10f2ea03fe8d8d4509381">gosling_context_set_endpoint_client_handshake_completed_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a13e2be4cc93faf9b14c70436ff812f43">gosling_endpoint_client_handshake_completed_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:ac6d3525731f10f2ea03fe8d8d4509381"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7758fc77ef6624cfb12a430cba185b55"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a7758fc77ef6624cfb12a430cba185b55">gosling_context_set_endpoint_client_handshake_failed_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#aed0e48c5c21fd63cad2c66152c48850b">gosling_endpoint_client_handshake_failed_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:a7758fc77ef6624cfb12a430cba185b55"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a94d6f8083c4a644579c871e2cb72ef97"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a94d6f8083c4a644579c871e2cb72ef97">gosling_context_set_endpoint_server_published_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a0df04b21558495ebdefa19c41058deb7">gosling_endpoint_server_published_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:a94d6f8083c4a644579c871e2cb72ef97"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa0656d6cff88980eb76b87a9d6d29a46"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#aa0656d6cff88980eb76b87a9d6d29a46">gosling_context_set_endpoint_server_handshake_started_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a53dd73f3f58a788ddcc6b7cf8ec2254c">gosling_endpoint_server_handshake_started_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:aa0656d6cff88980eb76b87a9d6d29a46"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac24b9e838867fe4ec01b03003b7428a3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ac24b9e838867fe4ec01b03003b7428a3">gosling_context_set_endpoint_server_channel_supported_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a4d50496bcf5f3fd3a6857487be56bc53">gosling_endpoint_server_channel_supported_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:ac24b9e838867fe4ec01b03003b7428a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7f9b7856d59bb94e4487bf84a27fa8aa"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a7f9b7856d59bb94e4487bf84a27fa8aa">gosling_context_set_endpoint_server_handshake_completed_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a883df6f816baa5e73b60b5aedfd67a67">gosling_endpoint_server_handshake_completed_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:a7f9b7856d59bb94e4487bf84a27fa8aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a017c63f978f833e05ca4c52d2c443c1b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a017c63f978f833e05ca4c52d2c443c1b">gosling_context_set_endpoint_server_handshake_rejected_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a435a257e31fdd30ad7a530b4c9f5547f">gosling_endpoint_server_handshake_rejected_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:a017c63f978f833e05ca4c52d2c443c1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0f43fb848ce07814c2eab45c2c2a9ab8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a0f43fb848ce07814c2eab45c2c2a9ab8">gosling_context_set_endpoint_server_handshake_failed_callback</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a3243584e7403e943cae3f3978ebf3f1d">gosling_endpoint_server_handshake_failed_callback_t</a> callback, void *callback_data, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
+<tr class="separator:a0f43fb848ce07814c2eab45c2c2a9ab8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab9b52c8fd98e9a543f0683d18c20f902"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#ab9b52c8fd98e9a543f0683d18c20f902">gosling_context_free</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *in_context)</td></tr>
 <tr class="separator:ab9b52c8fd98e9a543f0683d18c20f902"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a206ebc5fd562a94f26dac8849db6cf9d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cgosling_8h.html#a206ebc5fd562a94f26dac8849db6cf9d">gosling_context_init</a> (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> **out_context, <a class="el" href="cgosling_8h.html#aa9175b153fa7c5ba3eeddf5860da1a64">gosling_tor_provider</a> *in_tor_provider, uint16_t identity_port, uint16_t endpoint_port, const <a class="el" href="cgosling_8h.html#a1ce74ce2296552d7587de725370b773c">gosling_ed25519_private_key</a> *identity_private_key, <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> **error)</td></tr>
@@ -694,20 +694,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a34ca0a3d9cb2a8c0bf5e28e8d5680161"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a34ca0a3d9cb2a8c0bf5e28e8d5680161">&#9670;&nbsp;</a></span>gosling_endpoint_client_handshake_completed_callback_t</h2>
+<a id="a13e2be4cc93faf9b14c70436ff812f43"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a13e2be4cc93faf9b14c70436ff812f43">&#9670;&nbsp;</a></span>gosling_endpoint_client_handshake_completed_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* gosling_endpoint_client_handshake_completed_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *endpoint_service_id, const char *channel_name, size_t channel_name_length, <a class="el" href="cgosling_8h.html#a0ef7c7f71396b2fb8eecafe06dc5777a">gosling_tcp_socket_t</a> stream)</td>
+          <td class="memname">typedef void(* gosling_endpoint_client_handshake_completed_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *endpoint_service_id, const char *channel_name, size_t channel_name_length, <a class="el" href="cgosling_8h.html#a0ef7c7f71396b2fb8eecafe06dc5777a">gosling_tcp_socket_t</a> stream)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function pointer type for the endpoint client handshake completed callback. This callback is called when the client successfully connects to an endpoint server.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
     <tr><td class="paramname">endpoint_service_id</td><td>the onion service id of the endpoint server the client has connected to </td></tr>
@@ -720,20 +721,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a458bd3dc3614d79fb979a8240875f930"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a458bd3dc3614d79fb979a8240875f930">&#9670;&nbsp;</a></span>gosling_endpoint_client_handshake_failed_callback_t</h2>
+<a id="aed0e48c5c21fd63cad2c66152c48850b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aed0e48c5c21fd63cad2c66152c48850b">&#9670;&nbsp;</a></span>gosling_endpoint_client_handshake_failed_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* gosling_endpoint_client_handshake_failed_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> *error)</td>
+          <td class="memname">typedef void(* gosling_endpoint_client_handshake_failed_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> *error)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function pointer type for the endpoint client handshake handshake failed callback. This callback is called when a client's endpoint handshake fails.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
     <tr><td class="paramname">error</td><td>error associated with this failure </td></tr>
@@ -743,20 +745,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a270f7bd7435c53f30f94cef2a0fe87b8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a270f7bd7435c53f30f94cef2a0fe87b8">&#9670;&nbsp;</a></span>gosling_endpoint_server_channel_supported_callback_t</h2>
+<a id="a4d50496bcf5f3fd3a6857487be56bc53"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4d50496bcf5f3fd3a6857487be56bc53">&#9670;&nbsp;</a></span>gosling_endpoint_server_channel_supported_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef bool(* gosling_endpoint_server_channel_supported_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *client_service_id, const char *channel_name, size_t channel_name_length)</td>
+          <td class="memname">typedef bool(* gosling_endpoint_server_channel_supported_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *client_service_id, const char *channel_name, size_t channel_name_length)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function pointer type of the endpoint server channel supported callback. This callback is called when the server needs to determine if the client's requested channel is supported. The result of this callback partially determines if an incoming endpoint client handshake request is possible to complete.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
     <tr><td class="paramname">client_service_id</td><td>the onion service id of the connected endpoint client </td></tr>
@@ -769,20 +772,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a6192cf7ae8ac0c889f7bf882ed25d159"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6192cf7ae8ac0c889f7bf882ed25d159">&#9670;&nbsp;</a></span>gosling_endpoint_server_handshake_completed_callback_t</h2>
+<a id="a883df6f816baa5e73b60b5aedfd67a67"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a883df6f816baa5e73b60b5aedfd67a67">&#9670;&nbsp;</a></span>gosling_endpoint_server_handshake_completed_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* gosling_endpoint_server_handshake_completed_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *endpoint_service_id, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *client_service_id, const char *channel_name, size_t channel_name_length, <a class="el" href="cgosling_8h.html#a0ef7c7f71396b2fb8eecafe06dc5777a">gosling_tcp_socket_t</a> stream)</td>
+          <td class="memname">typedef void(* gosling_endpoint_server_handshake_completed_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *endpoint_service_id, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *client_service_id, const char *channel_name, size_t channel_name_length, <a class="el" href="cgosling_8h.html#a0ef7c7f71396b2fb8eecafe06dc5777a">gosling_tcp_socket_t</a> stream)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function pointer type for the endpoint server handshake completed callback. This callback is called when an endpoint server completes a handshake with an endpoint client.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
     <tr><td class="paramname">endpoint_service_id</td><td>the onion service id of the endpoint server the endpoint client has connected to </td></tr>
@@ -796,20 +800,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a0c9a3cd6cca74560d39e982c365789b5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0c9a3cd6cca74560d39e982c365789b5">&#9670;&nbsp;</a></span>gosling_endpoint_server_handshake_failed_callback_t</h2>
+<a id="a3243584e7403e943cae3f3978ebf3f1d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3243584e7403e943cae3f3978ebf3f1d">&#9670;&nbsp;</a></span>gosling_endpoint_server_handshake_failed_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* gosling_endpoint_server_handshake_failed_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> *error)</td>
+          <td class="memname">typedef void(* gosling_endpoint_server_handshake_failed_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> *error)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function pointer type for the endpoint server handshake handshake failed callback. This callback is called when a server's endpoint handshake fails.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
     <tr><td class="paramname">error</td><td>error associated with this failure </td></tr>
@@ -819,20 +824,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="af1b34974ee89a19168aedb8e9a5cb28b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af1b34974ee89a19168aedb8e9a5cb28b">&#9670;&nbsp;</a></span>gosling_endpoint_server_handshake_rejected_callback_t</h2>
+<a id="a435a257e31fdd30ad7a530b4c9f5547f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a435a257e31fdd30ad7a530b4c9f5547f">&#9670;&nbsp;</a></span>gosling_endpoint_server_handshake_rejected_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* gosling_endpoint_server_handshake_rejected_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, bool client_allowed, bool client_requested_channel_valid, bool client_proof_signature_valid)</td>
+          <td class="memname">typedef void(* gosling_endpoint_server_handshake_rejected_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, bool client_allowed, bool client_requested_channel_valid, bool client_proof_signature_valid)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function pointer type of the endpoint server handshake rejected callback. This callback is called whenever the endpoint server has rejected an endpoint client's handshake.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
     <tr><td class="paramname">client_allowed</td><td>true if requesting client is allowed, false otherwies </td></tr>
@@ -844,20 +850,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ac11ad875dc8cdef20c9ef760ea39f72f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac11ad875dc8cdef20c9ef760ea39f72f">&#9670;&nbsp;</a></span>gosling_endpoint_server_handshake_started_callback_t</h2>
+<a id="a53dd73f3f58a788ddcc6b7cf8ec2254c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a53dd73f3f58a788ddcc6b7cf8ec2254c">&#9670;&nbsp;</a></span>gosling_endpoint_server_handshake_started_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* gosling_endpoint_server_handshake_started_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle)</td>
+          <td class="memname">typedef void(* gosling_endpoint_server_handshake_started_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function pointer type of the endpoint server handshake started callback. This callback is called whenever the endpoint server is initially connected to.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
   </table>
@@ -866,20 +873,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ab7a3d67563f72b754d45f29edfaaf5b6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab7a3d67563f72b754d45f29edfaaf5b6">&#9670;&nbsp;</a></span>gosling_endpoint_server_published_callback_t</h2>
+<a id="a0df04b21558495ebdefa19c41058deb7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0df04b21558495ebdefa19c41058deb7">&#9670;&nbsp;</a></span>gosling_endpoint_server_published_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* gosling_endpoint_server_published_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *endpoint_service_id, const char *endpoint_name, size_t endpoint_name_length)</td>
+          <td class="memname">typedef void(* gosling_endpoint_server_published_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *endpoint_service_id, const char *endpoint_name, size_t endpoint_name_length)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function pointer type for the endpoint server published callback. This callbcak is called whenever the onion service of the indicated endpoint server associted with the given context is published and should be reachable by clients.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">endpoint_service_id</td><td>the onion service id of the published endpoint server </td></tr>
     <tr><td class="paramname">endpoint_name</td><td>the null-terminated name of the endpoint server published </td></tr>
@@ -920,20 +928,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a3011daa82141ba8b9e0a94350f132ae2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3011daa82141ba8b9e0a94350f132ae2">&#9670;&nbsp;</a></span>gosling_identity_client_handshake_build_challenge_response_callback_t</h2>
+<a id="aaf4f24661d4a2af9262d1949bf636a55"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf4f24661d4a2af9262d1949bf636a55">&#9670;&nbsp;</a></span>gosling_identity_client_handshake_build_challenge_response_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* gosling_identity_client_handshake_build_challenge_response_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const uint8_t *challenge_buffer, size_t challenge_buffer_size, uint8_t *out_challenge_response_buffer, size_t out_challenge_response_buffer_size)</td>
+          <td class="memname">typedef void(* gosling_identity_client_handshake_build_challenge_response_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const uint8_t *challenge_buffer, size_t challenge_buffer_size, uint8_t *out_challenge_response_buffer, size_t out_challenge_response_buffer_size)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function pointer type for the identity client handshake build challlenge response callback. This callback is called when a client is ready to build a challenge response object.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
     <tr><td class="paramname">challenge_buffer</td><td>the source buffer containing a BSON document received from the identity server to serve as an endpoint request challenge </td></tr>
@@ -946,20 +955,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="acf80a6813c3fc36edab59a036aff4b92"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acf80a6813c3fc36edab59a036aff4b92">&#9670;&nbsp;</a></span>gosling_identity_client_handshake_challenge_response_size_callback_t</h2>
+<a id="a0bc8658e8e0640f926bdeedf0297c5af"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0bc8658e8e0640f926bdeedf0297c5af">&#9670;&nbsp;</a></span>gosling_identity_client_handshake_challenge_response_size_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef size_t(* gosling_identity_client_handshake_challenge_response_size_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const uint8_t *challenge_buffer, size_t challenge_buffer_size)</td>
+          <td class="memname">typedef size_t(* gosling_identity_client_handshake_challenge_response_size_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const uint8_t *challenge_buffer, size_t challenge_buffer_size)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function pointer type for the client handshake challenge response size callback. This callback is called when a client needs to know how much memory to allocate for a challenge response.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>pointer to the client handshake handle this callback invocation is associated with; null if no client handshake init callback was provided </td></tr>
     <tr><td class="paramname">challenge_buffer</td><td>the source buffer containing a BSON document received from the identity server to serve as an endpoint request challenge </td></tr>
@@ -971,20 +981,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a90f60b1d9e6d0b047b3c64ce6844f21f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a90f60b1d9e6d0b047b3c64ce6844f21f">&#9670;&nbsp;</a></span>gosling_identity_client_handshake_completed_callback_t</h2>
+<a id="adcab310ab7e296b3b0a1aaf9603996d5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adcab310ab7e296b3b0a1aaf9603996d5">&#9670;&nbsp;</a></span>gosling_identity_client_handshake_completed_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* gosling_identity_client_handshake_completed_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *identity_service_id, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *endpoint_service_id, const char *endpoint_name, size_t endpoint_name_length, const <a class="el" href="cgosling_8h.html#ae2aaf774700e7b99f052b9d747da20ab">gosling_x25519_private_key</a> *client_auth_private_key)</td>
+          <td class="memname">typedef void(* gosling_identity_client_handshake_completed_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *identity_service_id, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *endpoint_service_id, const char *endpoint_name, size_t endpoint_name_length, const <a class="el" href="cgosling_8h.html#ae2aaf774700e7b99f052b9d747da20ab">gosling_x25519_private_key</a> *client_auth_private_key)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function pointer type for the identity client handshake completed callback. This callback is called whenever the client successfully completes a handshake with an identity server and is granted access to an endpoint server.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
     <tr><td class="paramname">identity_service_id</td><td>the onion service id of the identity server the client has successfully completed a hadshake with </td></tr>
@@ -998,20 +1009,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a00d509c6624f3fd3e31a8f0aef5ccb52"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a00d509c6624f3fd3e31a8f0aef5ccb52">&#9670;&nbsp;</a></span>gosling_identity_client_handshake_failed_callback_t</h2>
+<a id="a03b6a3f7805f4c7f063efcaf63955599"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a03b6a3f7805f4c7f063efcaf63955599">&#9670;&nbsp;</a></span>gosling_identity_client_handshake_failed_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* gosling_identity_client_handshake_failed_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> *error)</td>
+          <td class="memname">typedef void(* gosling_identity_client_handshake_failed_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> *error)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function pointer type for the identity client handshake handshake failed callback. This callback is called when a client's identity handshake fails.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
     <tr><td class="paramname">error</td><td>error associated with this failure </td></tr>
@@ -1021,20 +1033,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a3ad4bf48c98d801c448161bb6f64a00b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3ad4bf48c98d801c448161bb6f64a00b">&#9670;&nbsp;</a></span>gosling_identity_server_endpoint_supported_callback_t</h2>
+<a id="ae3b345cf3066aab2891addcd998e8e7d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae3b345cf3066aab2891addcd998e8e7d">&#9670;&nbsp;</a></span>gosling_identity_server_endpoint_supported_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef bool(* gosling_identity_server_endpoint_supported_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const char *endpoint_name, size_t endpoint_name_length)</td>
+          <td class="memname">typedef bool(* gosling_identity_server_endpoint_supported_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const char *endpoint_name, size_t endpoint_name_length)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function pointer type of the identity server endpoint supported callback. This callback is called when the server needs to determine if the client's requested endpoint is supported. The result of this callback partially determines if an incoming client handshake request is possible to complete.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
     <tr><td class="paramname">endpoint_name</td><td>a null-terminated ASCII string containing the name of the endpoint being requested </td></tr>
@@ -1046,20 +1059,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="acc312c89701ae704140f8317e5267933"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acc312c89701ae704140f8317e5267933">&#9670;&nbsp;</a></span>gosling_identity_server_handshake_build_challenge_callback_t</h2>
+<a id="a9eb7253004342c15a62d78447e30c4c4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9eb7253004342c15a62d78447e30c4c4">&#9670;&nbsp;</a></span>gosling_identity_server_handshake_build_challenge_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* gosling_identity_server_handshake_build_challenge_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, uint8_t *out_challenge_buffer, size_t out_challenge_buffer_size)</td>
+          <td class="memname">typedef void(* gosling_identity_server_handshake_build_challenge_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, uint8_t *out_challenge_buffer, size_t out_challenge_buffer_size)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function pointer type for the server handshake build challenge callback. This callback is called when a server needs to build a challenge object.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
     <tr><td class="paramname">out_challenge_buffer</td><td>the destination buffer for the callback to write a BSON document representing the endpoint request challenge object </td></tr>
@@ -1070,20 +1084,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ad24edef1efe1850263289c94a9547184"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad24edef1efe1850263289c94a9547184">&#9670;&nbsp;</a></span>gosling_identity_server_handshake_challenge_size_callback_t</h2>
+<a id="a910aeabb8b007478b39f29a0e289072f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a910aeabb8b007478b39f29a0e289072f">&#9670;&nbsp;</a></span>gosling_identity_server_handshake_challenge_size_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef size_t(* gosling_identity_server_handshake_challenge_size_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle)</td>
+          <td class="memname">typedef size_t(* gosling_identity_server_handshake_challenge_size_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function pointer type for the server handshake challenge size callback. This callback is called when a server needs to know how much memory to allocate for a challenge.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
   </table>
@@ -1093,20 +1108,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a8bcca27d3dc7ee8718bd44d77f4cce01"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8bcca27d3dc7ee8718bd44d77f4cce01">&#9670;&nbsp;</a></span>gosling_identity_server_handshake_client_allowed_callback_t</h2>
+<a id="a24eb8fef512f5c1ed7c9c46f2b2e9b14"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a24eb8fef512f5c1ed7c9c46f2b2e9b14">&#9670;&nbsp;</a></span>gosling_identity_server_handshake_client_allowed_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef bool(* gosling_identity_server_handshake_client_allowed_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *client_service_id)</td>
+          <td class="memname">typedef bool(* gosling_identity_server_handshake_client_allowed_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *client_service_id)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function pointer type of the identity server handshake client allowed callback. The result of this callback partially determines if an incoming client handshake request is possible to complete. For instance an implementation of this function completed.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
     <tr><td class="paramname">client_service_id</td><td>the v3 onion service id of the connected client </td></tr>
@@ -1117,20 +1133,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ac5b6c012e8b8942479f7de51eb4e2e50"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac5b6c012e8b8942479f7de51eb4e2e50">&#9670;&nbsp;</a></span>gosling_identity_server_handshake_completed_callback_t</h2>
+<a id="a44dd479199d2d2291edc7c29dc17b1ce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a44dd479199d2d2291edc7c29dc17b1ce">&#9670;&nbsp;</a></span>gosling_identity_server_handshake_completed_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* gosling_identity_server_handshake_completed_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#a1ce74ce2296552d7587de725370b773c">gosling_ed25519_private_key</a> *endpoint_private_key, const char *endpoint_name, size_t endpoint_name_length, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *client_service_id, const <a class="el" href="cgosling_8h.html#a07b38f7f7cae749babd88245465026c3">gosling_x25519_public_key</a> *client_auth_public_key)</td>
+          <td class="memname">typedef void(* gosling_identity_server_handshake_completed_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#a1ce74ce2296552d7587de725370b773c">gosling_ed25519_private_key</a> *endpoint_private_key, const char *endpoint_name, size_t endpoint_name_length, const <a class="el" href="cgosling_8h.html#ae898752d132cdfc9ca8164fcd5ca9e97">gosling_v3_onion_service_id</a> *client_service_id, const <a class="el" href="cgosling_8h.html#a07b38f7f7cae749babd88245465026c3">gosling_x25519_public_key</a> *client_auth_public_key)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function pointer type for the identity server handshake completed callback. This callback is called whenever the identity server has successfully completed a handshake with and granted to a connecting identity client.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
     <tr><td class="paramname">endpoint_private_key</td><td>the ed25519 private key of the endpoint server to host for the client </td></tr>
@@ -1144,20 +1161,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a29ed4ff79587a4c0330aab04adb50e07"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a29ed4ff79587a4c0330aab04adb50e07">&#9670;&nbsp;</a></span>gosling_identity_server_handshake_failed_callback_t</h2>
+<a id="a0d5bf6a5c8d00b4a8d661e5597a53072"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0d5bf6a5c8d00b4a8d661e5597a53072">&#9670;&nbsp;</a></span>gosling_identity_server_handshake_failed_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* gosling_identity_server_handshake_failed_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> *error)</td>
+          <td class="memname">typedef void(* gosling_identity_server_handshake_failed_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const <a class="el" href="cgosling_8h.html#af01c130fc6ca6c5a92313a12ae4c983f">gosling_error</a> *error)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function pointer type for the identity server handshake handshake failed callback. This callback is called when a server's identity handshake fails.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
     <tr><td class="paramname">error</td><td>error associated with this failure </td></tr>
@@ -1167,20 +1185,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a6634a81892f235cad1f3fe24b92d0e5e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6634a81892f235cad1f3fe24b92d0e5e">&#9670;&nbsp;</a></span>gosling_identity_server_handshake_rejected_callback_t</h2>
+<a id="a472bc03a71d34b3ef909a0bbcce8cbba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a472bc03a71d34b3ef909a0bbcce8cbba">&#9670;&nbsp;</a></span>gosling_identity_server_handshake_rejected_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* gosling_identity_server_handshake_rejected_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, bool client_allowed, bool client_requested_endpoint_valid, bool client_proof_signature_valid, bool client_auth_signature_valid, bool challenge_response_valid)</td>
+          <td class="memname">typedef void(* gosling_identity_server_handshake_rejected_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, bool client_allowed, bool client_requested_endpoint_valid, bool client_proof_signature_valid, bool client_auth_signature_valid, bool challenge_response_valid)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function pointer type of the identity server handshake rejected callback. This callback is called whenever the identity server has rejected an identity client's handshake.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
     <tr><td class="paramname">client_allowed</td><td>true if requesting client is allowed, false otherwies </td></tr>
@@ -1194,20 +1213,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a10b93053a19451772e3a2117a6c6e97f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a10b93053a19451772e3a2117a6c6e97f">&#9670;&nbsp;</a></span>gosling_identity_server_handshake_started_callback_t</h2>
+<a id="adf5bc0744f7dd4e55f0c34e401e8a3ba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adf5bc0744f7dd4e55f0c34e401e8a3ba">&#9670;&nbsp;</a></span>gosling_identity_server_handshake_started_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* gosling_identity_server_handshake_started_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle)</td>
+          <td class="memname">typedef void(* gosling_identity_server_handshake_started_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function pointer type of the identity server handshake started callback. This callback is called whenever the identity server is initially connected to.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
   </table>
@@ -1216,20 +1236,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="abdac8c50bffdc04183216c92482bd308"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abdac8c50bffdc04183216c92482bd308">&#9670;&nbsp;</a></span>gosling_identity_server_handshake_verify_challenge_response_callback_t</h2>
+<a id="aba149fe9b43ba90343899bf8aff84ab3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aba149fe9b43ba90343899bf8aff84ab3">&#9670;&nbsp;</a></span>gosling_identity_server_handshake_verify_challenge_response_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef bool(* gosling_identity_server_handshake_verify_challenge_response_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const uint8_t *challenge_response_buffer, size_t challenge_response_buffer_size)</td>
+          <td class="memname">typedef bool(* gosling_identity_server_handshake_verify_challenge_response_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, <a class="el" href="cgosling_8h.html#a6361a7ac60d7cf3cb07ac35ac92c01f7">gosling_handshake_handle_t</a> handshake_handle, const uint8_t *challenge_response_buffer, size_t challenge_response_buffer_size)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function poointer type for the server handshake verify challenge response callback. This callback is called when a server needs to verify a challenge response object.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">handshake_handle</td><td>the handshake handle this callback is associated with </td></tr>
     <tr><td class="paramname">challenge_response_buffer</td><td>a buffer containing the BSON document representing the endpoint request challenge response object </td></tr>
@@ -1241,20 +1262,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a894cd4533e13cd02214656e944da4935"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a894cd4533e13cd02214656e944da4935">&#9670;&nbsp;</a></span>gosling_identity_server_published_callback_t</h2>
+<a id="a23dc07df62b70f6621afc688a518c89b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a23dc07df62b70f6621afc688a518c89b">&#9670;&nbsp;</a></span>gosling_identity_server_published_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* gosling_identity_server_published_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context)</td>
+          <td class="memname">typedef void(* gosling_identity_server_published_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function pointer type for the identity server published callback. This callback is called whenever the onion service of the identity server associated with the given context is published and should be reachable by clients.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
   </table>
   </dd>
@@ -1352,20 +1374,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a9e3ef4bb1793209a0f53e1dcb9e37f6b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9e3ef4bb1793209a0f53e1dcb9e37f6b">&#9670;&nbsp;</a></span>gosling_tor_bootstrap_completed_callback_t</h2>
+<a id="a5d07c893139cad401e1d7e2dcb1eebe3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5d07c893139cad401e1d7e2dcb1eebe3">&#9670;&nbsp;</a></span>gosling_tor_bootstrap_completed_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* gosling_tor_bootstrap_completed_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context)</td>
+          <td class="memname">typedef void(* gosling_tor_bootstrap_completed_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function pointer type for the tor boootstrap completed callback. This callback is called when the context's tor daemon's bootstrap process has completed.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
   </table>
   </dd>
@@ -1373,20 +1396,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ae598c09fbd947980317f30c95cea9898"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae598c09fbd947980317f30c95cea9898">&#9670;&nbsp;</a></span>gosling_tor_bootstrap_status_received_callback_t</h2>
+<a id="a1397d66bac9a89da05d6e900deadf1f9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1397d66bac9a89da05d6e900deadf1f9">&#9670;&nbsp;</a></span>gosling_tor_bootstrap_status_received_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* gosling_tor_bootstrap_status_received_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, uint32_t progress, const char *tag, size_t tag_length, const char *summary, size_t summary_length)</td>
+          <td class="memname">typedef void(* gosling_tor_bootstrap_status_received_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, uint32_t progress, const char *tag, size_t tag_length, const char *summary, size_t summary_length)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function pointer type for the tor bootstrap status received callback. This callback is called when context's tor daemon's bootstrap status has progressed.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">progress</td><td>an unsigned integer from 0 to 100 indicating the current completion perentage of the context's bootstrap process </td></tr>
     <tr><td class="paramname">tag</td><td>the null-terminated short name of the current bootstrap stage </td></tr>
@@ -1399,20 +1423,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ad44bac6a829e0af667d3aec74b1324c8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad44bac6a829e0af667d3aec74b1324c8">&#9670;&nbsp;</a></span>gosling_tor_log_received_callback_t</h2>
+<a id="a3932ba634bfb3688b150702e37b76c8c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3932ba634bfb3688b150702e37b76c8c">&#9670;&nbsp;</a></span>gosling_tor_log_received_callback_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* gosling_tor_log_received_callback_t) (<a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, const char *line, size_t line_length)</td>
+          <td class="memname">typedef void(* gosling_tor_log_received_callback_t) (void *callback_data, <a class="el" href="cgosling_8h.html#a2d2a1a45dc3bccbf435fd07b5446af3d">gosling_context</a> *context, const char *line, size_t line_length)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>The function pointer type for the tor log received callback. This callback is called whenever the context's tor daemon prints new log lines.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">callback_data</td><td>arbitrary pointer to developer-defined memory provided when setting this callback </td></tr>
     <tr><td class="paramname">context</td><td>the context associated with this event </td></tr>
     <tr><td class="paramname">line</td><td>the null-terminated received log line </td></tr>
     <tr><td class="paramname">line_length</td><td>the number of chars in line not including the null-terminator </td></tr>
@@ -2117,8 +2142,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ab73b2e4ff4ec09eeff3665454055fe90"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab73b2e4ff4ec09eeff3665454055fe90">&#9670;&nbsp;</a></span>gosling_context_set_endpoint_client_handshake_completed_callback()</h2>
+<a id="ac6d3525731f10f2ea03fe8d8d4509381"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac6d3525731f10f2ea03fe8d8d4509381">&#9670;&nbsp;</a></span>gosling_context_set_endpoint_client_handshake_completed_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2132,8 +2157,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#a34ca0a3d9cb2a8c0bf5e28e8d5680161">gosling_endpoint_client_handshake_completed_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a13e2be4cc93faf9b14c70436ff812f43">gosling_endpoint_client_handshake_completed_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2153,6 +2184,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -2160,8 +2192,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a9ccc17994b96a6656ca1704d44618a75"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9ccc17994b96a6656ca1704d44618a75">&#9670;&nbsp;</a></span>gosling_context_set_endpoint_client_handshake_failed_callback()</h2>
+<a id="a7758fc77ef6624cfb12a430cba185b55"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7758fc77ef6624cfb12a430cba185b55">&#9670;&nbsp;</a></span>gosling_context_set_endpoint_client_handshake_failed_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2175,8 +2207,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#a458bd3dc3614d79fb979a8240875f930">gosling_endpoint_client_handshake_failed_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#aed0e48c5c21fd63cad2c66152c48850b">gosling_endpoint_client_handshake_failed_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2196,6 +2234,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -2203,8 +2242,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a28aa258d05880b1ea64f13bb27848f6b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a28aa258d05880b1ea64f13bb27848f6b">&#9670;&nbsp;</a></span>gosling_context_set_endpoint_server_channel_supported_callback()</h2>
+<a id="ac24b9e838867fe4ec01b03003b7428a3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac24b9e838867fe4ec01b03003b7428a3">&#9670;&nbsp;</a></span>gosling_context_set_endpoint_server_channel_supported_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2218,8 +2257,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#a270f7bd7435c53f30f94cef2a0fe87b8">gosling_endpoint_server_channel_supported_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a4d50496bcf5f3fd3a6857487be56bc53">gosling_endpoint_server_channel_supported_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2239,6 +2284,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -2246,8 +2292,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a82b477eed1da13666eed89bd760affc2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a82b477eed1da13666eed89bd760affc2">&#9670;&nbsp;</a></span>gosling_context_set_endpoint_server_handshake_completed_callback()</h2>
+<a id="a7f9b7856d59bb94e4487bf84a27fa8aa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7f9b7856d59bb94e4487bf84a27fa8aa">&#9670;&nbsp;</a></span>gosling_context_set_endpoint_server_handshake_completed_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2261,8 +2307,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#a6192cf7ae8ac0c889f7bf882ed25d159">gosling_endpoint_server_handshake_completed_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a883df6f816baa5e73b60b5aedfd67a67">gosling_endpoint_server_handshake_completed_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2282,6 +2334,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -2289,8 +2342,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="aa2120ad1cb18b422a7b9e1b7853966ef"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa2120ad1cb18b422a7b9e1b7853966ef">&#9670;&nbsp;</a></span>gosling_context_set_endpoint_server_handshake_failed_callback()</h2>
+<a id="a0f43fb848ce07814c2eab45c2c2a9ab8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0f43fb848ce07814c2eab45c2c2a9ab8">&#9670;&nbsp;</a></span>gosling_context_set_endpoint_server_handshake_failed_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2304,8 +2357,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#a0c9a3cd6cca74560d39e982c365789b5">gosling_endpoint_server_handshake_failed_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a3243584e7403e943cae3f3978ebf3f1d">gosling_endpoint_server_handshake_failed_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2325,6 +2384,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -2332,8 +2392,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="abb73699ed0895241cca00cd6f252e33c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abb73699ed0895241cca00cd6f252e33c">&#9670;&nbsp;</a></span>gosling_context_set_endpoint_server_handshake_rejected_callback()</h2>
+<a id="a017c63f978f833e05ca4c52d2c443c1b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a017c63f978f833e05ca4c52d2c443c1b">&#9670;&nbsp;</a></span>gosling_context_set_endpoint_server_handshake_rejected_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2347,8 +2407,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#af1b34974ee89a19168aedb8e9a5cb28b">gosling_endpoint_server_handshake_rejected_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a435a257e31fdd30ad7a530b4c9f5547f">gosling_endpoint_server_handshake_rejected_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2368,6 +2434,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -2375,8 +2442,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a30da67ab13178485d7cb7d92e7368171"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a30da67ab13178485d7cb7d92e7368171">&#9670;&nbsp;</a></span>gosling_context_set_endpoint_server_handshake_started_callback()</h2>
+<a id="aa0656d6cff88980eb76b87a9d6d29a46"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa0656d6cff88980eb76b87a9d6d29a46">&#9670;&nbsp;</a></span>gosling_context_set_endpoint_server_handshake_started_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2390,8 +2457,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#ac11ad875dc8cdef20c9ef760ea39f72f">gosling_endpoint_server_handshake_started_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a53dd73f3f58a788ddcc6b7cf8ec2254c">gosling_endpoint_server_handshake_started_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2411,6 +2484,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -2418,8 +2492,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a3360fa772f589ffb134ee141e86cad17"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3360fa772f589ffb134ee141e86cad17">&#9670;&nbsp;</a></span>gosling_context_set_endpoint_server_published_callback()</h2>
+<a id="a94d6f8083c4a644579c871e2cb72ef97"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a94d6f8083c4a644579c871e2cb72ef97">&#9670;&nbsp;</a></span>gosling_context_set_endpoint_server_published_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2433,8 +2507,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#ab7a3d67563f72b754d45f29edfaaf5b6">gosling_endpoint_server_published_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a0df04b21558495ebdefa19c41058deb7">gosling_endpoint_server_published_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2454,6 +2534,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -2461,8 +2542,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a8a5979035f69d50b44a1f0b2639d07b8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8a5979035f69d50b44a1f0b2639d07b8">&#9670;&nbsp;</a></span>gosling_context_set_identity_client_build_challenge_response_callback()</h2>
+<a id="a8341d9ca586002ae2e46b803847fde32"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8341d9ca586002ae2e46b803847fde32">&#9670;&nbsp;</a></span>gosling_context_set_identity_client_build_challenge_response_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2476,8 +2557,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#a3011daa82141ba8b9e0a94350f132ae2">gosling_identity_client_handshake_build_challenge_response_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#aaf4f24661d4a2af9262d1949bf636a55">gosling_identity_client_handshake_build_challenge_response_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2497,6 +2584,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -2504,8 +2592,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a776539ff0da719313ea0d42829af4da0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a776539ff0da719313ea0d42829af4da0">&#9670;&nbsp;</a></span>gosling_context_set_identity_client_challenge_response_size_callback()</h2>
+<a id="a4840b4ea53ea52be9050d1d7a7857f4b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4840b4ea53ea52be9050d1d7a7857f4b">&#9670;&nbsp;</a></span>gosling_context_set_identity_client_challenge_response_size_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2519,8 +2607,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#acf80a6813c3fc36edab59a036aff4b92">gosling_identity_client_handshake_challenge_response_size_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a0bc8658e8e0640f926bdeedf0297c5af">gosling_identity_client_handshake_challenge_response_size_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2540,6 +2634,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -2547,8 +2642,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a6414b7a6e636e1432b88c8481cba339e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6414b7a6e636e1432b88c8481cba339e">&#9670;&nbsp;</a></span>gosling_context_set_identity_client_handshake_completed_callback()</h2>
+<a id="ad974c2e1c50c6e5af37572957a72a318"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad974c2e1c50c6e5af37572957a72a318">&#9670;&nbsp;</a></span>gosling_context_set_identity_client_handshake_completed_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2562,8 +2657,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#a90f60b1d9e6d0b047b3c64ce6844f21f">gosling_identity_client_handshake_completed_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#adcab310ab7e296b3b0a1aaf9603996d5">gosling_identity_client_handshake_completed_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2583,6 +2684,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -2590,8 +2692,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="adf9578b4d022d5427f125267aacc1061"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adf9578b4d022d5427f125267aacc1061">&#9670;&nbsp;</a></span>gosling_context_set_identity_client_handshake_failed_callback()</h2>
+<a id="a7b9a00871086951807560431b83ea34b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7b9a00871086951807560431b83ea34b">&#9670;&nbsp;</a></span>gosling_context_set_identity_client_handshake_failed_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2605,8 +2707,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#a00d509c6624f3fd3e31a8f0aef5ccb52">gosling_identity_client_handshake_failed_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a03b6a3f7805f4c7f063efcaf63955599">gosling_identity_client_handshake_failed_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2626,6 +2734,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -2633,8 +2742,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a8439e0e0d704b013e1710fe7b7a1b912"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8439e0e0d704b013e1710fe7b7a1b912">&#9670;&nbsp;</a></span>gosling_context_set_identity_server_build_challenge_callback()</h2>
+<a id="a2ed2705124747b9f5bc527285776c92a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2ed2705124747b9f5bc527285776c92a">&#9670;&nbsp;</a></span>gosling_context_set_identity_server_build_challenge_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2648,8 +2757,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#acc312c89701ae704140f8317e5267933">gosling_identity_server_handshake_build_challenge_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a9eb7253004342c15a62d78447e30c4c4">gosling_identity_server_handshake_build_challenge_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2669,6 +2784,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
     <tr><td class="paramname">error</td><td>filled on erro </td></tr>
   </table>
   </dd>
@@ -2676,8 +2792,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a62ddadb5eb7ff083193c991aa80ee82b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a62ddadb5eb7ff083193c991aa80ee82b">&#9670;&nbsp;</a></span>gosling_context_set_identity_server_challenge_size_callback()</h2>
+<a id="a96072b17283ed3d94a879b0bd6310474"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a96072b17283ed3d94a879b0bd6310474">&#9670;&nbsp;</a></span>gosling_context_set_identity_server_challenge_size_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2691,8 +2807,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#ad24edef1efe1850263289c94a9547184">gosling_identity_server_handshake_challenge_size_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a910aeabb8b007478b39f29a0e289072f">gosling_identity_server_handshake_challenge_size_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2712,6 +2834,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
     <tr><td class="paramname">error</td><td>filled on erro </td></tr>
   </table>
   </dd>
@@ -2719,8 +2842,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ae620a2c482a0b3b06bfeb73e6e1d9310"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae620a2c482a0b3b06bfeb73e6e1d9310">&#9670;&nbsp;</a></span>gosling_context_set_identity_server_client_allowed_callback()</h2>
+<a id="a0c4ed8710007c3fae69b6c313b0818fe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0c4ed8710007c3fae69b6c313b0818fe">&#9670;&nbsp;</a></span>gosling_context_set_identity_server_client_allowed_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2734,8 +2857,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#a8bcca27d3dc7ee8718bd44d77f4cce01">gosling_identity_server_handshake_client_allowed_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a24eb8fef512f5c1ed7c9c46f2b2e9b14">gosling_identity_server_handshake_client_allowed_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2755,6 +2884,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -2762,8 +2892,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="af685abb01e25ffbd45ba8d7d696d2c42"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af685abb01e25ffbd45ba8d7d696d2c42">&#9670;&nbsp;</a></span>gosling_context_set_identity_server_endpoint_supported_callback()</h2>
+<a id="a4e1e58ab05c6899a3009ad9c1ae91686"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e1e58ab05c6899a3009ad9c1ae91686">&#9670;&nbsp;</a></span>gosling_context_set_identity_server_endpoint_supported_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2777,8 +2907,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#a3ad4bf48c98d801c448161bb6f64a00b">gosling_identity_server_endpoint_supported_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#ae3b345cf3066aab2891addcd998e8e7d">gosling_identity_server_endpoint_supported_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2798,6 +2934,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -2805,8 +2942,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ac83ebb5324d70d9f9e5323613fb55f92"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac83ebb5324d70d9f9e5323613fb55f92">&#9670;&nbsp;</a></span>gosling_context_set_identity_server_handshake_completed_callback()</h2>
+<a id="ab1186da6cec763a1519c00f995e2ca4b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab1186da6cec763a1519c00f995e2ca4b">&#9670;&nbsp;</a></span>gosling_context_set_identity_server_handshake_completed_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2820,8 +2957,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#ac5b6c012e8b8942479f7de51eb4e2e50">gosling_identity_server_handshake_completed_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a44dd479199d2d2291edc7c29dc17b1ce">gosling_identity_server_handshake_completed_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2841,6 +2984,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -2848,8 +2992,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a08d49821f9ab1e4c21051d1bc30d6af9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a08d49821f9ab1e4c21051d1bc30d6af9">&#9670;&nbsp;</a></span>gosling_context_set_identity_server_handshake_failed_callback()</h2>
+<a id="a367da98533c633797638c99ec5cbe157"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a367da98533c633797638c99ec5cbe157">&#9670;&nbsp;</a></span>gosling_context_set_identity_server_handshake_failed_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2863,8 +3007,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#a29ed4ff79587a4c0330aab04adb50e07">gosling_identity_server_handshake_failed_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a0d5bf6a5c8d00b4a8d661e5597a53072">gosling_identity_server_handshake_failed_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2884,6 +3034,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -2891,8 +3042,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a645652353d6e8ad2daa28c8e36503ab0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a645652353d6e8ad2daa28c8e36503ab0">&#9670;&nbsp;</a></span>gosling_context_set_identity_server_handshake_rejected_callback()</h2>
+<a id="afb40805431901322e49f1b1061798eca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afb40805431901322e49f1b1061798eca">&#9670;&nbsp;</a></span>gosling_context_set_identity_server_handshake_rejected_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2906,8 +3057,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#a6634a81892f235cad1f3fe24b92d0e5e">gosling_identity_server_handshake_rejected_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a472bc03a71d34b3ef909a0bbcce8cbba">gosling_identity_server_handshake_rejected_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2927,6 +3084,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -2934,8 +3092,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="aae91d0a70de4b7289bf1f8607f7dbfdd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aae91d0a70de4b7289bf1f8607f7dbfdd">&#9670;&nbsp;</a></span>gosling_context_set_identity_server_handshake_started_callback()</h2>
+<a id="ad02e3fde231506c872e9e80fefe39b49"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad02e3fde231506c872e9e80fefe39b49">&#9670;&nbsp;</a></span>gosling_context_set_identity_server_handshake_started_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2949,8 +3107,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#a10b93053a19451772e3a2117a6c6e97f">gosling_identity_server_handshake_started_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#adf5bc0744f7dd4e55f0c34e401e8a3ba">gosling_identity_server_handshake_started_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2970,6 +3134,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -2977,8 +3142,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a732240871d4bd8fbe72652ee5cf5dc43"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a732240871d4bd8fbe72652ee5cf5dc43">&#9670;&nbsp;</a></span>gosling_context_set_identity_server_published_callback()</h2>
+<a id="a66e45c11b4bf8322a8bca302adb1915a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a66e45c11b4bf8322a8bca302adb1915a">&#9670;&nbsp;</a></span>gosling_context_set_identity_server_published_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2992,8 +3157,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#a894cd4533e13cd02214656e944da4935">gosling_identity_server_published_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a23dc07df62b70f6621afc688a518c89b">gosling_identity_server_published_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -3013,6 +3184,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -3020,8 +3192,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="afa2077e145be5f606fa00a5966cc017e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afa2077e145be5f606fa00a5966cc017e">&#9670;&nbsp;</a></span>gosling_context_set_identity_server_verify_challenge_response_callback()</h2>
+<a id="a6b3c972a2edc116678d6a5efeb7941c9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6b3c972a2edc116678d6a5efeb7941c9">&#9670;&nbsp;</a></span>gosling_context_set_identity_server_verify_challenge_response_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3035,8 +3207,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#abdac8c50bffdc04183216c92482bd308">gosling_identity_server_handshake_verify_challenge_response_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#aba149fe9b43ba90343899bf8aff84ab3">gosling_identity_server_handshake_verify_challenge_response_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -3056,15 +3234,16 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
-    <tr><td class="paramname">error</td><td>filled on erro </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
+    <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
 </dl>
 
 </div>
 </div>
-<a id="a5c37c209b59c1aeac8123ade786a2061"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5c37c209b59c1aeac8123ade786a2061">&#9670;&nbsp;</a></span>gosling_context_set_tor_bootstrap_completed_callback()</h2>
+<a id="a5da1a17e8ea4e9f305507f65b647f02d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5da1a17e8ea4e9f305507f65b647f02d">&#9670;&nbsp;</a></span>gosling_context_set_tor_bootstrap_completed_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3078,8 +3257,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#a9e3ef4bb1793209a0f53e1dcb9e37f6b">gosling_tor_bootstrap_completed_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a5d07c893139cad401e1d7e2dcb1eebe3">gosling_tor_bootstrap_completed_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -3099,6 +3284,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -3106,8 +3292,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a9a13ceeebfb974f09c903735a1596083"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9a13ceeebfb974f09c903735a1596083">&#9670;&nbsp;</a></span>gosling_context_set_tor_bootstrap_status_received_callback()</h2>
+<a id="a12e0e27efe22c6b5f8eed4e8a3a4d660"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a12e0e27efe22c6b5f8eed4e8a3a4d660">&#9670;&nbsp;</a></span>gosling_context_set_tor_bootstrap_status_received_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3121,8 +3307,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#ae598c09fbd947980317f30c95cea9898">gosling_tor_bootstrap_status_received_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a1397d66bac9a89da05d6e900deadf1f9">gosling_tor_bootstrap_status_received_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -3142,6 +3334,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
@@ -3149,8 +3342,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a20d8e2b7d6592de221ba75ca3d95e213"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a20d8e2b7d6592de221ba75ca3d95e213">&#9670;&nbsp;</a></span>gosling_context_set_tor_log_received_callback()</h2>
+<a id="ab21982e60f33a0358143708831519abe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab21982e60f33a0358143708831519abe">&#9670;&nbsp;</a></span>gosling_context_set_tor_log_received_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3164,8 +3357,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="cgosling_8h.html#ad44bac6a829e0af667d3aec74b1324c8">gosling_tor_log_received_callback_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="cgosling_8h.html#a3932ba634bfb3688b150702e37b76c8c">gosling_tor_log_received_callback_t</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>callback_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -3185,6 +3384,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">context</td><td>the context to register the callback to </td></tr>
     <tr><td class="paramname">callback</td><td>the callback to register </td></tr>
+    <tr><td class="paramname">callback_data</td><td>the custom data to pass to this callback </td></tr>
     <tr><td class="paramname">error</td><td>filled on error </td></tr>
   </table>
   </dd>
