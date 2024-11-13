@@ -4,12 +4,33 @@
 
 Quality software cannot be developed in a vacuum. Periodic external audits and code-review help ensure that our software does what we claim and that we do not have any critical vulnerabilities.
 
-## 2022-11-18 - Code audit report
+## 2024-11-12
+by [Radically Open Security](https://www.radicallyopensecurity.com/)
+
+This was Gosling's second audit with a focus on the cgosling-based C/C++, Python, and Java bindings.
+
+### Report: [2024-11-12 - radically-open-security.pdf](<pdfs/2024-11-12 - radically-open-security.pdf>)
+
+### Issues
+
+- [CLN-001 - Java bindings tcp_pump timing oracle](https://github.com/blueprint-freespeech/gosling/issues/125) (High Threat)
+
+    **status**: fixed in [b931e0bfc0a95379b0d7811db2d8d10797c86085](https://github.com/blueprint-freespeech/gosling/commit/b931e0bfc0a95379b0d7811db2d8d10797c86085)
+
+- [CLN-003 - Rsa crate dependency timing side channel](https://github.com/blueprint-freespeech/gosling/issues/127) (Low Threat)
+
+    **status**: rsa crate only enabled with experimmental features, which themselves do not use the broken functionality; remains open until fixed upstream.
+
+- [CLN-012 - Java bindings invalid context](https://github.com/blueprint-freespeech/gosling/issues/126) (High Threat)
+
+    **status**: not a Gosling issue, was a bug in the test
+
+## 2022-11-18
 by [Radically Open Security](https://www.radicallyopensecurity.com/)
 
 This was Gosling's first audit of its implementation and specifications.
 
-### Report: [report_ngir-blueprintforfreespeech 1.1.pdf](<pdfs/report_ngir-blueprintforfreespeech 1.1.pdf>)
+### Report: [2022-11-18 - radically-open-security.pdf](<pdfs/2022-11-18 - radically-open-security.pdf>)
 
 ### Issues
 

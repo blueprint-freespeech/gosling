@@ -3,7 +3,8 @@ set(build_outputs)
 
 # files which we will just copy directly
 set(copy_sources
-    "report_ngir-blueprintforfreespeech 1.1.pdf")
+    "2022-11-18 - radically-open-security.pdf"
+    "2024-11-12 - radically-open-security.pdf")
 
 foreach(file ${copy_sources})
     add_custom_command(
