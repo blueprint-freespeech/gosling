@@ -48,11 +48,24 @@
 <h1 id="security-reviews">Security Reviews</h1>
 <hr />
 <p>Quality software cannot be developed in a vacuum. Periodic external audits and code-review help ensure that our software does what we claim and that we do not have any critical vulnerabilities.</p>
+<h2 id="section">2024-11-12 -</h2>
+<p>by <a href="https://www.radicallyopensecurity.com/">Radically Open Security</a></p>
+<p>This was Gosling’s second audit with a focus on the cgosling-based C/C++, Python, and Java bindings.</p>
+<h3 id="report-2024-11-12---radically-open-security.pdf">Report: <a href="pdfs/2024-11-12%20-%20radically-open-security.pdf">2024-11-12 - radically-open-security.pdf</a></h3>
+<h3 id="issues">Issues</h3>
+<ul>
+<li><p><a href="https://github.com/blueprint-freespeech/gosling/issues/125">CLN-001 - Java bindings tcp_pump timing oracle</a> (High Threat)</p>
+<p><strong>status</strong>: fixed in <a href="https://github.com/blueprint-freespeech/gosling/commit/b931e0bfc0a95379b0d7811db2d8d10797c86085">b931e0bfc0a95379b0d7811db2d8d10797c86085</a></p></li>
+<li><p><a href="https://github.com/blueprint-freespeech/gosling/issues/127">CLN-003 - Rsa crate dependency timing side channel</a> (Low Threat)</p>
+<p><strong>status</strong>: rsa crate only enabled with experimmental features, which themselves do not use the broken functionality; remains open until fixed upstream.</p></li>
+<li><p><a href="https://github.com/blueprint-freespeech/gosling/issues/126">CLN-012 - Java bindings invalid context</a> (High Threat)</p>
+<p><strong>status</strong>: not a Gosling issue, was a bug in the test</p></li>
+</ul>
 <h2 id="code-audit-report">2022-11-18 - Code audit report</h2>
 <p>by <a href="https://www.radicallyopensecurity.com/">Radically Open Security</a></p>
 <p>This was Gosling’s first audit of its implementation and specifications.</p>
-<h3 id="report-report_ngir-blueprintforfreespeech-1.1.pdf">Report: <a href="pdfs/report_ngir-blueprintforfreespeech%201.1.pdf">report_ngir-blueprintforfreespeech 1.1.pdf</a></h3>
-<h3 id="issues">Issues</h3>
+<h3 id="report-2022-11-18---radically-open-security.pdf">Report: <a href="pdfs/2022-11-18%20-%20radically-open-security.pdf">2022-11-18 - radically-open-security.pdf</a></h3>
+<h3 id="issues-1">Issues</h3>
 <ul>
 <li><p><a href="https://github.com/blueprint-freespeech/gosling/issues/45">GS-001 - DoS through OOM condition</a> (Elevated Threat)</p>
 <p><strong>status</strong>: fixed in <a href="https://github.com/blueprint-freespeech/gosling/commit/6af83925bac126881bd70550293978c07cdc2fa0">6af83925bac126881bd70550293978c07cdc2fa0</a></p></li>
@@ -70,7 +83,7 @@
       <hr/>
       <footer>
         <p>&copy; 2023-2024 <a href="https://www.blueprintforfreespeech.net">Blueprint for Free Speech</a>. All rights reserved.</p>
-        <p><i>Page last modified date: 2024-08-11</i></p>
+        <p><i>Page last modified date: 2024-11-13</i></p>
       </footer>
     </div>
   </div>
