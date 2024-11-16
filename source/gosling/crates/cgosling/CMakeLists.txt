@@ -1,6 +1,6 @@
 set(CGOSLING_MAJOR_VERSION "0" CACHE STRING "SemVer major version of cgosling library" FORCE)
-set(CGOSLING_MINOR_VERSION "3" CACHE STRING "SemVer minor version of cgosling library" FORCE)
-set(CGOSLING_PATCH_VERSION "1" CACHE STRING "SemVer patch version of cgosling library" FORCE)
+set(CGOSLING_MINOR_VERSION "4" CACHE STRING "SemVer minor version of cgosling library" FORCE)
+set(CGOSLING_PATCH_VERSION "0" CACHE STRING "SemVer patch version of cgosling library" FORCE)
 set(CGOSLING_VERSION "${CGOSLING_MAJOR_VERSION}.${CGOSLING_MINOR_VERSION}.${CGOSLING_PATCH_VERSION}" CACHE STRING "SemVer of the cgosling library" FORCE)
 
 # generate Cargo.toml file
