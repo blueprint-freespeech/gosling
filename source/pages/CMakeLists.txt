@@ -35,6 +35,7 @@ if (BUILD_PAGES)
         honk-rpc-spec.md
         index.md
         news.md
+        presentations.md
         security-reviews.md
         usage-guide.md)
     list(LENGTH page_sources page_sources_count)
@@ -46,6 +47,7 @@ if (BUILD_PAGES)
         "Honk-RPC Protocol Specification"
         "Main"
         "News"
+        "Presentations"
         "Security Review"
         "Usage Guide")
     list(LENGTH page_titles page_titles_count)
