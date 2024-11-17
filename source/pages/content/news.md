@@ -2,10 +2,37 @@
 
 ---
 
+## 2024-11-17 - New Release: tor-interface 0.5.0, gosling 0.4.0, and cgosling 0.4.0  {.news-title}
+### by morgan {.news-author}
+
+Yesterday, we published new versions of the [tor-interface](https://crates.io/crates/tor-interface) and [gosling](https://crates.io/crates/gosling) crates to **crates.io** based on commit [1b37699c6edaca4fd2e838f16fa565ed33d09367](https://github.com/blueprint-freespeech/gosling/commit/1b37699c6edaca4fd2e838f16fa565ed33d09367).
+
+The major changes since tor-interface 0.4.0, gosling 0.3.1, and cgosling 0.3.1 follow:
+
+    - tor-interface
+        - updated arti-client crate (and dependencies) to 0.24.0
+        - implemented add_client_auth() and remove_client_auth() methods for ArtiClientTorClient TorProvider
+        - improved test reliability
+    - gosling
+        - add support for in-process ArtiClientTorClient TorProvider
+    - cgosling
+        - improved API documentation
+        - enable link-time optimisation for all targets when supported
+        - callbacks now pass through user-supplied arbitrary pointer
+        - add support for arti-client based gosling_tor_provider
+
+## 2024-11-12 - Second Security Review by Radically Open Security Completed! {.news-title}
+### by morgan {.news-author}
+
+Gosling has undergone a second security review by [Radically Open Security](https://www.radicallyopensecurity.com/). One actionable issue in cgosling's Java bindings was found and has since been resolved.
+
+The full report can be found on our security reviews [page](security-reviews.xhtml).
+
 ## 2024-09-24 - NGI Assure interview posted {.news-title}
 ### by morgan {.news-author}
 
 One of Blueprint for Free Speech's funders is NLnet, who have funded development work for both Gosling and [Ricochet-Refresh](https://ricochetrefresh.net). A few months back, they sent out a questionnaire to various NLnet-funded projects. My answers seem to have been posted a few weeks ago! It's a fairly short read, so please go take a look! It should give some insight into why we do the work we do, and how we think about software and user security+privacy:
+
 - [https://ngi.eu/ngi-interviews/interview-with-morgan/](https://ngi.eu/ngi-interviews/interview-with-morgan/)
 
 ## 2024-07-06 - New minor features and configuration options {.news-title}
