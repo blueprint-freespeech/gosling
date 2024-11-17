@@ -18,6 +18,7 @@
         <li><a href="https://github.com/blueprint-freespeech/gosling">GitHub</a></li>
         <li><a href="design-doc.xhtml">Design Document</a></li>
         <li><a href="usage-guide.xhtml">Usage Guide</a></li>
+        <li><a href="presentations.xhtml">Presentations</a></li>
         <li>Source Documentation
           <ul>
             <li>Rust</li>
@@ -40,16 +41,38 @@
           </ul>
         </li>
         <li><a href="coverage.html">Test Coverage</a></li>
-        <li><a href="gosling.spdx.json">SBOM (SPDX JSON)</a></li>
         <li><a href="security-reviews.xhtml">Security Reviews</a></li>
+        <li><a href="gosling.spdx.json">SBOM (SPDX JSON)</a></li>
       </ul>
     </div>
     <div class="content">
 <h1 id="news">News</h1>
 <hr />
-<h2 class="news-title" id="ngi-assure-interview-posted">2024-09-24 - NGI Assure interview posted</h2>
+<h2 class="news-title" id="new-release-tor-interface-0.5.0-gosling-0.4.0-and-cgosling-0.4.0">2024-11-17 - New Release: tor-interface 0.5.0, gosling 0.4.0, and cgosling 0.4.0</h2>
 <h3 class="news-author" id="by-morgan">by morgan</h3>
-<p>One of Blueprint for Free Speech’s funders is NLnet, who have funded development work for both Gosling and <a href="https://ricochetrefresh.net">Ricochet-Refresh</a>. A few months back, they sent out a questionnaire to various NLnet-funded projects. My answers seem to have been posted a few weeks ago! It’s a fairly short read, so please go take a look! It should give some insight into why we do the work we do, and how we think about software and user security+privacy: - <a href="https://ngi.eu/ngi-interviews/interview-with-morgan/">https://ngi.eu/ngi-interviews/interview-with-morgan/</a></p>
+<p>Yesterday, we published new versions of the <a href="https://crates.io/crates/tor-interface">tor-interface</a> and <a href="https://crates.io/crates/gosling">gosling</a> crates to <strong>crates.io</strong> based on commit <a href="https://github.com/blueprint-freespeech/gosling/commit/1b37699c6edaca4fd2e838f16fa565ed33d09367">1b37699c6edaca4fd2e838f16fa565ed33d09367</a>.</p>
+<p>The major changes since tor-interface 0.4.0, gosling 0.3.1, and cgosling 0.3.1 follow:</p>
+<pre><code>- tor-interface
+    - updated arti-client crate (and dependencies) to 0.24.0
+    - implemented add_client_auth() and remove_client_auth() methods for ArtiClientTorClient TorProvider
+    - improved test reliability
+- gosling
+    - add support for in-process ArtiClientTorClient TorProvider
+- cgosling
+    - improved API documentation
+    - enable link-time optimisation for all targets when supported
+    - callbacks now pass through user-supplied arbitrary pointer
+    - add support for arti-client based gosling_tor_provider</code></pre>
+<h2 class="news-title" id="second-security-review-by-radically-open-security-completed">2024-11-12 - Second Security Review by Radically Open Security Completed!</h2>
+<h3 class="news-author" id="by-morgan-1">by morgan</h3>
+<p>Gosling has undergone a second security review by <a href="https://www.radicallyopensecurity.com/">Radically Open Security</a>. One actionable issue in cgosling’s Java bindings was found and has since been resolved.</p>
+<p>The full report can be found on our security reviews <a href="security-reviews.xhtml">page</a>.</p>
+<h2 class="news-title" id="ngi-assure-interview-posted">2024-09-24 - NGI Assure interview posted</h2>
+<h3 class="news-author" id="by-morgan-2">by morgan</h3>
+<p>One of Blueprint for Free Speech’s funders is NLnet, who have funded development work for both Gosling and <a href="https://ricochetrefresh.net">Ricochet-Refresh</a>. A few months back, they sent out a questionnaire to various NLnet-funded projects. My answers seem to have been posted a few weeks ago! It’s a fairly short read, so please go take a look! It should give some insight into why we do the work we do, and how we think about software and user security+privacy:</p>
+<ul>
+<li><a href="https://ngi.eu/ngi-interviews/interview-with-morgan/">https://ngi.eu/ngi-interviews/interview-with-morgan/</a></li>
+</ul>
 <h2 class="news-title" id="new-minor-features-and-configuration-options">2024-07-06 - New minor features and configuration options</h2>
 <h3 class="news-author" id="by-richard">by richard</h3>
 <p>The work for the past month or so has been focused on implementing various features unrelated to the Gosling protocol itself.</p>
@@ -101,7 +124,7 @@
       <hr/>
       <footer>
         <p>&copy; 2023-2024 <a href="https://www.blueprintforfreespeech.net">Blueprint for Free Speech</a>. All rights reserved.</p>
-        <p><i>Page last modified date: 2024-09-27</i></p>
+        <p><i>Page last modified date: 2024-11-17</i></p>
       </footer>
     </div>
   </div>
