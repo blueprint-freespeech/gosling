@@ -8,7 +8,7 @@ A quick summary of the Gosling work completed in 2024.
 
 #### Slides: [2024-11-20 - state-of-the-onion.pdf](<pdfs/2024-11-20 - state-of-the-onion.pdf>)
 
-#### Video: Pending
+#### Video: [https://www.youtube.com/watch?v=EODNtLqD7f8#t=893](https://www.youtube.com/watch?v=EODNtLqD7f8#t=893)
 
 ## 2024-05-02: Adding Arti Backend(s) Support to the Gosling Library
 
