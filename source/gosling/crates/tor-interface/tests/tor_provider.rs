@@ -19,6 +19,8 @@ use tokio::runtime;
 // internal crates
 #[cfg(feature = "arti-client-tor-provider")]
 use tor_interface::arti_client_tor_client::*;
+#[cfg(feature = "arti-tor-provider")]
+use tor_interface::arti_tor_client::*;
 #[cfg(feature = "legacy-tor-provider")]
 use tor_interface::censorship_circumvention::*;
 #[cfg(feature = "legacy-tor-provider")]
@@ -181,6 +183,20 @@ fn build_arti_client_tor_provider(runtime: Arc<runtime::Runtime>, name: &str) ->
     Ok(Box::new(ArtiClientTorClient::new(runtime, &data_path)?))
 }
 
+#[cfg(test)]
+#[cfg(feature = "arti-tor-provider")]
+fn build_arti_tor_provider(name: &str) -> anyhow::Result<Box<dyn TorProvider>> {
+    let arti_path = which::which(format!("arti{}", std::env::consts::EXE_SUFFIX))?;
+    let mut data_path = std::env::temp_dir();
+    data_path.push(name);
+
+    let arti_config = ArtiTorClientConfig::BundledArti {
+        arti_bin_path: arti_path,
+        data_directory: data_path,
+    };
+
+    Ok(Box::new(ArtiTorClient::new(arti_config)?))
+}
 //
 // Test Functions
 //
@@ -633,7 +649,7 @@ fn test_system_legacy_authenticated_onion_service() -> anyhow::Result<()> {
 }
 
 //
-// Arti TorProvider tests
+// Arti-Client TorProvider tests
 //
 
 #[test]
@@ -668,6 +684,20 @@ fn test_arti_client_authenticated_onion_service() -> anyhow::Result<()> {
 
     authenticated_onion_service_test(server_provider, client_provider)
 }
+
+//
+// Arti TorProvider tests
+//
+
+#[test]
+#[serial]
+#[cfg(feature = "arti-tor-provider")]
+fn test_arti_bootstrap() -> anyhow::Result<()> {
+    let tor_provider = build_arti_tor_provider("test_arti_bootstrap")?;
+    bootstrap_test(tor_provider, false)
+}
+
+//
 
 //
 // Mixed Arti/Legacy TorProvider tests
