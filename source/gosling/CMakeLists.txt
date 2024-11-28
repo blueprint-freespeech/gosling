@@ -2,6 +2,7 @@
 find_program(RUSTC_EXECUTABLE NAMES rustc)
 find_program(CARGO_EXECUTABLE NAMES cargo)
 find_program(CARGO_TARPAULIN_EXECUTABLE NAMES cargo-tarpaulin)
+find_program(CARGO_SBOM_EXECUTABLE NAMES cargo-sbom)
 find_program(CARGO_FUZZ_EXECUTABLE NAMES cargo-fuzz)
 
 if (NOT RUSTC_EXECUTABLE)
@@ -10,6 +11,8 @@ elseif (NOT CARGO_EXECUTABLE)
     message(FATAL_ERROR "cargo not found; required to build gosling")
 elseif (NOT CARGO_TARPAULIN_EXECUTABLE AND BUILD_PAGES)
     message(FATAL_ERROR "cargo-tarpaulin not found; required to generate Rust test coverage and build pages")
+elseif (NOT CARGO_SBOM_EXECUTABLE AND BUILD_PAGES)
+    message(FATAL_ERROR "cargo-sbom not found; required to generate gosling software bill of materials and build pages")
 elseif (NOT CARGO_FUZZ_EXECUTABLE AND ENABLE_FUZZ_TESTS)
     message(FATAL_ERROR "cargo-fuzz not found; required to run fuzz tests")
 endif()
@@ -96,7 +99,6 @@ if (BUILD_PAGES)
     #
     add_custom_command(
         OUTPUT ${CARGO_TARGET_DIR}/gosling.spdx.json
-        COMMAND cargo install cargo-sbom
         COMMAND cargo sbom > ${CARGO_TARGET_DIR}/gosling.spdx.json
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     add_custom_target(gosling_cargo_sbom_target ALL

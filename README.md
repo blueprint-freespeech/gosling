@@ -152,7 +152,7 @@ Enables the following cargo-fuzz ctest test targets (enabling this option also e
 The following additional dependencies are required for this configure option:
 
 - rust nightly (for `-z`  rustc compiler flag)
-- [cargo-fuzz](https://github.com/rust-fuzz/cargo-fuzz)
+- [cargo-fuzz](https://docs.rs/crate/cargo-fuzz/latest)
 - [libfuzzer](https://www.llvm.org/docs/LibFuzzer.html)
 
 ### ENABLE_TOR_EXPERT_BUNDLE
@@ -268,6 +268,8 @@ Access to the tor network is required to run the tests and generate code-coverag
 
 The following additional dependencies are required for this configure option:
 
+- [cargo-sbom](https://docs.rs/crate/cargo-sbom/latest)
+- [cargo-tarpaulin](https://docs.rs/crate/cargo-tarpaulin/latest)
 - [doxygen](https://www.doxygen.nl/)
 - [graphviz](https://www.graphviz.org/)
 - [mustache](http://mustache.github.io/)

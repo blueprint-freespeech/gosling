@@ -18,7 +18,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libboost-all-dev tor
-          cargo install cargo-tarpaulin
+          cargo install cargo-tarpaulin cargo-sbom
           sudo apt-get install -y doxygen pandoc plantuml tidy ruby-mustache graphviz
       - name: Build Pages
         run: |
