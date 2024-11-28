@@ -14,7 +14,7 @@ jobs:
           - tor_interface_mock_authenticated_onion_service_cargo_test
           - tor_interface_mock_bootstrap_cargo_test
           - tor_interface_mock_onion_service_cargo_test
-          - tor_interface_arti_authenticated_onion_service_cargo_test
+          - tor_interface_arti_client_authenticated_onion_service_cargo_test
           - tor_interface_arti_client_bootstrap_cargo_test
           - tor_interface_arti_client_onion_service_cargo_test
           - tor_interface_legacy_authenticated_onion_service_cargo_test
@@ -58,7 +58,7 @@ jobs:
           - tor_interface_mock_authenticated_onion_service_cargo_test
           - tor_interface_mock_bootstrap_cargo_test
           - tor_interface_mock_onion_service_cargo_test
-          - tor_interface_arti_authenticated_onion_service_cargo_test
+          - tor_interface_arti_client_authenticated_onion_service_cargo_test
           - tor_interface_arti_client_bootstrap_cargo_test
           - tor_interface_arti_client_onion_service_cargo_test
           - tor_interface_legacy_authenticated_onion_service_cargo_test
@@ -123,7 +123,7 @@ jobs:
           - tor_interface_mock_authenticated_onion_service_cargo_test
           - tor_interface_mock_bootstrap_cargo_test
           - tor_interface_mock_onion_service_cargo_test
-          - tor_interface_arti_authenticated_onion_service_cargo_test
+          - tor_interface_arti_client_authenticated_onion_service_cargo_test
           - tor_interface_arti_client_bootstrap_cargo_test
           - tor_interface_arti_client_onion_service_cargo_test
           - tor_interface_legacy_authenticated_onion_service_cargo_test
