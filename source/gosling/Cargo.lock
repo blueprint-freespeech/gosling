@@ -176,6 +176,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "arti-rpc-client-core"
+version = "0.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb8e54b6b2edd957b1d2937e5f5326236bf5c332e3dbb0be9ccb2bf0dd9da540"
+dependencies = [
+ "caret",
+ "cfg-if",
+ "derive_more",
+ "educe",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tor-error",
+ "tor-socksproto",
+ "void",
+]
+
+[[package]]
 name = "ascii"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4142,6 +4160,7 @@ version = "0.5.0"
 dependencies = [
  "anyhow",
  "arti-client",
+ "arti-rpc-client-core",
  "curve25519-dalek",
  "data-encoding",
  "data-encoding-macro",
