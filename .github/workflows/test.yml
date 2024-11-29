@@ -14,6 +14,7 @@ jobs:
           - tor_interface_mock_authenticated_onion_service_cargo_test
           - tor_interface_mock_bootstrap_cargo_test
           - tor_interface_mock_onion_service_cargo_test
+          - tor_interface_arti_bootstrap_cargo_test
           - tor_interface_arti_client_authenticated_onion_service_cargo_test
           - tor_interface_arti_client_bootstrap_cargo_test
           - tor_interface_arti_client_onion_service_cargo_test
@@ -24,9 +25,13 @@ jobs:
           - tor_interface_system_legacy_authenticated_onion_service_cargo_test
           - tor_interface_system_legacy_onion_service_cargo_test
           - tor_interface_mixed_arti_client_legacy_authenticated_onion_service_cargo_test
-          - tor_interface_mixed_arti_client_legacy_bootstrap_cargo_test
+          - tor_interface_mixed_arti_client_legacy_onion_service_cargo_test
           - tor_interface_mixed_legacy_arti_client_authenticated_onion_service_cargo_test
-          - tor_interface_mixed_legacy_arti_client_bootstrap_cargo_test
+          - tor_interface_mixed_legacy_arti_client_onion_service_cargo_test
+          # - tor_interface_mixed_arti_legacy_onion_service_cargo_test
+          - tor_interface_mixed_legacy_arti_onion_service_cargo_test
+          # - tor_interface_mixed_arti_legacy_authenticated_onion_service_cargo_test
+          # - tor_interface_mixed_legacy_arti_authenticated_onion_service_cargo_test
           - gosling_cargo_test
           - cgosling_cargo_test
           - gosling_cpp_bindings_test
@@ -41,10 +46,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libboost-all-dev tor libsqlite3-dev
+      - name: Install arti
+        run: |
+          cargo install arti --features experimental
       - name: Test
         run: |
           mkdir build
-          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DBUILD_JAVA_BINDINGS=ON
+          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_ARTI_TOR_PROVIDER=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DBUILD_JAVA_BINDINGS=ON
           cd build
           ctest --verbose -R ^${{matrix.test}}
   windows:
@@ -58,6 +66,7 @@ jobs:
           - tor_interface_mock_authenticated_onion_service_cargo_test
           - tor_interface_mock_bootstrap_cargo_test
           - tor_interface_mock_onion_service_cargo_test
+          - tor_interface_arti_bootstrap_cargo_test
           - tor_interface_arti_client_authenticated_onion_service_cargo_test
           - tor_interface_arti_client_bootstrap_cargo_test
           - tor_interface_arti_client_onion_service_cargo_test
@@ -68,9 +77,13 @@ jobs:
           - tor_interface_system_legacy_authenticated_onion_service_cargo_test
           - tor_interface_system_legacy_onion_service_cargo_test
           - tor_interface_mixed_arti_client_legacy_authenticated_onion_service_cargo_test
-          - tor_interface_mixed_arti_client_legacy_bootstrap_cargo_test
+          - tor_interface_mixed_arti_client_legacy_onion_service_cargo_test
           - tor_interface_mixed_legacy_arti_client_authenticated_onion_service_cargo_test
-          - tor_interface_mixed_legacy_arti_client_bootstrap_cargo_test
+          - tor_interface_mixed_legacy_arti_client_onion_service_cargo_test
+          # - tor_interface_mixed_arti_legacy_onion_service_cargo_test
+          # - tor_interface_mixed_legacy_arti_onion_service_cargo_test
+          # - tor_interface_mixed_arti_legacy_authenticated_onion_service_cargo_test
+          # - tor_interface_mixed_legacy_arti_authenticated_onion_service_cargo_test
           - gosling_cargo_test
           - cgosling_cargo_test
           - gosling_cpp_bindings_test
@@ -103,13 +116,16 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
           architecture: x86_64
+      # - name: Install arti
+      #   run: |
+      #     cargo install arti --features experimental
       - name: Test
         env:
           CC: clang
         run: |
           export PATH=$(cygpath -u ${JAVA_HOME})/bin:$PATH
           mkdir build
-          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DBUILD_JAVA_BINDINGS=ON
+          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_ARTI_TOR_PROVIDER=OFF -DENABLE_TOR_EXPERT_BUNDLE=ON -DBUILD_JAVA_BINDINGS=ON
           cd build
           ctest --verbose -R ^${{matrix.test}}
   macos:
@@ -123,6 +139,7 @@ jobs:
           - tor_interface_mock_authenticated_onion_service_cargo_test
           - tor_interface_mock_bootstrap_cargo_test
           - tor_interface_mock_onion_service_cargo_test
+          - tor_interface_arti_bootstrap_cargo_test
           - tor_interface_arti_client_authenticated_onion_service_cargo_test
           - tor_interface_arti_client_bootstrap_cargo_test
           - tor_interface_arti_client_onion_service_cargo_test
@@ -133,9 +150,13 @@ jobs:
           - tor_interface_system_legacy_authenticated_onion_service_cargo_test
           - tor_interface_system_legacy_onion_service_cargo_test
           - tor_interface_mixed_arti_client_legacy_authenticated_onion_service_cargo_test
-          - tor_interface_mixed_arti_client_legacy_bootstrap_cargo_test
+          - tor_interface_mixed_arti_client_legacy_onion_service_cargo_test
           - tor_interface_mixed_legacy_arti_client_authenticated_onion_service_cargo_test
-          - tor_interface_mixed_legacy_arti_client_bootstrap_cargo_test
+          - tor_interface_mixed_legacy_arti_client_onion_service_cargo_test
+          # - tor_interface_mixed_arti_legacy_onion_service_cargo_test
+          - tor_interface_mixed_legacy_arti_onion_service_cargo_test
+          # - tor_interface_mixed_arti_legacy_authenticated_onion_service_cargo_test
+          # - tor_interface_mixed_legacy_arti_authenticated_onion_service_cargo_test
           - gosling_cargo_test
           - cgosling_cargo_test
           - gosling_cpp_bindings_test
@@ -149,9 +170,12 @@ jobs:
       - name: Install Dependencies
         run: |
           brew install boost tor sqlite3
+      - name: Install arti
+        run: |
+          cargo install arti --features experimental
       - name: Test
         run: |
           mkdir build
-          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DBUILD_JAVA_BINDINGS=ON
+          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_ARTI_TOR_PROVIDER=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DBUILD_JAVA_BINDINGS=ON
           cd build
           ctest --verbose -R ^${{matrix.test}}
