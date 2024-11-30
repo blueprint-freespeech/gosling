@@ -831,10 +831,10 @@
 </span><span class="kw">use </span>curve25519_dalek::Scalar;
 <span class="kw">use </span>data_encoding::{BASE32_NOPAD, BASE64};
 <span class="kw">use </span>data_encoding_macro::new_encoding;
-<span class="attr">#[cfg(feature = <span class="string">"legacy-tor-provider"</span>)]
+<span class="attr">#[cfg(any(feature = <span class="string">"legacy-tor-provider"</span>, feature = <span class="string">"arti-tor-provider"</span>))]
 </span><span class="kw">use </span>rand::distributions::Alphanumeric;
 <span class="kw">use </span>rand::rngs::OsRng;
-<span class="attr">#[cfg(feature = <span class="string">"legacy-tor-provider"</span>)]
+<span class="attr">#[cfg(any(feature = <span class="string">"legacy-tor-provider"</span>, feature = <span class="string">"arti-tor-provider"</span>))]
 </span><span class="kw">use </span>rand::Rng;
 <span class="kw">use </span>sha3::{Digest, Sha3_256};
 <span class="kw">use </span>static_assertions::const_assert_eq;
@@ -935,7 +935,7 @@
 <span class="comment">// Free functions
 
 // securely generate password using OsRng
-</span><span class="attr">#[cfg(feature = <span class="string">"legacy-tor-provider"</span>)]
+</span><span class="attr">#[cfg(any(feature = <span class="string">"legacy-tor-provider"</span>, feature = <span class="string">"arti-tor-provider"</span>))]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>generate_password(length: usize) -&gt; String {
     <span class="kw">let </span>password: String = std::iter::repeat(())
         .map(|()| OsRng.sample(Alphanumeric))

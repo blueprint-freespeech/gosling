@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["arti_client_tor_client","censorship_circumvention","legacy_tor_client","legacy_tor_version","mock_tor_client","proxy","tor_crypto","tor_provider"]};
+window.SIDEBAR_ITEMS = {"mod":["arti_client_tor_client","arti_process","arti_tor_client","censorship_circumvention","legacy_tor_client","legacy_tor_version","mock_tor_client","proxy","tor_crypto","tor_provider"]};

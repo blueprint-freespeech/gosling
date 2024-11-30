@@ -452,6 +452,7 @@
 <a href="#452" id="452">452</a>
 <a href="#453" id="453">453</a>
 <a href="#454" id="454">454</a>
+<a href="#455" id="455">455</a>
 </pre></div><pre class="rust"><code><span class="comment">// standard
 </span><span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::boxed::Box;
@@ -732,6 +733,7 @@
 </span><span class="doccomment">/// A wrapper around a [`std::net::TcpStream`] with some Tor-specific customisations
 ///
 /// An onion-listener can be constructed using the [`TorProvider::connect()`] method.
+</span><span class="attr">#[derive(Debug)]
 </span><span class="kw">pub struct </span>OnionStream {
     <span class="kw">pub</span>(<span class="kw">crate</span>) stream: TcpStream,
     <span class="kw">pub</span>(<span class="kw">crate</span>) local_addr: <span class="prelude-ty">Option</span>&lt;OnionAddr&gt;,
