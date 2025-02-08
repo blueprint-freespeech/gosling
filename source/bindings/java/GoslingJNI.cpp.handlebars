@@ -107,12 +107,12 @@ public:
     jobject tcp_stream_to_java_socket(JNIEnv* env, boost::asio::ip::tcp::socket::native_handle_type native_stream) {
         std::lock_guard<std::mutex> lock(g_jni_glue->tcp_proxy_mutex);
 
-        boost::asio::ip::tcp::socket from_socket(io_service);
+        boost::asio::ip::tcp::socket from_socket(io_context);
         from_socket.assign(boost::asio::ip::tcp::v4(), native_stream);
         from_socket.non_blocking(true);
 
-        boost::asio::ip::tcp::acceptor acceptor(io_service, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 0));
-        boost::asio::ip::tcp::socket to_socket(io_service);
+        boost::asio::ip::tcp::acceptor acceptor(io_context, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 0));
+        boost::asio::ip::tcp::socket to_socket(io_context);
 
         const auto& local_endpoint = acceptor.local_endpoint();
         boost::asio::ip::address ip = local_endpoint.address();
@@ -163,10 +163,10 @@ public:
     // set a thread_local copy when gosling_context_poll_events is called so Java listeners can
     // be called
     static thread_local JNIEnv* env;
-    // Global mutex for accessing/modifying our tcp and io_service
+    // Global mutex for accessing/modifying our tcp and io_context
     std::mutex tcp_proxy_mutex;
-    // boost io_service for creating sockets
-    boost::asio::io_service io_service{};
+    // boost io_context for creating sockets
+    boost::asio::io_context io_context{};
 
     struct tcp_proxy {
         tcp_proxy(boost::asio::ip::tcp::socket&& a, boost::asio::ip::tcp::socket&& b) :
@@ -184,7 +184,7 @@ public:
             // based on existence of tcp proxies (no need to busy-spin when there
             // are no tcp proxies to pump)
 
-            // mutex on the tcp proxies and io_service
+            // mutex on the tcp proxies and io_context
             std::lock_guard<std::mutex> lock(g_jni_glue->tcp_proxy_mutex);
             for(auto it = g_jni_glue->tcp_proxies.begin();
                 it != g_jni_glue->tcp_proxies.end();) {

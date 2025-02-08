@@ -11,7 +11,7 @@ namespace example {
     inline unique_ptr<gosling_library> LIBRARY{};
     inline unique_ptr<gosling_context> GOSLING_CONTEXT{};
     inline unique_ptr<gosling_v3_onion_service_id> IDENTITY_SERVICE_ID{};
-    inline boost::asio::io_service IO_SERVICE{};
+    inline boost::asio::io_context IO_CONTEXT{};
 
     //
     // Handshake Constants
@@ -105,7 +105,7 @@ namespace example {
     // socket and buffer for async reads
     struct peer_connection {
         string read_buffer;
-        boost::asio::ip::tcp::socket socket = boost::asio::ip::tcp::socket(IO_SERVICE);
+        boost::asio::ip::tcp::socket socket = boost::asio::ip::tcp::socket(IO_CONTEXT);
     };
     // peer identity service id to tcp stream
     inline map<string, peer_connection> ENDPOINT_CONNECTIONS{};

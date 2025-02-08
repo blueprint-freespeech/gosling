@@ -498,9 +498,9 @@ void gosling_cpp_demo_impl(
   gosling_tcp_socket_t pat_stream = gosling_tcp_socket_t();
   gosling_tcp_socket_t alice_stream = gosling_tcp_socket_t();
 
-  boost::asio::io_service io_service;
-  boost::asio::ip::tcp::socket pat_socket(io_service);
-  boost::asio::ip::tcp::socket alice_socket(io_service);
+  boost::asio::io_context io_context;
+  boost::asio::ip::tcp::socket pat_socket(io_context);
+  boost::asio::ip::tcp::socket alice_socket(io_context);
 
   auto pat_channel_request_complete_callback = [&](gosling_context *context, size_t handshake_handle,
              const gosling_v3_onion_service_id *endpoint_service_id,
