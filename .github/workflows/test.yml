@@ -48,7 +48,7 @@ jobs:
           sudo apt-get install -y libboost-all-dev tor libsqlite3-dev liblzma-dev
       - name: Install arti
         run: |
-          cargo install arti --features experimental
+          cargo install arti --features experimental --version 1.4.0
       - name: Test
         run: |
           mkdir build
@@ -81,7 +81,7 @@ jobs:
           - tor_interface_mixed_legacy_arti_client_authenticated_onion_service_cargo_test
           - tor_interface_mixed_legacy_arti_client_onion_service_cargo_test
           # - tor_interface_mixed_arti_legacy_onion_service_cargo_test
-          # - tor_interface_mixed_legacy_arti_onion_service_cargo_test
+          - tor_interface_mixed_legacy_arti_onion_service_cargo_test
           # - tor_interface_mixed_arti_legacy_authenticated_onion_service_cargo_test
           # - tor_interface_mixed_legacy_arti_authenticated_onion_service_cargo_test
           - gosling_cargo_test
@@ -116,9 +116,9 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
           architecture: x86_64
-      # - name: Install arti
-      #   run: |
-      #     cargo install arti --features experimental
+      - name: Install arti
+        run: |
+          cargo install arti --features experimental --version 1.4.0
       - name: Test
         env:
           CC: clang
@@ -172,7 +172,7 @@ jobs:
           brew install boost tor sqlite3
       - name: Install arti
         run: |
-          cargo install arti --features experimental
+          cargo install arti --features experimental --version 1.4.0
       - name: Test
         run: |
           mkdir build
