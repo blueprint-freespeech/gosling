@@ -45,10 +45,10 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libboost-all-dev tor libsqlite3-dev
+          sudo apt-get install -y libboost-all-dev tor libsqlite3-dev liblzma-dev
       - name: Install arti
         run: |
-          cargo install arti --features experimental
+          cargo install arti --features experimental --version 1.3.2
       - name: Test
         run: |
           mkdir build
@@ -172,7 +172,7 @@ jobs:
           brew install boost tor sqlite3
       - name: Install arti
         run: |
-          cargo install arti --features experimental
+          cargo install arti --features experimental --version 1.3.2
       - name: Test
         run: |
           mkdir build
