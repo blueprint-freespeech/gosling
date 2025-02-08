@@ -333,7 +333,7 @@ fn build_bundled_legacy_pt_tor_provider(teb_path: &str, working_dir_name: &str) 
 
     // construct a obfs4 bridge line to use with lyrebird
     let mut bridge_line: *mut GoslingBridgeLine = ptr::null_mut();
-    let bridge_line_str = "obfs4 207.172.185.193:22223 F34AC0CDBC06918E54292A474578C99834A58893 cert=MjqosoyVylLQuLo4LH+eQ5hS7Z44s2CaMfQbIjJtn4bGRnvLv8ldSvSED5JpvWSxm09XXg iat-mode=0";
+    let bridge_line_str = "obfs4 45.145.95.6:27015 C5B7CD6946FF10C5B3E89691A7D3F2C122D2117C cert=TD7PbUO0/0k6xYHMPW3vJxICfkMZNdkRrb63Zhl5j9dW3iRGiCx0A7mPhe5T2EDzQ35+Zw iat-mode=0";
     let bridge_line_str = CString::new(bridge_line_str)?;
 
     require_noerror!(gosling_bridge_line_from_string(
