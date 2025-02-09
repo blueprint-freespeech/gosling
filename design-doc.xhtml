@@ -46,110 +46,258 @@
       </ul>
     </div>
     <div class="content">
-<h1 id="gosling-design-and-adversary-model">Gosling Design and Adversary Model</h1>
-<h4 id="richard-pospesel-richardblueprintforfreespeech.org">Richard Pospesel &lt;<a href="mailto:richard@blueprintforfreespeech.org">richard@blueprintforfreespeech.org</a>&gt;</h4>
-<h4 id="morgan-morgantorproject.org">Morgan &lt;<a href="mailto:morgan@torproject.org">morgan@torproject.org</a>&gt;</h4>
+<h1 id="gosling-design-and-adversary-model">Gosling Design and Adversary
+Model</h1>
+<h4 id="richard-pospesel-richardblueprintforfreespeech.org">Richard
+Pospesel &lt;<a
+href="mailto:richard@blueprintforfreespeech.org">richard@blueprintforfreespeech.org</a>&gt;</h4>
+<h4 id="morgan-morgantorproject.org">Morgan &lt;<a
+href="mailto:morgan@torproject.org">morgan@torproject.org</a>&gt;</h4>
 <hr />
 <h2 id="introduction">Introduction</h2>
-<p>The purpose of Gosling is to allow authorised peers in a peer-to-peer network to connect to each other while minimising the leaked metadata available to unauthorised peers.</p>
-<p>This document describes the design requirements and adversary model of the Gosling protocol and implementations. For the protocol details and particulars, please see the protocol specification<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>.</p>
-<p>The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in this document are to be interpreted as described in RFC 2119<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>.</p>
-<p>It is assumed that the reader is familiar with Tor<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>, onion-routing<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>, onion-services (aka hidden services)<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a>, and onion-service client-authorisation<a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a>.</p>
+<p>The purpose of Gosling is to allow authorised peers in a peer-to-peer
+network to connect to each other while minimising the leaked metadata
+available to unauthorised peers.</p>
+<p>This document describes the design requirements and adversary model
+of the Gosling protocol and implementations. For the protocol details
+and particulars, please see the protocol specification<a href="#fn1"
+class="footnote-ref" id="fnref1"
+role="doc-noteref"><sup>1</sup></a>.</p>
+<p>The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”,
+“SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in this
+document are to be interpreted as described in RFC 2119<a href="#fn2"
+class="footnote-ref" id="fnref2"
+role="doc-noteref"><sup>2</sup></a>.</p>
+<p>It is assumed that the reader is familiar with Tor<a href="#fn3"
+class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>,
+onion-routing<a href="#fn4" class="footnote-ref" id="fnref4"
+role="doc-noteref"><sup>4</sup></a>, onion-services (aka hidden
+services)<a href="#fn5" class="footnote-ref" id="fnref5"
+role="doc-noteref"><sup>5</sup></a>, and onion-service
+client-authorisation<a href="#fn6" class="footnote-ref" id="fnref6"
+role="doc-noteref"><sup>6</sup></a>.</p>
 <h2 id="design-requirements">Design Requirements</h2>
 <ol type="1">
 <li><p><strong>Authenticated long-term identity</strong></p>
-<p>Gosling peers MUST have a long-term identifier which is authenticated and cannot be impersonated.</p></li>
+<p>Gosling peers MUST have a long-term identifier which is authenticated
+and cannot be impersonated.</p></li>
 <li><p><strong>Peer anonymity</strong></p>
-<p>The public IP address of Gosling peers MUST NOT be accessible by other Gosling peers.</p></li>
+<p>The public IP address of Gosling peers MUST NOT be accessible by
+other Gosling peers.</p></li>
 <li><p><strong>Metadata resistance</strong></p>
-<p>The available metadata about Gosling sessions available to peers MUST be minimised.</p></li>
+<p>The available metadata about Gosling sessions available to peers MUST
+be minimised.</p></li>
 <li><p><strong>End-to-end encryption</strong></p>
-<p>All non-localhost communications MUST be end-to-end encrypted.</p></li>
+<p>All non-localhost communications MUST be end-to-end
+encrypted.</p></li>
 <li><p><strong>Decentralisation</strong></p>
-<p>The Gosling protocol MUST NOT depend on any centralised authority for any of its functionality.</p></li>
+<p>The Gosling protocol MUST NOT depend on any centralised authority for
+any of its functionality.</p></li>
 <li><p><strong>Custom client authorisation</strong></p>
-<p>The Gosling protocol MUST be customisable to allow application-specific methods of determining whether an authenticated client is <em>allowed</em> to be a peer.</p></li>
+<p>The Gosling protocol MUST be customisable to allow
+application-specific methods of determining whether an authenticated
+client is <em>allowed</em> to be a peer.</p></li>
 </ol>
 <h2 id="overview">Overview</h2>
-<p>Gosling peers have a long-term identity defined by an onion-service service-id. The onion-service associated with this service-id is used as an introduction point to acquire and authorise new peers. We refer to this onion-service as the identity server.</p>
-<p>New potential peers connect to the the identity server and are REQUIRED to complete the identity handshake before attempting further communications. If no new peers are needed, the identity server MAY be shutdown.</p>
+<p>Gosling peers have a long-term identity defined by an onion-service
+service-id. The onion-service associated with this service-id is used as
+an introduction point to acquire and authorise new peers. We refer to
+this onion-service as the identity server.</p>
+<p>New potential peers connect to the the identity server and are
+REQUIRED to complete the identity handshake before attempting further
+communications. If no new peers are needed, the identity server MAY be
+shutdown.</p>
 <p>The identity handshake serves three purposes:</p>
 <ol type="1">
-<li><strong>Peer authentication</strong>: to verify the potential new peer initiating the handshake with the identity server has ownership of the private keys needed to derive its claimed onion-service service-id (i.e. to verify the peer is not attempting to impersonate another peer)</li>
-<li><strong>Peer authorisation</strong>: once authenticated, to determine if the peer is allowed to connect (e.g. by consulting a block-list, verifying knowledge of a shared secret, calculating of some cryptographic proof-of-work, solving a CAPTCHA, etc)</li>
-<li><strong>Credential negotiation</strong>: once authorised, jointly build the configuration needed by the peer to access a second onion-service known as the endpoint server where the actual application-specific communications occur (e.g. transferring or syncing files, sending chat messages, etc)</li>
+<li><strong>Peer authentication</strong>: to verify the potential new
+peer initiating the handshake with the identity server has ownership of
+the private keys needed to derive its claimed onion-service service-id
+(i.e. to verify the peer is not attempting to impersonate another
+peer)</li>
+<li><strong>Peer authorisation</strong>: once authenticated, to
+determine if the peer is allowed to connect (e.g. by consulting a
+block-list, verifying knowledge of a shared secret, calculating of some
+cryptographic proof-of-work, solving a CAPTCHA, etc)</li>
+<li><strong>Credential negotiation</strong>: once authorised, jointly
+build the configuration needed by the peer to access a second
+onion-service known as the endpoint server where the actual
+application-specific communications occur (e.g. transferring or syncing
+files, sending chat messages, etc)</li>
 </ol>
-<p>The peer authorisation process of the identity handshake is customisable to meet the needs of the application. The Gosling protocol MAY be configured to include OPTIONAL attachments on the identity handshake messages in order to implement additional custom authorisation logic. If the connecting peer and the hosting peer wish to swap roles in the future, during subsequent identity handshakes the authorisation portion of the identity handshake MAY be short-circuited if appropriate for the application.</p>
-<p>After the identity handshake completes, the owner of the identity server MAY start an endpoint server for the newly-authorised peer to connect to. This endpoint server’s service-id SHALL be secret and known only to this pair of peers, and its descriptor (information needed to connect to it) SHALL be protected using the connecting peer’s agreed upon onion-service client-authorisation keypair. The endpoint server’s credentials MUST NOT be shared between multiple peers.</p>
-<p>After the identity handshake successfully completes, the host MAY start the endpoint server using the agreed-upon credentials, and the previously connecting peer MAY now attempt to connect to it. Connecting to the endpoint server REQUIREs completion of an endpoint handshake.</p>
+<p>The peer authorisation process of the identity handshake is
+customisable to meet the needs of the application. The Gosling protocol
+MAY be configured to include OPTIONAL attachments on the identity
+handshake messages in order to implement additional custom authorisation
+logic. If the connecting peer and the hosting peer wish to swap roles in
+the future, during subsequent identity handshakes the authorisation
+portion of the identity handshake MAY be short-circuited if appropriate
+for the application.</p>
+<p>After the identity handshake completes, the owner of the identity
+server MAY start an endpoint server for the newly-authorised peer to
+connect to. This endpoint server’s service-id SHALL be secret and known
+only to this pair of peers, and its descriptor (information needed to
+connect to it) SHALL be protected using the connecting peer’s agreed
+upon onion-service client-authorisation keypair. The endpoint server’s
+credentials MUST NOT be shared between multiple peers.</p>
+<p>After the identity handshake successfully completes, the host MAY
+start the endpoint server using the agreed-upon credentials, and the
+previously connecting peer MAY now attempt to connect to it. Connecting
+to the endpoint server REQUIREs completion of an endpoint handshake.</p>
 <p>The endpoint handshake serves three purposes:</p>
 <ol type="1">
-<li><strong>Peer authentication</strong>: to verify the peer initiating the handshake with the endpoint server has ownership of the private keys needed to derive its claimed onion-service service-id (i.e. to verify the peer is not attempting to impersonate another peer)</li>
-<li><strong>Peer authorisation</strong>: once authenticated, verify the peer’s identity corresponds with the identity associated with this endpoint server</li>
-<li><strong>TCP stream hand-off</strong>: upon completion, the underlying tcp connection is returned to the application</li>
+<li><strong>Peer authentication</strong>: to verify the peer initiating
+the handshake with the endpoint server has ownership of the private keys
+needed to derive its claimed onion-service service-id (i.e. to verify
+the peer is not attempting to impersonate another peer)</li>
+<li><strong>Peer authorisation</strong>: once authenticated, verify the
+peer’s identity corresponds with the identity associated with this
+endpoint server</li>
+<li><strong>TCP stream hand-off</strong>: upon completion, the
+underlying tcp connection is returned to the application</li>
 </ol>
-<p>The peer authorisation process of the endpoint handshake is not customisable.</p>
+<p>The peer authorisation process of the endpoint handshake is not
+customisable.</p>
 <h2 id="adversary-model">Adversary Model</h2>
-<p>The adversaries of Gosling-enabled applications have various possible goals, positions and capabilities.</p>
+<p>The adversaries of Gosling-enabled applications have various possible
+goals, positions and capabilities.</p>
 <h3 id="positioning-and-capabilities">Positioning and Capabilities</h3>
-<p>We have to assume a Gosling peer’s own computer is free of malware which can read or write data sent between the Gosling-using application and the underlying Tor implementation or which can read or write the application’s memory. Any attacks related to malicious 3rd-party applications running on the same machine as the Gosling-using application are considered explicitly out-of-scope.</p>
-<p>We assume our adversaries MAY be positioned in at least one of the following positions:</p>
+<p>We have to assume a Gosling peer’s own computer is free of malware
+which can read or write data sent between the Gosling-using application
+and the underlying Tor implementation or which can read or write the
+application’s memory. Any attacks related to malicious 3rd-party
+applications running on the same machine as the Gosling-using
+application are considered explicitly out-of-scope.</p>
+<p>We assume our adversaries MAY be positioned in at least one of the
+following positions:</p>
 <ol type="1">
 <li><p><strong>Authorised Peers</strong></p>
 <p>An adversary MAY run a malicious but authorised Gosling peer.</p>
-<p>Such an adversary would have access to the data sent to and from their peers, as well as the online/offline status metadata of these peers.</p></li>
+<p>Such an adversary would have access to the data sent to and from
+their peers, as well as the online/offline status metadata of these
+peers.</p></li>
 <li><p><strong>Unauthorised Peers</strong></p>
-<p>An adversary MAY attempt to connect to a Gosling peer’s identity server and attempt to complete an identity handshake.</p>
-<p>Such an adversary would have access to the identity server’s online/offline status. They would also be able send somehow malformed requests to the identity server.</p></li>
+<p>An adversary MAY attempt to connect to a Gosling peer’s identity
+server and attempt to complete an identity handshake.</p>
+<p>Such an adversary would have access to the identity server’s
+online/offline status. They would also be able send somehow malformed
+requests to the identity server.</p></li>
 <li><p><strong>Tor middle relays or upstream routers</strong></p>
-<p>An adversary MAY run modified, malicious Tor relays in the Tor Network. Alternatively, they MAY control the upstream network infrastructure of Tor relays.</p>
-<p>Such an adversary can observe the encrypted traffic over the connections between Tor relays, and they can collect metadata around when such connections occur.</p></li>
+<p>An adversary MAY run modified, malicious Tor relays in the Tor
+Network. Alternatively, they MAY control the upstream network
+infrastructure of Tor relays.</p>
+<p>Such an adversary can observe the encrypted traffic over the
+connections between Tor relays, and they can collect metadata around
+when such connections occur.</p></li>
 <li><p><strong>Tor guard relays or upstream routers</strong></p>
-<p>An adversary MAY run modified, malicious Tor guard relays in the Tor Network. Alternatively, they MAY control the upstream network infrastructure of Tor guard relays.</p>
-<p>Such an adversary can observe the encrypted traffic sent from a Gosling peer through the Tor Network, and they can collect metadata around when such connections occur. This adversary also knows the real identity of a Gosling peer, but does not know with whom said peer is ultimately communicating with.</p></li>
+<p>An adversary MAY run modified, malicious Tor guard relays in the Tor
+Network. Alternatively, they MAY control the upstream network
+infrastructure of Tor guard relays.</p>
+<p>Such an adversary can observe the encrypted traffic sent from a
+Gosling peer through the Tor Network, and they can collect metadata
+around when such connections occur. This adversary also knows the real
+identity of a Gosling peer, but does not know with whom said peer is
+ultimately communicating with.</p></li>
 <li><p><strong>Local network, ISP, or upstream routers</strong></p>
-<p>An adversary MAY control the network infrastructure between a Gosling peer and their Tor guard relay.</p>
-<p>Such an adversary can observe the encrypted traffic between a Gosling peer and its Tor guard relay, and they can collect metadata around when such connections occur. This adversary also knows the real identity of a Gosling peer, but does not know with whom said peer is ultimately communicating with. At this position, an adversary MAY block access to the Tor Network entirely and prevent a local Gosling peer from connecting.</p></li>
+<p>An adversary MAY control the network infrastructure between a Gosling
+peer and their Tor guard relay.</p>
+<p>Such an adversary can observe the encrypted traffic between a Gosling
+peer and its Tor guard relay, and they can collect metadata around when
+such connections occur. This adversary also knows the real identity of a
+Gosling peer, but does not know with whom said peer is ultimately
+communicating with. At this position, an adversary MAY block access to
+the Tor Network entirely and prevent a local Gosling peer from
+connecting.</p></li>
 </ol>
 <h3 id="goals-and-mitigations">Goals and Mitigations</h3>
-<p>We assume our adversaries have at least one of the following goals. We presume that an authorised peer (i.e. a remote Gosling peer which has completed an identity handshake and is now permitted to connect our associated endpoint server) is more trusted than an unauthorised peer.</p>
+<p>We assume our adversaries have at least one of the following goals.
+We presume that an authorised peer (i.e. a remote Gosling peer which has
+completed an identity handshake and is now permitted to connect our
+associated endpoint server) is more trusted than an unauthorised
+peer.</p>
 <ol type="1">
 <li><p><strong>Discovering peers’ real identity</strong></p>
 <p>An adversary may want to de-anonymise a Gosling peer.</p>
-<p><strong>Mitigations</strong>: Gosling is built on Tor onion-services. Tor onion-services ensure the anonymity of both the service itself, as well as those connecting to the service.</p></li>
+<p><strong>Mitigations</strong>: Gosling is built on Tor onion-services.
+Tor onion-services ensure the anonymity of both the service itself, as
+well as those connecting to the service.</p></li>
 <li><p><strong>Impersonating peers</strong></p>
 <p>An adversary may want to impersonate Gosling peer.</p>
-<p><strong>Mitigations</strong>: The Gosling handshake REQUIRES connecting clients prove ownership of the their identity keys while Tor itself ensures that the onion-services clients connect to are not being impersonated.</p></li>
+<p><strong>Mitigations</strong>: The Gosling handshake REQUIRES
+connecting clients prove ownership of the their identity keys while Tor
+itself ensures that the onion-services clients connect to are not being
+impersonated.</p></li>
 <li><p><strong>Building peer social graph</strong></p>
-<p>An adversary may want to identify which Gosling peers are or have been connected in the past.</p>
-<p><strong>Mitigations</strong>: Gosling is <em>purely</em> peer-to-peer and provides no mechanism or capability to allow peers to learn about <em>their</em> peers relationships to other peers. Gosling also has no need for centralised authority that keeps track of such peer-to-peer relationships. The only party which is able to know who a peer is connected to is that peer itself.</p></li>
-<li><p><strong>Correlating Gosling and non-Gosling activities</strong></p>
-<p>An adversary MAY want to determine if a Gosling peer is also a user of some other unrelated service.</p>
-<p>By default, Gosling’s only possible metadata-leak to untrusted peers is the identity server’s online/offline status. An adversary could therefore correlate a Gosling peer’s online/offline status with the online/offline status of an account on some 3rd party service. If these two profiles have sufficent overlap, a case could be made that the Gosling peer and the 3rd party service account are the same user.</p>
-<p><strong>Mitigations</strong>: To partially solve this problem, Gosling provides applications the ability to operate with various levels of privacy with an associated degradation in functionality.</p>
-<p>A Gosling peer’s public identity server is OPTIONAL and only needs to be enabled if the user wants new and un-trusted peers to connect to them. When the identity server is disabled, only a previously authorised peer can build this aforementioned online/offline profile by connecting to their endpoint server.</p>
-<p>Additionally, Gosling peer’s private endpoint servers are also OPTIONAL and only need to be enabled if the user wants their trusted peers to be able to connect to them. In this mode of operation, an application could still function by only allowing outgoing connections to other trusted peer’s endpoint servers.</p></li>
+<p>An adversary may want to identify which Gosling peers are or have
+been connected in the past.</p>
+<p><strong>Mitigations</strong>: Gosling is <em>purely</em> peer-to-peer
+and provides no mechanism or capability to allow peers to learn about
+<em>their</em> peers relationships to other peers. Gosling also has no
+need for centralised authority that keeps track of such peer-to-peer
+relationships. The only party which is able to know who a peer is
+connected to is that peer itself.</p></li>
+<li><p><strong>Correlating Gosling and non-Gosling
+activities</strong></p>
+<p>An adversary MAY want to determine if a Gosling peer is also a user
+of some other unrelated service.</p>
+<p>By default, Gosling’s only possible metadata-leak to untrusted peers
+is the identity server’s online/offline status. An adversary could
+therefore correlate a Gosling peer’s online/offline status with the
+online/offline status of an account on some 3rd party service. If these
+two profiles have sufficent overlap, a case could be made that the
+Gosling peer and the 3rd party service account are the same user.</p>
+<p><strong>Mitigations</strong>: To partially solve this problem,
+Gosling provides applications the ability to operate with various levels
+of privacy with an associated degradation in functionality.</p>
+<p>A Gosling peer’s public identity server is OPTIONAL and only needs to
+be enabled if the user wants new and un-trusted peers to connect to
+them. When the identity server is disabled, only a previously authorised
+peer can build this aforementioned online/offline profile by connecting
+to their endpoint server.</p>
+<p>Additionally, Gosling peer’s private endpoint servers are also
+OPTIONAL and only need to be enabled if the user wants their trusted
+peers to be able to connect to them. In this mode of operation, an
+application could still function by only allowing outgoing connections
+to other trusted peer’s endpoint servers.</p></li>
 <li><p><strong>Reading message contents</strong></p>
-<p>An adversary may want to know the contents of data transferred between Gosling peers.</p>
-<p><strong>Mitigations</strong>: End-to-end encryption of messages is provided by the underlying Tor implementation.</p></li>
+<p>An adversary may want to know the contents of data transferred
+between Gosling peers.</p>
+<p><strong>Mitigations</strong>: End-to-end encryption of messages is
+provided by the underlying Tor implementation.</p></li>
 <li><p><strong>Censorship</strong></p>
-<p>An adversary may want to prevent a Gosling peer from accessing its peer-to-peer network.</p>
-<p><strong>Mitigations</strong>: The only way to prevent Gosling peers from accessing each other is to block access to the Tor Network itself. Gosling can be configured to use pluggable-transports and bridges to access the Tor Network.</p></li>
+<p>An adversary may want to prevent a Gosling peer from accessing its
+peer-to-peer network.</p>
+<p><strong>Mitigations</strong>: The only way to prevent Gosling peers
+from accessing each other is to block access to the Tor Network itself.
+Gosling can be configured to use pluggable-transports and bridges to
+access the Tor Network.</p></li>
 </ol>
-<section class="footnotes" role="doc-endnotes">
+<aside id="footnotes" class="footnotes footnotes-end-of-document"
+role="doc-endnotes">
 <hr />
 <ol>
-<li id="fn1" role="doc-endnote"><p>Gosling Protocol <a href="gosling-spec.xhtml">https://gosling.technology/gosling-spec.xhtml</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" role="doc-endnote"><p>RFC 2119 <a href="https://www.rfc-editor.org/rfc/rfc2119">https://www.rfc-editor.org/rfc/rfc2119</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3" role="doc-endnote"><p>onion-routing <a href="https://en.wikipedia.org/wiki/Onion_routing">https://en.wikipedia.org/wiki/Onion_routing</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4" role="doc-endnote"><p>Tor <a href="https://support.torproject.org/about/">https://support.torproject.org/about/</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn5" role="doc-endnote"><p>onion-services <a href="https://community.torproject.org/onion-services/overview/">https://community.torproject.org/onion-services/overview/</a><a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn6" role="doc-endnote"><p>onion-service client-authorization <a href="https://community.torproject.org/onion-services/advanced/client-auth/">https://community.torproject.org/onion-services/advanced/client-auth/</a><a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn1"><p>Gosling Protocol <a
+href="gosling-spec.xhtml">https://gosling.technology/gosling-spec.xhtml</a><a
+href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>RFC 2119 <a
+href="https://www.rfc-editor.org/rfc/rfc2119">https://www.rfc-editor.org/rfc/rfc2119</a><a
+href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p>onion-routing <a
+href="https://en.wikipedia.org/wiki/Onion_routing">https://en.wikipedia.org/wiki/Onion_routing</a><a
+href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4"><p>Tor <a
+href="https://support.torproject.org/about/">https://support.torproject.org/about/</a><a
+href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5"><p>onion-services <a
+href="https://community.torproject.org/onion-services/overview/">https://community.torproject.org/onion-services/overview/</a><a
+href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn6"><p>onion-service client-authorization <a
+href="https://community.torproject.org/onion-services/advanced/client-auth/">https://community.torproject.org/onion-services/advanced/client-auth/</a><a
+href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
-</section>
+</aside>
       <hr/>
       <footer>
-        <p>&copy; 2023-2024 <a href="https://www.blueprintforfreespeech.net">Blueprint for Free Speech</a>. All rights reserved.</p>
+        <p>&copy; 2023-2025 <a href="https://www.blueprintforfreespeech.net">Blueprint for Free Speech</a>. All rights reserved.</p>
         <p><i>Page last modified date: 2024-08-18</i></p>
       </footer>
     </div>

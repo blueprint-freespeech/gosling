@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['out_5funique_5fptr_205',['out_unique_ptr',['../classgosling_1_1out__unique__ptr.html',1,'gosling']]]
+  ['throw_5fon_5ferror_0',['throw_on_error',['../classgosling_1_1throw__on__error.html',1,'gosling']]]
 ];

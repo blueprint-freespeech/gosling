@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['v3_5fonion_5fservice_5fid_5fstring_5flength_177',['V3_ONION_SERVICE_ID_STRING_LENGTH',['../cgosling_8h.html#a0aaa1394f5ee32c3fbafe214aa8c8bac',1,'cgosling.h']]],
-  ['v3_5fonion_5fservice_5fid_5fstring_5flength_178',['v3_onion_service_id_string_length',['../cgosling_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba8b2b086ddd4bf39b46691865b3ae46d5',1,'cgosling.h']]],
-  ['v3_5fonion_5fservice_5fid_5fstring_5fsize_179',['V3_ONION_SERVICE_ID_STRING_SIZE',['../cgosling_8h.html#a6abedca208342a4db35779303bfcd519',1,'cgosling.h']]],
-  ['v3_5fonion_5fservice_5fid_5fstring_5fsize_180',['v3_onion_service_id_string_size',['../cgosling_8h.html#a06fc87d81c62e9abb8790b6e5713c55baa48794c57511a5aeb25531e8dbb32aac',1,'cgosling.h']]]
+  ['x25519_5fprivate_5fkey_5fbase64_5flength_0',['x25519_private_key_base64_length',['../cgosling_8h.html#ae3dd0079e4531d2156511d5193a32334',1,'X25519_PRIVATE_KEY_BASE64_LENGTH:&#160;cgosling.h'],['../cgosling_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba9b8a9fd3f522f217801a1f4129490930',1,'x25519_private_key_base64_length:&#160;cgosling.h']]],
+  ['x25519_5fprivate_5fkey_5fbase64_5fsize_1',['x25519_private_key_base64_size',['../cgosling_8h.html#a0867ebca8cb36d938b21e67fc7dece7d',1,'X25519_PRIVATE_KEY_BASE64_SIZE:&#160;cgosling.h'],['../cgosling_8h.html#a06fc87d81c62e9abb8790b6e5713c55bad39aea2d1abbef598ff5d3f065871ee5',1,'x25519_private_key_base64_size:&#160;cgosling.h']]],
+  ['x25519_5fpublic_5fkey_5fbase32_5flength_2',['x25519_public_key_base32_length',['../cgosling_8h.html#ad1304c0526a80e23c547a4595f1be63a',1,'X25519_PUBLIC_KEY_BASE32_LENGTH:&#160;cgosling.h'],['../cgosling_8h.html#a06fc87d81c62e9abb8790b6e5713c55badae2d9e5eb236bc93a1f8f60bd93ab8d',1,'x25519_public_key_base32_length:&#160;cgosling.h']]],
+  ['x25519_5fpublic_5fkey_5fbase32_5fsize_3',['x25519_public_key_base32_size',['../cgosling_8h.html#abd10f9c63b34e794fb6e8a767e5ae3a2',1,'X25519_PUBLIC_KEY_BASE32_SIZE:&#160;cgosling.h'],['../cgosling_8h.html#a06fc87d81c62e9abb8790b6e5713c55ba9f1c66b6955c5643bd032e659c9b709a',1,'x25519_public_key_base32_size:&#160;cgosling.h']]]
 ];

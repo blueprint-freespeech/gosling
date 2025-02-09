@@ -47,18 +47,41 @@
     </div>
     <div class="content">
 <h1 id="gosling-protocol-v0.1.0">Gosling Protocol v0.1.0</h1>
-<h4 id="richard-pospesel-richardblueprintforfreespeech.org">Richard Pospesel &lt;<a href="mailto:richard@blueprintforfreespeech.org">richard@blueprintforfreespeech.org</a>&gt;</h4>
-<h4 id="morgan-morgantorproject.org">Morgan &lt;<a href="mailto:morgan@torproject.org">morgan@torproject.org</a>&gt;</h4>
+<h4 id="richard-pospesel-richardblueprintforfreespeech.org">Richard
+Pospesel &lt;<a
+href="mailto:richard@blueprintforfreespeech.org">richard@blueprintforfreespeech.org</a>&gt;</h4>
+<h4 id="morgan-morgantorproject.org">Morgan &lt;<a
+href="mailto:morgan@torproject.org">morgan@torproject.org</a>&gt;</h4>
 <hr />
-<p>Gosling is a peer-to-peer authentication and authorisation protocol built on Tor onion-services. For a high-level overview of the protocol and its purpose, please see the design document<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>.</p>
-<p>The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in this document are to be interpreted as described in RFC 2119<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>.</p>
+<p>Gosling is a peer-to-peer authentication and authorisation protocol
+built on Tor onion-services. For a high-level overview of the protocol
+and its purpose, please see the design document<a href="#fn1"
+class="footnote-ref" id="fnref1"
+role="doc-noteref"><sup>1</sup></a>.</p>
+<p>The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”,
+“SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL” in this
+document are to be interpreted as described in RFC 2119<a href="#fn2"
+class="footnote-ref" id="fnref2"
+role="doc-noteref"><sup>2</sup></a>.</p>
 <h2 id="protocol">Protocol</h2>
-<p>The Gosling protocol is defined in terms of a remote procedure call (RPC) interface. Specifically, Gosling uses Honk-RPC v0.1.0<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>.</p>
-<p>Honk-RPC itself uses BSON<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a> as the wire format for its messages, so the types in the following function definitions are referring to BSON-types. Any type marked <code>binary</code> is specifically encoded as the ‘Generic binary subtype’ (<code>\x00</code>). Any type marked <code>document</code> is specifically encoded as a BSON document (an encoded set of key/value pairs).</p>
-<p>Calling these functions out of order MUST result in an error being returned and the connection being closed.</p>
+<p>The Gosling protocol is defined in terms of a remote procedure call
+(RPC) interface. Specifically, Gosling uses Honk-RPC v0.1.0<a
+href="#fn3" class="footnote-ref" id="fnref3"
+role="doc-noteref"><sup>3</sup></a>.</p>
+<p>Honk-RPC itself uses BSON<a href="#fn4" class="footnote-ref"
+id="fnref4" role="doc-noteref"><sup>4</sup></a> as the wire format for
+its messages, so the types in the following function definitions are
+referring to BSON-types. Any type marked <code>binary</code> is
+specifically encoded as the ‘Generic binary subtype’
+(<code>\x00</code>). Any type marked <code>document</code> is
+specifically encoded as a BSON document (an encoded set of key/value
+pairs).</p>
+<p>Calling these functions out of order MUST result in an error being
+returned and the connection being closed.</p>
 <h3 id="identity-handshake">Identity Handshake</h3>
 <h4 id="sequence-diagram">Sequence Diagram</h4>
-<p><img src="images/identity_handshake.svg" title="identity handshake sequence diagram" /></p>
+<p><img src="images/identity_handshake.svg"
+title="identity handshake sequence diagram" /></p>
 <h4 id="identity-server-rpc-api">Identity Server RPC API</h4>
 <pre><code>namespace gosling_identity {
   // Begins an identity handshake session.
@@ -115,9 +138,13 @@
                 document challenge_response) -&gt; string;
 }</code></pre>
 <h3 id="endpoint-handshake">Endpoint Handshake</h3>
-<p>A client MAY connect an <strong>endpoint server</strong> multiple times by specifying different channel names. For example, a chat application could have concurrent ‘messaging’ and ‘file transfer’ channels.</p>
+<p>A client MAY connect an <strong>endpoint server</strong> multiple
+times by specifying different channel names. For example, a chat
+application could have concurrent ‘messaging’ and ‘file transfer’
+channels.</p>
 <h4 id="sequence-diagram-1">Sequence Diagram</h4>
-<p><img src="images/endpoint_handshake.svg" title="endpoint handshake sequence diagram" /></p>
+<p><img src="images/endpoint_handshake.svg"
+title="endpoint handshake sequence diagram" /></p>
 <h4 id="endpoint-server-rpc-api">Endpoint Server RPC API</h4>
 <pre><code>namespace gosling_endpoint {
   // Begins an identity handshake session.
@@ -153,8 +180,13 @@
                 binary client_identity_proof_signature) -&gt; document;
 }</code></pre>
 <h4 id="proofs-and-signatures">Proofs and Signatures</h4>
-<h3 id="client-identity-proof-calculation-and-verification">Client Identity Proof Calculation and Verification</h3>
-<p>The purpose of this proof verification is for a connecting <strong>identity client</strong> or <strong>endpoint client</strong> to prove it owns the ed25519 private key used to derive the v3 onion-service service-id it claims as its identity. This prevents client impersonation.</p>
+<h3 id="client-identity-proof-calculation-and-verification">Client
+Identity Proof Calculation and Verification</h3>
+<p>The purpose of this proof verification is for a connecting
+<strong>identity client</strong> or <strong>endpoint client</strong> to
+prove it owns the ed25519 private key used to derive the v3
+onion-service service-id it claims as its identity. This prevents client
+impersonation.</p>
 <p>The proof is calculated as:</p>
 <pre><code>proof = domain_separator  +
         request           +
@@ -162,41 +194,101 @@
         server_service_id +
         hex_client_cookie +
         hex_server_cookie</code></pre>
-<p>The <code>+</code> operator here indicates concatenation with a null byte in-between. For example, <code>"a" + "b" + "c"</code> would be encoded as the byte array <code>['a', \x00, 'b', \x00, 'c']</code>.</p>
-<p>Each of the parameters MUST be representable as an ASCII string and do not include an implicit null-terminator. The parameters are defined as:</p>
+<p>The <code>+</code> operator here indicates concatenation with a null
+byte in-between. For example, <code>"a" + "b" + "c"</code> would be
+encoded as the byte array <code>['a', \x00, 'b', \x00, 'c']</code>.</p>
+<p>Each of the parameters MUST be representable as an ASCII string and
+do not include an implicit null-terminator. The parameters are defined
+as:</p>
 <ul>
-<li><code>domain_separator</code> : an ASCII string; for the <strong>identity handshake</strong>, this string is <code>gosling-identity</code> and for the <strong>endpoint handshake</strong>, this string is <code>gosling-endpoint</code></li>
-<li><code>request</code> : an ASCII string; for the <strong>identity handshake</strong>, this string is the requested endpoint and for the <strong>endpoint handshake</strong>, this string is the requested channel</li>
-<li><code>client_service_id</code> : an ASCII string; the base-32 encoded onion-service service-id (without the “.onion” suffix) of the connecting client’s <strong>identity server</strong></li>
-<li><code>server_service_id</code> : an ASCII string; the base-32 encoded onion-service service-id (without the “.onion” suffix) of the connected server (i.e. when connected to the <strong>identity server</strong>, that <strong>identity server</strong>’s onion-service service-id is used; when connected to an <strong>endpoint server</strong>, that <strong>endpoint server</strong>’s onion-service service-id is used)</li>
-<li><code>client_cookie</code> : an ASCII string; the cryptographically-randomly generated 32-byte client cookie encoded as lower-case hexadecimal (0-9a-f)</li>
-<li><code>server_cookie</code> : an ASCII string; the cryptographically-randomly generated 32-byte server cookie encoded as lower-case hexadecimal (0-9a-f)</li>
+<li><code>domain_separator</code> : an ASCII string; for the
+<strong>identity handshake</strong>, this string is
+<code>gosling-identity</code> and for the <strong>endpoint
+handshake</strong>, this string is <code>gosling-endpoint</code></li>
+<li><code>request</code> : an ASCII string; for the <strong>identity
+handshake</strong>, this string is the requested endpoint and for the
+<strong>endpoint handshake</strong>, this string is the requested
+channel</li>
+<li><code>client_service_id</code> : an ASCII string; the base-32
+encoded onion-service service-id (without the “.onion” suffix) of the
+connecting client’s <strong>identity server</strong></li>
+<li><code>server_service_id</code> : an ASCII string; the base-32
+encoded onion-service service-id (without the “.onion” suffix) of the
+connected server (i.e. when connected to the <strong>identity
+server</strong>, that <strong>identity server</strong>’s onion-service
+service-id is used; when connected to an <strong>endpoint
+server</strong>, that <strong>endpoint server</strong>’s onion-service
+service-id is used)</li>
+<li><code>client_cookie</code> : an ASCII string; the
+cryptographically-randomly generated 32-byte client cookie encoded as
+lower-case hexadecimal (0-9a-f)</li>
+<li><code>server_cookie</code> : an ASCII string; the
+cryptographically-randomly generated 32-byte server cookie encoded as
+lower-case hexadecimal (0-9a-f)</li>
 </ul>
-<p>A client signs the above proof with its ed25519 private key. A gosling server MUST verify this signature using the client’s ed25519 public key derived from the client’s provided v3 onion-service service-id .</p>
-<h3 id="client-authorization-signature-generation-and-verification">Client-Authorization Signature Generation and Verification</h3>
-<p>The purpose of this verification is to verify the connecting <strong>identity client</strong> owns the x25519 private key used to derive the x25519 public key it provides for <strong>endpoint server</strong> client-authorisation. This prevents impersonation of other clients.</p>
+<p>A client signs the above proof with its ed25519 private key. A
+gosling server MUST verify this signature using the client’s ed25519
+public key derived from the client’s provided v3 onion-service
+service-id .</p>
+<h3
+id="client-authorization-signature-generation-and-verification">Client-Authorization
+Signature Generation and Verification</h3>
+<p>The purpose of this verification is to verify the connecting
+<strong>identity client</strong> owns the x25519 private key used to
+derive the x25519 public key it provides for <strong>endpoint
+server</strong> client-authorisation. This prevents impersonation of
+other clients.</p>
 <h4 id="generation">Generation</h4>
-<p>The signature is calculated by the <strong>identity client</strong> by signing its v3 onion-service service-id (without the “.onion” suffix) with the ed25519 private key derived from the x25519 private key used to calculate the provided x25519 public key to use for onion-service client-authorization. The <strong>identity server</strong> verifies this signature with the ed25519 public key derived from the <strong>identity client’s</strong> provided x25519 key.</p>
-<p><img src="images/client_auth_signature.svg" title="client-authorisation x25519 signature calculation" /></p>
-<p>An <strong>identity client</strong> proves they control the x25519 private key associated with the provided x25519 public key (used for onion service client-authorization) by generating the above signature and sending it to the <strong>identity server</strong>.</p>
+<p>The signature is calculated by the <strong>identity client</strong>
+by signing its v3 onion-service service-id (without the “.onion” suffix)
+with the ed25519 private key derived from the x25519 private key used to
+calculate the provided x25519 public key to use for onion-service
+client-authorization. The <strong>identity server</strong> verifies this
+signature with the ed25519 public key derived from the <strong>identity
+client’s</strong> provided x25519 key.</p>
+<p><img src="images/client_auth_signature.svg"
+title="client-authorisation x25519 signature calculation" /></p>
+<p>An <strong>identity client</strong> proves they control the x25519
+private key associated with the provided x25519 public key (used for
+onion service client-authorization) by generating the above signature
+and sending it to the <strong>identity server</strong>.</p>
 <h4 id="verification">Verification</h4>
-<p>To verify this signature, the <strong>identity server</strong> first converts the received x25519 public key + signbit into an ed25519 public key. It then verifies the signature using this derived key.</p>
-<p><img src="images/client_auth_signature_verification.svg" title="client-authorisation x25519 signature verification" /></p>
-<p>A gosling <strong>identity server</strong> MUST verify the validity of the provided signature to prove the <strong>identity client</strong> controls the private x25519 key used to derive the provided public x25519 key.</p>
+<p>To verify this signature, the <strong>identity server</strong> first
+converts the received x25519 public key + signbit into an ed25519 public
+key. It then verifies the signature using this derived key.</p>
+<p><img src="images/client_auth_signature_verification.svg"
+title="client-authorisation x25519 signature verification" /></p>
+<p>A gosling <strong>identity server</strong> MUST verify the validity
+of the provided signature to prove the <strong>identity client</strong>
+controls the private x25519 key used to derive the provided public
+x25519 key.</p>
 <h2 id="acknowledgements">Acknowledgements</h2>
-<p>Creation of innovative free software needs support. We thank the NGI Assure Fund, a fund established by NLnet with financial support from the European Commission’s Next Generation Internet programme, under the aegis of DG Communications Networks, Content and Technology under grant agreement No 957073</p>
-<section class="footnotes" role="doc-endnotes">
+<p>Creation of innovative free software needs support. We thank the NGI
+Assure Fund, a fund established by NLnet with financial support from the
+European Commission’s Next Generation Internet programme, under the
+aegis of DG Communications Networks, Content and Technology under grant
+agreement No 957073</p>
+<aside id="footnotes" class="footnotes footnotes-end-of-document"
+role="doc-endnotes">
 <hr />
 <ol>
-<li id="fn1" role="doc-endnote"><p>Gosling Design and Adversary Model <a href="design-doc.xhtml">https://gosling.technology/design-doc.xhtml</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2" role="doc-endnote"><p>RFC 2119 <a href="https://www.rfc-editor.org/rfc/rfc2119">https://www.rfc-editor.org/rfc/rfc2119</a><a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3" role="doc-endnote"><p>Honk-RPC v0.1.0 specification <a href="honk-rpc-spec.xhtml">https://gosling.technology/honk-rpc-spec.xtml</a><a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4" role="doc-endnote"><p>BSON specification <a href="https://bsonspec.org/spec.html">https://bsonspec.org/spec.html</a><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn1"><p>Gosling Design and Adversary Model <a
+href="design-doc.xhtml">https://gosling.technology/design-doc.xhtml</a><a
+href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>RFC 2119 <a
+href="https://www.rfc-editor.org/rfc/rfc2119">https://www.rfc-editor.org/rfc/rfc2119</a><a
+href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p>Honk-RPC v0.1.0 specification <a
+href="honk-rpc-spec.xhtml">https://gosling.technology/honk-rpc-spec.xtml</a><a
+href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4"><p>BSON specification <a
+href="https://bsonspec.org/spec.html">https://bsonspec.org/spec.html</a><a
+href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
-</section>
+</aside>
       <hr/>
       <footer>
-        <p>&copy; 2023-2024 <a href="https://www.blueprintforfreespeech.net">Blueprint for Free Speech</a>. All rights reserved.</p>
+        <p>&copy; 2023-2025 <a href="https://www.blueprintforfreespeech.net">Blueprint for Free Speech</a>. All rights reserved.</p>
         <p><i>Page last modified date: 2024-08-18</i></p>
       </footer>
     </div>
