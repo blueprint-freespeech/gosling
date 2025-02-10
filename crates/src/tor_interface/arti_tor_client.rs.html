@@ -252,7 +252,9 @@
 <a href="#251" id="251">251</a>
 <a href="#252" id="252">252</a>
 <a href="#253" id="253">253</a>
-<a href="#254" id="254">254</a></pre></div><pre class="rust"><code><span class="comment">// std
+<a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a></pre></div><pre class="rust"><code><span class="comment">// std
 </span><span class="kw">use </span>std::collections::BTreeMap;
 <span class="kw">use </span>std::ops::DerefMut;
 <span class="kw">use </span>std::path::PathBuf;
@@ -260,7 +262,7 @@
 <span class="kw">use </span>std::time::{Duration, Instant};
 
 <span class="comment">// extern
-</span><span class="kw">use </span>arti_rpc_client_core::{ObjectId, RpcConn, RpcConnBuilder};
+</span><span class="kw">use </span>arti_rpc_client_core::{RpcConn, RpcConnBuilder};
 
 <span class="comment">// internal crates
 </span><span class="kw">use </span><span class="kw">crate</span>::tor_crypto::<span class="kw-2">*</span>;
@@ -308,7 +310,7 @@
 }
 
 <span class="kw">pub struct </span>ArtiTorClient {
-    daemon: <span class="prelude-ty">Option</span>&lt;ArtiProcess&gt;,
+    _daemon: <span class="prelude-ty">Option</span>&lt;ArtiProcess&gt;,
     rpc_conn: RpcConn,
     pending_log_lines: Arc&lt;Mutex&lt;Vec&lt;String&gt;&gt;&gt;,
     pending_events: Arc&lt;Mutex&lt;Vec&lt;TorEvent&gt;&gt;&gt;,
@@ -333,15 +335,17 @@
                     ArtiProcess::new(arti_bin_path.as_path(), data_directory.as_path(), Arc::downgrade(<span class="kw-2">&amp;</span>pending_log_lines))
                         .map_err(Error::ArtiProcessCreationFailed)<span class="question-mark">?</span>;
 
-                <span class="kw">let </span>builder = RpcConnBuilder::from_connect_string(daemon.connect_string()).unwrap();
-
                 <span class="kw">let </span>rpc_conn = {
-                    <span class="comment">// try to open an rpc conneciton for 5 seconds beore giving up
+                    <span class="comment">// try to open an rpc connnection for 5 seconds beore giving up
                     </span><span class="kw">let </span>timeout = Duration::from_secs(<span class="number">5</span>);
                     <span class="kw">let </span><span class="kw-2">mut </span>rpc_conn: <span class="prelude-ty">Option</span>&lt;RpcConn&gt; = <span class="prelude-val">None</span>;
 
                     <span class="kw">let </span>start = Instant::now();
                     <span class="kw">while </span>rpc_conn.is_none() &amp;&amp; start.elapsed() &lt; timeout {
+
+                        <span class="kw">let </span><span class="kw-2">mut </span>builder = RpcConnBuilder::new();
+                        builder.prepend_literal_path(daemon.connect_string().into());
+
                         rpc_conn = builder.connect().map_or(<span class="prelude-val">None</span>, |rpc_conn| <span class="prelude-val">Some</span>(rpc_conn));
                     }
 
@@ -360,12 +364,12 @@
         };
 
         <span class="kw">let </span>pending_events = <span class="macro">std::vec!</span>[TorEvent::LogReceived {
-            line: <span class="string">"Starting arti-client TorProvider"</span>.to_string()
+            line: <span class="string">"Starting arti TorProvider"</span>.to_string()
         }];
         <span class="kw">let </span>pending_events = Arc::new(Mutex::new(pending_events));
 
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
-            daemon: <span class="prelude-val">Some</span>(daemon),
+            _daemon: <span class="prelude-val">Some</span>(daemon),
             rpc_conn,
             pending_log_lines,
             pending_events,
