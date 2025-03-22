@@ -32,6 +32,9 @@ pub enum Error {
     #[error("invalid circuit token: {0}")]
     CircuitTokenInvalid(CircuitToken),
 
+    #[error("failed to spawn connect_async thread")]
+    ConnectAsyncThreadSpawnFailed(#[source] std::io::Error),
+
     #[error("not implemented")]
     NotImplemented(),
 }
@@ -55,10 +58,11 @@ pub enum ArtiTorClientConfig {
 
 pub struct ArtiTorClient {
     _daemon: Option<ArtiProcess>,
-    rpc_conn: RpcConn,
+    rpc_conn: Arc<RpcConn>,
     pending_log_lines: Arc<Mutex<Vec<String>>>,
     pending_events: Arc<Mutex<Vec<TorEvent>>>,
     bootstrapped: bool,
+    next_connect_handle: ConnectHandle,
     // our list of circuit tokens for the arti daemon
     circuit_token_counter: usize,
     circuit_tokens: BTreeMap<CircuitToken, String>,
@@ -114,10 +118,11 @@ impl ArtiTorClient {
 
         Ok(Self {
             _daemon: Some(daemon),
-            rpc_conn,
+            rpc_conn: Arc::new(rpc_conn),
             pending_log_lines,
             pending_events,
             bootstrapped: false,
+            next_connect_handle: Default::default(),
             circuit_token_counter: 0,
             circuit_tokens: Default::default(),
         })
@@ -231,13 +236,67 @@ impl TorProvider for ArtiTorClient {
             ""
         };
 
-        let stream = Self::connect_impl(target.clone(), &self.rpc_conn, isolation)?;
+        let stream = Self::connect_impl(target.clone(), self.rpc_conn.as_ref(), isolation)?;
 
         Ok(OnionStream {
             stream,
             local_addr: None,
             peer_addr: Some(target),
         })
+    }
+
+    fn connect_async(
+        &mut self,
+        target: TargetAddr,
+        circuit_token: Option<CircuitToken>,
+    ) -> Result<ConnectHandle, tor_provider::Error> {
+
+        // map circuit_token to isolation string for arti
+        let isolation = if let Some(circuit_token) = circuit_token {
+            if let Some(isolation) = self.circuit_tokens.get(&circuit_token) {
+                isolation.as_str()
+            } else {
+                return Err(Error::CircuitTokenInvalid(circuit_token))?;
+            }
+        } else {
+            ""
+        }.to_string();
+
+        let handle = self.next_connect_handle;
+        self.next_connect_handle += 1usize;
+
+        let rpc_conn = Arc::downgrade(&self.rpc_conn);
+        let pending_events = Arc::downgrade(&self.pending_events);
+
+        // open connection on background thread
+        std::thread::Builder::new()
+            .spawn(move || {
+                if let Some(rpc_conn) = rpc_conn.upgrade() {
+                    let stream = Self::connect_impl(target.clone(), &rpc_conn, isolation.as_str());
+                    if let Some(pending_events) = pending_events.upgrade() {
+                        let event = match stream {
+                            Ok(stream) => {
+                                let stream = OnionStream {
+                                    stream,
+                                    local_addr: None,
+                                    peer_addr: Some(target),
+                                };
+                                TorEvent::ConnectComplete{
+                                    handle,
+                                    stream,
+                                }
+                            },
+                            Err(error) => TorEvent::ConnectFailed{
+                                handle,
+                                error,
+                            },
+                        };
+                        let mut pending_events = pending_events.lock().expect("async_events mutex poisoned");
+                        pending_events.push(event);
+                    }
+                }
+            }).map_err(Error::ConnectAsyncThreadSpawnFailed)?;
+        Ok(handle)
     }
 
     fn listener(

@@ -28,6 +28,10 @@ pub enum Error {
     #[error("{0}")]
     /// Other miscellaneous error
     Generic(String),
+
+    #[error("Function not implemented")]
+    /// Placeholder for unimplemented functions
+    NotImplemented,
 }
 
 //
@@ -266,10 +270,23 @@ pub enum TorEvent {
         /// The service-id of the onion-service which has been published.
         service_id: V3OnionServiceId,
     },
+    /// TorProvider::connect_async() call completed successfully
+    ConnectComplete {
+        handle: ConnectHandle,
+        stream: OnionStream,
+    },
+    /// TorProvider::connect_async() call failed
+    ConnectFailed {
+        handle: ConnectHandle,
+        error: Error,
+    },
 }
 
 /// A `CircuitToken` is used to specify circuits used to connect to clearnet services.
 pub type CircuitToken = usize;
+
+/// A `ConnectHandle` is used to associate a connect request with returned stream
+pub type ConnectHandle = usize;
 
 //
 // Onion Stream
@@ -439,6 +456,20 @@ pub trait TorProvider: Send {
         target: TargetAddr,
         circuit: Option<CircuitToken>,
     ) -> Result<OnionStream, Error>;
+    /// Anonymously connect to the address specified by `target` over the Tor Network. The resulting [`OnionStream`] (or failure) will be returned as a [`TorEvent`] from [`TorProvider::update()`].
+    ///
+    /// When conecting to clearnet targets, an optional [`CircuitToken`] may be used to enforce usage of different circuits through the Tor Network. If `circuit` is `None`, the default circuit is used.
+    ///
+    ///Connections made with different `CircuitToken`s are required to use different circuits through the Tor Network. However, connections made with identical `CircuitToken`s are *not* required to use identical circuits through the Tor Network.
+    ///
+    /// Specifying a circuit token when connecting to an onion-service has no effect on the resulting circuit.
+    fn connect_async(
+        &mut self,
+        _target: TargetAddr,
+        _circuit: Option<CircuitToken>,
+    ) -> Result<ConnectHandle, Error> {
+        Err(Error::NotImplemented)
+    }
     /// Anonymously start an onion-service and return the associated [`OnionListener`].
     ///
     ///The resulting onion-service will not be reachable by clients until [`TorProvider::update()`] returns a [`TorEvent::OnionServicePublished`] event. The optional `authorised_clients` parameter may be used to require client authorisation keys to connect to resulting onion-service. For further information, see the Tor Project's onion-services [client-auth documentation](https://community.torproject.org/onion-services/advanced/client-auth).

@@ -372,22 +372,45 @@ pub(crate) fn bootstrap_test(mut tor: Box<dyn TorProvider>, skip_connect_tests: 
 
     if !skip_connect_tests {
 
-        // example.com
-        let stream = tor.connect(TargetAddr::from_str("www.example.com:80")?, None)?;
-        println!("stream: {stream:?}");
+        let addresses = [
+            // http://example.com
+            TargetAddr::from_str("www.example.com:80")?,
+            // google dns (ipv4)
+            TargetAddr::from_str("8.8.8.8:53")?,
+            // google dns (ipv6)
+            TargetAddr::from_str("[2001:4860:4860::8888]:53")?,
+            // riseup onion service
+            TargetAddr::from_str("vww6ybal4bd7szmgncyruucpgfkqahzddi37ktceo3ah7ngmcopnpyyd.onion:80")?
+        ];
 
-        // google dns (ipv4)
-        let stream = tor.connect(TargetAddr::from_str("8.8.8.8:53")?, None)?;
-        println!("stream: {stream:?}");
+        // connect synchrynously
+        for addr in &addresses {
+            let stream = tor.connect(addr.clone(), None)?;
+            println!("stream: {stream:?}");
+        }
 
-        // google dns (ipv6)
-        let stream = tor.connect(TargetAddr::from_str("[2001:4860:4860::8888]:53")?, None)?;
-        println!("stream: {stream:?}");
+        // connect async
+        for addr in &addresses {
+            let connect_handle = tor.connect_async(addr.clone(), None)?;
 
-        // riseup onion service
-        let stream = tor.connect(TargetAddr::from_str("vww6ybal4bd7szmgncyruucpgfkqahzddi37ktceo3ah7ngmcopnpyyd.onion:80")?, None)?;
-        println!("stream: {stream:?}");
-
+            let mut connect_complete = false;
+            while !connect_complete {
+                for event in tor.update()?.drain(..) {
+                    match event {
+                        TorEvent::ConnectComplete{handle, stream} => {
+                            assert_eq!(handle, connect_handle);
+                            println!("async stream: {stream:?}");
+                            connect_complete = true;
+                        },
+                        TorEvent::ConnectFailed{handle, error} => {
+                            assert_eq!(handle, connect_handle);
+                            anyhow::bail!(error);
+                        },
+                        _ => (),
+                    }
+                }
+            }
+        }
     }
 
     Ok(())

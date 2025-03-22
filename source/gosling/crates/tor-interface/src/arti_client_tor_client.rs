@@ -82,6 +82,7 @@ pub struct ArtiClientTorClient {
     arti_client: TorClient<PreferredRuntime>,
     pending_events: Arc<Mutex<Vec<TorEvent>>>,
     bootstrapped: Arc<AtomicBool>,
+    next_connect_handle: ConnectHandle,
 }
 
 // used to forward traffic to/from arti to local tcp streams
@@ -194,13 +195,14 @@ impl ArtiClientTorClient {
             arti_client,
             pending_events,
             bootstrapped: Arc::new(AtomicBool::new(false)),
+            next_connect_handle: Default::default(),
         })
     }
 
     async fn connect_impl(
         target_addr: TargetAddr,
         arti_client: TorClient<PreferredRuntime>,
-    ) -> Result<TcpStream, tor_provider::Error> {
+    ) -> Result<std::net::TcpStream, tor_provider::Error> {
         // convert TargetAddr to TorAddr
         let arti_target = match target_addr.clone() {
             TargetAddr::Socket(socket_addr) => socket_addr.into_tor_addr_dangerously(),
@@ -255,7 +257,10 @@ impl ArtiClientTorClient {
         tokio::task::spawn(async move {
             forward_stream(pump_alive, data_reader, tcp_writer).await;
         });
-        Ok::<TcpStream, tor_provider::Error>(client_stream)
+        let client_stream = client_stream
+            .into_std()
+            .map_err(Error::TcpStreamIntoFailed)?;
+        Ok::<std::net::TcpStream, tor_provider::Error>(client_stream)
     }
 }
 
@@ -362,20 +367,62 @@ impl TorProvider for ArtiClientTorClient {
         }
 
         let arti_client = self.arti_client.clone();
-        let client_stream = self.tokio_runtime.block_on({
+        let stream = self.tokio_runtime.block_on({
             let target = target.clone();
             async move {
                 Self::connect_impl(target, arti_client).await
             }
         })?;
-        let stream = client_stream
-            .into_std()
-            .map_err(Error::TcpStreamIntoFailed)?;
         Ok(OnionStream {
             stream,
             local_addr: None,
             peer_addr: Some(target),
         })
+    }
+
+    fn connect_async(
+        &mut self,
+        target: TargetAddr,
+        circuit: Option<CircuitToken>,
+    ) -> Result<ConnectHandle, tor_provider::Error> {
+
+        // stream isolation not implemented yet
+        if circuit.is_some() {
+            return Err(Error::NotImplemented().into());
+        }
+
+        let handle = self.next_connect_handle;
+        self.next_connect_handle += 1usize;
+
+        let arti_client = self.arti_client.clone();
+        let pending_events = Arc::downgrade(&self.pending_events);
+
+        self.tokio_runtime.spawn(async move {
+            let stream = Self::connect_impl(target.clone(), arti_client).await;
+            if let Some(pending_events) = pending_events.upgrade() {
+                let event = match stream {
+                    Ok(stream) => {
+                        let stream = OnionStream {
+                            stream,
+                            local_addr: None,
+                            peer_addr: Some(target),
+                        };
+                        TorEvent::ConnectComplete{
+                            handle,
+                            stream,
+                        }
+                    },
+                    Err(error) => TorEvent::ConnectFailed{
+                        handle,
+                        error,
+                    },
+                };
+                let mut pending_events = pending_events.lock().expect("pending_events mutex poisoned");
+                pending_events.push(event);
+            }
+        });
+
+        Ok(handle)
     }
 
     fn listener(

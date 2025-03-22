@@ -7,7 +7,7 @@ use std::option::Option;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::string::ToString;
-use std::sync::{atomic, Arc};
+use std::sync::{atomic, Arc, Mutex};
 use std::time::Duration;
 
 // extern crates
@@ -78,6 +78,9 @@ pub enum Error {
 
     #[error("unable to connect to socks listener")]
     Socks5ConnectionFailed(#[source] std::io::Error),
+
+    #[error("failed to spawn connect_async thread")]
+    ConnectAsyncThreadSpawnFailed(#[source] std::io::Error),
 
     #[error("unable to bind TCP listener")]
     TcpListenerBindFailed(#[source] std::io::Error),
@@ -247,6 +250,8 @@ pub struct LegacyTorClient {
     controller: LegacyTorController,
     bootstrapped: bool,
     socks_listener: Option<SocketAddr>,
+    async_events: Arc<Mutex<Vec<TorEvent>>>,
+    next_connect_handle: ConnectHandle,
     // list of open onion services and their is_active flag
     onion_services: Vec<(V3OnionServiceId, Arc<atomic::AtomicBool>)>,
     // our list of circuit tokens for the tor daemon
@@ -509,6 +514,8 @@ impl LegacyTorClient {
             bootstrapped: false,
             socks_listener,
             onion_services: Default::default(),
+            async_events: Default::default(),
+            next_connect_handle: Default::default(),
             circuit_token_counter: 0usize,
             circuit_tokens: Default::default(),
         })
@@ -540,7 +547,7 @@ impl LegacyTorClient {
     fn connect_impl(
         target_addr: TargetAddr,
         socks_listener: SocketAddr,
-        socks_credentials: Option<(&String, &String)>,
+        socks_credentials: Option<(String, String)>,
     ) -> Result<Socks5Stream, tor_provider::Error> {
         // our target
         let socks_target = match target_addr {
@@ -560,8 +567,8 @@ impl LegacyTorClient {
             Some((username, password)) => Socks5Stream::connect_with_password(
                 socks_listener,
                 socks_target,
-                username,
-                password,
+                &username,
+                &password,
             ),
         }.map_err(Error::Socks5ConnectionFailed)?;
         Ok(stream)
@@ -649,6 +656,12 @@ impl TorProvider for LegacyTorClient {
             self.bootstrapped = true;
         }
 
+        // append any new async events
+        let mut async_events = self.async_events.lock().expect("async_events mutex poisoned");
+        if !async_events.is_empty() {
+            events.append(&mut std::mem::take(&mut *async_events));
+        }
+
         Ok(events)
     }
 
@@ -695,13 +708,12 @@ impl TorProvider for LegacyTorClient {
         let socks_listener = self.socks_listener()?;
         let socks_credentials = match circuit {
             Some(circuit) => if let Some(circuit) = self.circuit_tokens.get(&circuit) {
-                Some((&circuit.username, &circuit.password))
+                Some((circuit.username.clone(), circuit.password.clone()))
             } else {
                 return Err(Error::CircuitTokenInvalid())?;
             },
             None => None,
         };
-
 
         let stream = Self::connect_impl(target.clone(), socks_listener, socks_credentials)?;
 
@@ -710,6 +722,57 @@ impl TorProvider for LegacyTorClient {
             local_addr: None,
             peer_addr: Some(target),
         })
+    }
+
+    fn connect_async(
+        &mut self,
+        target: TargetAddr,
+        circuit: Option<CircuitToken>,
+    ) -> Result<ConnectHandle, tor_provider::Error> {
+
+        let socks_listener = self.socks_listener()?;
+        let socks_credentials = match circuit {
+            Some(circuit) => if let Some(circuit) = self.circuit_tokens.get(&circuit) {
+                Some((circuit.username.clone(), circuit.password.clone()))
+            } else {
+                return Err(Error::CircuitTokenInvalid())?;
+            },
+            None => None,
+        };
+
+        let handle = self.next_connect_handle;
+        self.next_connect_handle += 1usize;
+
+        let async_events = Arc::downgrade(&self.async_events);
+
+        // connect to socks listener on background thread
+        std::thread::Builder::new()
+            .spawn(move || {
+                let stream = Self::connect_impl(target.clone(), socks_listener, socks_credentials);
+                if let Some(async_events) = async_events.upgrade() {
+                    let event = match stream {
+                        Ok(stream) => {
+                            let stream = OnionStream {
+                                stream: stream.into_inner(),
+                                local_addr: None,
+                                peer_addr: Some(target),
+                            };
+                            TorEvent::ConnectComplete{
+                                handle,
+                                stream,
+                            }
+                        },
+                        Err(error) => TorEvent::ConnectFailed{
+                            handle,
+                            error,
+                        },
+                    };
+                    let mut async_events = async_events.lock().expect("async_events mutex poisoned");
+                    async_events.push(event);
+                }
+            }).map_err(Error::ConnectAsyncThreadSpawnFailed)?;
+
+        Ok(handle)
     }
 
     // stand up an onion service and return an OnionListener

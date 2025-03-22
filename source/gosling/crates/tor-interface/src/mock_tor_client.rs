@@ -139,6 +139,7 @@ pub struct MockTorClient {
     client_auth_keys: BTreeMap<V3OnionServiceId, X25519PublicKey>,
     onion_services: Vec<(OnionAddr, Arc<atomic::AtomicBool>)>,
     loopback: TcpListener,
+    next_connect_handle: ConnectHandle,
 }
 
 impl MockTorClient {
@@ -157,6 +158,7 @@ impl MockTorClient {
             client_auth_keys: Default::default(),
             onion_services: Default::default(),
             loopback: listener,
+            next_connect_handle: Default::default(),
         }
     }
 }
@@ -271,6 +273,30 @@ impl TorProvider for MockTorClient {
             }
             Err(_) => unreachable!("another thread panicked while holding mock tor network's lock"),
         }
+    }
+
+    fn connect_async(
+        &mut self,
+        target: TargetAddr,
+        circuit: Option<CircuitToken>,
+    ) -> Result<ConnectHandle, tor_provider::Error> {
+
+        let handle = self.next_connect_handle;
+        self.next_connect_handle += 1usize;
+
+        let event = match self.connect(target, circuit) {
+            Ok(stream) => TorEvent::ConnectComplete{
+                handle,
+                stream,
+            },
+            Err(error) => TorEvent::ConnectFailed{
+                handle,
+                error,
+            },
+        };
+        self.events.push(event);
+
+        Ok(handle)
     }
 
     fn listener(
