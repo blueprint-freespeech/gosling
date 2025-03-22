@@ -196,6 +196,67 @@ impl ArtiClientTorClient {
             bootstrapped: Arc::new(AtomicBool::new(false)),
         })
     }
+
+    async fn connect_impl(
+        target_addr: TargetAddr,
+        arti_client: TorClient<PreferredRuntime>,
+    ) -> Result<TcpStream, tor_provider::Error> {
+        // convert TargetAddr to TorAddr
+        let arti_target = match target_addr.clone() {
+            TargetAddr::Socket(socket_addr) => socket_addr.into_tor_addr_dangerously(),
+            TargetAddr::Domain(domain_addr) => {
+                (domain_addr.domain(), domain_addr.port()).into_tor_addr()
+            }
+            TargetAddr::OnionService(OnionAddr::V3(OnionAddrV3 {
+                service_id,
+                virt_port,
+            })) => (format!("{}.onion", service_id), virt_port).into_tor_addr(),
+        }
+        .map_err(Error::ArtiClientTorAddrError)?;
+
+        // connect to target
+        let data_stream = arti_client.connect(arti_target)
+            .await
+            .map_err(Error::ArtiClientError)?;
+
+        // start a task to forward traffic from returned data stream
+        // and tcp socket
+        let (data_reader, data_writer) = data_stream.split();
+
+        // try to bind to a local address, let OS pick our port
+        let socket_addr = SocketAddr::from(([127, 0, 0, 1], 0u16));
+        let server_listener = TcpListener::bind(socket_addr)
+            .await
+            .map_err(Error::TcpListenerBindFailed)?;
+        // await future after a client connects
+        let server_accept_future = server_listener.accept();
+        let socket_addr = server_listener
+            .local_addr()
+            .map_err(Error::TcpListenerLocalAddrFailed)?;
+
+        // client stream will ultimatley be returned from connect_impl()
+        let client_stream = TcpStream::connect(socket_addr)
+            .await
+            .map_err(Error::TcpStreamConnectFailed)?;
+        // client has connected so now get the server's tcp stream
+        let (server_stream, _socket_addr) = server_accept_future
+            .await
+            .map_err(Error::TcpListenerAcceptFailed)?;
+        let (tcp_reader, tcp_writer) = server_stream.into_split();
+
+        // now spawn new tasks to forward traffic to/from local listener
+        let pump_alive = Arc::new(AtomicBool::new(true));
+        tokio::task::spawn({
+            let pump_alive = pump_alive.clone();
+            async move {
+                forward_stream(pump_alive, tcp_reader, data_writer).await;
+            }
+        });
+        tokio::task::spawn(async move {
+            forward_stream(pump_alive, data_reader, tcp_writer).await;
+        });
+        Ok::<TcpStream, tor_provider::Error>(client_stream)
+    }
 }
 
 impl TorProvider for ArtiClientTorClient {
@@ -300,65 +361,13 @@ impl TorProvider for ArtiClientTorClient {
             return Err(Error::NotImplemented().into());
         }
 
-        // connect to onion service
-        let arti_target = match target.clone() {
-            TargetAddr::Socket(socket_addr) => socket_addr.into_tor_addr_dangerously(),
-            TargetAddr::Domain(domain_addr) => {
-                (domain_addr.domain(), domain_addr.port()).into_tor_addr()
-            }
-            TargetAddr::OnionService(OnionAddr::V3(OnionAddrV3 {
-                service_id,
-                virt_port,
-            })) => (format!("{}.onion", service_id), virt_port).into_tor_addr(),
-        }
-        .map_err(Error::ArtiClientTorAddrError)?;
-
         let arti_client = self.arti_client.clone();
-        let data_stream = self
-            .tokio_runtime
-            .block_on(async move { arti_client.connect(arti_target).await })
-            .map_err(Error::ArtiClientError)?;
-
-        // start a task to forward traffic from returned data stream
-        // and tcp socket
-        let client_stream = self.tokio_runtime.block_on(async move {
-            let (data_reader, data_writer) = data_stream.split();
-
-            // try to bind to a local address, let OS pick our port
-            let socket_addr = SocketAddr::from(([127, 0, 0, 1], 0u16));
-            let server_listener = TcpListener::bind(socket_addr)
-                .await
-                .map_err(Error::TcpListenerBindFailed)?;
-            // await future after a client connects
-            let server_accept_future = server_listener.accept();
-            let socket_addr = server_listener
-                .local_addr()
-                .map_err(Error::TcpListenerLocalAddrFailed)?;
-
-            // client stream will ultimatley be returned from connect()
-            let client_stream = TcpStream::connect(socket_addr)
-                .await
-                .map_err(Error::TcpStreamConnectFailed)?;
-            // client has connected so now get the server's tcp stream
-            let (server_stream, _socket_addr) = server_accept_future
-                .await
-                .map_err(Error::TcpListenerAcceptFailed)?;
-            let (tcp_reader, tcp_writer) = server_stream.into_split();
-
-            // now spawn new tasks to forward traffic to/from local listener
-            let pump_alive = Arc::new(AtomicBool::new(true));
-            tokio::task::spawn({
-                let pump_alive = pump_alive.clone();
-                async move {
-                    forward_stream(pump_alive, tcp_reader, data_writer).await;
-                }
-            });
-            tokio::task::spawn(async move {
-                forward_stream(pump_alive, data_reader, tcp_writer).await;
-            });
-            Ok::<TcpStream, tor_provider::Error>(client_stream)
+        let client_stream = self.tokio_runtime.block_on({
+            let target = target.clone();
+            async move {
+                Self::connect_impl(target, arti_client).await
+            }
         })?;
-
         let stream = client_stream
             .into_std()
             .map_err(Error::TcpStreamIntoFailed)?;
