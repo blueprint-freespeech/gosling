@@ -893,7 +893,8 @@ impl Context {
                             *published = true;
                         }
                     }
-                }
+                },
+                _ => (),
             }
         }
 
