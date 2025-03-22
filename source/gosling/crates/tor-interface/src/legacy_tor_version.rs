@@ -12,7 +12,7 @@ pub enum Error {
 }
 
 /// Type representing a legacy c-tor daemon's version number. This version conforms c-tor's [version-spec](https://spec.torproject.org/version-spec.htm).
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct LegacyTorVersion {
     pub(crate) major: u32,
     pub(crate) minor: u32,
