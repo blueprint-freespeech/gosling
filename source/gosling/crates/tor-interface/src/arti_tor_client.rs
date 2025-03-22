@@ -122,6 +122,25 @@ impl ArtiTorClient {
             circuit_tokens: Default::default(),
         })
     }
+
+    fn connect_impl(
+        target: TargetAddr,
+        rpc_conn: &RpcConn,
+        circuit_isolation: &str,
+    ) -> Result<std::net::TcpStream, tor_provider::Error> {
+
+        // convert TargetAddr to (String, u16) tuple
+        let (host, port) = match &target {
+            TargetAddr::Socket(socket_addr) => (format!("{:?}", socket_addr.ip()), socket_addr.port()),
+            TargetAddr::OnionService(OnionAddr::V3(onion_addr)) => (format!("{}.onion", onion_addr.service_id()), onion_addr.virt_port()),
+            TargetAddr::Domain(domain_addr) => (domain_addr.domain().to_string(), domain_addr.port()),
+        };
+
+        // connect to target
+        let stream = rpc_conn.open_stream(None, (host.as_str(), port), circuit_isolation)
+            .map_err(Error::ArtiOpenStreamFailed)?;
+        Ok(stream)
+    }
 }
 
 impl TorProvider for ArtiTorClient {
@@ -201,13 +220,6 @@ impl TorProvider for ArtiTorClient {
             return Err(Error::ArtiNotBootstrapped().into());
         }
 
-        // convert TargetAddr to (String, u16) tuple
-        let (host, port) = match &target {
-            TargetAddr::Socket(socket_addr) => (format!("{:?}", socket_addr.ip()), socket_addr.port()),
-            TargetAddr::OnionService(OnionAddr::V3(onion_addr)) => (format!("{}.onion", onion_addr.service_id()), onion_addr.virt_port()),
-            TargetAddr::Domain(domain_addr) => (domain_addr.domain().to_string(), domain_addr.port()),
-        };
-
         // map circuit_token to isolation string for arti
         let isolation = if let Some(circuit_token) = circuit_token {
             if let Some(isolation) = self.circuit_tokens.get(&circuit_token) {
@@ -219,9 +231,7 @@ impl TorProvider for ArtiTorClient {
             ""
         };
 
-        // connect to target
-        let stream = self.rpc_conn.open_stream(None, (host.as_str(), port), isolation)
-            .map_err(Error::ArtiOpenStreamFailed)?;
+        let stream = Self::connect_impl(target.clone(), &self.rpc_conn, isolation)?;
 
         Ok(OnionStream {
             stream,
