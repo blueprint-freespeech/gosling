@@ -518,6 +518,54 @@ impl LegacyTorClient {
     pub fn version(&mut self) -> LegacyTorVersion {
         self.version.clone()
     }
+
+    fn socks_listener(&mut self) -> Result<SocketAddr, Error> {
+        match self.socks_listener {
+            Some(socks_listener) => Ok(socks_listener.clone()),
+            None => {
+                let mut listeners = self
+                    .controller
+                    .getinfo_net_listeners_socks()
+                    .map_err(Error::GetInfoNetListenersSocksFailed)?;
+                if listeners.is_empty() {
+                    return Err(Error::NoSocksListenersFound())?;
+                }
+                let socks_listener = listeners.swap_remove(0);
+                self.socks_listener = Some(socks_listener.clone());
+                Ok(socks_listener)
+            }
+        }
+    }
+
+    fn connect_impl(
+        target_addr: TargetAddr,
+        socks_listener: SocketAddr,
+        socks_credentials: Option<(&String, &String)>,
+    ) -> Result<Socks5Stream, tor_provider::Error> {
+        // our target
+        let socks_target = match target_addr {
+            TargetAddr::Socket(socket_addr) => socks::TargetAddr::Ip(socket_addr),
+            TargetAddr::Domain(domain_addr) => {
+                socks::TargetAddr::Domain(domain_addr.domain().to_string(), domain_addr.port())
+            }
+            TargetAddr::OnionService(OnionAddr::V3(OnionAddrV3 {
+                service_id,
+                virt_port,
+            })) => socks::TargetAddr::Domain(format!("{}.onion", service_id), virt_port),
+        };
+
+        // readwrite stream
+        let stream = match socks_credentials {
+            None => Socks5Stream::connect(socks_listener, socks_target),
+            Some((username, password)) => Socks5Stream::connect_with_password(
+                socks_listener,
+                socks_target,
+                username,
+                password,
+            ),
+        }.map_err(Error::Socks5ConnectionFailed)?;
+        Ok(stream)
+    }
 }
 
 impl TorProvider for LegacyTorClient {
@@ -644,51 +692,18 @@ impl TorProvider for LegacyTorClient {
             return Err(Error::LegacyTorNotBootstrapped().into());
         }
 
-        if self.socks_listener.is_none() {
-            let mut listeners = self
-                .controller
-                .getinfo_net_listeners_socks()
-                .map_err(Error::GetInfoNetListenersSocksFailed)?;
-            if listeners.is_empty() {
-                return Err(Error::NoSocksListenersFound())?;
-            }
-            self.socks_listener = Some(listeners.swap_remove(0));
-        }
-
-        let socks_listener = match self.socks_listener {
-            Some(socks_listener) => socks_listener,
-            None => unreachable!(),
+        let socks_listener = self.socks_listener()?;
+        let socks_credentials = match circuit {
+            Some(circuit) => if let Some(circuit) = self.circuit_tokens.get(&circuit) {
+                Some((&circuit.username, &circuit.password))
+            } else {
+                return Err(Error::CircuitTokenInvalid())?;
+            },
+            None => None,
         };
 
-        // our target
-        let socks_target = match target.clone() {
-            TargetAddr::Socket(socket_addr) => socks::TargetAddr::Ip(socket_addr),
-            TargetAddr::Domain(domain_addr) => {
-                socks::TargetAddr::Domain(domain_addr.domain().to_string(), domain_addr.port())
-            }
-            TargetAddr::OnionService(OnionAddr::V3(OnionAddrV3 {
-                service_id,
-                virt_port,
-            })) => socks::TargetAddr::Domain(format!("{}.onion", service_id), virt_port),
-        };
 
-        // readwrite stream
-        let stream = match &circuit {
-            None => Socks5Stream::connect(socks_listener, socks_target),
-            Some(circuit) => {
-                if let Some(circuit) = self.circuit_tokens.get(circuit) {
-                    Socks5Stream::connect_with_password(
-                        socks_listener,
-                        socks_target,
-                        &circuit.username,
-                        &circuit.password,
-                    )
-                } else {
-                    return Err(Error::CircuitTokenInvalid())?;
-                }
-            }
-        }
-        .map_err(Error::Socks5ConnectionFailed)?;
+        let stream = Self::connect_impl(target.clone(), socks_listener, socks_credentials)?;
 
         Ok(OnionStream {
             stream: stream.into_inner(),
