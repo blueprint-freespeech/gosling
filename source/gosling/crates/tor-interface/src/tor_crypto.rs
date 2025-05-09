@@ -305,15 +305,19 @@ impl Ed25519PrivateKey {
         Ed25519PrivateKey::from_raw_impl(&private_key_data_raw, method)
     }
 
+    /// Create an `Ed25519PrivateKey` from a [`String`] in the legacy c-tor daemon key blob format used in the `ADD_ONION` control-port command. From the c-tor control [specification](https://spec.torproject.org/control-spec/commands.html#add_onion):
+    /// > For a "ED25519-V3" key is the Base64 encoding of the concatenation of the 32-byte ed25519 secret scalar in little-endian and the 32-byte ed25519 PRF secret.
+    ///
+    /// Only key blob strings created by the legacy c-tor daemon are required to convert correctly using this function. An `Ed25519PrivateKey` created using this method will seriaise to a different (but cryptographically equivalent) scalar-reduced key blob string using the [`Ed25519PrivateKey::to_key_blob()`] function.
     #[cfg(feature = "legacy-tor-provider")]
-    pub(crate) fn from_key_blob_legacy(key_blob: &str) -> Result<Ed25519PrivateKey, Error> {
+    pub fn from_key_blob_legacy(key_blob: &str) -> Result<Ed25519PrivateKey, Error> {
         Self::from_key_blob_impl(key_blob, FromRawValidationMethod::LegacyCTor)
     }
 
     /// Create an `Ed25519PrivateKey` from a [`String`] in the legacy c-tor daemon key blob format used in the `ADD_ONION` control-port command. From the c-tor control [specification](https://spec.torproject.org/control-spec/commands.html#add_onion):
     /// > For a "ED25519-V3" key is the Base64 encoding of the concatenation of the 32-byte ed25519 secret scalar in little-endian and the 32-byte ed25519 PRF secret.
     ///
-    /// Only key blob strings derived from [`Ed25519PrivateKey::to_key_blob()`] are required to convert correctly.
+    /// Only key blob strings derived from [`Ed25519PrivateKey::to_key_blob()`] are required to convert correctly using this function.
     pub fn from_key_blob(key_blob: &str) -> Result<Ed25519PrivateKey, Error> {
         Self::from_key_blob_impl(key_blob, FromRawValidationMethod::Ed25519Dalek)
     }
