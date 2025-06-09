@@ -3297,8 +3297,7 @@ dependencies = [
 [[package]]
 name = "socks"
 version = "0.3.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0c3dbbd9ae980613c6dd8e28a9407b50509d3803b57624d5dfe8315218cd58b"
+source = "git+https://github.com/nabijaczleweli/rust-socks#fbe04c36a4a2673b0989db3ccb6db6135c73adb2"
 dependencies = [
  "byteorder",
  "libc",

@@ -584,8 +584,8 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_system_legacy_client_co
         let tor_control_passwd = std::str::from_utf8(tor_control_passwd)?.to_string();
 
         let tor_config = LegacyTorClientConfig::SystemTor {
-            tor_socks_addr,
-            tor_control_addr,
+            tor_socks_addr: tor_socks_addr.into(),
+            tor_control_addr: tor_control_addr.into(),
             tor_control_auth: Some(TorAuth::Password(tor_control_passwd)),
         };
 
