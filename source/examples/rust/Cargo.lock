@@ -376,6 +376,7 @@ dependencies = [
  "block-buffer",
  "const-oid",
  "crypto-common",
+ "subtle",
 ]
 
 [[package]]
@@ -657,6 +658,15 @@ name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
+
+[[package]]
+name = "hmac"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c49c37c09c17a53d937dfbb742eb3a961d65a994e6bcdcf37e7399d0cc8ab5e"
+dependencies = [
+ "digest",
+]
 
 [[package]]
 name = "home"
@@ -1500,8 +1510,7 @@ checksum = "3c5e1a9a646d36c3599cd173a41282daf47c44583ad367b8e6837255952e5c67"
 [[package]]
 name = "socks"
 version = "0.3.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0c3dbbd9ae980613c6dd8e28a9407b50509d3803b57624d5dfe8315218cd58b"
+source = "git+https://github.com/nabijaczleweli/rust-socks#a1182ee5024d06cba2104a1145dd648e10a90468"
 dependencies = [
  "byteorder",
  "libc",
@@ -1687,11 +1696,13 @@ dependencies = [
  "data-encoding",
  "data-encoding-macro",
  "domain",
+ "hmac",
  "idna",
  "rand 0.9.1",
  "rand_core 0.9.3",
  "regex",
  "sha1",
+ "sha2",
  "sha3",
  "signature 1.6.4",
  "socks",
