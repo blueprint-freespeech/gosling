@@ -2,7 +2,7 @@
 use std::default::Default;
 use std::net::SocketAddr;
 use std::option::Option;
-#[cfg(test)]
+use std::io::{Read, Write};
 use std::path::Path;
 use std::str::FromStr;
 use std::string::ToString;
@@ -93,6 +93,22 @@ fn quoted_string(string: &str) -> String {
     // replace \ with \\ and " with \"
     // see: https://spec.torproject.org/control-spec/message-format.html?highlight=QuotedString#description-format
     string.replace("\\", "\\\\").replace("\"", "\\\"")
+}
+
+
+// All authentication cookies are 32 bytes long.  Controllers MUST NOT
+// use the contents of a non-32-byte-long file as an authentication
+// cookie.
+pub(crate) fn read_cookie(from: &Path) -> std::io::Result<[u8; 32]> {
+    let mut f = std::fs::File::open(from)?;
+    let mut ret = [0u8; 32];
+    f.read_exact(&mut ret[..])?;
+    let mut nonce = [0u8; 1];
+    if f.read_exact(&mut nonce[..]).is_ok() {
+        Err(std::io::Error::new(std::io::ErrorKind::FileTooLarge, "cookies are 32 bytes"))
+    } else {
+        Ok(ret)
+    }
 }
 
 impl LegacyTorController {
@@ -303,6 +319,16 @@ impl LegacyTorController {
         self.write_command(&command)
     }
 
+    // AUTHENTICATE (3.5)
+    fn authenticate_cmd_cookie(&mut self, cookie: [u8; 32]) -> Result<Reply, Error> {
+        let mut command = b"AUTHENTICATE "[..].to_owned();
+        for b in cookie {
+            write!(&mut command, "{:02x}", b).map_err(|e| Error::InvalidCommandArguments(e.to_string()))?;
+        }
+
+        self.write_command(unsafe { str::from_utf8_unchecked(&command) })
+    }
+
     // GETINFO (3.9)
     fn getinfo_cmd(&mut self, keywords: &[&str]) -> Result<Reply, Error> {
         if keywords.is_empty() {
@@ -471,6 +497,15 @@ impl LegacyTorController {
 
     pub fn authenticate(&mut self, password: &str) -> Result<(), Error> {
         let reply = self.authenticate_cmd(password)?;
+
+        match reply.status_code {
+            250u32 => Ok(()),
+            code => Err(Error::CommandFailed(code, reply.reply_lines)),
+        }
+    }
+
+    pub fn authenticate_cookie(&mut self, data: [u8; 32]) -> Result<(), Error> {
+        let reply = self.authenticate_cmd_cookie(data)?;
 
         match reply.status_code {
             250u32 => Ok(()),
