@@ -2,12 +2,15 @@
 use std::collections::BTreeMap;
 use std::convert::From;
 use std::default::Default;
-use std::net::{SocketAddr, TcpListener};
+use std::net::{SocketAddr, TcpListener, IpAddr};
 use std::option::Option;
 use std::path::PathBuf;
 use std::string::ToString;
 use std::sync::{atomic, Arc};
 use std::time::Duration;
+use std::str::FromStr;
+#[cfg(unix)]
+use std::os::unix::net::SocketAddr as UnixSocketAddr;
 
 // extern crates
 use socks::{Socks5Stream, SocketAddrOrUnixSocketAddr};
@@ -167,6 +170,85 @@ pub enum LegacyTorClientConfig {
         tor_control_addr: SocketAddrOrUnixSocketAddr,
         tor_control_passwd: String,
     },
+}
+
+impl LegacyTorClientConfig {
+    fn one(ipc: &str, host: &str, port: &str) -> Option<SocketAddrOrUnixSocketAddr> {
+        #[cfg(unix)]
+        if let Some(p) = std::env::var_os(ipc) {
+            return Some(UnixSocketAddr::from_pathname(p).ok()?.into());
+        }
+        match (std::env::var(host), std::env::var(port)) {
+            (Ok(h), Ok(p)) => Some(SocketAddr::new(IpAddr::from_str(&h).ok()?, u16::from_str(&p).ok()?).into()),
+            _ => None,
+        }
+    }
+
+    /// Consult `$TOR_SOCKS_{IPC_PATH,HOST+PORT}`, `$TOR_CONTROL_{IPC_PATH,HOST+PORT}` and `$TOR_CONTROL_PASSWD`
+    ///
+    /// `$TOR_SOCKS_IPC_PATH` and `$TOR_CONTROL_IPC_PATH` are ignored if `cfg(not(unix))`,
+    /// and take precedence if `cfg(unix)`.
+    pub fn system_from_environment() -> Option<Self> {
+        Some(LegacyTorClientConfig::SystemTor {
+            tor_socks_addr: Self::one("TOR_SOCKS_IPC_PATH", "TOR_SOCKS_HOST", "TOR_SOCKS_PORT")?,
+            tor_control_addr: Self::one("TOR_CONTROL_IPC_PATH", "TOR_CONTROL_HOST", "TOR_CONTROL_PORT")?,
+            tor_control_passwd: std::env::var("TOR_CONTROL_PASSWD").or_else(|e|
+                match e {
+                    std::env::VarError::NotPresent => Ok(String::new()),
+                    _ => Err(e)
+                }
+            ).ok()?,
+        })
+    }
+}
+
+#[test]
+fn system_from_environment() {
+    fn flatten(conf: Option<LegacyTorClientConfig>) -> Option<(SocketAddrOrUnixSocketAddr, SocketAddrOrUnixSocketAddr, String)> {
+        conf.and_then(|c| match c {
+            LegacyTorClientConfig::BundledTor { .. } => None,
+            LegacyTorClientConfig::SystemTor { tor_socks_addr, tor_control_addr, tor_control_passwd } => Some((tor_socks_addr, tor_control_addr, tor_control_passwd))
+        })
+    }
+
+    for var in ["TOR_SOCKS_IPC_PATH", "TOR_SOCKS_HOST", "TOR_SOCKS_PORT", "TOR_CONTROL_IPC_PATH", "TOR_CONTROL_HOST", "TOR_CONTROL_PORT", "TOR_CONTROL_PASSWD"] {
+        unsafe { std::env::remove_var(var) };
+    }
+    assert_eq!(flatten(LegacyTorClientConfig::system_from_environment()), None);
+
+    std::env::set_var("TOR_SOCKS_HOST", "1.1.1.1");
+    std::env::set_var("TOR_SOCKS_PORT", "9050");
+    std::env::set_var("TOR_CONTROL_HOST", "2.2.2.2");
+    std::env::set_var("TOR_CONTROL_PORT", "9051");
+    assert_eq!(flatten(LegacyTorClientConfig::system_from_environment()), Some((
+        SocketAddr::from(([1, 1, 1, 1], 9050)).into(),
+        SocketAddr::from(([2, 2, 2, 2], 9051)).into(),
+        "".to_string(),
+    )));
+
+    unsafe { std::env::set_var("TOR_CONTROL_PASSWD", std::ffi::OsStr::from_encoded_bytes_unchecked(b"\xFF")) };
+    assert_eq!(flatten(LegacyTorClientConfig::system_from_environment()), None);
+
+    std::env::set_var("TOR_CONTROL_PASSWD", "pass");
+    assert_eq!(flatten(LegacyTorClientConfig::system_from_environment()), Some((
+        SocketAddr::from(([1, 1, 1, 1], 9050)).into(),
+        SocketAddr::from(([2, 2, 2, 2], 9051)).into(),
+        "pass".to_string(),
+    )));
+
+    std::env::set_var("TOR_SOCKS_IPC_PATH", "/sock");
+    #[cfg(not(unix))]
+    assert_eq!(flatten(LegacyTorClientConfig::system_from_environment()), Some((
+        SocketAddr::from(([1, 1, 1, 1], 9050)).into(),
+        SocketAddr::from(([2, 2, 2, 2], 9051)).into(),
+        "pass".to_string(),
+    )));
+    #[cfg(unix)]
+    assert_eq!(flatten(LegacyTorClientConfig::system_from_environment()), Some((
+        UnixSocketAddr::from_pathname("/sock").unwrap().into(),
+        SocketAddr::from(([2, 2, 2, 2], 9051)).into(),
+        "pass".to_string(),
+    )));
 }
 
 //
