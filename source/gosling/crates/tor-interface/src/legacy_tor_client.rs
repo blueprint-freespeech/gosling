@@ -632,7 +632,7 @@ impl TorProvider for LegacyTorClient {
         })
     }
 
-    // stand up an onion service and return an LegacyOnionListener
+    // stand up an onion service and return an OnionListener
     fn listener(
         &mut self,
         private_key: &Ed25519PrivateKey,
@@ -650,13 +650,11 @@ impl TorProvider for LegacyTorClient {
             .local_addr()
             .map_err(Error::TcpListenerLocalAddrFailed)?;
 
-        let mut flags = AddOnionFlags {
+        let flags = AddOnionFlags {
             discard_pk: true,
+            v3_auth: authorized_clients.is_some(),
             ..Default::default()
         };
-        if authorized_clients.is_some() {
-            flags.v3_auth = true;
-        }
 
         let onion_addr = OnionAddr::V3(OnionAddrV3::new(
             V3OnionServiceId::from_private_key(private_key),
