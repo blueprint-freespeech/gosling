@@ -84,7 +84,7 @@ impl MockTorNetwork {
 
                     if let Ok(stream) = TcpStream::connect(socket_addr) {
                         Ok(OnionStream {
-                            stream,
+                            stream: stream.into(),
                             local_addr: None,
                             peer_addr: Some(TargetAddr::OnionService(onion_addr)),
                         })
@@ -254,7 +254,7 @@ impl TorProvider for MockTorClient {
                         .expect("loopback local_addr failed"),
                 ) {
                     return Ok(OnionStream {
-                        stream,
+                        stream: stream.into(),
                         local_addr: None,
                         peer_addr: Some(target_address),
                     });

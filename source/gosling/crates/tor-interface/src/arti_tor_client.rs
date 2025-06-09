@@ -224,7 +224,7 @@ impl TorProvider for ArtiTorClient {
             .map_err(Error::ArtiOpenStreamFailed)?;
 
         Ok(OnionStream {
-            stream,
+            stream: stream.into(),
             local_addr: None,
             peer_addr: Some(target),
         })

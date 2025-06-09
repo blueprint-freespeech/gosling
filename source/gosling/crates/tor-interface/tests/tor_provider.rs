@@ -71,7 +71,7 @@ fn build_bundled_pt_legacy_tor_provider(name: &str) -> anyhow::Result<Option<Box
     data_path.push(name);
 
     // find the lyrebird bin
-    let teb_path = std::env::var("TEB_PATH")?;
+    let teb_path = std::env::var("TEB_PATH").unwrap_or_default();
     if teb_path.is_empty() {
         println!("TEB_PATH environment variable empty, so skipping test_legacy_pluggable_transport_bootstrap()");
         return Ok(None);
@@ -166,8 +166,8 @@ fn build_system_legacy_tor_provider(
     std::thread::sleep(std::time::Duration::from_secs(5));
 
     let tor_config = LegacyTorClientConfig::SystemTor {
-        tor_socks_addr: std::net::SocketAddr::from_str(format!("127.0.0.1:{socks_port}").as_str())?,
-        tor_control_addr: std::net::SocketAddr::from_str(format!("127.0.0.1:{control_port}").as_str())?,
+        tor_socks_addr: std::net::SocketAddr::from_str(format!("127.0.0.1:{socks_port}").as_str())?.into(),
+        tor_control_addr: std::net::SocketAddr::from_str(format!("127.0.0.1:{control_port}").as_str())?.into(),
         tor_control_passwd: "password".to_string(),
     };
     let tor_provider = Box::new(LegacyTorClient::new(tor_config)?);

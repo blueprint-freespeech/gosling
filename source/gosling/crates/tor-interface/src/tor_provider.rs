@@ -3,7 +3,7 @@ use std::any::Any;
 use std::boxed::Box;
 use std::convert::TryFrom;
 use std::io::{Read, Write};
-use std::net::{SocketAddr, TcpListener, TcpStream};
+use std::net::{SocketAddr, TcpListener};
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 use std::sync::OnceLock;
@@ -13,6 +13,7 @@ use domain::base::name::Name;
 use idna::uts46::{Hyphens, Uts46};
 use idna::{domain_to_ascii_cow, AsciiDenyList};
 use regex::Regex;
+use socks::TcpOrUnixStream;
 
 // internal crates
 use crate::tor_crypto::*;
@@ -275,18 +276,18 @@ pub type CircuitToken = usize;
 // Onion Stream
 //
 
-/// A wrapper around a [`std::net::TcpStream`] with some Tor-specific customisations
+/// A wrapper around a [`TcpOrUnixStream`] with some Tor-specific customisations
 ///
 /// An onion-listener can be constructed using the [`TorProvider::connect()`] method.
 #[derive(Debug)]
 pub struct OnionStream {
-    pub(crate) stream: TcpStream,
+    pub(crate) stream: TcpOrUnixStream,
     pub(crate) local_addr: Option<OnionAddr>,
     pub(crate) peer_addr: Option<TargetAddr>,
 }
 
 impl Deref for OnionStream {
-    type Target = TcpStream;
+    type Target = TcpOrUnixStream;
     fn deref(&self) -> &Self::Target {
         &self.stream
     }
@@ -298,7 +299,7 @@ impl DerefMut for OnionStream {
     }
 }
 
-impl From<OnionStream> for TcpStream {
+impl From<OnionStream> for TcpOrUnixStream {
     fn from(onion_stream: OnionStream) -> Self {
         onion_stream.stream
     }
@@ -331,7 +332,7 @@ impl OnionStream {
         self.local_addr.clone()
     }
 
-    /// Tries to clone the underlying connection and data. A simple pass-through to [`std::net::TcpStream::try_clone()`].
+    /// Tries to clone the underlying connection and data. A simple pass-through to [`TcpOrUnixStream::try_clone()`].
     pub fn try_clone(&self) -> Result<Self, std::io::Error> {
         Ok(Self {
             stream: self.stream.try_clone()?,
@@ -390,7 +391,7 @@ impl OnionListener {
     pub fn accept(&self) -> Result<Option<OnionStream>, std::io::Error> {
         match self.listener.accept() {
             Ok((stream, _socket_addr)) => Ok(Some(OnionStream {
-                stream,
+                stream: stream.into(),
                 local_addr: Some(self.onion_addr.clone()),
                 peer_addr: None,
             })),
