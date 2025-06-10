@@ -15,7 +15,6 @@ use std::time::{Duration, Instant};
 
 // extern crates
 use data_encoding::HEXUPPER;
-use rand::rngs::OsRng;
 use rand::RngCore;
 use sha1::{Digest, Sha1};
 

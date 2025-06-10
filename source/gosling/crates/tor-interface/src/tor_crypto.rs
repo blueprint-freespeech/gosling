@@ -10,7 +10,6 @@ use data_encoding_macro::new_encoding;
 use rand::distr::Alphanumeric;
 #[cfg(any(feature = "legacy-tor-provider", feature = "arti-tor-provider"))]
 use rand::Rng;
-use rand::rngs::OsRng;
 use sha3::{Digest, Sha3_256};
 use static_assertions::const_assert_eq;
 use tor_llcrypto::pk::keymanip::*;
@@ -109,7 +108,7 @@ const ONION_BASE32: data_encoding::Encoding = new_encoding! {
 
 // Free functions
 
-// securely generate password using OsRng
+// securely generate password using CautionsRng
 #[cfg(any(feature = "legacy-tor-provider", feature = "arti-tor-provider"))]
 pub(crate) fn generate_password(length: usize) -> String {
     let password: String = std::iter::repeat(())
