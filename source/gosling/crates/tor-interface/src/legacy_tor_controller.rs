@@ -111,6 +111,7 @@ pub(crate) struct LegacyTorController {
     status_event_argument_pattern: Regex,
     hs_desc_pattern: Regex,
     protocolinfo_data: Option<ProtocolInfo>,
+    version: Option<LegacyTorVersion>,
 }
 
 fn quoted_string(string: &str) -> String {
@@ -179,6 +180,7 @@ impl LegacyTorController {
             status_event_argument_pattern,
             hs_desc_pattern,
             protocolinfo_data: None,
+            version: None,
         })
     }
 
@@ -558,8 +560,13 @@ impl LegacyTorController {
         // 250-AUTH METHODS=COOKIE,SAFECOOKIE,HASHEDPASSWORD COOKIEFILE="/home/nabijaczleweli/.tor/coo kie \\\" \320\266 \n 2"
         // 250-AUTH METHODS=COOKIE,SAFECOOKIE,HASHEDPASSWORD COOKIEFILE="/home/nabijaczleweli/.tor/C/\001\002\003\004\005\006\007\010\t\n\013\014\r\016\017\020\021\022\023\024\025\026\027\030\031\032\033\034\035\036\037 !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\177\200\201\202\203\204\205\206\207\210\211\212\213\214\215\216\217\220\221\222\223\224\225\226\227\230\231\232\233\234\235\236\237\240\241\242\243\244\245\246\247\250\251\252\253\254\255\256\257\260\261\262\263\264\265\266\267\270\271\272\273\274\275\276\277\300\301\302\303\304\305\306\307\310\311\312\313\314\315\316\317\320\321\322\323\324\325\326\327\330\331\332\333\334\335\336\337\340\341\342\343\344\345\346\347\350\351\352\353\354\355\356\357\360\361\362\363\364\365\366\367\370\371\372\373\374\375\376\377"
         // 250-AUTH METHODS=NULL
+        // 250-VERSION Tor=\"0.4.7.16\"
         match self.protocolinfo_cmd() {
             Ok(reply) if reply.status_code == 250 => {
+                if let Some(vers) = reply.reply_lines.iter().find(|l| l.starts_with("VERSION Tor=\"")) {
+                    self.version = vers["VERSION Tor=\"".len()..].split('\"').next().and_then(|s| <_>::from_str(s).ok());
+                }
+
                 let mut ret = ProtocolInfo::default();
                 if let Some(auth) = reply.reply_lines.iter().find(|l| l.starts_with("AUTH METHODS=")) {
                     let mut two = auth["AUTH METHODS=".len()..].splitn(2, ' ');
@@ -847,6 +854,10 @@ impl LegacyTorController {
     }
 
     pub fn getinfo_version(&mut self) -> Result<LegacyTorVersion, Error> {
+        if let Some(vers) = self.version.take() {
+            return Ok(vers);
+        }
+
         let response = self.getinfo(&["version"])?;
         for (key, value) in response.iter() {
             if key.as_str() == "version" {
