@@ -7,10 +7,10 @@ use curve25519_dalek::Scalar;
 use data_encoding::{BASE32_NOPAD, BASE64};
 use data_encoding_macro::new_encoding;
 #[cfg(any(feature = "legacy-tor-provider", feature = "arti-tor-provider"))]
-use rand::distributions::Alphanumeric;
-use rand::rngs::OsRng;
+use rand::distr::Alphanumeric;
 #[cfg(any(feature = "legacy-tor-provider", feature = "arti-tor-provider"))]
 use rand::Rng;
+use rand::rngs::OsRng;
 use sha3::{Digest, Sha3_256};
 use static_assertions::const_assert_eq;
 use tor_llcrypto::pk::keymanip::*;
@@ -113,7 +113,7 @@ const ONION_BASE32: data_encoding::Encoding = new_encoding! {
 #[cfg(any(feature = "legacy-tor-provider", feature = "arti-tor-provider"))]
 pub(crate) fn generate_password(length: usize) -> String {
     let password: String = std::iter::repeat(())
-        .map(|()| OsRng.sample(Alphanumeric))
+        .map(|()| tor_llcrypto::rng::CautiousRng.sample(Alphanumeric))
         .map(char::from)
         .take(length)
         .collect();
@@ -151,7 +151,7 @@ pub struct X25519PrivateKey {
 }
 
 /// An x25519 public key
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct X25519PublicKey {
     public_key: pk::curve25519::PublicKey,
 }
@@ -213,7 +213,7 @@ enum FromRawValidationMethod {
 impl Ed25519PrivateKey {
     /// Securely generate a new `Ed25519PrivateKey`.
     pub fn generate() -> Ed25519PrivateKey {
-        let csprng = &mut OsRng;
+        let csprng = &mut tor_llcrypto::rng::CautiousRng;
         let keypair = pk::ed25519::Keypair::generate(csprng);
 
         Ed25519PrivateKey {
@@ -487,13 +487,10 @@ impl Ed25519Signature {
 
     /// Verify this `Ed25519Signature` for the given message and [`Ed25519PublicKey`].
     pub fn verify(&self, message: &[u8], public_key: &Ed25519PublicKey) -> bool {
-        if let Ok(()) = public_key
+        public_key
             .public_key
-            .verify_strict(message, &self.signature)
-        {
-            return true;
-        }
-        false
+            .verify(message, &self.signature)
+            .is_ok()
     }
 
     /// Verify this `Ed25519Signature` for the given message, [`X25519PublicKey`], and [`SignBit`]. This signature must have been created by first converting an [`X25519PrivateKey`] to a [`Ed25519PrivateKey`] and [`SignBit`], and then signing the message using this [`Ed25519PrivateKey`]. This method verifies the signature using the [`Ed25519PublicKey`] derived from the provided  [`X25519PublicKey`] and [`SignBit`].
@@ -531,7 +528,7 @@ impl std::fmt::Debug for Ed25519Signature {
 impl X25519PrivateKey {
     /// Securely generate a new `X25519PrivateKey`
     pub fn generate() -> X25519PrivateKey {
-        let csprng = &mut OsRng;
+        let csprng = &mut tor_llcrypto::rng::CautiousRng;
         X25519PrivateKey {
             secret_key: pk::curve25519::StaticSecret::random_from_rng(csprng),
         }
