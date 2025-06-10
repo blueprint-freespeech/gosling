@@ -9,7 +9,7 @@ use bson::spec::BinarySubtype;
 use bson::{Binary, Bson};
 use honk_rpc::honk_rpc::{RequestCookie, Response, Session};
 use rand::rngs::OsRng;
-use rand::RngCore;
+use rand::{rand_core, TryRngCore};
 use tor_interface::tor_crypto::*;
 
 // internal crates
@@ -33,6 +33,9 @@ pub enum Error {
 
     #[error("incorrect usage: {0}")]
     IncorrectUsage(String),
+
+    #[error("OsRng::try_fill_bytes() failed: {0}")]
+    OsRngTryFillBytesFailure(#[from] rand_core::OsError),
 }
 
 pub(crate) enum EndpointClientEvent {
@@ -163,7 +166,7 @@ impl EndpointClient {
 
                                 // client_cookie
                                 let mut client_cookie: ClientCookie = Default::default();
-                                OsRng.fill_bytes(&mut client_cookie);
+                                OsRng.try_fill_bytes(&mut client_cookie)?;
 
                                 // client_identity_proof_signature
                                 let server_cookie: ServerCookie =

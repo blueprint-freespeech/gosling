@@ -9,7 +9,7 @@ use bson::spec::BinarySubtype;
 use bson::{Binary, Bson};
 use honk_rpc::honk_rpc::{ApiSet, ErrorCode, RequestCookie, Session};
 use rand::rngs::OsRng;
-use rand::RngCore;
+use rand::{rand_core, TryRngCore};
 use tor_interface::tor_crypto::*;
 
 // internal crates
@@ -33,6 +33,9 @@ pub enum Error {
 
     #[error("client sent invalid request")]
     BadClient,
+
+    #[error("OsRng::try_fill_bytes() failed: {0}")]
+    OsRngTryFillBytesFailure(#[from] rand_core::OsError),
 }
 
 pub(crate) enum EndpointServerEvent {
@@ -101,10 +104,6 @@ impl EndpointServer {
         client_identity: V3OnionServiceId,
         server_identity: V3OnionServiceId,
     ) -> Self {
-        // generate server cookie
-        let mut server_cookie: ServerCookie = Default::default();
-        OsRng.fill_bytes(&mut server_cookie);
-
         EndpointServer {
             rpc: Some(rpc),
             server_identity,
@@ -236,7 +235,7 @@ impl EndpointServer {
              None) // handshake_succeeded
             => {
                 let mut server_cookie: ServerCookie = Default::default();
-                OsRng.fill_bytes(&mut server_cookie);
+                OsRng.try_fill_bytes(&mut server_cookie)?;
                 self.server_cookie = Some(server_cookie);
                 self.client_allowed = *client_identity == self.allowed_client_identity;
                 self.client_requested_channel_valid = client_requested_channel_valid;
