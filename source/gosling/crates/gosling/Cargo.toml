@@ -14,7 +14,7 @@ bson = "2.0"
 data-encoding = "2.0"
 honk-rpc = { version = "0.3", path = "../honk-rpc" }
 num_enum = "0.6"
-rand = "0.8"
+rand = "0.9"
 thiserror = "1.0"
 tokio = { version = "1", features = ["full"], optional = true }
 tor-interface = { version = "0.5", path = "../tor-interface" }

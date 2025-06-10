@@ -11,7 +11,7 @@ use honk_rpc::honk_rpc::{
     get_message_overhead, get_response_section_size, ApiSet, ErrorCode, RequestCookie, Session,
 };
 use rand::rngs::OsRng;
-use rand::RngCore;
+use rand::{rand_core, TryRngCore};
 use tor_interface::tor_crypto::*;
 
 // internal crates
@@ -38,6 +38,9 @@ pub enum Error {
 
     #[error("provided endpoint challenge too large; encoded size would be {0} but session's maximum honk-rpc message size is {1}")]
     EndpointChallengeTooLarge(usize, usize),
+
+    #[error("OsRng::try_fill_bytes() failed: {0}")]
+    OsRngTryFillBytesFailure(#[from] rand_core::OsError),
 }
 
 pub(crate) enum IdentityServerEvent {
@@ -312,7 +315,7 @@ impl IdentityServer {
                 None, // endpoint_private_key
             ) => {
                 let mut server_cookie: ServerCookie = Default::default();
-                OsRng.fill_bytes(&mut server_cookie);
+                OsRng.try_fill_bytes(&mut server_cookie)?;
 
                 // calculate required size of response message and ensure if fits our
                 // specified message size budget
