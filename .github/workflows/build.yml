@@ -15,11 +15,13 @@ jobs:
             cmake-find-root-path: /usr/lib/i386-linux-gnu
             teb-target: linux-i686
             arch: i386
+            force-non-host: --force-non-host
           - debian-arch: amd64
             rust-target: x86_64-unknown-linux-gnu
             cmake-find-root-path: /usr/lib/x86_64-linux-gnu
             teb-target: linux-x86_64
             arch: x86_64
+            force-non-host:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Gosling
@@ -35,7 +37,7 @@ jobs:
       - name: Configure Rust
         run: |
           rustup target add ${{ matrix.rust-target }}
-          rustup default stable-${{ matrix.rust-target }}
+          rustup default stable-${{ matrix.rust-target }} ${{ matrix.force-non-host }}
       - name: Build Debug
         run: |
           cmake -S . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=dist/debug -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_DEBIAN_SOURCE_PACKAGE=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }} -DCMAKE_C_FLAGS="${{ matrix.cflags }}" -DCMAKE_CXX_FLAGS="${{ matrix.cxxflags }}" -DCMAKE_FIND_ROOT_PATH=${{ matrix.cmake-find-root-path }}
