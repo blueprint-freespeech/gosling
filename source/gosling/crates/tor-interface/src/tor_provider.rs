@@ -13,7 +13,7 @@ use domain::base::name::Name;
 use idna::uts46::{Hyphens, Uts46};
 use idna::{domain_to_ascii_cow, AsciiDenyList};
 use regex::Regex;
-use socks::TcpOrUnixStream;
+pub use socks::TcpOrUnixStream;
 
 // internal crates
 use crate::tor_crypto::*;
@@ -200,7 +200,7 @@ impl FromStr for DomainAddr {
 //
 
 /// An enum representing the various types of addresses a [`TorProvider`] implementation may connect to.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TargetAddr {
     /// An ip address and port
     Socket(std::net::SocketAddr),
@@ -403,6 +403,19 @@ impl OnionListener {
                 }
             }
         }
+    }
+
+    /// `TcpListener::try_clone()` the inner listener
+    ///
+    /// The lifetime of the hidden service itself is still bound to this object,
+    /// but the resulting [`TcpListener`] may be polled/`accept`ed independently
+    pub fn try_clone_inner(&self) -> std::io::Result<TcpListener> {
+        self.listener.try_clone()
+    }
+
+    /// Address this listener is listening on
+    pub fn address(&self) -> &OnionAddr {
+        &self.onion_addr
     }
 }
 
