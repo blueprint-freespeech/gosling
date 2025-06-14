@@ -363,7 +363,7 @@ impl TorProvider for ArtiClientTorClient {
             .into_std()
             .map_err(Error::TcpStreamIntoFailed)?;
         Ok(OnionStream {
-            stream,
+            stream: stream.into(),
             local_addr: None,
             peer_addr: Some(target),
         })

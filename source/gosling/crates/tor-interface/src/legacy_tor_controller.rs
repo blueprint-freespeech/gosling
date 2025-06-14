@@ -2,8 +2,8 @@
 use std::default::Default;
 use std::net::SocketAddr;
 use std::option::Option;
-#[cfg(test)]
-use std::path::Path;
+use std::io::{Read, Write};
+use std::path::{PathBuf, Path};
 use std::str::FromStr;
 use std::string::ToString;
 #[cfg(test)]
@@ -13,6 +13,9 @@ use std::time::{Duration, Instant};
 use regex::Regex;
 #[cfg(test)]
 use serial_test::serial;
+use rand::TryRngCore;
+use rand::rngs::OsRng;
+use hmac::Mac;
 
 // internal crates
 use crate::legacy_tor_control_stream::*;
@@ -46,6 +49,18 @@ pub enum Error {
 
     #[error("failed to parse received tor version")]
     TorVersionParseFailed(#[source] crate::legacy_tor_version::Error),
+
+    #[error("unable to read cookie file: {1:?}")]
+    CookieReadingFailed(#[source] std::io::Error, PathBuf),
+
+    #[error("[SAFE]COOKIE authentication not supported")]
+    CookiesNotSupported(),
+
+    #[error("impostor sent invalid SAFECOOKIE HMAC")]
+    BadCookieHash(),
+
+    #[error("failed to generate random data")]
+    RngError(#[source] <OsRng as TryRngCore>::Error),
 }
 
 // Per-command data
@@ -78,6 +93,14 @@ pub(crate) enum AsyncEvent {
     },
 }
 
+#[derive(Default, Debug)]
+struct ProtocolInfo {
+    auth_cookie: bool,
+    auth_safecookie: bool,
+    auth_null: bool,
+    cookiefile: PathBuf,
+}
+
 pub(crate) struct LegacyTorController {
     // underlying control stream
     control_stream: LegacyControlStream,
@@ -87,12 +110,54 @@ pub(crate) struct LegacyTorController {
     status_event_pattern: Regex,
     status_event_argument_pattern: Regex,
     hs_desc_pattern: Regex,
+    protocolinfo_data: Option<ProtocolInfo>,
+    version: Option<LegacyTorVersion>,
 }
 
 fn quoted_string(string: &str) -> String {
     // replace \ with \\ and " with \"
     // see: https://spec.torproject.org/control-spec/message-format.html?highlight=QuotedString#description-format
     string.replace("\\", "\\\\").replace("\"", "\\\"")
+}
+
+
+// All authentication cookies are 32 bytes long.  Controllers MUST NOT
+// use the contents of a non-32-byte-long file as an authentication
+// cookie.
+pub(crate) fn read_cookie(from: &Path) -> std::io::Result<[u8; 32]> {
+    let mut f = std::fs::File::open(from)?;
+    let mut ret = [0u8; 32];
+    f.read_exact(&mut ret[..])?;
+    let mut nonce = [0u8; 1];
+    if f.read_exact(&mut nonce[..]).is_ok() {
+        Err(std::io::Error::new(std::io::ErrorKind::FileTooLarge, "cookies are 32 bytes"))
+    } else {
+        Ok(ret)
+    }
+}
+
+fn tonibble(c: u8) -> u8 {
+    match c {
+        b'0'..=b'9' => c - b'0',
+        b'a'..=b'f' => 0xA + (c - b'a'),
+        b'A'..=b'F' => 0xA + (c - b'A'),
+        _ => unreachable!(),
+    }
+}
+
+fn hmac_sha256(key: &str, blob1: &[u8], blob2: &[u8], blob3: &[u8]) -> hmac::Hmac<sha2::Sha256> {
+    let mut hmac = hmac::Hmac::new_from_slice(key.as_bytes()).unwrap();
+    hmac.update(blob1);
+    hmac.update(blob2);
+    hmac.update(blob3);
+    hmac
+}
+
+fn reply_ok(reply: Reply) -> Result<Reply, Error> {
+    match reply.status_code {
+        250u32 => Ok(reply),
+        code => Err(Error::CommandFailed(code, reply.reply_lines)),
+    }
 }
 
 impl LegacyTorController {
@@ -114,6 +179,8 @@ impl LegacyTorController {
             status_event_pattern,
             status_event_argument_pattern,
             hs_desc_pattern,
+            protocolinfo_data: None,
+            version: None,
         })
     }
 
@@ -303,6 +370,31 @@ impl LegacyTorController {
         self.write_command(&command)
     }
 
+    // AUTHENTICATE (3.5)
+    fn authenticate_cmd_cookie(&mut self, cookie: &[u8]) -> Result<Reply, Error> {
+        let mut command = b"AUTHENTICATE "[..].to_owned();
+        for b in cookie {
+            write!(&mut command, "{:02x}", b).map_err(|e| Error::InvalidCommandArguments(e.to_string()))?;
+        }
+
+        self.write_command(unsafe { str::from_utf8_unchecked(&command) })
+    }
+
+    // AUTHCHALLENGE (3.24)
+    fn authchallenge_cmd(&mut self, client_nonce: &[u8]) -> Result<Reply, Error> {
+        let mut command = b"AUTHCHALLENGE SAFECOOKIE "[..].to_owned();
+        for b in client_nonce {
+            write!(&mut command, "{:02x}", b).map_err(|e| Error::InvalidCommandArguments(e.to_string()))?;
+        }
+
+        self.write_command(unsafe { str::from_utf8_unchecked(&command) })
+    }
+
+    // PROTOCOLINFO (3.21)
+    fn protocolinfo_cmd(&mut self) -> Result<Reply, Error> {
+        self.write_command("PROTOCOLINFO 1")
+    }
+
     // GETINFO (3.9)
     fn getinfo_cmd(&mut self, keywords: &[&str]) -> Result<Reply, Error> {
         if keywords.is_empty() {
@@ -432,73 +524,205 @@ impl LegacyTorController {
     //
 
     pub fn setconf(&mut self, key_values: &[(&str, String)]) -> Result<(), Error> {
-        let reply = self.setconf_cmd(key_values)?;
-
-        match reply.status_code {
-            250u32 => Ok(()),
-            code => Err(Error::CommandFailed(code, reply.reply_lines)),
-        }
+        self.setconf_cmd(key_values).and_then(reply_ok).map(|_| ())
     }
 
     #[cfg(test)]
     pub fn getconf(&mut self, keywords: &[&str]) -> Result<Vec<(String, String)>, Error> {
-        let reply = self.getconf_cmd(keywords)?;
+        let reply = self.getconf_cmd(keywords).and_then(reply_ok)?;
 
-        match reply.status_code {
-            250u32 => {
-                let mut key_values: Vec<(String, String)> = Default::default();
-                for line in reply.reply_lines {
-                    match line.find('=') {
-                        Some(index) => key_values
-                            .push((line[0..index].to_string(), line[index + 1..].to_string())),
-                        None => key_values.push((line, String::new())),
-                    }
-                }
-                Ok(key_values)
+        let mut key_values: Vec<(String, String)> = Default::default();
+        for line in reply.reply_lines {
+            match line.find('=') {
+                Some(index) => key_values
+                    .push((line[0..index].to_string(), line[index + 1..].to_string())),
+                None => key_values.push((line, String::new())),
             }
-            code => Err(Error::CommandFailed(code, reply.reply_lines)),
         }
+        Ok(key_values)
     }
 
     pub fn setevents(&mut self, events: &[&str]) -> Result<(), Error> {
-        let reply = self.setevents_cmd(events)?;
-
-        match reply.status_code {
-            250u32 => Ok(()),
-            code => Err(Error::CommandFailed(code, reply.reply_lines)),
-        }
+        self.setevents_cmd(events).and_then(reply_ok).map(|_| ())
     }
 
     pub fn authenticate(&mut self, password: &str) -> Result<(), Error> {
-        let reply = self.authenticate_cmd(password)?;
+        self.authenticate_cmd(password).and_then(reply_ok).map(|_| ())
+    }
 
-        match reply.status_code {
-            250u32 => Ok(()),
-            code => Err(Error::CommandFailed(code, reply.reply_lines)),
+    fn ensure_protocolinfo(&mut self) {
+        if self.protocolinfo_data.is_some() {
+            return;
+        }
+
+        // 250-AUTH METHODS=COOKIE,SAFECOOKIE COOKIEFILE="/home/nabijaczleweli/.tor/control_auth_cookie"
+        // 250-AUTH METHODS=HASHEDPASSWORD
+        // 250-AUTH METHODS=COOKIE,SAFECOOKIE,HASHEDPASSWORD COOKIEFILE="/home/nabijaczleweli/.tor/coo kie \\\" \320\266 \n 2"
+        // 250-AUTH METHODS=COOKIE,SAFECOOKIE,HASHEDPASSWORD COOKIEFILE="/home/nabijaczleweli/.tor/C/\001\002\003\004\005\006\007\010\t\n\013\014\r\016\017\020\021\022\023\024\025\026\027\030\031\032\033\034\035\036\037 !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\177\200\201\202\203\204\205\206\207\210\211\212\213\214\215\216\217\220\221\222\223\224\225\226\227\230\231\232\233\234\235\236\237\240\241\242\243\244\245\246\247\250\251\252\253\254\255\256\257\260\261\262\263\264\265\266\267\270\271\272\273\274\275\276\277\300\301\302\303\304\305\306\307\310\311\312\313\314\315\316\317\320\321\322\323\324\325\326\327\330\331\332\333\334\335\336\337\340\341\342\343\344\345\346\347\350\351\352\353\354\355\356\357\360\361\362\363\364\365\366\367\370\371\372\373\374\375\376\377"
+        // 250-AUTH METHODS=NULL
+        // 250-VERSION Tor=\"0.4.7.16\"
+        match self.protocolinfo_cmd() {
+            Ok(reply) if reply.status_code == 250 => {
+                if let Some(vers) = reply.reply_lines.iter().find(|l| l.starts_with("VERSION Tor=\"")) {
+                    self.version = vers["VERSION Tor=\"".len()..].split('\"').next().and_then(|s| <_>::from_str(s).ok());
+                }
+
+                let mut ret = ProtocolInfo::default();
+                if let Some(auth) = reply.reply_lines.iter().find(|l| l.starts_with("AUTH METHODS=")) {
+                    let mut two = auth["AUTH METHODS=".len()..].splitn(2, ' ');
+                    if let Some(methods) = two.next() {
+                        for m in methods.split(',') {
+                            match m {
+                                "COOKIE" => ret.auth_cookie = true,
+                                "SAFECOOKIE" => ret.auth_safecookie = true,
+                                "NULL" => ret.auth_null = true,
+                                _ => {}
+                            }
+                        }
+                    }
+                    let remainder = two.next();
+                    if (ret.auth_cookie || ret.auth_safecookie) && remainder.map(|r| r.starts_with("COOKIEFILE=\"")).unwrap_or(false) {
+                        let mut remainder = remainder.unwrap()["COOKIEFILE=\"".len()..].as_bytes();
+
+                        let mut path = vec![];
+                        // https://datatracker.ietf.org/doc/html/rfc2822 qcontent
+                        while let Some(mut byte) = remainder.get(0).copied() {
+                            if byte == b'"' {
+                                break;
+                            }
+                            remainder = &remainder[1..];
+                            if byte == b'\\' {
+                                let mut consume = 1;
+                                match (remainder.get(0), remainder.get(1), remainder.get(2)) {
+                                    (Some(b't'), ..) => byte = b'\t',
+                                    (Some(b'n'), ..) => byte = b'\n',
+                                    (Some(b'r'), ..) => byte = b'\r',
+                                    (Some(b'\"'), ..) => byte = b'\"',
+                                    (Some(b'\''), ..) => byte = b'\'',
+                                    (Some(b'\\'), ..) => byte = b'\\',
+                                    (Some(h @ b'0'..=b'3'), Some(t @ b'0'..=b'7'), Some(u @ b'0'..=b'7')) => {
+                                        byte = ((h - b'0') << 6) | ((t - b'0') << 3) | (u - b'0');
+                                        consume = 3;
+                                    }
+                                    _ => {
+                                        path.clear();
+                                        break;
+                                    }
+                                }
+                                remainder = &remainder[consume..];
+                            }
+                            path.push(byte);
+                        }
+                        // On UNIX, paths are sequences of non-0 bytes. We know this.
+                        // On tor/Win32, paths are sequences of ASCII bytes(?): https://101010.pl/@nabijaczleweli/114655491521731646
+                        #[cfg(unix)]
+                        {
+                            use std::os::unix::ffi::OsStringExt;
+                            use std::ffi::OsString;
+                            ret.cookiefile = OsString::from_vec(path.into()).into();
+                        }
+                        #[cfg(not(unix))]
+                        {
+                            // TODO: string_from_utf8_lossy_owned
+                            ret.cookiefile = String::from_utf8_lossy(&path).into();
+                        }
+                    }
+                }
+                self.protocolinfo_data = Some(ret);
+            }
+            _ => self.protocolinfo_data = Some(Default::default()),
+        }
+    }
+
+    fn authenticate_safecookie(&mut self, data: [u8; 32]) -> Result<Reply, Error> {
+        let mut client_nonce = [0u8; 32];
+        OsRng.try_fill_bytes(&mut client_nonce).map_err(Error::RngError)?;
+        let reply = self.authchallenge_cmd(&client_nonce).and_then(reply_ok)?;
+
+        if reply.reply_lines.len() != 1 || !reply.reply_lines[0].starts_with("AUTHCHALLENGE SERVERHASH=") {
+            return Err(Error::CommandReplyParseFailed(reply.reply_lines.get(0).cloned().unwrap_or_else(|| "[no response]".to_string())));
+        }
+        let mut chunks = reply.reply_lines[0]["AUTHCHALLENGE SERVERHASH=".len()..].splitn(2, ' ');
+
+        let sh = chunks.next().map(|sh| sh.as_bytes())
+            .filter(|sh| sh.len() % 64 == 0)
+            .filter(|sh| sh.iter().all(|c| matches!(c, b'0'..=b'9' | b'a'..=b'f' | b'A'..=b'F')))
+            .ok_or_else(|| Error::CommandReplyParseFailed(reply.reply_lines[0].clone()))?;
+        let mut server_hash = Vec::new();
+        server_hash.resize(sh.len() / 2, 0);
+        for (hilo, dest) in sh.chunks_exact(2).zip(server_hash.iter_mut()) {
+            *dest = tonibble(hilo[0]) << 4 | tonibble(hilo[1]);
+        }
+
+        let sn = chunks.next().map(|sh| sh.as_bytes())
+            .filter(|sn| sn.starts_with(b"SERVERNONCE="))
+            .map(|sn| &sn[b"SERVERNONCE=".len()..])
+            .filter(|sh| sh.len() == 64)
+            .filter(|sh| sh.iter().all(|c| matches!(c, b'0'..=b'9' | b'a'..=b'f' | b'A'..=b'F')))
+            .ok_or_else(|| Error::CommandReplyParseFailed(reply.reply_lines[0].clone()))?;
+        let mut server_nonce = [0u8; 32];
+        for (hilo, dest) in sn.chunks_exact(2).zip(server_nonce.iter_mut()) {
+            *dest = tonibble(hilo[0]) << 4 | tonibble(hilo[1]);
+        }
+
+        hmac_sha256("Tor safe cookie authentication server-to-controller hash", &data, &client_nonce, &server_nonce)
+            .verify_slice(&server_hash).map_err(|_| Error::BadCookieHash())?;
+
+        self.authenticate_cmd_cookie(
+            hmac_sha256("Tor safe cookie authentication controller-to-server hash", &data, &client_nonce, &server_nonce).finalize().into_bytes().as_slice())
+    }
+
+    pub fn authenticate_cookie(&mut self, data: [u8; 32]) -> Result<(), Error> {
+        self.ensure_protocolinfo();
+        let Some(pi) = self.protocolinfo_data.as_ref()
+            else { unreachable!() };
+
+        let reply = if pi.auth_safecookie && pi.auth_cookie {
+            match self.authenticate_safecookie(data) {
+                r @ Ok(_) | r @ Err(Error::BadCookieHash()) => r?,
+                _ => self.authenticate_cmd_cookie(&data)?,
+            }
+        } else if pi.auth_safecookie {
+            self.authenticate_safecookie(data)?
+        } else if pi.auth_cookie {
+            self.authenticate_cmd_cookie(&data)?
+        } else {
+            return Err(Error::CookiesNotSupported());
+        };
+
+        reply_ok(reply).map(|_| ())
+    }
+
+    pub fn authenticate_auto(&mut self) -> Result<(), Error> {
+        self.ensure_protocolinfo();
+        let Some(pi) = self.protocolinfo_data.as_ref()
+            else { unreachable!() };
+
+        if pi.auth_null {
+            self.authenticate("")
+        } else if (pi.auth_cookie || pi.auth_safecookie) && pi.cookiefile != Path::new("") {
+            self.authenticate_cookie(read_cookie(&pi.cookiefile).map_err(|e| Error::CookieReadingFailed(e, pi.cookiefile.clone()))?)
+        } else {
+            self.authenticate("") // fallback
         }
     }
 
     pub fn getinfo(&mut self, keywords: &[&str]) -> Result<Vec<(String, String)>, Error> {
-        let reply = self.getinfo_cmd(keywords)?;
+        let reply = self.getinfo_cmd(keywords).and_then(reply_ok)?;
 
-        match reply.status_code {
-            250u32 => {
-                let mut key_values: Vec<(String, String)> = Default::default();
-                for line in reply.reply_lines {
-                    match line.find('=') {
-                        Some(index) => key_values
-                            .push((line[0..index].to_string(), line[index + 1..].to_string())),
-                        None => {
-                            if line != "OK" {
-                                key_values.push((line, String::new()))
-                            }
-                        }
+        let mut key_values: Vec<(String, String)> = Default::default();
+        for line in reply.reply_lines {
+            match line.find('=') {
+                Some(index) => key_values
+                    .push((line[0..index].to_string(), line[index + 1..].to_string())),
+                None => {
+                    if line != "OK" {
+                        key_values.push((line, String::new()))
                     }
                 }
-                Ok(key_values)
             }
-            code => Err(Error::CommandFailed(code, reply.reply_lines)),
         }
+        Ok(key_values)
     }
 
     pub fn add_onion(
@@ -510,64 +734,59 @@ impl LegacyTorController {
         target: Option<SocketAddr>,
         client_auth: Option<&[X25519PublicKey]>,
     ) -> Result<(Option<Ed25519PrivateKey>, V3OnionServiceId), Error> {
-        let reply = self.add_onion_cmd(key, flags, max_streams, virt_port, target, client_auth)?;
+        let reply = self.add_onion_cmd(key, flags, max_streams, virt_port, target, client_auth).and_then(reply_ok)?;
 
         let mut private_key: Option<Ed25519PrivateKey> = None;
         let mut service_id: Option<V3OnionServiceId> = None;
 
-        match reply.status_code {
-            250u32 => {
-                for line in reply.reply_lines {
-                    if let Some(mut index) = line.find("ServiceID=") {
-                        if service_id.is_some() {
-                            return Err(Error::CommandReplyParseFailed(
-                                "received duplicate ServiceID entries".to_string(),
-                            ));
-                        }
-                        index += "ServiceId=".len();
-                        let service_id_string = &line[index..];
-                        service_id = match V3OnionServiceId::from_string(service_id_string) {
-                            Ok(service_id) => Some(service_id),
-                            Err(_) => {
-                                return Err(Error::CommandReplyParseFailed(format!(
-                                    "could not parse '{}' as V3OnionServiceId",
-                                    service_id_string
-                                )))
-                            }
-                        }
-                    } else if let Some(mut index) = line.find("PrivateKey=") {
-                        if private_key.is_some() {
-                            return Err(Error::CommandReplyParseFailed(
-                                "received duplicate PrivateKey entries".to_string(),
-                            ));
-                        }
-                        index += "PrivateKey=".len();
-                        let key_blob_string = &line[index..];
-                        private_key = match Ed25519PrivateKey::from_key_blob_legacy(key_blob_string)
-                        {
-                            Ok(private_key) => Some(private_key),
-                            Err(_) => {
-                                return Err(Error::CommandReplyParseFailed(format!(
-                                    "could not parse {} as Ed25519PrivateKey",
-                                    key_blob_string
-                                )))
-                            }
-                        };
-                    } else if line.contains("ClientAuthV3=") {
-                        if client_auth.unwrap_or_default().is_empty() {
-                            return Err(Error::CommandReplyParseFailed(
-                                "recieved unexpected ClientAuthV3 keys".to_string(),
-                            ));
-                        }
-                    } else if !line.contains("OK") {
+        for line in reply.reply_lines {
+            if let Some(mut index) = line.find("ServiceID=") {
+                if service_id.is_some() {
+                    return Err(Error::CommandReplyParseFailed(
+                        "received duplicate ServiceID entries".to_string(),
+                    ));
+                }
+                index += "ServiceId=".len();
+                let service_id_string = &line[index..];
+                service_id = match V3OnionServiceId::from_string(service_id_string) {
+                    Ok(service_id) => Some(service_id),
+                    Err(_) => {
                         return Err(Error::CommandReplyParseFailed(format!(
-                            "received unexpected reply line '{}'",
-                            line
-                        )));
+                            "could not parse '{}' as V3OnionServiceId",
+                            service_id_string
+                        )))
                     }
                 }
+            } else if let Some(mut index) = line.find("PrivateKey=") {
+                if private_key.is_some() {
+                    return Err(Error::CommandReplyParseFailed(
+                        "received duplicate PrivateKey entries".to_string(),
+                    ));
+                }
+                index += "PrivateKey=".len();
+                let key_blob_string = &line[index..];
+                private_key = match Ed25519PrivateKey::from_key_blob_legacy(key_blob_string)
+                {
+                    Ok(private_key) => Some(private_key),
+                    Err(_) => {
+                        return Err(Error::CommandReplyParseFailed(format!(
+                            "could not parse {} as Ed25519PrivateKey",
+                            key_blob_string
+                        )))
+                    }
+                };
+            } else if line.contains("ClientAuthV3=") {
+                if client_auth.unwrap_or_default().is_empty() {
+                    return Err(Error::CommandReplyParseFailed(
+                        "recieved unexpected ClientAuthV3 keys".to_string(),
+                    ));
+                }
+            } else if !line.contains("OK") {
+                return Err(Error::CommandReplyParseFailed(format!(
+                    "received unexpected reply line '{}'",
+                    line
+                )));
             }
-            code => return Err(Error::CommandFailed(code, reply.reply_lines)),
         }
 
         if flags.discard_pk {
@@ -591,12 +810,7 @@ impl LegacyTorController {
     }
 
     pub fn del_onion(&mut self, service_id: &V3OnionServiceId) -> Result<(), Error> {
-        let reply = self.del_onion_cmd(service_id)?;
-
-        match reply.status_code {
-            250u32 => Ok(()),
-            code => Err(Error::CommandFailed(code, reply.reply_lines)),
-        }
+        self.del_onion_cmd(service_id).and_then(reply_ok).map(|_| ())
     }
 
     // more specific encapulsation of specific command invocations
@@ -640,6 +854,10 @@ impl LegacyTorController {
     }
 
     pub fn getinfo_version(&mut self) -> Result<LegacyTorVersion, Error> {
+        if let Some(vers) = self.version.take() {
+            return Ok(vers);
+        }
+
         let response = self.getinfo(&["version"])?;
         for (key, value) in response.iter() {
             if key.as_str() == "version" {
@@ -680,10 +898,22 @@ impl LegacyTorController {
 #[test]
 #[serial]
 fn test_tor_controller() -> anyhow::Result<()> {
+    test_tor_controller_impl(false)
+}
+#[test]
+#[serial]
+#[cfg(unix)]
+fn test_tor_controller_unix() -> anyhow::Result<()> {
+    test_tor_controller_impl(true)
+}
+#[cfg(test)]
+fn test_tor_controller_impl(unix: bool) -> anyhow::Result<()> {
+    use std::borrow::Cow;
+
     let tor_path = which::which(format!("tor{}", std::env::consts::EXE_SUFFIX))?;
     let mut data_path = std::env::temp_dir();
     data_path.push("test_tor_controller");
-    let tor_process = LegacyTorProcess::new(&tor_path, &data_path)?;
+    let tor_process = LegacyTorProcess::new_unix(&tor_path, &data_path, unix)?;
 
     // create a scope to ensure tor_controller is dropped
     {
@@ -693,11 +923,11 @@ fn test_tor_controller() -> anyhow::Result<()> {
         // create a tor controller and send authentication command
         let mut tor_controller = LegacyTorController::new(control_stream)?;
         tor_controller.authenticate_cmd(tor_process.get_password())?;
-        assert!(
+        assert_eq!(
             tor_controller
                 .authenticate_cmd("invalid password")?
-                .status_code
-                == 515u32
+                .status_code,
+            515u32
         );
 
         // tor controller should have shutdown the connection after failed authentication
@@ -728,7 +958,7 @@ fn test_tor_controller() -> anyhow::Result<()> {
                 "DisableNetwork" => "1",
                 _ => panic!("unexpected returned key: {}", key),
             };
-            assert!(value == expected);
+            assert_eq!(value, expected);
         }
 
         let vals = tor_controller.getinfo(&["version", "config-file", "config-text"])?;
@@ -739,14 +969,15 @@ fn test_tor_controller() -> anyhow::Result<()> {
         for (key, value) in vals.iter() {
             match key.as_str() {
                 "version" => assert!(Regex::new(r"\d+\.\d+\.\d+\.\d+")?.is_match(&value)),
-                "config-file" => assert!(Path::new(&value) == expected_torrc_path),
-                "config-text" => assert!(
-                    value.to_string()
-                        == format!(
-                            "\nControlPort auto\nControlPortWriteToFile {}\nDataDirectory {}",
-                            expected_control_port_path.display(),
-                            data_path.display()
-                        )
+                "config-file" => assert_eq!(Path::new(&value), expected_torrc_path),
+                "config-text" => assert_eq!(
+                    value.to_string(),
+                    format!(
+                        "\nControlPort {}\nControlPortWriteToFile {}\nDataDirectory {}",
+                        if unix { Cow::Owned(format!("unix:{}", expected_control_port_path.with_file_name("control.sock").display())) } else { Cow::Borrowed("auto") },
+                        expected_control_port_path.display(),
+                        data_path.display()
+                    )
                 ),
                 _ => panic!("unexpected returned key: {}", key),
             }
