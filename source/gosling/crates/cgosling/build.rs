@@ -115,7 +115,7 @@ fn preprocess_header(source: String) -> String {
     features.push("GOSLING_HAVE_MOCK_TOR_PROVIDER");
 
 
-    let source = preprocess_any(source.to_string(), &features);
+    let source = preprocess_any(source, &features);
     let source = preprocess_all(source, &features);
 
     source
