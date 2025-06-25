@@ -90,7 +90,6 @@ fn preprocess_all(source: String, _features: &Vec<&str>) -> String {
 
     if block_regex.is_match(&source) {
         panic!("unexpected #[cfg(all(..))]");
-        return source;
     }
 
     source
