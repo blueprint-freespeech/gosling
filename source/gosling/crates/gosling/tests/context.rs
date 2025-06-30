@@ -1,6 +1,5 @@
 // standard
 use std::io::{BufRead, BufReader, Write};
-use std::net::TcpStream;
 #[cfg(feature = "arti-client-tor-provider")]
 use std::sync::Arc;
 
@@ -29,7 +28,7 @@ const INVALID_HANDSHAKE_HANDLE: HandshakeHandle = !0usize;
 #[test]
 #[cfg(feature = "mock-tor-provider")]
 fn test_mock_client_gosling_context_bootstrap() -> anyhow::Result<()> {
-    let tor_client = Box::new(MockTorClient::new());
+    let tor_client = MockTorClient::new();
     gosling_context_bootstrap_test(tor_client)
 }
 
@@ -49,7 +48,7 @@ fn test_legacy_client_gosling_context_bootstrap() -> anyhow::Result<()> {
         pluggable_transports: None,
         bridge_lines: None,
     };
-    let tor_client = Box::new(LegacyTorClient::new(tor_config)?);
+    let tor_client = LegacyTorClient::new(tor_config)?;
     gosling_context_bootstrap_test(tor_client)
 }
 
@@ -62,7 +61,7 @@ fn test_arti_client_gosling_context_bootstrap() -> anyhow::Result<()> {
 
     let mut data_path = std::env::temp_dir();
     data_path.push("test_arti_client_gosling_context_bootstrap");
-    let tor_client = Box::new(ArtiClientTorClient::new(runtime, &data_path)?);
+    let tor_client = ArtiClientTorClient::new(runtime, &data_path)?;
 
     gosling_context_bootstrap_test(tor_client)
 }
@@ -71,8 +70,8 @@ fn test_arti_client_gosling_context_bootstrap() -> anyhow::Result<()> {
 #[test]
 #[cfg(feature = "mock-tor-provider")]
 fn test_mock_client_gosling_context() -> anyhow::Result<()> {
-    let alice_tor_client = Box::new(MockTorClient::new());
-    let pat_tor_client = Box::new(MockTorClient::new());
+    let alice_tor_client = MockTorClient::new();
+    let pat_tor_client = MockTorClient::new();
     gosling_context_test(alice_tor_client, pat_tor_client)
 }
 
@@ -92,7 +91,7 @@ fn test_legacy_client_gosling_context() -> anyhow::Result<()> {
         pluggable_transports: None,
         bridge_lines: None,
     };
-    let alice_tor_client = Box::new(LegacyTorClient::new(tor_config)?);
+    let alice_tor_client = LegacyTorClient::new(tor_config)?;
 
     let mut pat_path = std::env::temp_dir();
     pat_path.push("test_legacy_client_gosling_context_pat");
@@ -104,7 +103,7 @@ fn test_legacy_client_gosling_context() -> anyhow::Result<()> {
         pluggable_transports: None,
         bridge_lines: None,
     };
-    let pat_tor_client = Box::new(LegacyTorClient::new(tor_config)?);
+    let pat_tor_client = LegacyTorClient::new(tor_config)?;
 
     gosling_context_test(alice_tor_client, pat_tor_client)
 }
@@ -118,18 +117,18 @@ fn test_arti_client_gosling_context() -> anyhow::Result<()> {
 
     let mut data_path = std::env::temp_dir();
     data_path.push("test_arti_client_gosling_context_alice");
-    let alice_tor_client = Box::new(ArtiClientTorClient::new(runtime.clone(), &data_path)?);
+    let alice_tor_client = ArtiClientTorClient::new(runtime.clone(), &data_path)?;
 
     let mut data_path = std::env::temp_dir();
     data_path.push("test_arti_client_gosling_context_pat");
-    let pat_tor_client = Box::new(ArtiClientTorClient::new(runtime.clone(), &data_path)?);
+    let pat_tor_client = ArtiClientTorClient::new(runtime.clone(), &data_path)?;
 
     gosling_context_test(alice_tor_client, pat_tor_client)
 }
 
 #[cfg(test)]
-fn gosling_context_bootstrap_test(
-    mut tor_client: Box<dyn TorProvider>,
+fn gosling_context_bootstrap_test<P: TorProvider + 'static>(
+    tor_client: P,
 ) -> anyhow::Result<()> {
     // Bootstrap
     let private_key = Ed25519PrivateKey::generate();
@@ -141,7 +140,7 @@ fn gosling_context_bootstrap_test(
     );
 
     let mut context = Context::new(
-        tor_client,
+        BoxTorProvider::new(tor_client),
         420,
         420,
         std::time::Duration::from_secs(60),
@@ -179,9 +178,9 @@ fn gosling_context_bootstrap_test(
 }
 
 #[cfg(test)]
-fn gosling_context_test(
-    alice_tor_client: Box<dyn TorProvider>,
-    pat_tor_client: Box<dyn TorProvider>,
+fn gosling_context_test<P1: TorProvider + 'static, P2: TorProvider + 'static>(
+    alice_tor_client: P1,
+    pat_tor_client: P2,
 ) -> anyhow::Result<()> {
     // Bootstrap Alice
     let alice_private_key = Ed25519PrivateKey::generate();
@@ -193,7 +192,7 @@ fn gosling_context_test(
     );
 
     let mut alice = Context::new(
-        alice_tor_client,
+        BoxTorProvider::new(alice_tor_client),
         420,
         420,
         std::time::Duration::from_secs(60),
@@ -236,7 +235,7 @@ fn gosling_context_test(
         pat_service_id.to_string()
     );
     let mut pat = Context::new(
-        pat_tor_client,
+        BoxTorProvider::new(pat_tor_client),
         420,
         420,
         std::time::Duration::from_secs(60),
@@ -616,8 +615,8 @@ fn gosling_context_test(
     // Alice and Pat await hndshake result
     println!("Endpoint handshake completing");
     let (alice_server_stream, mut pat_client_stream) = {
-        let mut alice_server_stream: Option<TcpStream> = None;
-        let mut pat_client_stream: Option<TcpStream> = None;
+        let mut alice_server_stream = None;
+        let mut pat_client_stream = None;
 
         let mut pat_endpoint_client_handshake_completed: bool = false;
         let mut alice_endpoint_server_handshake_completed: bool = false;

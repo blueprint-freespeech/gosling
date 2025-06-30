@@ -4,9 +4,9 @@ use std::ffi::CString;
 use std::io::Cursor;
 use std::os::raw::{c_char, c_void};
 #[cfg(unix)]
-use std::os::unix::io::{IntoRawFd, RawFd};
+use std::os::unix::io::RawFd;
 #[cfg(windows)]
-use std::os::windows::io::{IntoRawSocket, RawSocket};
+use std::os::windows::io::RawSocket;
 use std::time::Duration;
 
 // extern crates
@@ -16,6 +16,7 @@ use anyhow::bail;
 use cgosling_proc_macros::*;
 use gosling::context::*;
 use tor_interface::tor_crypto::*;
+use tor_interface::tor_provider::OnionStream;
 
 // internal
 use crate::callbacks::*;
@@ -842,11 +843,6 @@ fn handle_context_event(
                 let channel_name0 = CString::new(channel_name)
                     .expect("channel_name should be a valid ASCII string and not have an intermediate null byte");
 
-                #[cfg(any(target_os = "linux", target_os = "macos"))]
-                let stream = stream.into_raw_fd();
-                #[cfg(target_os = "windows")]
-                let stream = stream.into_raw_socket();
-
                 callback(
                     data,
                     context,
@@ -854,7 +850,7 @@ fn handle_context_event(
                     endpoint_service_id as *const GoslingV3OnionServiceId,
                     channel_name0.as_ptr(),
                     channel_name_len,
-                    stream,
+                    stream.into_raw(),
                 );
 
                 // cleanup
@@ -959,11 +955,6 @@ fn handle_context_event(
                 let channel_name0 = CString::new(channel_name)
                     .expect("channel_name should be a valid ASCII string and not have an intermediate null byte");
 
-                #[cfg(any(target_os = "linux", target_os = "macos"))]
-                let stream = stream.into_raw_fd();
-                #[cfg(target_os = "windows")]
-                let stream = stream.into_raw_socket();
-
                 callback(
                     data,
                     context,
@@ -972,7 +963,7 @@ fn handle_context_event(
                     client_service_id as *const GoslingV3OnionServiceId,
                     channel_name0.as_ptr(),
                     channel_name_len,
-                    stream,
+                    stream.into_raw(),
                 );
 
                 // cleanup

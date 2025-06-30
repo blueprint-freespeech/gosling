@@ -1,7 +1,7 @@
 // standard
 use std::clone::Clone;
 use std::convert::TryInto;
-use std::net::TcpStream;
+use std::io::{Read, Write};
 
 // extern crates
 use bson::doc;
@@ -71,9 +71,9 @@ pub(crate) enum IdentityClientState {
 // An identity client object used for connecting
 // to an identity server
 //
-pub(crate) struct IdentityClient {
+pub(crate) struct IdentityClient<RW: Read + Write + Send> {
     // session data
-    rpc: Session<TcpStream>,
+    rpc: Session<RW>,
     server_service_id: V3OnionServiceId,
     requested_endpoint: AsciiString,
     client_service_id: V3OnionServiceId,
@@ -89,13 +89,13 @@ pub(crate) struct IdentityClient {
     send_response_request_cookie: Option<RequestCookie>,
 }
 
-impl IdentityClient {
+impl<RW: Read + Write + Send> IdentityClient<RW> {
     fn get_state(&self) -> String {
         format!("{{ state: {:?},  begin_handshake_request_cookie: {:?},  server_cookie: {:?}, endpoint_challenge_response: {:?},  send_response_request_cookie: {:?} }}", self.state,  self.begin_handshake_request_cookie, self.server_cookie, self.endpoint_challenge_response, self.send_response_request_cookie)
     }
 
     pub fn new(
-        rpc: Session<TcpStream>,
+        rpc: Session<RW>,
         server_service_id: V3OnionServiceId,
         requested_endpoint: AsciiString,
         client_identity_ed25519_private: Ed25519PrivateKey,

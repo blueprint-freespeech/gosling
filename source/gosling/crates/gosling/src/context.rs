@@ -1,7 +1,6 @@
 // standard
 use std::clone::Clone;
 use std::collections::{BTreeMap, HashMap, VecDeque};
-use std::net::TcpStream;
 use std::time::Duration;
 
 // extern crates
@@ -87,7 +86,7 @@ pub enum Error {
 /// - [https://gosling.technology/gosling-spec.xhtml](https://gosling.technology/gosling-spec.xhtml)
 pub struct Context {
     // our tor instance
-    tor_provider: Box<dyn TorProvider>,
+    tor_provider: BoxTorProvider,
     bootstrap_complete: bool,
     identity_port: u16,
     endpoint_port: u16,
@@ -99,18 +98,18 @@ pub struct Context {
     // Servers and Clients for in-process handshakes
     //
     next_handshake_handle: HandshakeHandle,
-    identity_clients: BTreeMap<HandshakeHandle, IdentityClient>,
-    identity_servers: BTreeMap<HandshakeHandle, IdentityServer>,
-    endpoint_clients: BTreeMap<HandshakeHandle, EndpointClient>,
-    endpoint_servers: BTreeMap<HandshakeHandle, EndpointServer>,
+    identity_clients: BTreeMap<HandshakeHandle, IdentityClient<BoxOnionStream>>,
+    identity_servers: BTreeMap<HandshakeHandle, IdentityServer<BoxOnionStream>>,
+    endpoint_clients: BTreeMap<HandshakeHandle, EndpointClient<BoxOnionStream>>,
+    endpoint_servers: BTreeMap<HandshakeHandle, EndpointServer<BoxOnionStream>>,
 
     //
     // Listeners for incoming connections
     //
-    identity_listener: Option<OnionListener>,
+    identity_listener: Option<BoxOnionListener>,
     identity_server_published: bool,
     // maps the endpoint service id to the (enpdoint name, alowed client, onion listener tuple, published)
-    endpoint_listeners: HashMap<V3OnionServiceId, (String, V3OnionServiceId, OnionListener, bool)>,
+    endpoint_listeners: HashMap<V3OnionServiceId, (String, V3OnionServiceId, BoxOnionListener, bool)>,
 
     //
     // Server Config Data
@@ -268,7 +267,7 @@ pub enum ContextEvent {
         /// The ASCII-encoded name of the requested channel on the endpoint server
         channel_name: String,
         /// The resulting TCP connection to the endpoint server
-        stream: TcpStream,
+        stream: BoxOnionStream,
     },
 
     /// An outgoing endpoint handshake has failed.
@@ -320,7 +319,7 @@ pub enum ContextEvent {
         /// The ASCII-encoded name of the client's requested channel
         channel_name: String,
         /// The resulting TCP connection to tohe endpoint clientt
-        stream: TcpStream,
+        stream: BoxOnionStream,
     },
 
     /// An endpoint server has rejected an endpoint client's channel request.
@@ -360,7 +359,7 @@ impl Context {
     /// # Returns
     /// A newly constructed `Context`.
     pub fn new(
-        tor_provider: Box<dyn TorProvider>,
+        tor_provider: BoxTorProvider,
         identity_port: u16,
         endpoint_port: u16,
         identity_timeout: Duration,
@@ -429,13 +428,12 @@ impl Context {
         }
 
         // open tcp stream to remove ident server
-        let stream: TcpStream = self
+        let stream = self
             .tor_provider
             .connect(
                 (identity_server_id.clone(), self.identity_port).into(),
                 None,
-            )?
-            .into();
+            )?;
         stream.set_nonblocking(true)?;
         let mut client_rpc = Session::new(stream);
         client_rpc.set_max_wait_time(self.identity_timeout);
@@ -597,13 +595,12 @@ impl Context {
 
         self.tor_provider
             .add_client_auth(&endpoint_server_id, &client_auth_key)?;
-        let stream: TcpStream = self
+        let stream = self
             .tor_provider
             .connect(
                 (endpoint_server_id.clone(), self.endpoint_port).into(),
                 None,
-            )?
-            .into();
+            )?;
         stream.set_nonblocking(true)?;
 
         let mut session = Session::new(stream);
@@ -726,13 +723,12 @@ impl Context {
     }
 
     fn identity_server_handle_accept(
-        identity_listener: &OnionListener,
+        identity_listener: &BoxOnionListener,
         identity_timeout: Duration,
         identity_max_message_size: i32,
         identity_private_key: &Ed25519PrivateKey,
-    ) -> Result<Option<IdentityServer>, Error> {
+    ) -> Result<Option<IdentityServer<BoxOnionStream>>, Error> {
         if let Some(stream) = identity_listener.accept()? {
-            let stream: TcpStream = stream.into();
             if stream.set_nonblocking(true).is_err() {
                 return Ok(None);
             }
@@ -750,13 +746,12 @@ impl Context {
     }
 
     fn endpoint_server_handle_accept(
-        endpoint_listener: &OnionListener,
+        endpoint_listener: &BoxOnionListener,
         endpoint_timeout: Duration,
         client_service_id: &V3OnionServiceId,
         endpoint_service_id: &V3OnionServiceId,
-    ) -> Result<Option<EndpointServer>, Error> {
+    ) -> Result<Option<EndpointServer<BoxOnionStream>>, Error> {
         if let Some(stream) = endpoint_listener.accept()? {
-            let stream: TcpStream = stream.into();
             if stream.set_nonblocking(true).is_err() {
                 return Ok(None);
             }
@@ -782,7 +777,7 @@ impl Context {
         &mut self,
         target_addr: TargetAddr,
         circuit_token: Option<CircuitToken>,
-    ) -> Result<OnionStream, Error> {
+    ) -> Result<BoxOnionStream, Error> {
         Ok(self.tor_provider.connect(target_addr, circuit_token)?)
     }
 

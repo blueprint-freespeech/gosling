@@ -70,7 +70,7 @@ define_registry! {TorProviderConfig}
 /// A tor provider object used by a context to connect to the tor network
 pub struct GoslingTorProvider;
 /// cbindgen:ignore
-type TorProvider = Box<dyn tor_provider::TorProvider>;
+type TorProvider = tor_provider::BoxTorProvider;
 define_registry! {TorProvider}
 
 //
@@ -586,7 +586,7 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_system_legacy_client_co
         let tor_config = LegacyTorClientConfig::SystemTor {
             tor_socks_addr,
             tor_control_addr,
-            tor_control_passwd,
+            tor_control_auth: Some(TorAuth::Password(tor_control_passwd)),
         };
 
         let handle = get_tor_provider_config_registry()
@@ -802,7 +802,7 @@ pub unsafe extern "C" fn gosling_tor_provider_from_tor_provider_config(
         ensure_not_null!(out_tor_provider);
         ensure_not_null!(tor_provider_config);
 
-        let tor_provider: Box<dyn tor_provider::TorProvider> =
+        let tor_provider =
             match get_tor_provider_config_registry().get(tor_provider_config as usize) {
                 Some(tor_provider_config) => match tor_provider_config {
                     #[cfg(feature = "arti-client-tor-provider")]
@@ -822,18 +822,18 @@ pub unsafe extern "C" fn gosling_tor_provider_from_tor_provider_config(
                         };
                         let tor_provider: ArtiClientTorClient =
                             ArtiClientTorClient::new(runtime, &data_dir)?;
-                        Box::new(tor_provider)
+                        TorProvider::new(tor_provider)
                     },
                     #[cfg(feature = "legacy-tor-provider")]
                     TorProviderConfig::LegacyTorClientConfig(legacy_tor_config) => {
                         let tor_provider: LegacyTorClient =
                             LegacyTorClient::new(legacy_tor_config.clone())?;
-                        Box::new(tor_provider)
+                        TorProvider::new(tor_provider)
                     },
                     #[cfg(feature = "mock-tor-provider")]
                     TorProviderConfig::MockTorClientConfig => {
                         let tor_provider: MockTorClient = Default::default();
-                        Box::new(tor_provider)
+                        TorProvider::new(tor_provider)
                     },
                 },
                 None => bail_invalid_handle!(tor_provider_config),

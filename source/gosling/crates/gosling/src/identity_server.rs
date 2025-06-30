@@ -1,7 +1,7 @@
 // standard
 use std::clone::Clone;
 use std::convert::TryInto;
-use std::net::TcpStream;
+use std::io::{Read, Write};
 
 // extern crates
 use bson::doc;
@@ -89,9 +89,9 @@ enum IdentityServerState {
     HandshakeFailed,
 }
 
-pub(crate) struct IdentityServer {
+pub(crate) struct IdentityServer<RW: Read + Write + Send> {
     // Session Data
-    rpc: Option<Session<TcpStream>>,
+    rpc: Option<Session<RW>>,
     server_identity: V3OnionServiceId,
 
     // State Machine Data
@@ -120,12 +120,12 @@ pub(crate) struct IdentityServer {
     challenge_response_valid: bool,
 }
 
-impl IdentityServer {
+impl<RW: Read + Write + Send> IdentityServer<RW> {
     fn get_state(&self) -> String {
         format!("{{ state: {:?}, begin_handshake_request_cookie: {:?}, client_identity: {:?}, requested_endpoint: {:?}, server_cookie: {:?}, endpoint_challenge: {:?}, send_response_request_cookie: {:?}, client_auth_key: {:?}, challenge_response: {:?}, endpoint_private_key: {:?} }}", self.state, self.begin_handshake_request_cookie, self.client_identity, self.requested_endpoint, self.server_cookie, self.endpoint_challenge, self.send_response_request_cookie, self.client_auth_key, self.challenge_response, self.endpoint_private_key)
     }
 
-    pub fn new(rpc: Session<TcpStream>, server_identity: V3OnionServiceId) -> Self {
+    pub fn new(rpc: Session<RW>, server_identity: V3OnionServiceId) -> Self {
         IdentityServer {
             // Session Data
             rpc: Some(rpc),
@@ -382,7 +382,7 @@ impl IdentityServer {
     }
 }
 
-impl ApiSet for IdentityServer {
+impl<RW: Read + Write + Send> ApiSet for IdentityServer<RW> {
     fn namespace(&self) -> &str {
         "gosling_identity"
     }
