@@ -3596,6 +3596,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "tokio-mpmc"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ffadf729b08a5df966b11daa6faee399f72a4ddb00125c0e8853aa4e0f08006c"
+dependencies = [
+ "crossbeam-queue",
+ "futures",
+ "rand 0.9.1",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "tokio-stream"
 version = "0.1.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4249,6 +4263,7 @@ dependencies = [
  "static_assertions",
  "thiserror 1.0.69",
  "tokio",
+ "tokio-mpmc",
  "tokio-stream",
  "tor-cell",
  "tor-config",
