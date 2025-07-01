@@ -633,7 +633,7 @@
 <a href=#633 id=633 data-nosnippet>633</a>        })
 <a href=#634 id=634 data-nosnippet>634</a>    }
 <a href=#635 id=635 data-nosnippet>635</a>
-<a href=#636 id=636 data-nosnippet>636</a>    <span class="comment">// stand up an onion service and return an LegacyOnionListener
+<a href=#636 id=636 data-nosnippet>636</a>    <span class="comment">// stand up an onion service and return an OnionListener
 <a href=#637 id=637 data-nosnippet>637</a>    </span><span class="kw">fn </span>listener(
 <a href=#638 id=638 data-nosnippet>638</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
 <a href=#639 id=639 data-nosnippet>639</a>        private_key: <span class="kw-2">&amp;</span>Ed25519PrivateKey,
@@ -651,50 +651,48 @@
 <a href=#651 id=651 data-nosnippet>651</a>            .local_addr()
 <a href=#652 id=652 data-nosnippet>652</a>            .map_err(Error::TcpListenerLocalAddrFailed)<span class="question-mark">?</span>;
 <a href=#653 id=653 data-nosnippet>653</a>
-<a href=#654 id=654 data-nosnippet>654</a>        <span class="kw">let </span><span class="kw-2">mut </span>flags = AddOnionFlags {
+<a href=#654 id=654 data-nosnippet>654</a>        <span class="kw">let </span>flags = AddOnionFlags {
 <a href=#655 id=655 data-nosnippet>655</a>            discard_pk: <span class="bool-val">true</span>,
-<a href=#656 id=656 data-nosnippet>656</a>            ..Default::default()
-<a href=#657 id=657 data-nosnippet>657</a>        };
-<a href=#658 id=658 data-nosnippet>658</a>        <span class="kw">if </span>authorized_clients.is_some() {
-<a href=#659 id=659 data-nosnippet>659</a>            flags.v3_auth = <span class="bool-val">true</span>;
-<a href=#660 id=660 data-nosnippet>660</a>        }
-<a href=#661 id=661 data-nosnippet>661</a>
-<a href=#662 id=662 data-nosnippet>662</a>        <span class="kw">let </span>onion_addr = OnionAddr::V3(OnionAddrV3::new(
-<a href=#663 id=663 data-nosnippet>663</a>            V3OnionServiceId::from_private_key(private_key),
-<a href=#664 id=664 data-nosnippet>664</a>            virt_port,
-<a href=#665 id=665 data-nosnippet>665</a>        ));
-<a href=#666 id=666 data-nosnippet>666</a>
-<a href=#667 id=667 data-nosnippet>667</a>        <span class="comment">// start onion service
-<a href=#668 id=668 data-nosnippet>668</a>        </span><span class="kw">let </span>(<span class="kw">_</span>, service_id) = <span class="self">self
-<a href=#669 id=669 data-nosnippet>669</a>            </span>.controller
-<a href=#670 id=670 data-nosnippet>670</a>            .add_onion(
-<a href=#671 id=671 data-nosnippet>671</a>                <span class="prelude-val">Some</span>(private_key),
-<a href=#672 id=672 data-nosnippet>672</a>                <span class="kw-2">&amp;</span>flags,
-<a href=#673 id=673 data-nosnippet>673</a>                <span class="prelude-val">None</span>,
-<a href=#674 id=674 data-nosnippet>674</a>                virt_port,
-<a href=#675 id=675 data-nosnippet>675</a>                <span class="prelude-val">Some</span>(socket_addr),
-<a href=#676 id=676 data-nosnippet>676</a>                authorized_clients,
-<a href=#677 id=677 data-nosnippet>677</a>            )
-<a href=#678 id=678 data-nosnippet>678</a>            .map_err(Error::AddOnionFailed)<span class="question-mark">?</span>;
-<a href=#679 id=679 data-nosnippet>679</a>
-<a href=#680 id=680 data-nosnippet>680</a>        <span class="kw">let </span>is_active = Arc::new(atomic::AtomicBool::new(<span class="bool-val">true</span>));
-<a href=#681 id=681 data-nosnippet>681</a>        <span class="self">self</span>.onion_services
-<a href=#682 id=682 data-nosnippet>682</a>            .push((service_id, Arc::clone(<span class="kw-2">&amp;</span>is_active)));
-<a href=#683 id=683 data-nosnippet>683</a>
-<a href=#684 id=684 data-nosnippet>684</a>        <span class="prelude-val">Ok</span>(OnionListener::new(listener, onion_addr, is_active, |is_active| {
-<a href=#685 id=685 data-nosnippet>685</a>            is_active.store(<span class="bool-val">false</span>, atomic::Ordering::Relaxed);
-<a href=#686 id=686 data-nosnippet>686</a>        }))
-<a href=#687 id=687 data-nosnippet>687</a>    }
-<a href=#688 id=688 data-nosnippet>688</a>
-<a href=#689 id=689 data-nosnippet>689</a>    <span class="kw">fn </span>generate_token(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; CircuitToken {
-<a href=#690 id=690 data-nosnippet>690</a>        <span class="kw">let </span>new_token = <span class="self">self</span>.circuit_token_counter;
-<a href=#691 id=691 data-nosnippet>691</a>        <span class="self">self</span>.circuit_token_counter += <span class="number">1</span>;
-<a href=#692 id=692 data-nosnippet>692</a>        <span class="self">self</span>.circuit_tokens
-<a href=#693 id=693 data-nosnippet>693</a>            .insert(new_token, LegacyCircuitToken::new());
-<a href=#694 id=694 data-nosnippet>694</a>        new_token
-<a href=#695 id=695 data-nosnippet>695</a>    }
-<a href=#696 id=696 data-nosnippet>696</a>
-<a href=#697 id=697 data-nosnippet>697</a>    <span class="kw">fn </span>release_token(<span class="kw-2">&amp;mut </span><span class="self">self</span>, circuit_token: CircuitToken) {
-<a href=#698 id=698 data-nosnippet>698</a>        <span class="self">self</span>.circuit_tokens.remove(<span class="kw-2">&amp;</span>circuit_token);
-<a href=#699 id=699 data-nosnippet>699</a>    }
-<a href=#700 id=700 data-nosnippet>700</a>}</code></pre></div></section></main></body></html>
+<a href=#656 id=656 data-nosnippet>656</a>            v3_auth: authorized_clients.is_some(),
+<a href=#657 id=657 data-nosnippet>657</a>            ..Default::default()
+<a href=#658 id=658 data-nosnippet>658</a>        };
+<a href=#659 id=659 data-nosnippet>659</a>
+<a href=#660 id=660 data-nosnippet>660</a>        <span class="kw">let </span>onion_addr = OnionAddr::V3(OnionAddrV3::new(
+<a href=#661 id=661 data-nosnippet>661</a>            V3OnionServiceId::from_private_key(private_key),
+<a href=#662 id=662 data-nosnippet>662</a>            virt_port,
+<a href=#663 id=663 data-nosnippet>663</a>        ));
+<a href=#664 id=664 data-nosnippet>664</a>
+<a href=#665 id=665 data-nosnippet>665</a>        <span class="comment">// start onion service
+<a href=#666 id=666 data-nosnippet>666</a>        </span><span class="kw">let </span>(<span class="kw">_</span>, service_id) = <span class="self">self
+<a href=#667 id=667 data-nosnippet>667</a>            </span>.controller
+<a href=#668 id=668 data-nosnippet>668</a>            .add_onion(
+<a href=#669 id=669 data-nosnippet>669</a>                <span class="prelude-val">Some</span>(private_key),
+<a href=#670 id=670 data-nosnippet>670</a>                <span class="kw-2">&amp;</span>flags,
+<a href=#671 id=671 data-nosnippet>671</a>                <span class="prelude-val">None</span>,
+<a href=#672 id=672 data-nosnippet>672</a>                virt_port,
+<a href=#673 id=673 data-nosnippet>673</a>                <span class="prelude-val">Some</span>(socket_addr),
+<a href=#674 id=674 data-nosnippet>674</a>                authorized_clients,
+<a href=#675 id=675 data-nosnippet>675</a>            )
+<a href=#676 id=676 data-nosnippet>676</a>            .map_err(Error::AddOnionFailed)<span class="question-mark">?</span>;
+<a href=#677 id=677 data-nosnippet>677</a>
+<a href=#678 id=678 data-nosnippet>678</a>        <span class="kw">let </span>is_active = Arc::new(atomic::AtomicBool::new(<span class="bool-val">true</span>));
+<a href=#679 id=679 data-nosnippet>679</a>        <span class="self">self</span>.onion_services
+<a href=#680 id=680 data-nosnippet>680</a>            .push((service_id, Arc::clone(<span class="kw-2">&amp;</span>is_active)));
+<a href=#681 id=681 data-nosnippet>681</a>
+<a href=#682 id=682 data-nosnippet>682</a>        <span class="prelude-val">Ok</span>(OnionListener::new(listener, onion_addr, is_active, |is_active| {
+<a href=#683 id=683 data-nosnippet>683</a>            is_active.store(<span class="bool-val">false</span>, atomic::Ordering::Relaxed);
+<a href=#684 id=684 data-nosnippet>684</a>        }))
+<a href=#685 id=685 data-nosnippet>685</a>    }
+<a href=#686 id=686 data-nosnippet>686</a>
+<a href=#687 id=687 data-nosnippet>687</a>    <span class="kw">fn </span>generate_token(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; CircuitToken {
+<a href=#688 id=688 data-nosnippet>688</a>        <span class="kw">let </span>new_token = <span class="self">self</span>.circuit_token_counter;
+<a href=#689 id=689 data-nosnippet>689</a>        <span class="self">self</span>.circuit_token_counter += <span class="number">1</span>;
+<a href=#690 id=690 data-nosnippet>690</a>        <span class="self">self</span>.circuit_tokens
+<a href=#691 id=691 data-nosnippet>691</a>            .insert(new_token, LegacyCircuitToken::new());
+<a href=#692 id=692 data-nosnippet>692</a>        new_token
+<a href=#693 id=693 data-nosnippet>693</a>    }
+<a href=#694 id=694 data-nosnippet>694</a>
+<a href=#695 id=695 data-nosnippet>695</a>    <span class="kw">fn </span>release_token(<span class="kw-2">&amp;mut </span><span class="self">self</span>, circuit_token: CircuitToken) {
+<a href=#696 id=696 data-nosnippet>696</a>        <span class="self">self</span>.circuit_tokens.remove(<span class="kw-2">&amp;</span>circuit_token);
+<a href=#697 id=697 data-nosnippet>697</a>    }
+<a href=#698 id=698 data-nosnippet>698</a>}</code></pre></div></section></main></body></html>
