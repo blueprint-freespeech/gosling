@@ -4,9 +4,9 @@ use std::ffi::CString;
 use std::io::Cursor;
 use std::os::raw::{c_char, c_void};
 #[cfg(unix)]
-use std::os::unix::io::{IntoRawFd, RawFd};
+use std::os::unix::io::RawFd;
 #[cfg(windows)]
-use std::os::windows::io::{IntoRawSocket, RawSocket};
+use std::os::windows::io::RawSocket;
 use std::time::Duration;
 
 // extern crates
@@ -16,6 +16,7 @@ use anyhow::bail;
 use cgosling_proc_macros::*;
 use gosling::context::*;
 use tor_interface::tor_crypto::*;
+use tor_interface::tor_provider::OnionStream;
 
 // internal
 use crate::callbacks::*;
@@ -485,10 +486,12 @@ fn handle_context_event(
             summary,
         } => {
             if let (Some(callback), data) = get_callback!(callbacks, tor_bootstrap_status_received_callback) {
-                let tag0 = CString::new(tag.as_str()).expect(
+                let tag_len = tag.len();
+                let tag0 = CString::new(tag).expect(
                     "bootstrap status tag string should not have an intermediate null byte",
                 );
-                let summary0 = CString::new(summary.as_str()).expect(
+                let summary_len = summary.len();
+                let summary0 = CString::new(summary).expect(
                     "bootstrap status summary string should not have an intermediate null byte",
                 );
                 callback(
@@ -496,9 +499,9 @@ fn handle_context_event(
                     context,
                     progress,
                     tag0.as_ptr(),
-                    tag.len(),
+                    tag_len,
                     summary0.as_ptr(),
-                    summary.len(),
+                    summary_len,
                 );
             }
         }
@@ -509,9 +512,10 @@ fn handle_context_event(
         }
         ContextEvent::TorLogReceived { line } => {
             if let (Some(callback), data) = get_callback!(callbacks, tor_log_received_callback) {
-                let line0 = CString::new(line.as_str())
+                let line_len = line.len();
+                let line0 = CString::new(line)
                     .expect("tor log line string should not have an intermediate null byte");
-                callback(data, context, line0.as_ptr(), line.len());
+                callback(data, context, line0.as_ptr(), line_len);
             }
         }
         //
@@ -591,7 +595,8 @@ fn handle_context_event(
                     (identity_service_id, endpoint_service_id)
                 };
 
-                let endpoint_name0 = CString::new(endpoint_name.as_str())
+                let endpoint_name_len = endpoint_name.len();
+                let endpoint_name0 = CString::new(endpoint_name)
                     .expect("endpoint_name should be a valid ASCII string and not have an intermediate null byte");
 
                 let client_auth_private_key =
@@ -604,7 +609,7 @@ fn handle_context_event(
                     identity_service_id as *const GoslingV3OnionServiceId,
                     endpoint_service_id as *const GoslingV3OnionServiceId,
                     endpoint_name0.as_ptr(),
-                    endpoint_name.len(),
+                    endpoint_name_len,
                     client_auth_private_key as *const GoslingX25519PrivateKey,
                 );
 
@@ -658,7 +663,8 @@ fn handle_context_event(
             };
 
             let endpoint_supported = if let (Some(callback), data) = get_callback!(callbacks, identity_server_endpoint_supported_callback) {
-                let requested_endpoint0 = CString::new(requested_endpoint.as_str()).expect(
+                let requested_endpoint_len = requested_endpoint.len();
+                let requested_endpoint0 = CString::new(requested_endpoint).expect(
                     "requested_endpoint should be a valid ASCII string and not have an intermediate null byte",
                 );
                 callback(
@@ -666,7 +672,7 @@ fn handle_context_event(
                     context,
                     handle,
                     requested_endpoint0.as_ptr(),
-                    requested_endpoint.len(),
+                    requested_endpoint_len,
                 )
             } else {
                 bail!("missing required identity_server_endpoint_supported() callback");
@@ -758,7 +764,8 @@ fn handle_context_event(
                     ed25519_private_key_registry.insert(endpoint_private_key)
                 };
 
-                let endpoint_name0 = CString::new(endpoint_name.as_str())
+                let endpoint_name_len = endpoint_name.len();
+                let endpoint_name0 = CString::new(endpoint_name)
                     .expect("endpoint_name should be a valid ASCII string and not have an intermediate null byte");
 
                 let client_service_id = {
@@ -777,7 +784,7 @@ fn handle_context_event(
                     handle,
                     endpoint_private_key as *const GoslingEd25519PrivateKey,
                     endpoint_name0.as_ptr(),
-                    endpoint_name.len(),
+                    endpoint_name_len,
                     client_service_id as *const GoslingV3OnionServiceId,
                     client_auth_public_key as *const GoslingX25519PublicKey,
                 );
@@ -832,13 +839,9 @@ fn handle_context_event(
                     let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
                     v3_onion_service_id_registry.insert(endpoint_service_id)
                 };
-                let channel_name0 = CString::new(channel_name.as_str())
+                let channel_name_len = channel_name.len();
+                let channel_name0 = CString::new(channel_name)
                     .expect("channel_name should be a valid ASCII string and not have an intermediate null byte");
-
-                #[cfg(any(target_os = "linux", target_os = "macos"))]
-                let stream = stream.into_raw_fd();
-                #[cfg(target_os = "windows")]
-                let stream = stream.into_raw_socket();
 
                 callback(
                     data,
@@ -846,8 +849,8 @@ fn handle_context_event(
                     handle,
                     endpoint_service_id as *const GoslingV3OnionServiceId,
                     channel_name0.as_ptr(),
-                    channel_name.len(),
-                    stream,
+                    channel_name_len,
+                    stream.into_raw(),
                 );
 
                 // cleanup
@@ -875,7 +878,8 @@ fn handle_context_event(
                     let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
                     v3_onion_service_id_registry.insert(endpoint_service_id)
                 };
-                let endpoint_name0 = CString::new(endpoint_name.as_str())
+                let endpoint_name_len = endpoint_name.len();
+                let endpoint_name0 = CString::new(endpoint_name)
                     .expect("endpoint_name should be a valid ASCII string and not have an intermediate null byte");
 
                 callback(
@@ -883,7 +887,7 @@ fn handle_context_event(
                     context,
                     endpoint_service_id as *const GoslingV3OnionServiceId,
                     endpoint_name0.as_ptr(),
-                    endpoint_name.len(),
+                    endpoint_name_len,
                 );
 
                 // cleanup
@@ -905,7 +909,8 @@ fn handle_context_event(
                     let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
                     v3_onion_service_id_registry.insert(client_service_id)
                 };
-                let requested_channel0 = CString::new(requested_channel.as_str()).expect("requested_channel should be a valid ASCII string and not have an intermediate null byte",
+                let requested_channel_len = requested_channel.len();
+                let requested_channel0 = CString::new(requested_channel).expect("requested_channel should be a valid ASCII string and not have an intermediate null byte",
                 );
                 let channel_supported = callback(
                     data,
@@ -913,7 +918,7 @@ fn handle_context_event(
                     handle,
                     client_service_id as *const GoslingV3OnionServiceId,
                     requested_channel0.as_ptr(),
-                    requested_channel.len(),
+                    requested_channel_len,
                 );
 
                 // cleanup
@@ -946,13 +951,9 @@ fn handle_context_event(
                     (endpoint_service_id, client_service_id)
                 };
 
-                let channel_name0 = CString::new(channel_name.as_str())
+                let channel_name_len = channel_name.len();
+                let channel_name0 = CString::new(channel_name)
                     .expect("channel_name should be a valid ASCII string and not have an intermediate null byte");
-
-                #[cfg(any(target_os = "linux", target_os = "macos"))]
-                let stream = stream.into_raw_fd();
-                #[cfg(target_os = "windows")]
-                let stream = stream.into_raw_socket();
 
                 callback(
                     data,
@@ -961,8 +962,8 @@ fn handle_context_event(
                     endpoint_service_id as *const GoslingV3OnionServiceId,
                     client_service_id as *const GoslingV3OnionServiceId,
                     channel_name0.as_ptr(),
-                    channel_name.len(),
-                    stream,
+                    channel_name_len,
+                    stream.into_raw(),
                 );
 
                 // cleanup

@@ -2,6 +2,7 @@
 use std::collections::BTreeMap;
 use std::ops::DerefMut;
 use std::path::PathBuf;
+use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -125,6 +126,9 @@ impl ArtiTorClient {
 }
 
 impl TorProvider for ArtiTorClient {
+    type Stream = TcpOrUnixOnionStream;
+    type Listener = TcpOnionListener;
+
     fn update(&mut self) -> Result<Vec<TorEvent>, tor_provider::Error> {
         std::thread::sleep(std::time::Duration::from_millis(16));
         let mut tor_events = match self.pending_events.lock() {
@@ -196,7 +200,7 @@ impl TorProvider for ArtiTorClient {
         &mut self,
         target: TargetAddr,
         circuit_token: Option<CircuitToken>,
-    ) -> Result<OnionStream, tor_provider::Error> {
+    ) -> Result<Self::Stream, tor_provider::Error> {
         if !self.bootstrapped {
             return Err(Error::ArtiNotBootstrapped().into());
         }
@@ -223,8 +227,8 @@ impl TorProvider for ArtiTorClient {
         let stream = self.rpc_conn.open_stream(None, (host.as_str(), port), isolation)
             .map_err(Error::ArtiOpenStreamFailed)?;
 
-        Ok(OnionStream {
-            stream,
+        Ok(TcpOrUnixOnionStream {
+            stream: stream.into(),
             local_addr: None,
             peer_addr: Some(target),
         })
@@ -235,7 +239,8 @@ impl TorProvider for ArtiTorClient {
         _private_key: &Ed25519PrivateKey,
         _virt_port: u16,
         _authorized_clients: Option<&[X25519PublicKey]>,
-    ) -> Result<OnionListener, tor_provider::Error> {
+        _bind_addr: Option<SocketAddr>,
+    ) -> Result<Self::Listener, tor_provider::Error> {
         Err(Error::NotImplemented().into())
     }
 

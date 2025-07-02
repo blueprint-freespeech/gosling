@@ -1,7 +1,7 @@
 // standard
 use std::clone::Clone;
 use std::convert::TryInto;
-use std::net::TcpStream;
+use std::io::{Read, Write};
 
 // extern crates
 use bson::doc;
@@ -38,8 +38,8 @@ pub enum Error {
     OsRngTryFillBytesFailure(#[from] rand_core::OsError),
 }
 
-pub(crate) enum EndpointClientEvent {
-    HandshakeCompleted { stream: TcpStream },
+pub(crate) enum EndpointClientEvent<RW: Read + Write + Send> {
+    HandshakeCompleted { stream: RW },
 }
 
 #[derive(Debug, PartialEq)]
@@ -50,9 +50,9 @@ enum EndpointClientState {
     HandshakeComplete,
 }
 
-pub(crate) struct EndpointClient {
+pub(crate) struct EndpointClient<RW: Read + Write + Send> {
     // session data
-    rpc: Option<Session<TcpStream>>,
+    rpc: Option<Session<RW>>,
     pub server_service_id: V3OnionServiceId,
     pub requested_channel: AsciiString,
     client_service_id: V3OnionServiceId,
@@ -64,13 +64,13 @@ pub(crate) struct EndpointClient {
     send_response_request_cookie: Option<RequestCookie>,
 }
 
-impl EndpointClient {
+impl<RW: Read + Write + Send> EndpointClient<RW> {
     fn get_state(&self) -> String {
         format!("{{ state: {:?}, begin_handshake_request_cookie: {:?}, send_response_request_cookie: {:?} }}", self.state, self.begin_handshake_request_cookie, self.send_response_request_cookie)
     }
 
     pub fn new(
-        rpc: Session<TcpStream>,
+        rpc: Session<RW>,
         server_service_id: V3OnionServiceId,
         requested_channel: AsciiString,
         client_ed25519_private: Ed25519PrivateKey,
@@ -88,7 +88,7 @@ impl EndpointClient {
         }
     }
 
-    pub fn update(&mut self) -> Result<Option<EndpointClientEvent>, Error> {
+    pub fn update(&mut self) -> Result<Option<EndpointClientEvent<RW>>, Error> {
         if self.state == EndpointClientState::HandshakeComplete {
             return Err(Error::IncorrectUsage("update() may not be called after HandshakeComplete has been returned from previous update() call".to_string()));
         }

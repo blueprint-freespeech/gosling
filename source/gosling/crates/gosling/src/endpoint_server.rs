@@ -1,7 +1,7 @@
 // standard
 use std::clone::Clone;
 use std::convert::TryInto;
-use std::net::TcpStream;
+use std::io::{Read, Write};
 
 // extern crates
 use bson::doc;
@@ -38,7 +38,7 @@ pub enum Error {
     OsRngTryFillBytesFailure(#[from] rand_core::OsError),
 }
 
-pub(crate) enum EndpointServerEvent {
+pub(crate) enum EndpointServerEvent<RW: Read + Write + Send> {
     ChannelRequestReceived {
         client_service_id: V3OnionServiceId,
         requested_channel: AsciiString,
@@ -47,7 +47,7 @@ pub(crate) enum EndpointServerEvent {
     HandshakeCompleted {
         client_service_id: V3OnionServiceId,
         channel_name: AsciiString,
-        stream: TcpStream,
+        stream: RW,
     },
     // endpoint server has reject an incoming channel request
     HandshakeRejected {
@@ -70,9 +70,9 @@ enum EndpointServerState {
     HandshakeFailed,
 }
 
-pub(crate) struct EndpointServer {
+pub(crate) struct EndpointServer<RW: Read + Write + Send> {
     // Session Data
-    rpc: Option<Session<TcpStream>>,
+    rpc: Option<Session<RW>>,
     pub server_identity: V3OnionServiceId,
     allowed_client_identity: V3OnionServiceId,
 
@@ -94,13 +94,13 @@ pub(crate) struct EndpointServer {
     client_proof_signature_valid: bool,
 }
 
-impl EndpointServer {
+impl<RW: Read + Write + Send> EndpointServer<RW> {
     fn get_state(&self) -> String {
         format!("{{ state: {:?}, begin_handshake_request_cookie: {:?}, client_identity: {:?}, requested_channel: {:?}, server_cookie: {:?}, handshake_succeeded:{:?} }}", self.state, self.begin_handshake_request_cookie, self.client_identity, self.requested_channel, self.server_cookie, self.handshake_succeeded)
     }
 
     pub fn new(
-        rpc: Session<TcpStream>,
+        rpc: Session<RW>,
         client_identity: V3OnionServiceId,
         server_identity: V3OnionServiceId,
     ) -> Self {
@@ -121,7 +121,7 @@ impl EndpointServer {
         }
     }
 
-    pub fn update(&mut self) -> Result<Option<EndpointServerEvent>, Error> {
+    pub fn update(&mut self) -> Result<Option<EndpointServerEvent<RW>>, Error> {
         if let Some(mut rpc) = std::mem::take(&mut self.rpc) {
             match rpc.update(Some(&mut [self])) {
                 Ok(()) => {
@@ -247,7 +247,7 @@ impl EndpointServer {
     }
 }
 
-impl ApiSet for EndpointServer {
+impl<RW: Read + Write + Send> ApiSet for EndpointServer<RW> {
     fn namespace(&self) -> &str {
         "gosling_endpoint"
     }

@@ -3,16 +3,21 @@ use std::any::Any;
 use std::boxed::Box;
 use std::convert::TryFrom;
 use std::io::{Read, Write};
-use std::net::{SocketAddr, TcpListener, TcpStream};
+use std::net::{SocketAddr, TcpListener};
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
-use std::sync::OnceLock;
+use std::sync::{atomic, Arc, OnceLock};
+#[cfg(unix)]
+use std::os::unix::io::{IntoRawFd, RawFd};
+#[cfg(windows)]
+use std::os::windows::io::{IntoRawSocket, RawSocket};
 
 // extern crates
 use domain::base::name::Name;
 use idna::uts46::{Hyphens, Uts46};
 use idna::{domain_to_ascii_cow, AsciiDenyList};
 use regex::Regex;
+pub use socks::TcpOrUnixStream;
 
 // internal crates
 use crate::tor_crypto::*;
@@ -199,7 +204,7 @@ impl FromStr for DomainAddr {
 //
 
 /// An enum representing the various types of addresses a [`TorProvider`] implementation may connect to.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TargetAddr {
     /// An ip address and port
     Socket(std::net::SocketAddr),
@@ -275,69 +280,231 @@ pub type CircuitToken = usize;
 // Onion Stream
 //
 
-/// A wrapper around a [`std::net::TcpStream`] with some Tor-specific customisations
+#[cfg(unix)]
+pub type OnionStreamIntoRaw = RawFd;
+#[cfg(windows)]
+pub type OnionStreamIntoRaw = RawSocket;
+
+/// A wrapper around a [`TcpOrUnixStream`] with some Tor-specific customisations
 ///
 /// An onion-listener can be constructed using the [`TorProvider::connect()`] method.
+pub trait OnionStream: Send + Read + Write + std::fmt::Debug {
+    /// Returns the target address of the remote peer of this onion connection.
+    fn peer_addr(&self) -> Option<TargetAddr>;
+
+    /// Returns the onion address of the local connection for an incoming onion-service connection. Returns `None` for outgoing connections.
+    fn local_addr(&self) -> Option<OnionAddr>;
+
+    /// Tries to clone the underlying connection and data. A simple pass-through to [`TcpOrUnixStream::try_clone()`].
+    fn try_clone(&self) -> std::io::Result<Self> where Self: Sized;
+
+    /// Moves the underlying `TcpOrUnixStream` into or out of nonblocking mode.
+    fn set_nonblocking(&self, nonblocking: bool) -> std::io::Result<()>;
+
+    /// Consume stream and return the underlying raw handle.
+    fn into_raw(self) -> OnionStreamIntoRaw;
+}
+
 #[derive(Debug)]
-pub struct OnionStream {
-    pub(crate) stream: TcpStream,
+pub struct TcpOrUnixOnionStream {
+    pub(crate) stream: TcpOrUnixStream,
     pub(crate) local_addr: Option<OnionAddr>,
     pub(crate) peer_addr: Option<TargetAddr>,
 }
 
-impl Deref for OnionStream {
-    type Target = TcpStream;
+impl Deref for TcpOrUnixOnionStream {
+    type Target = TcpOrUnixStream;
     fn deref(&self) -> &Self::Target {
         &self.stream
     }
 }
 
-impl DerefMut for OnionStream {
+impl DerefMut for TcpOrUnixOnionStream {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.stream
     }
 }
 
-impl From<OnionStream> for TcpStream {
-    fn from(onion_stream: OnionStream) -> Self {
+impl From<TcpOrUnixOnionStream> for TcpOrUnixStream {
+    fn from(onion_stream: TcpOrUnixOnionStream) -> Self {
         onion_stream.stream
     }
 }
 
-impl Read for OnionStream {
-    fn read(&mut self, buf: &mut [u8]) -> Result<usize, std::io::Error> {
+impl Read for TcpOrUnixOnionStream {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         self.stream.read(buf)
     }
+    fn read_vectored(&mut self, bufs: &mut [std::io::IoSliceMut<'_>]) -> std::io::Result<usize> {
+        self.stream.read_vectored(bufs)
+    }
+    fn read_to_end(&mut self, buf: &mut Vec<u8>) -> std::io::Result<usize> {
+        self.stream.read_to_end(buf)
+    }
+    fn read_to_string(&mut self, buf: &mut String) -> std::io::Result<usize> {
+        self.stream.read_to_string(buf)
+    }
+    fn read_exact(&mut self, buf: &mut [u8]) -> std::io::Result<()> {
+        self.stream.read_exact(buf)
+    }
 }
 
-impl Write for OnionStream {
-    fn write(&mut self, buf: &[u8]) -> Result<usize, std::io::Error> {
+impl Write for TcpOrUnixOnionStream {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         self.stream.write(buf)
     }
-
-    fn flush(&mut self) -> Result<(), std::io::Error> {
+    fn flush(&mut self) -> std::io::Result<()> {
         self.stream.flush()
+    }
+    fn write_vectored(&mut self, bufs: &[std::io::IoSlice<'_>]) -> std::io::Result<usize> {
+        self.stream.write_vectored(bufs)
+    }
+    fn write_all(&mut self, buf: &[u8]) -> std::io::Result<()> {
+        self.stream.write_all(buf)
+    }
+    fn write_fmt(&mut self, fmt: std::fmt::Arguments<'_>) -> std::io::Result<()> {
+        self.stream.write_fmt(fmt)
     }
 }
 
-impl OnionStream {
-    /// Returns the target address of the remote peer of this onion connection.
-    pub fn peer_addr(&self) -> Option<TargetAddr> {
+impl OnionStream for TcpOrUnixOnionStream {
+    fn peer_addr(&self) -> Option<TargetAddr> {
         self.peer_addr.clone()
     }
 
-    /// Returns the onion address of the local connection for an incoming onion-service connection. Returns `None` for outgoing connections.
-    pub fn local_addr(&self) -> Option<OnionAddr> {
+    fn local_addr(&self) -> Option<OnionAddr> {
         self.local_addr.clone()
     }
 
-    /// Tries to clone the underlying connection and data. A simple pass-through to [`std::net::TcpStream::try_clone()`].
-    pub fn try_clone(&self) -> Result<Self, std::io::Error> {
+    fn try_clone(&self) -> std::io::Result<Self> where Self: Sized {
         Ok(Self {
             stream: self.stream.try_clone()?,
             local_addr: self.local_addr.clone(),
             peer_addr: self.peer_addr.clone(),
         })
+    }
+
+    fn set_nonblocking(&self, nonblocking: bool) -> std::io::Result<()> {
+        self.stream.set_nonblocking(nonblocking)
+    }
+
+    fn into_raw(self) -> OnionStreamIntoRaw {
+        #[cfg(unix)]
+        return self.stream.into_raw_fd();
+        #[cfg(windows)]
+        return self.stream.into_raw_stream();
+    }
+}
+
+pub struct BoxOnionStream {
+    data: Box<dyn Any + Send>,
+
+    peer_addr: fn(&Box<dyn Any + Send>) -> Option<TargetAddr>,
+    local_addr: fn(&Box<dyn Any + Send>) -> Option<OnionAddr>,
+    try_clone: fn(&Box<dyn Any + Send>) -> std::io::Result<Self>,
+    set_nonblocking: fn(&Box<dyn Any + Send>, bool) -> std::io::Result<()>,
+    into_raw: fn(Box<dyn Any + Send>) -> OnionStreamIntoRaw,
+
+    read: fn(&mut Box<dyn Any + Send>, &mut [u8]) -> std::io::Result<usize>,
+    read_vectored: fn(&mut Box<dyn Any + Send>, &mut [std::io::IoSliceMut<'_>]) -> std::io::Result<usize>,
+    read_to_end: fn(&mut Box<dyn Any + Send>, &mut Vec<u8>) -> std::io::Result<usize>,
+    read_to_string: fn(&mut Box<dyn Any + Send>, &mut String) -> std::io::Result<usize>,
+    read_exact: fn(&mut Box<dyn Any + Send>, &mut [u8]) -> std::io::Result<()>,
+
+    write: fn(&mut Box<dyn Any + Send>, &[u8]) -> std::io::Result<usize>,
+    flush: fn(&mut Box<dyn Any + Send>) -> std::io::Result<()>,
+    write_vectored: fn(&mut Box<dyn Any + Send>, &[std::io::IoSlice<'_>]) -> std::io::Result<usize>,
+    write_all: fn(&mut Box<dyn Any + Send>, &[u8]) -> std::io::Result<()>,
+    write_fmt: fn(&mut Box<dyn Any + Send>, std::fmt::Arguments<'_>) -> std::io::Result<()>,
+}
+
+impl std::fmt::Debug for BoxOnionStream {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        f.write_str("BoxOnionStream")
+    }
+}
+
+impl BoxOnionStream {
+    pub fn new<S: OnionStream + 'static>(s: S) -> Self {
+        Self {
+            data: Box::new(s),
+
+            peer_addr: |slf| slf.downcast_ref::<S>().unwrap().peer_addr(),
+            local_addr: |slf| slf.downcast_ref::<S>().unwrap().local_addr(),
+            try_clone: |slf| slf.downcast_ref::<S>().unwrap().try_clone().map(BoxOnionStream::new),
+            set_nonblocking: |slf, nonblocking| slf.downcast_ref::<S>().unwrap().set_nonblocking(nonblocking),
+            into_raw: |slf| slf.downcast::<S>().unwrap().into_raw(),
+
+            read: |slf, buf| slf.downcast_mut::<S>().unwrap().read(buf),
+            read_vectored: |slf, bufs| slf.downcast_mut::<S>().unwrap().read_vectored(bufs),
+            read_to_end: |slf, buf| slf.downcast_mut::<S>().unwrap().read_to_end(buf),
+            read_to_string: |slf, buf| slf.downcast_mut::<S>().unwrap().read_to_string(buf),
+            read_exact: |slf, buf| slf.downcast_mut::<S>().unwrap().read_exact(buf),
+
+            write: |slf, buf| slf.downcast_mut::<S>().unwrap().write(buf),
+            flush: |slf| slf.downcast_mut::<S>().unwrap().flush(),
+            write_vectored: |slf, bufs| slf.downcast_mut::<S>().unwrap().write_vectored(bufs),
+            write_all: |slf, buf| slf.downcast_mut::<S>().unwrap().write_all(buf),
+            write_fmt: |slf, fmt| slf.downcast_mut::<S>().unwrap().write_fmt(fmt),
+        }
+    }
+}
+
+impl Read for BoxOnionStream {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        (self.read)(&mut self.data, buf)
+    }
+    fn read_vectored(&mut self, bufs: &mut [std::io::IoSliceMut<'_>]) -> std::io::Result<usize> {
+        (self.read_vectored)(&mut self.data, bufs)
+    }
+    fn read_to_end(&mut self, buf: &mut Vec<u8>) -> std::io::Result<usize> {
+        (self.read_to_end)(&mut self.data, buf)
+    }
+    fn read_to_string(&mut self, buf: &mut String) -> std::io::Result<usize> {
+        (self.read_to_string)(&mut self.data, buf)
+    }
+    fn read_exact(&mut self, buf: &mut [u8]) -> std::io::Result<()> {
+        (self.read_exact)(&mut self.data, buf)
+    }
+}
+
+impl Write for BoxOnionStream {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        (self.write)(&mut self.data, buf)
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        (self.flush)(&mut self.data)
+    }
+    fn write_vectored(&mut self, bufs: &[std::io::IoSlice<'_>]) -> std::io::Result<usize> {
+        (self.write_vectored)(&mut self.data, bufs)
+    }
+    fn write_all(&mut self, buf: &[u8]) -> std::io::Result<()> {
+        (self.write_all)(&mut self.data, buf)
+    }
+    fn write_fmt(&mut self, fmt: std::fmt::Arguments<'_>) -> std::io::Result<()> {
+        (self.write_fmt)(&mut self.data, fmt)
+    }
+}
+
+impl OnionStream for BoxOnionStream {
+    fn peer_addr(&self) -> Option<TargetAddr> {
+        (self.peer_addr)(&self.data)
+    }
+
+    fn local_addr(&self) -> Option<OnionAddr> {
+        (self.local_addr)(&self.data)
+    }
+
+    fn try_clone(&self) -> std::io::Result<Self> where Self: Sized {
+        (self.try_clone)(&self.data)
+    }
+
+    fn set_nonblocking(&self, nonblocking: bool) -> std::io::Result<()> {
+        (self.set_nonblocking)(&self.data, nonblocking)
+    }
+
+    fn into_raw(self) -> OnionStreamIntoRaw {
+        (self.into_raw)(self.data)
     }
 }
 
@@ -348,50 +515,35 @@ impl OnionStream {
 /// A wrapper around a [`std::net::TcpListener`] with some Tor-specific customisations.
 ///
 /// An onion-listener can be constructed using the [`TorProvider::listener()`] method.
-pub struct OnionListener {
-    pub(crate) listener: TcpListener,
-    pub(crate) onion_addr: OnionAddr,
-    pub(crate) data: Option<Box<dyn Any + Send>>,
-    pub(crate) drop: Option<Box<dyn FnMut(Box<dyn Any>) + Send>>,
-}
-
-impl OnionListener {
-    /// Construct an `OnionListener`. The `data` and `drop` parameters are to allow custom `TorProvider` implementations their own data and cleanup procedures.
-    pub(crate) fn new<T: 'static + Send>(
-        listener: TcpListener,
-        onion_addr: OnionAddr,
-        data: T,
-        mut drop: impl FnMut(T) + 'static + Send) -> Self {
-        // marshall our data into an Any
-        let data: Option<Box<dyn Any + Send>> = Some(Box::new(data));
-        // marhsall our drop into a function which takes an Any
-        let drop: Option<Box<dyn FnMut(Box<dyn Any>) + Send>>  = Some(Box::new(move |data: Box<dyn std::any::Any>| {
-            // encapsulate extracting our data from the Any
-            if let Ok(data) = data.downcast::<T>() {
-                // and call our provided drop
-                drop(*data);
-            }
-        }));
-
-        Self{
-            listener,
-            onion_addr,
-            data,
-            drop,
-        }
-    }
+pub trait OnionListener: Send {
+    type Stream: OnionStream;
 
     /// Moves the underlying `TcpListener` into or out of nonblocking mode.
-    pub fn set_nonblocking(&self, nonblocking: bool) -> Result<(), std::io::Error> {
-        self.listener.set_nonblocking(nonblocking)
-    }
+    fn set_nonblocking(&self, nonblocking: bool) -> std::io::Result<()>;
 
     /// Accept a new incoming connection from this listener.
-    pub fn accept(&self) -> Result<Option<OnionStream>, std::io::Error> {
-        match self.listener.accept() {
-            Ok((stream, _socket_addr)) => Ok(Some(OnionStream {
-                stream,
-                local_addr: Some(self.onion_addr.clone()),
+    fn accept(&self) -> std::io::Result<Option<Self::Stream>>;
+
+    /// Address this listener is listening on
+    fn address(&self) -> &OnionAddr;
+}
+
+pub(crate) struct TcpOnionListenerBase(pub TcpListener, pub OnionAddr);
+
+pub struct TcpOnionListener(pub(crate) TcpOnionListenerBase, pub(crate) Arc<atomic::AtomicBool>);
+
+impl OnionListener for TcpOnionListenerBase {
+    type Stream = TcpOrUnixOnionStream;
+
+    fn set_nonblocking(&self, nonblocking: bool) -> std::io::Result<()> {
+        self.0.set_nonblocking(nonblocking)
+    }
+
+    fn accept(&self) -> std::io::Result<Option<Self::Stream>> {
+        match self.0.accept() {
+            Ok((stream, _socket_addr)) => Ok(Some(TcpOrUnixOnionStream {
+                stream: stream.into(),
+                local_addr: Some(self.1.clone()),
                 peer_addr: None,
             })),
             Err(err) => {
@@ -403,18 +555,85 @@ impl OnionListener {
             }
         }
     }
+
+    fn address(&self) -> &OnionAddr {
+        &self.1
+    }
 }
 
-impl Drop for OnionListener {
+impl OnionListener for TcpOnionListener {
+    type Stream = TcpOrUnixOnionStream;
+
+    fn set_nonblocking(&self, nonblocking: bool) -> std::io::Result<()> {
+        self.0.set_nonblocking(nonblocking)
+    }
+
+    fn accept(&self) -> std::io::Result<Option<Self::Stream>> {
+        self.0.accept()
+    }
+
+    fn address(&self) -> &OnionAddr {
+        &self.0.address()
+    }
+}
+
+impl TcpOnionListener {
+    /// `TcpListener::try_clone()` the inner listener
+    ///
+    /// The lifetime of the hidden service itself is still bound to this object,
+    /// but the resulting [`TcpListener`] may be polled/`accept`ed independently
+    pub fn try_clone_inner(&self) -> std::io::Result<TcpListener> {
+        self.0.0.try_clone()
+    }
+}
+
+impl Drop for TcpOnionListener {
     fn drop(&mut self) {
-        if let (Some(data), Some(mut drop)) = (self.data.take(), self.drop.take()) {
-            drop(data)
+        self.1.store(false, atomic::Ordering::Relaxed)
+    }
+}
+
+pub struct BoxOnionListener {
+    data: Box<dyn Any + Send>,
+
+    set_nonblocking: fn(&Box<dyn Any + Send>, bool) -> std::io::Result<()>,
+    accept: fn(&Box<dyn Any + Send>) -> std::io::Result<Option<<Self as OnionListener>::Stream>>,
+    address: fn(&Box<dyn Any + Send>) -> &OnionAddr,
+}
+
+impl BoxOnionListener {
+    pub fn new<L: OnionListener + 'static>(l: L) -> Self {
+        Self {
+            data: Box::new(l),
+
+            set_nonblocking: |slf, nonblocking| slf.downcast_ref::<L>().unwrap().set_nonblocking(nonblocking),
+            accept: |slf| slf.downcast_ref::<L>().unwrap().accept().map(|r| r.map(BoxOnionStream::new)),
+            address: |slf| slf.downcast_ref::<L>().unwrap().address(),
         }
+    }
+}
+
+impl OnionListener for BoxOnionListener {
+    type Stream = BoxOnionStream;
+
+    fn set_nonblocking(&self, nonblocking: bool) -> std::io::Result<()> {
+        (self.set_nonblocking)(&self.data, nonblocking)
+    }
+
+    fn accept(&self) -> std::io::Result<Option<Self::Stream>> {
+        (self.accept)(&self.data)
+    }
+
+    fn address(&self) -> &OnionAddr {
+        (self.address)(&self.data)
     }
 }
 
 /// The `TorProvider` trait allows for high-level Tor Network functionality. Implementations ay connect to the Tor Network, anonymously connect to both clearnet and onion-service endpoints, and host onion-services.
 pub trait TorProvider: Send {
+    type Stream: OnionStream;
+    type Listener: OnionListener;
+
     /// Process and return `TorEvent`s handled by this `TorProvider`.
     fn update(&mut self) -> Result<Vec<TorEvent>, Error>;
     /// Begin connecting to the Tor Network.
@@ -438,18 +657,94 @@ pub trait TorProvider: Send {
         &mut self,
         target: TargetAddr,
         circuit: Option<CircuitToken>,
-    ) -> Result<OnionStream, Error>;
+    ) -> Result<Self::Stream, Error>;
     /// Anonymously start an onion-service and return the associated [`OnionListener`].
     ///
-    ///The resulting onion-service will not be reachable by clients until [`TorProvider::update()`] returns a [`TorEvent::OnionServicePublished`] event. The optional `authorised_clients` parameter may be used to require client authorisation keys to connect to resulting onion-service. For further information, see the Tor Project's onion-services [client-auth documentation](https://community.torproject.org/onion-services/advanced/client-auth).
+    ///The resulting onion-service will not be reachable by clients until [`TorProvider::update()`] returns a [`TorEvent::OnionServicePublished`] event. The optional `authorised_clients` parameter may be used to require client authorisation keys to connect to resulting onion-service. `bind_addr` may be used to force a specific address and port. For further information, see the Tor Project's onion-services [client-auth documentation](https://community.torproject.org/onion-services/advanced/client-auth).
     fn listener(
         &mut self,
         private_key: &Ed25519PrivateKey,
         virt_port: u16,
         authorised_clients: Option<&[X25519PublicKey]>,
-    ) -> Result<OnionListener, Error>;
+        bind_addr: Option<SocketAddr>,
+    ) -> Result<Self::Listener, Error>;
     /// Create a new [`CircuitToken`].
     fn generate_token(&mut self) -> CircuitToken;
     /// Releaes a previously generated [`CircuitToken`].
     fn release_token(&mut self, token: CircuitToken);
+}
+
+
+pub struct BoxTorProvider {
+    data: Box<dyn Any + Send>,
+
+    update: fn(&mut Box<dyn Any + Send>) -> Result<Vec<TorEvent>, Error>,
+    bootstrap: fn(&mut Box<dyn Any + Send>) -> Result<(), Error>,
+    add_client_auth: fn(&mut Box<dyn Any + Send>, &V3OnionServiceId, &X25519PrivateKey) -> Result<(), Error>,
+    remove_client_auth: fn(&mut Box<dyn Any + Send>, &V3OnionServiceId) -> Result<(), Error>,
+    connect: fn(&mut Box<dyn Any + Send>, TargetAddr, Option<CircuitToken>) -> Result<<Self as TorProvider>::Stream, Error>,
+    listener: fn(&mut Box<dyn Any + Send>, &Ed25519PrivateKey, u16, Option<&[X25519PublicKey]>, Option<SocketAddr>) -> Result<<Self as TorProvider>::Listener, Error>,
+    generate_token: fn(&mut Box<dyn Any + Send>) -> CircuitToken,
+    release_token: fn(&mut Box<dyn Any + Send>, CircuitToken),
+}
+
+impl BoxTorProvider {
+    pub fn new<P: TorProvider + Send + 'static>(p: P) -> Self {
+        Self {
+            data: Box::new(p),
+
+            update: |slf| slf.downcast_mut::<P>().unwrap().update(),
+            bootstrap: |slf| slf.downcast_mut::<P>().unwrap().bootstrap(),
+            add_client_auth: |slf, service_id, client_auth| slf.downcast_mut::<P>().unwrap().add_client_auth(service_id, client_auth),
+            remove_client_auth: |slf, service_id| slf.downcast_mut::<P>().unwrap().remove_client_auth(service_id),
+            connect: |slf, target, circuit| slf.downcast_mut::<P>().unwrap().connect(target, circuit).map(BoxOnionStream::new),
+            listener: |slf, private_key, virt_port, authorised_clients, bind_addr| slf.downcast_mut::<P>().unwrap().listener(private_key, virt_port, authorised_clients, bind_addr).map(BoxOnionListener::new),
+            generate_token: |slf| slf.downcast_mut::<P>().unwrap().generate_token(),
+            release_token: |slf, token| slf.downcast_mut::<P>().unwrap().release_token(token),
+        }
+    }
+}
+
+impl TorProvider for BoxTorProvider {
+    type Stream = BoxOnionStream;
+    type Listener = BoxOnionListener;
+
+    fn update(&mut self) -> Result<Vec<TorEvent>, Error> {
+        (self.update)(&mut self.data)
+    }
+    fn bootstrap(&mut self) -> Result<(), Error> {
+        (self.bootstrap)(&mut self.data)
+    }
+    fn add_client_auth(
+        &mut self,
+        service_id: &V3OnionServiceId,
+        client_auth: &X25519PrivateKey,
+    ) -> Result<(), Error> {
+        (self.add_client_auth)(&mut self.data, service_id, client_auth)
+    }
+    fn remove_client_auth(&mut self, service_id: &V3OnionServiceId) -> Result<(), Error> {
+        (self.remove_client_auth)(&mut self.data, service_id)
+    }
+    fn connect(
+        &mut self,
+        target: TargetAddr,
+        circuit: Option<CircuitToken>,
+    ) -> Result<Self::Stream, Error> {
+        (self.connect)(&mut self.data, target, circuit)
+    }
+    fn listener(
+        &mut self,
+        private_key: &Ed25519PrivateKey,
+        virt_port: u16,
+        authorised_clients: Option<&[X25519PublicKey]>,
+        bind_addr: Option<SocketAddr>,
+    ) -> Result<Self::Listener, Error> {
+        (self.listener)(&mut self.data, private_key, virt_port, authorised_clients, bind_addr)
+    }
+    fn generate_token(&mut self) -> CircuitToken {
+        (self.generate_token)(&mut self.data)
+    }
+    fn release_token(&mut self, token: CircuitToken) {
+        (self.release_token)(&mut self.data, token)
+    }
 }

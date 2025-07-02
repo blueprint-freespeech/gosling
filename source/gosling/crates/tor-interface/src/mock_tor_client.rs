@@ -65,7 +65,7 @@ impl MockTorNetwork {
         service_id: &V3OnionServiceId,
         virt_port: u16,
         client_auth: Option<&X25519PublicKey>,
-    ) -> Result<OnionStream, Error> {
+    ) -> Result<<MockTorClient as TorProvider>::Stream, Error> {
         let onion_addr = OnionAddr::V3(OnionAddrV3::new(service_id.clone(), virt_port));
 
         match &mut self.onion_services {
@@ -83,8 +83,8 @@ impl MockTorNetwork {
                     }
 
                     if let Ok(stream) = TcpStream::connect(socket_addr) {
-                        Ok(OnionStream {
-                            stream,
+                        Ok(TcpOrUnixOnionStream {
+                            stream: stream.into(),
                             local_addr: None,
                             peer_addr: Some(TargetAddr::OnionService(onion_addr)),
                         })
@@ -168,6 +168,9 @@ impl Default for MockTorClient {
 }
 
 impl TorProvider for MockTorClient {
+    type Stream = TcpOrUnixOnionStream;
+    type Listener = TcpOnionListener;
+
     fn update(&mut self) -> Result<Vec<TorEvent>, tor_provider::Error> {
         match MOCK_TOR_NETWORK.lock() {
             Ok(mut mock_tor_network) => {
@@ -241,7 +244,7 @@ impl TorProvider for MockTorClient {
         &mut self,
         target: TargetAddr,
         _circuit: Option<CircuitToken>,
-    ) -> Result<OnionStream, tor_provider::Error> {
+    ) -> Result<Self::Stream, tor_provider::Error> {
         let (service_id, virt_port) = match target {
             TargetAddr::OnionService(OnionAddr::V3(OnionAddrV3 {
                 service_id,
@@ -253,8 +256,8 @@ impl TorProvider for MockTorClient {
                         .local_addr()
                         .expect("loopback local_addr failed"),
                 ) {
-                    return Ok(OnionStream {
-                        stream,
+                    return Ok(TcpOrUnixOnionStream {
+                        stream: stream.into(),
                         local_addr: None,
                         peer_addr: Some(target_address),
                     });
@@ -278,7 +281,8 @@ impl TorProvider for MockTorClient {
         private_key: &Ed25519PrivateKey,
         virt_port: u16,
         authorized_clients: Option<&[X25519PublicKey]>,
-    ) -> Result<OnionListener, tor_provider::Error> {
+        bind_addr: Option<SocketAddr>,
+    ) -> Result<Self::Listener, tor_provider::Error> {
         // convert inputs to relevant types
         let service_id = V3OnionServiceId::from_private_key(private_key);
         let onion_addr = OnionAddr::V3(OnionAddrV3::new(service_id.clone(), virt_port));
@@ -288,7 +292,7 @@ impl TorProvider for MockTorClient {
         };
 
         // try to bind to a local address, let OS pick our port
-        let socket_addr = SocketAddr::from(([127, 0, 0, 1], 0u16));
+        let socket_addr = bind_addr.unwrap_or(SocketAddr::from(([127, 0, 0, 1], 0u16)));
         let listener = TcpListener::bind(socket_addr).map_err(Error::TcpListenerBindFailed)?;
         let socket_addr = listener
             .local_addr()
@@ -315,9 +319,7 @@ impl TorProvider for MockTorClient {
             .push(TorEvent::OnionServicePublished { service_id });
 
 
-        Ok(OnionListener::new(listener, onion_addr, is_active, |is_active| {
-            is_active.store(false, atomic::Ordering::Relaxed);
-        }))
+        Ok(TcpOnionListener(TcpOnionListenerBase(listener, onion_addr), is_active))
     }
 
     fn generate_token(&mut self) -> CircuitToken {

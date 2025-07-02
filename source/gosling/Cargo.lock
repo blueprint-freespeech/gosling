@@ -3297,8 +3297,7 @@ dependencies = [
 [[package]]
 name = "socks"
 version = "0.3.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0c3dbbd9ae980613c6dd8e28a9407b50509d3803b57624d5dfe8315218cd58b"
+source = "git+https://github.com/nabijaczleweli/rust-socks#fbe04c36a4a2673b0989db3ccb6db6135c73adb2"
 dependencies = [
  "byteorder",
  "libc",
@@ -3593,6 +3592,20 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.102",
+]
+
+[[package]]
+name = "tokio-mpmc"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ffadf729b08a5df966b11daa6faee399f72a4ddb00125c0e8853aa4e0f08006c"
+dependencies = [
+ "crossbeam-queue",
+ "futures",
+ "rand 0.9.1",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -4235,18 +4248,21 @@ dependencies = [
  "data-encoding",
  "data-encoding-macro",
  "domain",
+ "hmac",
  "idna",
  "rand 0.9.1",
  "rand_core 0.9.3",
  "regex",
  "serial_test",
  "sha1",
+ "sha2",
  "sha3",
  "signature 1.6.4",
  "socks",
  "static_assertions",
  "thiserror 1.0.69",
  "tokio",
+ "tokio-mpmc",
  "tokio-stream",
  "tor-cell",
  "tor-config",
@@ -4256,6 +4272,7 @@ dependencies = [
  "tor-proto",
  "tor-rtcompat",
  "which",
+ "zeroize",
 ]
 
 [[package]]

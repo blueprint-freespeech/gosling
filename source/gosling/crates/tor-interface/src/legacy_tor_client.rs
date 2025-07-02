@@ -2,15 +2,19 @@
 use std::collections::BTreeMap;
 use std::convert::From;
 use std::default::Default;
-use std::net::{SocketAddr, TcpListener};
+use std::net::{IpAddr, SocketAddr, TcpListener};
 use std::option::Option;
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::string::ToString;
 use std::sync::{atomic, Arc};
 use std::time::Duration;
+use zeroize::ZeroizeOnDrop;
+#[cfg(unix)]
+use std::os::unix::net::SocketAddr as UnixSocketAddr;
 
 // extern crates
-use socks::Socks5Stream;
+use socks::{SocketAddrOrUnixSocketAddr, Socks5Stream};
 
 // internal crates
 use crate::censorship_circumvention::*;
@@ -73,6 +77,9 @@ pub enum Error {
 
     #[error("invalid circuit token")]
     CircuitTokenInvalid(),
+
+    #[error("unable to read cookie file: {1:?}")]
+    CookieReadingFailed(#[source] std::io::Error, PathBuf),
 
     #[error("unable to connect to socks listener")]
     Socks5ConnectionFailed(#[source] std::io::Error),
@@ -163,10 +170,107 @@ pub enum LegacyTorClientConfig {
         bridge_lines: Option<Vec<BridgeLine>>,
     },
     SystemTor {
-        tor_socks_addr: SocketAddr,
-        tor_control_addr: SocketAddr,
-        tor_control_passwd: String,
+        tor_socks_addr: SocketAddrOrUnixSocketAddr,
+        tor_control_addr: SocketAddrOrUnixSocketAddr,
+        tor_control_auth: Option<TorAuth>,
     },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, ZeroizeOnDrop)]
+pub enum TorAuth {
+    Password(String),
+    #[zeroize(skip)]
+    Cookie(PathBuf),
+    CookieData([u8; 32]),
+}
+
+impl LegacyTorClientConfig {
+    fn one(ipc: &str, host: &str, port: &str) -> Option<SocketAddrOrUnixSocketAddr> {
+        #[cfg(unix)]
+        if let Some(p) = std::env::var_os(ipc) {
+            return Some(UnixSocketAddr::from_pathname(p).ok()?.into());
+        }
+        match (std::env::var(host), std::env::var(port)) {
+            (Ok(h), Ok(p)) => Some(SocketAddr::new(IpAddr::from_str(&h).ok()?, u16::from_str(&p).ok()?).into()),
+            _ => None,
+        }
+    }
+
+    /// Consult `$TOR_SOCKS_{IPC_PATH,HOST+PORT}`, `$TOR_CONTROL_{IPC_PATH,HOST+PORT}` and `$TOR_CONTROL_{PASSWD,COOKIE_AUTH_FILE}`
+    ///
+    /// `$TOR_SOCKS_IPC_PATH` and `$TOR_CONTROL_IPC_PATH` are ignored if `cfg(not(unix))`,
+    /// and take precedence if `cfg(unix)`.
+    ///
+    /// `$TOR_CONTROL_PASSWD` takes precedence over `$TOR_CONTROL_COOKIE_AUTH_FILE`
+    pub fn system_from_environment() -> Option<Self> {
+        Some(LegacyTorClientConfig::SystemTor {
+            tor_socks_addr: Self::one("TOR_SOCKS_IPC_PATH", "TOR_SOCKS_HOST", "TOR_SOCKS_PORT")?,
+            tor_control_addr: Self::one("TOR_CONTROL_IPC_PATH", "TOR_CONTROL_HOST", "TOR_CONTROL_PORT")?,
+            tor_control_auth: match (std::env::var("TOR_CONTROL_PASSWD"), std::env::var_os("TOR_CONTROL_COOKIE_AUTH_FILE")) {
+                (Ok(pass), _) => Some(TorAuth::Password(pass)),
+                (Err(std::env::VarError::NotUnicode(_)), _) => return None,
+                (_, Some(cookie)) => Some(TorAuth::Cookie(cookie.into())),
+                _ => None,
+            }
+        })
+    }
+}
+
+#[test]
+fn system_from_environment() {
+    fn flatten(conf: Option<LegacyTorClientConfig>) -> Option<(SocketAddrOrUnixSocketAddr, SocketAddrOrUnixSocketAddr, Option<TorAuth>)> {
+        conf.and_then(|c| match c {
+            LegacyTorClientConfig::BundledTor { .. } => None,
+            LegacyTorClientConfig::SystemTor { tor_socks_addr, tor_control_addr, tor_control_auth } => Some((tor_socks_addr, tor_control_addr, tor_control_auth))
+        })
+    }
+
+    for var in ["TOR_SOCKS_IPC_PATH", "TOR_SOCKS_HOST", "TOR_SOCKS_PORT", "TOR_CONTROL_IPC_PATH", "TOR_CONTROL_HOST", "TOR_CONTROL_PORT", "TOR_CONTROL_PASSWD", "TOR_CONTROL_COOKIE_AUTH_FILE"] {
+        unsafe { std::env::remove_var(var) };
+    }
+    assert_eq!(flatten(LegacyTorClientConfig::system_from_environment()), None);
+
+    std::env::set_var("TOR_SOCKS_HOST", "1.1.1.1");
+    std::env::set_var("TOR_SOCKS_PORT", "9050");
+    std::env::set_var("TOR_CONTROL_HOST", "2.2.2.2");
+    std::env::set_var("TOR_CONTROL_PORT", "9051");
+    assert_eq!(flatten(LegacyTorClientConfig::system_from_environment()), Some((
+        SocketAddr::from(([1, 1, 1, 1], 9050)).into(),
+        SocketAddr::from(([2, 2, 2, 2], 9051)).into(),
+        None,
+    )));
+
+    unsafe { std::env::set_var("TOR_CONTROL_PASSWD", std::ffi::OsStr::from_encoded_bytes_unchecked(b"\xFF")) };
+    std::env::set_var("TOR_CONTROL_COOKIE_AUTH_FILE", "/cookie");
+    assert_eq!(flatten(LegacyTorClientConfig::system_from_environment()), None);
+
+    std::env::set_var("TOR_CONTROL_PASSWD", "pass");
+    assert_eq!(flatten(LegacyTorClientConfig::system_from_environment()), Some((
+        SocketAddr::from(([1, 1, 1, 1], 9050)).into(),
+        SocketAddr::from(([2, 2, 2, 2], 9051)).into(),
+        Some(TorAuth::Password("pass".to_string())),
+    )));
+
+    unsafe { std::env::remove_var("TOR_CONTROL_PASSWD") };
+    assert_eq!(flatten(LegacyTorClientConfig::system_from_environment()), Some((
+        SocketAddr::from(([1, 1, 1, 1], 9050)).into(),
+        SocketAddr::from(([2, 2, 2, 2], 9051)).into(),
+        Some(TorAuth::Cookie("/cookie".into())),
+    )));
+
+    std::env::set_var("TOR_SOCKS_IPC_PATH", "/sock");
+    #[cfg(not(unix))]
+    assert_eq!(flatten(LegacyTorClientConfig::system_from_environment()), Some((
+        SocketAddr::from(([1, 1, 1, 1], 9050)).into(),
+        SocketAddr::from(([2, 2, 2, 2], 9051)).into(),
+        Some(TorAuth::Cookie("/cookie".into())),
+    )));
+    #[cfg(unix)]
+    assert_eq!(flatten(LegacyTorClientConfig::system_from_environment()), Some((
+        UnixSocketAddr::from_pathname("/sock").unwrap().into(),
+        SocketAddr::from(([2, 2, 2, 2], 9051)).into(),
+        Some(TorAuth::Cookie("/cookie".into())),
+    )));
 }
 
 //
@@ -183,7 +287,7 @@ pub struct LegacyTorClient {
     version: LegacyTorVersion,
     controller: LegacyTorController,
     bootstrapped: bool,
-    socks_listener: Option<SocketAddr>,
+    socks_listener: Option<SocketAddrOrUnixSocketAddr>,
     // list of open onion services and their is_active flag
     onion_services: Vec<(V3OnionServiceId, Arc<atomic::AtomicBool>)>,
     // our list of circuit tokens for the tor daemon
@@ -193,8 +297,8 @@ pub struct LegacyTorClient {
 
 impl LegacyTorClient {
     /// Construct a new `LegacyTorClient` from a [`LegacyTorClientConfig`].
-    pub fn new(config: LegacyTorClientConfig) -> Result<LegacyTorClient, Error> {
-        let (daemon, mut controller, password, socks_listener) = match &config {
+    pub fn new(mut config: LegacyTorClientConfig) -> Result<LegacyTorClient, Error> {
+        let (daemon, mut controller, mut auth, socks_listener) = match &mut config {
             LegacyTorClientConfig::BundledTor {
                 tor_bin_path,
                 data_directory,
@@ -214,17 +318,16 @@ impl LegacyTorClient {
                     .map_err(Error::LegacyTorControllerCreationFailed)?;
 
                 let password = daemon.get_password().to_string();
-                (Some(daemon), controller, password, None)
+                (Some(daemon), controller, Some(TorAuth::Password(password)), None)
             }
             LegacyTorClientConfig::SystemTor {
                 tor_socks_addr,
                 tor_control_addr,
-                tor_control_passwd,
+                tor_control_auth,
             } => {
                 // open a control stream
-                let control_stream =
-                    LegacyControlStream::new(&tor_control_addr, Duration::from_millis(16))
-                        .map_err(Error::LegacyControlStreamCreationFailed)?;
+                let control_stream = LegacyControlStream::new(tor_control_addr, Duration::from_millis(16))
+                    .map_err(Error::LegacyControlStreamCreationFailed)?;
 
                 // create a controler
                 let controller = LegacyTorController::new(control_stream)
@@ -233,16 +336,19 @@ impl LegacyTorClient {
                 (
                     None,
                     controller,
-                    tor_control_passwd.clone(),
-                    Some(tor_socks_addr.clone()),
+                    tor_control_auth.take(),
+                    Some(tor_socks_addr.clone().into()),
                 )
             }
         };
 
         // authenticate
-        controller
-            .authenticate(&password)
-            .map_err(Error::LegacyTorProcessAuthenticationFailed)?;
+        match auth.as_mut() {
+            None => controller.authenticate_auto(),
+            Some(TorAuth::Password(pass)) => controller.authenticate(&pass),
+            Some(TorAuth::Cookie(file)) => controller.authenticate_cookie(crate::legacy_tor_controller::read_cookie(&file).map_err(|e| Error::CookieReadingFailed(e, std::mem::take(file)))?),
+            Some(TorAuth::CookieData(cookie)) => controller.authenticate_cookie(*cookie),
+        }.map_err(Error::LegacyTorProcessAuthenticationFailed)?;
 
         // min required version for v3 client auth (see control-spec.txt)
         let min_required_version = LegacyTorVersion {
@@ -456,6 +562,9 @@ impl LegacyTorClient {
 }
 
 impl TorProvider for LegacyTorClient {
+    type Stream = TcpOrUnixOnionStream;
+    type Listener = TcpOnionListener;
+
     fn update(&mut self) -> Result<Vec<TorEvent>, tor_provider::Error> {
         let mut i = 0;
         while i < self.onion_services.len() {
@@ -477,7 +586,6 @@ impl TorProvider for LegacyTorClient {
             .controller
             .wait_async_events()
             .map_err(Error::WaitAsyncEventsFailed)?
-            .iter()
         {
             match async_event {
                 AsyncEvent::StatusClient {
@@ -489,11 +597,11 @@ impl TorProvider for LegacyTorClient {
                         let mut progress: u32 = 0;
                         let mut tag: String = Default::default();
                         let mut summary: String = Default::default();
-                        for (key, val) in arguments.iter() {
+                        for (key, val) in arguments {
                             match key.as_str() {
                                 "PROGRESS" => progress = val.parse().unwrap_or(0u32),
-                                "TAG" => tag = val.to_string(),
-                                "SUMMARY" => summary = val.to_string(),
+                                "TAG" => tag = val,
+                                "SUMMARY" => summary = val,
                                 _ => {} // ignore unexpected arguments
                             }
                         }
@@ -511,7 +619,7 @@ impl TorProvider for LegacyTorClient {
                 AsyncEvent::HsDesc { action, hs_address } => {
                     if action == "UPLOADED" {
                         events.push(TorEvent::OnionServicePublished {
-                            service_id: hs_address.clone(),
+                            service_id: hs_address,
                         });
                     }
                 }
@@ -575,7 +683,7 @@ impl TorProvider for LegacyTorClient {
         &mut self,
         target: TargetAddr,
         circuit: Option<CircuitToken>,
-    ) -> Result<OnionStream, tor_provider::Error> {
+    ) -> Result<Self::Stream, tor_provider::Error> {
         if !self.bootstrapped {
             return Err(Error::LegacyTorNotBootstrapped().into());
         }
@@ -588,10 +696,10 @@ impl TorProvider for LegacyTorClient {
             if listeners.is_empty() {
                 return Err(Error::NoSocksListenersFound())?;
             }
-            self.socks_listener = Some(listeners.swap_remove(0));
+            self.socks_listener = Some(listeners.swap_remove(0).into());
         }
 
-        let socks_listener = match self.socks_listener {
+        let socks_listener = match self.socks_listener.as_ref() {
             Some(socks_listener) => socks_listener,
             None => unreachable!(),
         };
@@ -610,10 +718,10 @@ impl TorProvider for LegacyTorClient {
 
         // readwrite stream
         let stream = match &circuit {
-            None => Socks5Stream::connect(socks_listener, socks_target),
+            None => Socks5Stream::connect_either(socks_listener, socks_target),
             Some(circuit) => {
                 if let Some(circuit) = self.circuit_tokens.get(circuit) {
-                    Socks5Stream::connect_with_password(
+                    Socks5Stream::connect_either_with_password(
                         socks_listener,
                         socks_target,
                         &circuit.username,
@@ -626,7 +734,7 @@ impl TorProvider for LegacyTorClient {
         }
         .map_err(Error::Socks5ConnectionFailed)?;
 
-        Ok(OnionStream {
+        Ok(TcpOrUnixOnionStream {
             stream: stream.into_inner(),
             local_addr: None,
             peer_addr: Some(target),
@@ -639,15 +747,15 @@ impl TorProvider for LegacyTorClient {
         private_key: &Ed25519PrivateKey,
         virt_port: u16,
         authorized_clients: Option<&[X25519PublicKey]>,
-    ) -> Result<OnionListener, tor_provider::Error> {
+        bind_addr: Option<SocketAddr>,
+    ) -> Result<Self::Listener, tor_provider::Error> {
         if !self.bootstrapped {
             return Err(Error::LegacyTorNotBootstrapped().into());
         }
 
         // try to bind to a local address, let OS pick our port
-        let socket_addr = SocketAddr::from(([127, 0, 0, 1], 0u16));
-        let listener = TcpListener::bind(socket_addr).map_err(Error::TcpListenerBindFailed)?;
-        let socket_addr = listener
+        let listener = TcpListener::bind(bind_addr.unwrap_or(([127, 0, 0, 1], 0u16).into())).map_err(Error::TcpListenerBindFailed)?;
+        let bind_addr = listener
             .local_addr()
             .map_err(Error::TcpListenerLocalAddrFailed)?;
 
@@ -657,11 +765,6 @@ impl TorProvider for LegacyTorClient {
             ..Default::default()
         };
 
-        let onion_addr = OnionAddr::V3(OnionAddrV3::new(
-            V3OnionServiceId::from_private_key(private_key),
-            virt_port,
-        ));
-
         // start onion service
         let (_, service_id) = self
             .controller
@@ -670,18 +773,21 @@ impl TorProvider for LegacyTorClient {
                 &flags,
                 None,
                 virt_port,
-                Some(socket_addr),
+                Some(bind_addr),
                 authorized_clients,
             )
             .map_err(Error::AddOnionFailed)?;
+
+        let onion_addr = OnionAddr::V3(OnionAddrV3::new(
+            V3OnionServiceId::from_private_key(private_key),
+            virt_port,
+        ));
 
         let is_active = Arc::new(atomic::AtomicBool::new(true));
         self.onion_services
             .push((service_id, Arc::clone(&is_active)));
 
-        Ok(OnionListener::new(listener, onion_addr, is_active, |is_active| {
-            is_active.store(false, atomic::Ordering::Relaxed);
-        }))
+        Ok(TcpOnionListener(TcpOnionListenerBase(listener, onion_addr), is_active))
     }
 
     fn generate_token(&mut self) -> CircuitToken {
