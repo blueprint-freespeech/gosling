@@ -165,8 +165,15 @@ pub enum LegacyTorClientConfig {
     SystemTor {
         tor_socks_addr: SocketAddr,
         tor_control_addr: SocketAddr,
-        tor_control_passwd: String,
+        tor_control_auth: TorAuth,
     },
+}
+
+#[derive(Clone, Debug, Default)]
+pub enum TorAuth {
+    #[default] Null,
+    Password(String),
+    CookieFile(PathBuf),
 }
 
 //
@@ -193,8 +200,8 @@ pub struct LegacyTorClient {
 
 impl LegacyTorClient {
     /// Construct a new `LegacyTorClient` from a [`LegacyTorClientConfig`].
-    pub fn new(config: LegacyTorClientConfig) -> Result<LegacyTorClient, Error> {
-        let (daemon, mut controller, password, socks_listener) = match &config {
+    pub fn new(mut config: LegacyTorClientConfig) -> Result<LegacyTorClient, Error> {
+        let (daemon, mut controller, auth, socks_listener) = match &mut config {
             LegacyTorClientConfig::BundledTor {
                 tor_bin_path,
                 data_directory,
@@ -214,12 +221,12 @@ impl LegacyTorClient {
                     .map_err(Error::LegacyTorControllerCreationFailed)?;
 
                 let password = daemon.get_password().to_string();
-                (Some(daemon), controller, password, None)
+                (Some(daemon), controller, TorAuth::Password(password), None)
             }
             LegacyTorClientConfig::SystemTor {
                 tor_socks_addr,
                 tor_control_addr,
-                tor_control_passwd,
+                tor_control_auth,
             } => {
                 // open a control stream
                 let control_stream =
@@ -233,16 +240,18 @@ impl LegacyTorClient {
                 (
                     None,
                     controller,
-                    tor_control_passwd.clone(),
+                    std::mem::take(tor_control_auth),
                     Some(tor_socks_addr.clone()),
                 )
             }
         };
 
         // authenticate
-        controller
-            .authenticate(&password)
-            .map_err(Error::LegacyTorProcessAuthenticationFailed)?;
+        match auth {
+            TorAuth::Null => controller.authenticate(),
+            TorAuth::Password(pass) => controller.authenticate_password(pass),
+            TorAuth::CookieFile(file) => controller.authenticate_safecookie(file),
+        }.map_err(Error::LegacyTorProcessAuthenticationFailed)?;
 
         // min required version for v3 client auth (see control-spec.txt)
         let min_required_version = LegacyTorVersion {
