@@ -97,6 +97,7 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: ${{ matrix.msystem }}
+          path-type: strict
           update: true
           install: >-
             make

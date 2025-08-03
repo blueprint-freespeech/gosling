@@ -101,6 +101,7 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: clang64
+          path-type: strict
           update: true
           install: >-
             make
@@ -125,8 +126,8 @@ jobs:
         run: |
           export PATH=$(cygpath -u ${JAVA_HOME})/bin:$PATH
           mkdir build
-          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_ARTI_TOR_PROVIDER=OFF -DENABLE_TOR_EXPERT_BUNDLE=ON -DBUILD_JAVA_BINDINGS=ON
           cd build
+          cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_ARTI_TOR_PROVIDER=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DBUILD_JAVA_BINDINGS=ON -DARTI_EXECUTABLE="C:/Users/$(whoami)/.cargo/bin/arti.exe"
           ctest --verbose -R ^${{matrix.test}}
   macos:
     strategy:

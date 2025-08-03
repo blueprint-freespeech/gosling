@@ -80,10 +80,11 @@ impl ArtiProcess {
         }
 
         // arti data directory must not be world-writable on unix platforms when using a unix domain socket endpoint
-        if cfg!(unix) {
-            let perms = PermissionsExt::from_mode(0o700);
-            fs::set_permissions(data_directory, perms).map_err(Error::ArtiDataDirectorySetPermissionsFailed)?;
-        }
+        #[cfg(unix)]
+        fs::set_permissions(
+            data_directory,
+            PermissionsExt::from_mode(0o700))
+        .map_err(Error::ArtiDataDirectorySetPermissionsFailed)?;
 
         // construct paths to arti files file
         let arti_toml = data_directory.join("arti.toml");
