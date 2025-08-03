@@ -4312,6 +4312,7 @@ dependencies = [
  "tor-proto",
  "tor-rtcompat",
  "which",
+ "zeroize",
 ]
 
 [[package]]

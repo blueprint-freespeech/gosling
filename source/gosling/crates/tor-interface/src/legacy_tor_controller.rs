@@ -16,6 +16,7 @@ use rand::RngCore;
 use regex::Regex;
 #[cfg(test)]
 use serial_test::serial;
+use zeroize::Zeroize;
 
 // internal crates
 use crate::legacy_tor_control_stream::*;
@@ -106,8 +107,9 @@ pub(crate) struct LegacyTorController {
 // SAFECOOKIE support was introduced in version 0.2.3.13-alpha which is
 // much older than our required version 0.4.6.1, so lets not bother
 // with the older COOKIEFILE method
+#[derive(Zeroize)]
 enum AuthenticateMethod {
-    Null,
+    #[zeroize(skip)] Null,
     HashedPassword(String),
     SafeCookie([u8; 32]),
 }
@@ -340,18 +342,22 @@ impl LegacyTorController {
 
     // AUTHENTICATE (3.5)
     fn authenticate_cmd(&mut self, authenticate_method: AuthenticateMethod) -> Result<Reply, Error> {
-        let command = match authenticate_method {
+        let mut command = match authenticate_method {
             AuthenticateMethod::Null => "AUTHENTICATE".to_string(),
             AuthenticateMethod::HashedPassword(password) => {
-                let password = quoted_string(&password);
-                format!("AUTHENTICATE \"{password}\"")
+                let mut password = quoted_string(&password);
+                let command = format!("AUTHENTICATE \"{password}\"");
+                password.zeroize();
+                command
             },
             AuthenticateMethod::SafeCookie(clienthash) => {
                 let clienthash = HEXLOWER.encode(&clienthash);
                 format!("AUTHENTICATE {clienthash}")
             }
         };
-        self.write_command(&command)
+        let result = self.write_command(&command);
+        command.zeroize();
+        result
     }
 
     // AUTHCHALLENGE (3.24)
@@ -546,7 +552,7 @@ impl LegacyTorController {
     }
 
     pub fn authenticate_safecookie(&mut self, cookiefile_path: PathBuf) -> Result<(), Error> {
-        let cookie = Self::read_cookie_file(cookiefile_path)?;
+        let mut cookie = Self::read_cookie_file(cookiefile_path)?;
 
         let mut clientnonce = [0u8; 32];
         let csprng = &mut tor_llcrypto::rng::CautiousRng;
@@ -596,6 +602,8 @@ impl LegacyTorController {
         const CONTROLLER_TO_SERVER_KEY: &str = "Tor safe cookie authentication controller-to-server hash";
         let hmac = hmac_sha256(CONTROLLER_TO_SERVER_KEY, &cookie, &clientnonce, &servernonce);
         let clienthash: [u8; 32] = hmac.finalize().into_bytes().try_into().expect("");
+
+        cookie.zeroize();
 
         self.authenticate_cmd(AuthenticateMethod::SafeCookie(clienthash)).and_then(reply_ok).map(|_| ())
     }
