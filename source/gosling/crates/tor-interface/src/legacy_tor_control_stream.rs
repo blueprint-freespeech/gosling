@@ -253,11 +253,19 @@ impl LegacyControlStream {
         }))
     }
 
-    pub fn write(&mut self, cmd: &str) -> Result<(), Error> {
-        if let Err(err) = write!(self.stream, "{}\r\n", cmd) {
-            self.closed_by_remote = true;
-            return Err(Error::WriteFailed(err));
+    fn write_impl(&mut self, data: &str) -> Result<(), Error> {
+        match self.stream.write(data.as_bytes()) {
+            Ok(_) => Ok(()),
+            Err(err) => {
+                self.closed_by_remote = true;
+                Err(Error::WriteFailed(err))
+            }
         }
+    }
+
+    pub fn write(&mut self, cmd: &str) -> Result<(), Error> {
+        self.write_impl(cmd)?;
+        self.write_impl("\r\n")?;
         Ok(())
     }
 }

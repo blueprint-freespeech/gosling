@@ -11,6 +11,7 @@ use std::time::Duration;
 
 // extern crates
 use socks::Socks5Stream;
+use zeroize::ZeroizeOnDrop;
 
 // internal crates
 use crate::censorship_circumvention::*;
@@ -169,10 +170,13 @@ pub enum LegacyTorClientConfig {
     },
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, ZeroizeOnDrop)]
 pub enum TorAuth {
-    #[default] Null,
+    #[default]
+    #[zeroize(skip)]
+    Null,
     Password(String),
+    #[zeroize(skip)]
     CookieFile(PathBuf),
 }
 
@@ -201,7 +205,7 @@ pub struct LegacyTorClient {
 impl LegacyTorClient {
     /// Construct a new `LegacyTorClient` from a [`LegacyTorClientConfig`].
     pub fn new(mut config: LegacyTorClientConfig) -> Result<LegacyTorClient, Error> {
-        let (daemon, mut controller, auth, socks_listener) = match &mut config {
+        let (daemon, mut controller, mut auth, socks_listener) = match &mut config {
             LegacyTorClientConfig::BundledTor {
                 tor_bin_path,
                 data_directory,
@@ -247,10 +251,10 @@ impl LegacyTorClient {
         };
 
         // authenticate
-        match auth {
+        match &mut auth {
             TorAuth::Null => controller.authenticate(),
-            TorAuth::Password(pass) => controller.authenticate_password(pass),
-            TorAuth::CookieFile(file) => controller.authenticate_safecookie(file),
+            TorAuth::Password(pass) => controller.authenticate_password(std::mem::take(pass)),
+            TorAuth::CookieFile(file) => controller.authenticate_safecookie(std::mem::take(file)),
         }.map_err(Error::LegacyTorProcessAuthenticationFailed)?;
 
         // min required version for v3 client auth (see control-spec.txt)
