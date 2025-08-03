@@ -124,8 +124,9 @@ jobs:
           CC: clang
         run: |
           export PATH=$(cygpath -u ${JAVA_HOME})/bin:$PATH
+          export PATH=$(cygpath -u ${HOME})/.cargo/bin:$PATH
           mkdir build
-          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_ARTI_TOR_PROVIDER=OFF -DENABLE_TOR_EXPERT_BUNDLE=ON -DBUILD_JAVA_BINDINGS=ON
+          cmake -G "Unix Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_ARTI_TOR_PROVIDER=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DBUILD_JAVA_BINDINGS=ON
           cd build
           ctest --verbose -R ^${{matrix.test}}
   macos:
