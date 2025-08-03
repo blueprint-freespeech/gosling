@@ -239,6 +239,55 @@ fn build_system_legacy_tor_provider_cookie_file_auth(
 }
 
 #[cfg(test)]
+#[cfg(feature = "legacy-tor-provider")]
+fn build_system_legacy_tor_provider_from_environment(
+    name: &str,
+    control_port: u16,
+    socks_port: u16,
+) -> anyhow::Result<(Box<dyn TorProvider>, TorProcess)> {
+
+    const TOR_SOCKS_HOST: &str = "TOR_SOCKS_HOST";
+    const TOR_SOCKS_PORT: &str = "TOR_SOCKS_PORT";
+    const TOR_CONTROL_HOST: &str = "TOR_CONTROL_HOST";
+    const TOR_CONTROL_PORT: &str = "TOR_CONTROL_PORT";
+    const TOR_CONTROL_COOKIE_AUTH_FILE: &str = "TOR_CONTROL_COOKIE_AUTH_FILE";
+    const TOR_CONTROL_PASSWD: &str = "TOR_CONTROL_PASSWD";
+
+    const ENV_VARIABLES: [&str; 6] = [
+        TOR_SOCKS_HOST,
+        TOR_SOCKS_PORT,
+        TOR_CONTROL_HOST,
+        TOR_CONTROL_PORT,
+        TOR_CONTROL_COOKIE_AUTH_FILE,
+        TOR_CONTROL_PASSWD,
+    ];
+
+    for var in ENV_VARIABLES {
+        unsafe { std::env::remove_var(var) };
+    }
+
+    let mut cookiefile = std::path::PathBuf::new();
+    let tor_daemon = build_system_legacy_tor(name, control_port, socks_port, |data_dir, cmd| {
+        cookiefile = data_dir.join("cookie");
+        cmd.arg("CookieAuthentication")
+           .arg("1")
+           .arg("CookieAuthFile")
+           .arg(&cookiefile)
+    })?;
+
+    std::env::set_var(TOR_SOCKS_HOST, "127.0.0.1");
+    std::env::set_var(TOR_SOCKS_PORT, format!("{socks_port}").as_str());
+    std::env::set_var(TOR_CONTROL_HOST, "127.0.0.1");
+    std::env::set_var(TOR_CONTROL_PORT, format!("{control_port}").as_str());
+    std::env::set_var(TOR_CONTROL_COOKIE_AUTH_FILE, cookiefile.into_os_string());
+
+    let tor_config = LegacyTorClientConfig::try_from_environment()?;
+    let tor_provider = Box::new(LegacyTorClient::new(tor_config)?);
+
+    Ok((tor_provider, tor_daemon))
+}
+
+#[cfg(test)]
 #[cfg(feature = "arti-client-tor-provider")]
 fn build_arti_client_tor_provider(runtime: Arc<runtime::Runtime>, name: &str) -> anyhow::Result<Box<dyn TorProvider>> {
 
@@ -681,7 +730,9 @@ fn test_system_legacy_onion_service() -> anyhow::Result<()> {
     for (backend, name) in [
         build_system_legacy_tor_provider_no_auth,
         build_system_legacy_tor_provider_password_auth,
-        build_system_legacy_tor_provider_cookie_file_auth].into_iter().zip(["no", "password", "cookiefile"]) {
+        build_system_legacy_tor_provider_cookie_file_auth,
+        build_system_legacy_tor_provider_from_environment,
+        ].into_iter().zip(["no", "password", "cookiefile", "environment"]) {
         let server_provider = backend(
             &format!("test_system_legacy_onion_service_server_{}_auth", name),
             9251u16,
@@ -705,7 +756,9 @@ fn test_system_legacy_authenticated_onion_service() -> anyhow::Result<()> {
     for (backend, name) in [
         build_system_legacy_tor_provider_no_auth,
         build_system_legacy_tor_provider_password_auth,
-        build_system_legacy_tor_provider_cookie_file_auth].into_iter().zip(["no", "password", "cookiefile"]) {
+        build_system_legacy_tor_provider_cookie_file_auth,
+        build_system_legacy_tor_provider_from_environment,
+        ].into_iter().zip(["no", "password", "cookiefile", "environment"]) {
         let server_provider = backend(
             &format!("test_system_legacy_authenticated_onion_service_server_{}_auth", name),
             9251u16,

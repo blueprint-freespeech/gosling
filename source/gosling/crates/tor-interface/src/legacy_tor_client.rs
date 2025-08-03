@@ -2,9 +2,10 @@
 use std::collections::BTreeMap;
 use std::convert::From;
 use std::default::Default;
-use std::net::{SocketAddr, TcpListener};
+use std::net::{IpAddr, SocketAddr, TcpListener};
 use std::option::Option;
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::string::ToString;
 use std::sync::{atomic, Arc};
 use std::time::Duration;
@@ -114,6 +115,9 @@ pub enum Error {
     #[error("bridge transport '{0}' not supported by pluggable transport configuration")]
     BridgeTransportNotSupported(String),
 
+    #[error("invalid environment variable configuration: {0}")]
+    EnvironmentConfigurationInvalid(String),
+
     #[error("not implemented")]
     NotImplemented(),
 }
@@ -170,7 +174,55 @@ pub enum LegacyTorClientConfig {
     },
 }
 
-#[derive(Clone, Debug, Default, ZeroizeOnDrop)]
+impl LegacyTorClientConfig {
+    // Construct a LegacyTorClientConfig::SystemTor struct from environment variables
+    // see: https://gitlab.torproject.org/tpo/applications/wiki/-/wikis/Environment-variables-and-related-preferences
+    pub fn try_from_environment() -> Result<Self, Error> {
+        use std::env::{var, var_os};
+
+        // get socks proxy address
+        const TOR_SOCKS_HOST: &str = "TOR_SOCKS_HOST";
+        const TOR_SOCKS_PORT: &str = "TOR_SOCKS_PORT";
+        let tor_socks_addr = match (var(TOR_SOCKS_HOST), var(TOR_SOCKS_PORT)) {
+            (Ok(host), Ok(port)) => {
+                let ip = IpAddr::from_str(host.as_str()).map_err(|_| Error::EnvironmentConfigurationInvalid(format!("cannot parse TOR_SOCKS_HOST value '{host}' as ip address")))?;
+                let port = u16::from_str(port.as_str()).map_err(|_| Error::EnvironmentConfigurationInvalid(format!("cannot parse TOR_SOCKS_PORT value '{port}' as port")))?;
+                SocketAddr::new(ip, port)
+            },
+            _ => return Err(Error::EnvironmentConfigurationInvalid("environment variables TOR_SOCKS_HOST and TOR_SOCKS_PORT must be defined".to_string())),
+        };
+
+        // get control port address
+        const TOR_CONTROL_HOST: &str = "TOR_CONTROL_HOST";
+        const TOR_CONTROL_PORT: &str = "TOR_CONTROL_PORT";
+        let tor_control_addr = match (var(TOR_CONTROL_HOST), var(TOR_CONTROL_PORT)) {
+            (Ok(host), Ok(port)) => {
+                let ip = IpAddr::from_str(host.as_str()).map_err(|_| Error::EnvironmentConfigurationInvalid(format!("cannot parse TOR_CONTROL_HOST value '{host}' as ip address")))?;
+                let port = u16::from_str(port.as_str()).map_err(|_| Error::EnvironmentConfigurationInvalid(format!("cannot parse TOR_CONTROL_PORT value '{port}' as port")))?;
+                SocketAddr::new(ip, port)
+            },
+            _ => return Err(Error::EnvironmentConfigurationInvalid("environment variables TOR_CONTROL_HOST and TOR_CONTROL_PORT must be defined".to_string())),
+        };
+
+        // get control auth (prefer cookie file)
+        const TOR_CONTROL_COOKIE_AUTH_FILE: &str = "TOR_CONTROL_COOKIE_AUTH_FILE";
+        const TOR_CONTROL_PASSWD: &str = "TOR_CONTROL_PASSWD";
+        let tor_control_auth = if let Some(cookie_file) = var_os(TOR_CONTROL_COOKIE_AUTH_FILE) {
+            let cookie_file: PathBuf = cookie_file.clone().try_into().map_err(|_| Error::EnvironmentConfigurationInvalid(format!("Cannot parse TOR_CONTROL_COOKIE_AUTH_FILE value '{cookie_file:?} as file path")))?;
+            TorAuth::CookieFile(cookie_file)
+        } else {
+            match var(TOR_CONTROL_PASSWD) {
+                Ok(control_password) => TorAuth::Password(control_password),
+                Err(std::env::VarError::NotPresent) => TorAuth::Null,
+                _ => return Err(Error::EnvironmentConfigurationInvalid("Failed to read TOR_CONTROL_PASSWD".to_string())),
+            }
+        };
+
+        Ok(Self::SystemTor{tor_socks_addr, tor_control_addr, tor_control_auth})
+    }
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq, ZeroizeOnDrop)]
 pub enum TorAuth {
     #[default]
     #[zeroize(skip)]
