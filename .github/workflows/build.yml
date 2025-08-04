@@ -40,7 +40,7 @@ jobs:
           rustup default stable-${{ matrix.rust-target }} ${{ matrix.force-non-host }}
       - name: Build Debug
         run: |
-          cmake -S . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=dist/debug -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_DEBIAN_SOURCE_PACKAGE=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }} -DCMAKE_C_FLAGS="${{ matrix.cflags }}" -DCMAKE_CXX_FLAGS="${{ matrix.cxxflags }}" -DCMAKE_FIND_ROOT_PATH=${{ matrix.cmake-find-root-path }}
+          cmake -S . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=dist/debug -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_ARTI_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_DEBIAN_SOURCE_PACKAGE=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }} -DCMAKE_C_FLAGS="${{ matrix.cflags }}" -DCMAKE_CXX_FLAGS="${{ matrix.cxxflags }}" -DCMAKE_FIND_ROOT_PATH=${{ matrix.cmake-find-root-path }}
           cmake --build build
           cmake --install build
       - name: Archive Debug
@@ -54,7 +54,7 @@ jobs:
           path: dist/gosling-linux-gnu-${{ matrix.arch }}-debug.tar
       - name: Build Release
         run: |
-          cmake -S . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=dist/release -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_DEBIAN_SOURCE_PACKAGE=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }} -DCMAKE_C_FLAGS="${{ matrix.cflags }}" -DCMAKE_CXX_FLAGS="${{ matrix.cxxflags }}" -DCMAKE_FIND_ROOT_PATH=${{ matrix.cmake-find-root-path }}
+          cmake -S . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=dist/release -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_ARTI_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_DEBIAN_SOURCE_PACKAGE=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }} -DCMAKE_C_FLAGS="${{ matrix.cflags }}" -DCMAKE_CXX_FLAGS="${{ matrix.cxxflags }}" -DCMAKE_FIND_ROOT_PATH=${{ matrix.cmake-find-root-path }}
           cmake --build build
           cmake --install build
       - name: Archive Release
@@ -122,7 +122,7 @@ jobs:
           export PATH=$(cygpath -u ${JAVA_HOME})/bin:$PATH
           mkdir -p build/debug
           cd build/debug
-          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../../dist/debug -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_MSYS2_PKGBUILD=ON  -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
+          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../../dist/debug -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_ARTI_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_MSYS2_PKGBUILD=ON  -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
           make
           make install
       - name: Archive Debug
@@ -142,7 +142,7 @@ jobs:
           export PATH=$(cygpath -u ${JAVA_HOME})/bin:$PATH
           mkdir -p build/release
           cd build/release
-          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist/release -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_MSYS2_PKGBUILD=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
+          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../dist/release -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_ARTI_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_MSYS2_PKGBUILD=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
           make
           make install
       - name: Archive Release
@@ -202,7 +202,7 @@ jobs:
         env:
           BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
         run: |
-          cmake -S . -B build/debug -DCMAKE_BUILD_TYPE=Debug -A ${{ matrix.platform }} -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_INSTALL_PREFIX=dist/debug -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
+          cmake -S . -B build/debug -DCMAKE_BUILD_TYPE=Debug -A ${{ matrix.platform }} -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_INSTALL_PREFIX=dist/debug -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_ARTI_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
           cmake --build build/debug --config Debug
           cmake --install build/debug --config Debug
       - name: Upload Debug
@@ -214,7 +214,7 @@ jobs:
         env:
           BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
         run: |
-          cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release -A ${{ matrix.platform }} -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_INSTALL_PREFIX=dist/release -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
+          cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release -A ${{ matrix.platform }} -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_INSTALL_PREFIX=dist/release -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_ARTI_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
           cmake --build build/release --config Release
           cmake --install build/release --config Release
       - name: Upload Release
@@ -251,7 +251,7 @@ jobs:
         run: |
           mkdir -p build/debug
           cd build/debug
-          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$(brew --prefix)" -DCMAKE_INSTALL_PREFIX=../../dist/debug -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_HOMEBREW_FORMULA=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
+          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$(brew --prefix)" -DCMAKE_INSTALL_PREFIX=../../dist/debug -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_ARTI_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_HOMEBREW_FORMULA=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
           make
           make install
       - name: Archive Debug
@@ -269,7 +269,7 @@ jobs:
         run: |
           mkdir -p build/release
           cd build/release
-          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix)" -DCMAKE_INSTALL_PREFIX=../../dist/release -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_HOMEBREW_FORMULA=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
+          cmake ../.. -G "Unix Makefiles"  -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix)" -DCMAKE_INSTALL_PREFIX=../../dist/release -DENABLE_LEGACY_TOR_PROVIDER=ON -DENABLE_ARTI_CLIENT_TOR_PROVIDER=ON -DENABLE_ARTI_TOR_PROVIDER=ON -DBUILD_PYTHON_BINDINGS=ON -DBUILD_JAVA_BINDINGS=ON -DBUILD_EXAMPLES=ON -DBUILD_HOMEBREW_FORMULA=ON -DENABLE_TOR_EXPERT_BUNDLE=ON -DTEB_TARGET=${{ matrix.teb-target }}
           make
           make install
       - name: Archive Release
