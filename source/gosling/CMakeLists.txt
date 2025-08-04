@@ -4,6 +4,8 @@ find_program(CARGO_EXECUTABLE NAMES cargo)
 find_program(CARGO_TARPAULIN_EXECUTABLE NAMES cargo-tarpaulin)
 find_program(CARGO_SBOM_EXECUTABLE NAMES cargo-sbom)
 find_program(CARGO_FUZZ_EXECUTABLE NAMES cargo-fuzz)
+find_program(ARTI_EXECUTABLE NAMES arti)
+
 
 if (NOT RUSTC_EXECUTABLE)
     message(FATAL_ERROR "rustc not found; required to build gosling")
@@ -15,6 +17,8 @@ elseif (NOT CARGO_SBOM_EXECUTABLE AND BUILD_PAGES)
     message(FATAL_ERROR "cargo-sbom not found; required to generate gosling software bill of materials and build pages")
 elseif (NOT CARGO_FUZZ_EXECUTABLE AND ENABLE_FUZZ_TESTS)
     message(FATAL_ERROR "cargo-fuzz not found; required to run fuzz tests")
+elseif (NOT ARTI_EXECUTABLE AND ENABLE_ARTI_TOR_PROVIDER)
+    message(FATAL_ERROR "arti not found; required to run arti tests")
 endif()
 
 add_subdirectory(crates)
