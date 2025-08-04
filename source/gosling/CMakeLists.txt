@@ -17,7 +17,7 @@ elseif (NOT CARGO_SBOM_EXECUTABLE AND BUILD_PAGES)
     message(FATAL_ERROR "cargo-sbom not found; required to generate gosling software bill of materials and build pages")
 elseif (NOT CARGO_FUZZ_EXECUTABLE AND ENABLE_FUZZ_TESTS)
     message(FATAL_ERROR "cargo-fuzz not found; required to run fuzz tests")
-elseif (NOT ARTI_EXECUTABLE AND ENABLE_ARTI_TOR_PROVIDER)
+elseif (NOT ARTI_EXECUTABLE AND ENABLE_ARTI_TOR_PROVIDER AND ENABLE_TESTS)
     message(FATAL_ERROR "arti not found; required to run arti tests")
 endif()
 
