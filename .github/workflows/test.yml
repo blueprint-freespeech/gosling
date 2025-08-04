@@ -110,6 +110,7 @@ jobs:
             mingw-w64-clang-x86_64-boost
             mingw-w64-clang-x86_64-tor
             mingw-w64-clang-x86_64-sqlite3
+            mingw-w64-clang-x86_64-xz
       - name: Install Java
         uses: actions/setup-java@v4
         with:
