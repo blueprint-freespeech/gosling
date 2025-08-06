@@ -86,9 +86,9 @@ impl ArtiProcess {
         }
 
         // construct paths to arti files file
-        let arti_toml = data_directory.join("arti.toml").display().to_string();
-        let cache_dir = data_directory.join("cache").display().to_string();
-        let state_dir = data_directory.join("state").display().to_string();
+        let arti_toml = data_directory.join("arti.toml");
+        let cache_dir_string = data_directory.join("cache").display().to_string().escape_default().to_string();
+        let state_dir_string = data_directory.join("state").display().to_string().escape_default().to_string();
 
         let mut arti_toml_content = format!("\
         [rpc]\n\
@@ -98,8 +98,8 @@ impl ArtiProcess {
         [rpc.listen.system-default]\n\
         enable = false\n\n\
         [storage]\n\
-        cache_dir = \"{cache_dir}\"\n\
-        state_dir = \"{state_dir}\"\n\n\
+        cache_dir = \"{cache_dir_string}\"\n\
+        state_dir = \"{state_dir_string}\"\n\n\
         [storage.keystore]\n\
         enabled = true\n\n\
         [storage.keystore.primary]\n\
@@ -110,15 +110,16 @@ impl ArtiProcess {
 
         let connect_string = if cfg!(unix) {
             // use domain socket for unix
-            let unix_rpc_toml_path = data_directory.join("rpc.toml").display().to_string();
+            let unix_rpc_toml_path = data_directory.join("rpc.toml");
+            let unix_rpc_toml_path_string = unix_rpc_toml_path.display().to_string().escape_default().to_string();
 
             arti_toml_content.push_str(format!("\
             [rpc.listen.unix-point]\n\
             enable = true\n\
-            file = \"{unix_rpc_toml_path}\"\n\n\
+            file = \"{unix_rpc_toml_path_string}\"\n\n\
             ").as_str());
 
-            let socket_path = data_directory.join("rpc.socket").display().to_string();
+            let socket_path = data_directory.join("rpc.socket").display().to_string().escape_default().to_string();
 
             let unix_rpc_toml_content = format!("\
             [connect]\n\
@@ -132,25 +133,26 @@ impl ArtiProcess {
                 .write_all(unix_rpc_toml_content.as_bytes())
                 .map_err(Error::RpcTomlFileWriteFailed)?;
 
-            unix_rpc_toml_path
+            unix_rpc_toml_path_string
         } else {
             // use tcp socket everywhere else
-            let tcp_rpc_toml_path = data_directory.join("rpc.toml").display().to_string();
+            let tcp_rpc_toml_path = data_directory.join("rpc.toml");
+            let tcp_rpc_toml_path_string = tcp_rpc_toml_path.display().to_string().escape_default().to_string();
 
             arti_toml_content.push_str(format!("\
             [rpc.listen.tcp-point]\n\
             enable = true\n\
-            file = \"{tcp_rpc_toml_path}\"\n\n\
+            file = \"{tcp_rpc_toml_path_string}\"\n\n\
             ").as_str());
 
-            let cookie_path = data_directory.join("rpc.cookie").display().to_string();
+            let cookie_path_string = data_directory.join("rpc.cookie").display().to_string().escape_default().to_string();
 
             const RPC_PORT: u16 = 18929;
 
             let tcp_rpc_toml_content = format!("\
             [connect]\n\
             socket = \"inet:127.0.0.1:{RPC_PORT}\"\n\
-            auth = {{ cookie = {{ path = \"{cookie_path}\" }} }}\n\
+            auth = {{ cookie = {{ path = \"{cookie_path_string}\" }} }}\n\
             ");
 
             let mut tcp_rpc_toml_file =
@@ -159,7 +161,7 @@ impl ArtiProcess {
                 .write_all(tcp_rpc_toml_content.as_bytes())
                 .map_err(Error::RpcTomlFileWriteFailed)?;
 
-            tcp_rpc_toml_path
+            tcp_rpc_toml_path_string
         };
 
         let mut arti_toml_file =
