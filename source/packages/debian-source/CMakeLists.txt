@@ -4,12 +4,19 @@ if (BUILD_DEBIAN_SOURCE_PACKAGE)
 
     if ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
         message(FATAL_ERROR "deb-src package target requires out-of-source build")
-    elseif (NOT TAR_EXECUTABLE)
-        message(FATAL_ERROR "tar not found; required for debian source package")
-    elseif (NOT DPKG_SOURCE_EXECUTABLE)
-        message(FATAL_ERROR "dpkg-source not found; required for debian source package")
     endif()
 
+    if (NOT TAR_EXECUTABLE)
+        message(FATAL_ERROR "tar not found; required for debian source package")
+    else()
+        message(STATUS "Found tar: ${TAR_EXECUTABLE}")
+    endif()
+
+    if (NOT DPKG_SOURCE_EXECUTABLE)
+        message(FATAL_ERROR "dpkg-source not found; required for debian source package")
+    else()
+        message(STATUS "Found dpkg-source: ${DPKG_SOURCE_EXECUTABLE}")
+    endif()
 
     # generate debian/rules file
     set(RULES_IN ${CMAKE_CURRENT_SOURCE_DIR}/debian/rules.in)

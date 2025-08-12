@@ -92,6 +92,8 @@ if (BUILD_JAVA_BINDINGS)
         if (NOT javadoc_executable)
             message(FATAL_ERROR "javadoc not found; required to generate Java documentation")
         else()
+            message(STATUS "Found javadoc: ${javadoc_executable}")
+
             set(javadoc_depends
                 ${CMAKE_CURRENT_BINARY_DIR}/src/net/blueprintforfreespeech/gosling/Gosling.java)
             set(javadoc_output

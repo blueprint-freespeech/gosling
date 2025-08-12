@@ -8,12 +8,30 @@ if (BUILD_PAGES)
 
     if (NOT PANDOC_EXECUTABLE)
         message(FATAL_ERROR "pandoc not found; required to build pages")
-    elseif(NOT MUSTACHE_EXECUTABLE)
+    else()
+        message(STATUS "Found pandoc: ${PANDOC_EXECUTABLE}")
+    endif()
+
+    if(NOT MUSTACHE_EXECUTABLE)
         message(FATAL_ERROR "mustache not found; required to build pages")
-    elseif(NOT PLANTUML_EXECUTABLE)
+    else()
+        message(STATUS "Found mustache: ${MUSTACHE_EXECUTABLE}")
+    endif()
+
+    if(NOT PLANTUML_EXECUTABLE)
         message(FATAL_ERROR "plantuml not found; required to build pages")
-    elseif(NOT TIDY_EXECUTABLE)
+    else()
+        message(STATUS "Found plantuml: ${PLANTUML_EXECUTABLE}")
+    endif()
+
+    if(NOT TIDY_EXECUTABLE)
         message(FATAL_ERROR "tidy not found; required to build pages")
+    else()
+        message(STATUS: "Found tidy: ${TIDY_EXECUTABLE}")
+    endif()
+
+    if(GIT_EXECUTABLE)
+        message(STATUS: "Found git: ${GIT_EXECUTABLE}")
     endif()
 
     #

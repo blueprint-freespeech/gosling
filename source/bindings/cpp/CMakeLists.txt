@@ -67,6 +67,8 @@ if (BUILD_PAGES)
     if (NOT DOXYGEN_EXECUTABLE)
         message(FATAL_ERROR "doxygen not found; required to generate C/C++ documentation")
     else()
+        message(STATUS "Found doxygen: ${DOXYGEN_EXECUTABLE}")
+
         set(DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
         set(DOXYFILE ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
         configure_file(${DOXYFILE_IN} ${DOXYFILE} @ONLY)
