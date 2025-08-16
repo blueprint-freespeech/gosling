@@ -2,6 +2,14 @@
 
 ---
 
+## 2025-08-09: Gosling: Build Anonymous, Secure, and Metadata-Resistant Peer-to-Peer Applications Using Tor Onion Services
+
+A talk given at [WHY2025](https://why2025.org/) about Gosling, how it works, and how it can be used.
+
+#### Slides: [2025-08-09 - why2025-slides.pdf](<pdfs/2025-08-09 - why2025-slides.pdf>)
+
+#### Video: [https://www.youtube.com/watch?v=jRBP3AO3iq4](https://www.youtube.com/watch?v=jRBP3AO3iq4)
+
 ## 2024-11-20: Build Private + Secure p2p Applications with Gosling
 
 A quick summary of the Gosling work completed in 2024.
