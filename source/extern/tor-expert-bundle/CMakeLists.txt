@@ -1,6 +1,6 @@
 # TEB shorthand for tor-expert-bundle
 if (NOT TEB_VERSION)
-    set(TEB_VERSION 14.0.6)
+    set(TEB_VERSION 14.5.5)
 endif()
 
 # Guess if TEB_TARGET not manually specified
@@ -63,7 +63,6 @@ endif()
 
 set(pluggable_transport_binaries
     ${CMAKE_CURRENT_BINARY_DIR}/lyrebird${CMAKE_EXECUTABLE_SUFFIX}
-    ${CMAKE_CURRENT_BINARY_DIR}/snowflake-client${CMAKE_EXECUTABLE_SUFFIX}
     ${CMAKE_CURRENT_BINARY_DIR}/conjure-client${CMAKE_EXECUTABLE_SUFFIX}
 )
 
@@ -75,7 +74,6 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E chdir tor-expert-bundle ${CMAKE_COMMAND} -E tar xvf ${CMAKE_CURRENT_BINARY_DIR}/${TEB_ARCHIVE}
     # copy each pt
     COMMAND ${CMAKE_COMMAND} -E copy tor-expert-bundle/tor/pluggable_transports/lyrebird${CMAKE_EXECUTABLE_SUFFIX} .
-    COMMAND ${CMAKE_COMMAND} -E copy tor-expert-bundle/tor/pluggable_transports/snowflake-client${CMAKE_EXECUTABLE_SUFFIX} .
     COMMAND ${CMAKE_COMMAND} -E copy tor-expert-bundle/tor/pluggable_transports/conjure-client${CMAKE_EXECUTABLE_SUFFIX} .
     # cleanup exttra stuff
     COMMAND ${CMAKE_COMMAND} -E rm -rf tor-expert-bundle
