@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Error","LegacyTorClientConfig"],"struct":["LegacyTorClient"]};
+window.SIDEBAR_ITEMS = {"enum":["Error","LegacyTorClientConfig","TorAuth"],"struct":["LegacyTorClient"]};
