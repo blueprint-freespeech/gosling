@@ -65,7 +65,7 @@ if (ENABLE_LINTING)
     add_custom_target(cppcheck_target
         DEPENDS
             ${CMAKE_BINARY_DIR}/compile_commands.sans-catch2.json
-        COMMAND cppcheck --enable=all --inline-suppr --suppress=missingIncludeSystem --suppress=*:*Catch2* --project="${CMAKE_BINARY_DIR}/compile_commands.sans-catch2.json"
+        COMMAND cppcheck --enable=all --inline-suppr --suppress=missingIncludeSystem --suppress=unusedFunction:*cgosling.c --suppress=*:*Catch2* --project="${CMAKE_BINARY_DIR}/compile_commands.sans-catch2.json"
     )
     add_dependencies(linting cppcheck_target)
 endif()

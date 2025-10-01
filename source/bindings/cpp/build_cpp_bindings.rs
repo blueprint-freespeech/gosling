@@ -2,13 +2,14 @@ extern crate handlebars;
 extern crate serde;
 extern crate serde_json;
 
-use handlebars::{handlebars_helper, Handlebars, ScopedJson};
+use handlebars::{handlebars_helper, Handlebars};
 use regex::Regex;
 use serde::{Deserialize};
 use serde_json::Value;
 
 #[derive(Deserialize)]
 struct Param {
+    #[allow(dead_code)]
     name: String,
     typename: String,
 }
@@ -20,41 +21,37 @@ struct Function {
     input_params: Vec<Param>,
 }
 
-const TRUE: ScopedJson = ScopedJson::Constant(&Value::Bool(true));
-const FALSE: ScopedJson = ScopedJson::Constant(&Value::Bool(false));
-
 handlebars_helper!(functionIsToString: |function: Function| {
-    if function.return_param != "void" {
-        return Ok(FALSE);
-    }
     let input_params = &function.input_params;
-    if input_params.len() != 4 {
-        return Ok(FALSE);
-    }
     let handle_pattern = Regex::new(r"^const gosling_\w+\*$").unwrap();
-    if !handle_pattern.is_match(&input_params[0].typename) {
-        return Ok(FALSE);
+
+    if function.return_param != "void" {
+        false
+    } else if input_params.len() != 4 {
+        false
+    } else if !handle_pattern.is_match(&input_params[0].typename) {
+        false
+    } else if input_params[1].typename != "char*" {
+        false
+    } else if input_params[2].typename != "size_t" {
+        false
+    } else if input_params[3].typename != "gosling_error**" {
+        false
+    } else {
+        true
     }
-    if input_params[1].typename != "char*" {
-        return Ok(FALSE);
-    }
-    if input_params[2].typename != "size_t" {
-        return Ok(FALSE);
-    }
-    if input_params[3].typename != "gosling_error**" {
-        return Ok(FALSE);
-    }
-    return Ok(TRUE);
 });
 handlebars_helper!(functionIsFree: |function: Function| {
     if function.return_param != "void" {
-        return Ok(FALSE);
+        false
+    } else {
+        let free_pattern = Regex::new(r"^gosling_[\w]+_free$").unwrap();
+        if !free_pattern.is_match(&function.name) {
+            false
+        } else {
+            true
+        }
     }
-    let free_pattern = Regex::new(r"^gosling_[\w]+_free$").unwrap();
-    if !free_pattern.is_match(&function.name) {
-        return Ok(FALSE);
-    }
-    return Ok(TRUE);
 });
 handlebars_helper!(functionToObjectParam: |function: Function| {
     let from_param = &function.input_params[0];

@@ -198,6 +198,7 @@ enum gosling_tor_provider_type {
 // different, since we can repeatedly call this function with different
 // gosling_tor_providers, and we want each invocation to start fresh
 template <gosling_tor_provider_type TP>
+// cppcheck-suppress unusedFunction
 void gosling_cpp_demo_impl(
     unique_ptr<gosling_tor_provider> &&alice_tor_provider,
     unique_ptr<gosling_tor_provider> &&pat_tor_provider) {
