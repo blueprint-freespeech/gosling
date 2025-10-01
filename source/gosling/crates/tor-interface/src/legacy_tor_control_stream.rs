@@ -254,8 +254,8 @@ impl LegacyControlStream {
     }
 
     fn write_impl(&mut self, data: &str) -> Result<(), Error> {
-        match self.stream.write(data.as_bytes()) {
-            Ok(_) => Ok(()),
+        match self.stream.write_all(data.as_bytes()) {
+            Ok(()) => Ok(()),
             Err(err) => {
                 self.closed_by_remote = true;
                 Err(Error::WriteFailed(err))

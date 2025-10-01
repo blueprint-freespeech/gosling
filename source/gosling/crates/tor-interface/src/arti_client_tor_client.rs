@@ -86,7 +86,7 @@ pub struct ArtiClientTorClient {
 }
 
 // used to forward traffic to/from arti to local tcp streams
-async fn forward_stream<R, W>(alive: Arc<AtomicBool>, mut reader: R, mut writer: W) -> ()
+async fn forward_stream<R, W>(alive: Arc<AtomicBool>, mut reader: R, mut writer: W)
 where
     R: AsyncReadExt + Unpin,
     W: AsyncWriteExt + Unpin,
@@ -122,7 +122,7 @@ where
                 // read failed
                 Err(_err) => break,
             },
-            _ = tokio::time::sleep(read_timeout.clone()) => match writer.flush().await {
+            _ = tokio::time::sleep(read_timeout) => match writer.flush().await {
                 Ok(()) => {
                     // so long as our writer and reader are good, we should
                     // allow a few additional data pump attempts
@@ -171,7 +171,7 @@ impl ArtiClientTorClient {
 
         let config = match config_builder.build() {
             Ok(config) => config,
-            Err(err) => return Err(err).map_err(Error::ArtiClientConfigBuilderError),
+            Err(err) => return Err(Error::ArtiClientConfigBuilderError(err)),
         };
 
         let arti_client = tokio_runtime.block_on(async {
@@ -316,7 +316,6 @@ impl TorProvider for ArtiClientTorClient {
                         });
                         pending_events.push(TorEvent::BootstrapComplete);
                         bootstrapped.store(true, Ordering::Relaxed);
-                        return;
                     }
                     Err(_) => unreachable!(
                         "another thread panicked while holding this pending_events mutex"
@@ -337,7 +336,7 @@ impl TorProvider for ArtiClientTorClient {
         client_auth: &X25519PrivateKey,
     ) -> Result<(), tor_provider::Error> {
         let ed25519_public = Ed25519PublicKey::from_service_id(service_id).unwrap();
-        let hs_id = ed25519_public.as_bytes().clone();
+        let hs_id = *ed25519_public.as_bytes();
 
         self.arti_client.insert_service_discovery_key(KeystoreSelector::Primary, hs_id.into(), client_auth.inner().clone().into()).map_err(Error::ArtiClientError)?;
 
@@ -349,7 +348,7 @@ impl TorProvider for ArtiClientTorClient {
         service_id: &V3OnionServiceId,
     ) -> Result<(), tor_provider::Error> {
         let ed25519_public = Ed25519PublicKey::from_service_id(service_id).unwrap();
-        let hs_id = ed25519_public.as_bytes().clone();
+        let hs_id = *ed25519_public.as_bytes();
 
         self.arti_client.remove_service_discovery_key(KeystoreSelector::Primary, hs_id.into()).map_err(Error::ArtiClientError)?;
 
@@ -474,7 +473,7 @@ impl TorProvider for ArtiClientTorClient {
                         .access()
                         .push((
                             HsClientNickname::from_str(nickname.as_str()).unwrap(),
-                            key.inner().clone().into(),
+                            (*key.inner()).into(),
                         ));
                 }
             }
@@ -483,7 +482,7 @@ impl TorProvider for ArtiClientTorClient {
         let onion_service_config = match onion_service_config_builder.build()
         {
             Ok(onion_service_config) => onion_service_config,
-            Err(err) => Err(err).map_err(Error::OnionServiceConfigBuilderError)?,
+            Err(err) => Err(Error::OnionServiceConfigBuilderError(err))?,
         };
 
         let (onion_service, mut rend_requests) = self.arti_client
@@ -497,8 +496,8 @@ impl TorProvider for ArtiClientTorClient {
 
         self.tokio_runtime.spawn(async move {
             while let Some(evt) = status_events.next().await {
-                match evt.state() {
-                    tor_hsservice::status::State::Running => match pending_events.lock() {
+                if evt.state() == tor_hsservice::status::State::Running {
+                    match pending_events.lock() {
                         Ok(mut pending_events) => {
                             pending_events.push(TorEvent::OnionServicePublished { service_id: service_id_clone });
                             return;
@@ -506,8 +505,7 @@ impl TorProvider for ArtiClientTorClient {
                         Err(_) => unreachable!(
                             "another thread panicked while holding this pending_events mutex"
                         ),
-                    },
-                    _ => (),
+                    }
                 }
             }
         });

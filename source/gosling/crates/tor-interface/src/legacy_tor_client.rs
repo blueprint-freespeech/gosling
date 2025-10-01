@@ -211,7 +211,7 @@ impl LegacyTorClientConfig {
         const TOR_CONTROL_COOKIE_AUTH_FILE: &str = "TOR_CONTROL_COOKIE_AUTH_FILE";
         const TOR_CONTROL_PASSWD: &str = "TOR_CONTROL_PASSWD";
         let tor_control_auth = if let Some(cookie_file) = var_os(TOR_CONTROL_COOKIE_AUTH_FILE) {
-            let cookie_file: PathBuf = cookie_file.clone().try_into().map_err(|_| Error::EnvironmentConfigurationInvalid(format!("Cannot parse TOR_CONTROL_COOKIE_AUTH_FILE value '{cookie_file:?} as file path")))?;
+            let cookie_file: PathBuf = cookie_file.clone().into();
             TorAuth::CookieFile(cookie_file)
         } else {
             match var(TOR_CONTROL_PASSWD) {
@@ -291,7 +291,7 @@ impl LegacyTorClient {
             } => {
                 // open a control stream
                 let control_stream =
-                    LegacyControlStream::new(&tor_control_addr, Duration::from_millis(16))
+                    LegacyControlStream::new(tor_control_addr, Duration::from_millis(16))
                         .map_err(Error::LegacyControlStreamCreationFailed)?;
 
                 // create a controler
@@ -302,7 +302,7 @@ impl LegacyTorClient {
                     None,
                     controller,
                     std::mem::take(tor_control_auth),
-                    Some(tor_socks_addr.clone()),
+                    Some(*tor_socks_addr),
                 )
             }
         };
@@ -528,7 +528,7 @@ impl LegacyTorClient {
 
     fn socks_listener(&mut self) -> Result<SocketAddr, Error> {
         match self.socks_listener {
-            Some(socks_listener) => Ok(socks_listener.clone()),
+            Some(socks_listener) => Ok(socks_listener),
             None => {
                 let mut listeners = self
                     .controller
@@ -538,7 +538,7 @@ impl LegacyTorClient {
                     return Err(Error::NoSocksListenersFound())?;
                 }
                 let socks_listener = listeners.swap_remove(0);
-                self.socks_listener = Some(socks_listener.clone());
+                self.socks_listener = Some(socks_listener);
                 Ok(socks_listener)
             }
         }

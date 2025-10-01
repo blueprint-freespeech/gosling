@@ -42,7 +42,7 @@ impl PluggableTransportConfig {
         let transport_pattern = TRANSPORT_PATTERN.get_or_init(init_transport_pattern);
         // validate each transport
         for transport in &transports {
-            if !transport_pattern.is_match(&transport) {
+            if !transport_pattern.is_match(transport) {
                 return Err(PluggableTransportConfigError::TransportNameInvalid(
                     transport.clone(),
                 ));
@@ -166,7 +166,7 @@ impl BridgeLine {
 
         // validate key-values
         for (key, value) in &keyvalues {
-            if key.contains(' ') || key.contains('=') || key.len() == 0 {
+            if key.contains(' ') || key.contains('=') || key.is_empty() {
                 return Err(BridgeLineError::KeyValueInvalid(format!("{key}={value}")));
             }
         }
@@ -249,8 +249,8 @@ impl FromStr for BridgeLine {
             .get_or_init(|| Regex::new(r"(?m)^(?<key>[^=]+)=(?<value>.*)$").unwrap());
 
         let mut keyvalues: Vec<(String, String)> = Default::default();
-        while let Some(keyvalue) = tokens.next() {
-            if let Some(caps) = bridge_option_pattern.captures(&keyvalue) {
+        for keyvalue in tokens {
+            if let Some(caps) = bridge_option_pattern.captures(keyvalue) {
                 let key = caps
                     .name("key")
                     .expect("missing key group")

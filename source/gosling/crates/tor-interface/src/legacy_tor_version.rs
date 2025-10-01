@@ -164,14 +164,14 @@ impl FromStr for LegacyTorVersion {
     }
 }
 
-impl ToString for LegacyTorVersion {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for LegacyTorVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.status_tag {
-            Some(status_tag) => format!(
+            Some(status_tag) => write!(f,
                 "{}.{}.{}.{}-{}",
                 self.major, self.minor, self.micro, self.patch_level, status_tag
             ),
-            None => format!(
+            None => write!(f,
                 "{}.{}.{}.{}",
                 self.major, self.minor, self.micro, self.patch_level
             ),

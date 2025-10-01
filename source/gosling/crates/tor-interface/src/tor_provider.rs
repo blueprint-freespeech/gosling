@@ -144,7 +144,7 @@ impl std::fmt::Display for DomainAddr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let uts46: Uts46 = Default::default();
         let (ui_str, _err) = uts46.to_user_interface(
-            self.domain.as_str().as_bytes(),
+            self.domain.as_bytes(),
             AsciiDenyList::URL,
             Hyphens::Allow,
             |_, _, _| -> bool { false },
@@ -362,6 +362,8 @@ impl OnionStream {
 // Onion Listener
 //
 
+pub(crate) type OnionListenerDropFn = Box<dyn FnMut(Box<dyn Any>) + Send>;
+
 /// A wrapper around a [`std::net::TcpListener`] with some Tor-specific customisations.
 ///
 /// An onion-listener can be constructed using the [`TorProvider::listener()`] method.
@@ -369,7 +371,7 @@ pub struct OnionListener {
     pub(crate) listener: TcpListener,
     pub(crate) onion_addr: OnionAddr,
     pub(crate) data: Option<Box<dyn Any + Send>>,
-    pub(crate) drop: Option<Box<dyn FnMut(Box<dyn Any>) + Send>>,
+    pub(crate) drop: Option<OnionListenerDropFn>,
 }
 
 impl OnionListener {
@@ -382,7 +384,7 @@ impl OnionListener {
         // marshall our data into an Any
         let data: Option<Box<dyn Any + Send>> = Some(Box::new(data));
         // marhsall our drop into a function which takes an Any
-        let drop: Option<Box<dyn FnMut(Box<dyn Any>) + Send>>  = Some(Box::new(move |data: Box<dyn std::any::Any>| {
+        let drop: Option<OnionListenerDropFn>  = Some(Box::new(move |data: Box<dyn std::any::Any>| {
             // encapsulate extracting our data from the Any
             if let Ok(data) = data.downcast::<T>() {
                 // and call our provided drop

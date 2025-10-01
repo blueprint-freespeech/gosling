@@ -1,6 +1,6 @@
 // standard
 use std::default::Default;
-use std::io::{Read, Write};
+use std::io::Read;
 use std::net::SocketAddr;
 use std::option::Option;
 use std::path::PathBuf;
@@ -543,9 +543,8 @@ impl LegacyTorController {
         }
         // ensure no more bytes to read
         let mut nonce = [0u8; 1];
-        match cookie_file.read_exact(&mut nonce) {
-            Ok(()) => return Err(Error::CookieFileInvalid(cookie_file_path)),
-            Err(_) => (),
+        if cookie_file.read_exact(&mut nonce).is_ok() {
+            return Err(Error::CookieFileInvalid(cookie_file_path));
         }
 
         Ok(cookie)
@@ -601,7 +600,7 @@ impl LegacyTorController {
         // construct CLIENTHASH
         const CONTROLLER_TO_SERVER_KEY: &str = "Tor safe cookie authentication controller-to-server hash";
         let hmac = hmac_sha256(CONTROLLER_TO_SERVER_KEY, &cookie, &clientnonce, &servernonce);
-        let clienthash: [u8; 32] = hmac.finalize().into_bytes().try_into().expect("");
+        let clienthash: [u8; 32] = hmac.finalize().into_bytes().into();
 
         cookie.zeroize();
 
