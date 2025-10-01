@@ -78,14 +78,14 @@ fn preprocess_any(source: String, features: &Vec<&str>) -> String {
             }
         }
         if clear_block {
-            preprocessed_source = preprocessed_source.replace(&anyblock, "");
+            preprocessed_source = preprocessed_source.replace(anyblock, "");
             cleared_blocks.push(anyblock.to_string());
         }
     }
     preprocessed_source
 }
 
-fn preprocess_all(source: String, _features: &Vec<&str>) -> String {
+fn preprocess_all(source: String) -> String {
     let block_regex = Regex::new(r"(?m)(?<anyblock>#if \((defined\(([A-Z_]+)\)( && )?)+\)([^#]*\n)*#endif)").unwrap();
 
     if block_regex.is_match(&source) {
@@ -96,29 +96,22 @@ fn preprocess_all(source: String, _features: &Vec<&str>) -> String {
 }
 
 fn preprocess_header(source: String) -> String {
-    let mut features: Vec<&str> = Default::default();
+    let features: Vec<&str> = vec![
+        #[cfg(target_os = "windows")]
+        "GOSLING_PLATFORM_WINDOWS",
+        #[cfg(target_os = "macos")]
+        "GOSLING_PLATFORM_MACOS",
+        #[cfg(target_os = "linux")]
+        "GOSLING_PLATFORM_LINUX",
+        #[cfg(feature = "arti-client-tor-provider")]
+        "GOSLING_HAVE_ARTI_CLIENT_TOR_PROVIDER",
+        #[cfg(feature = "legacy-tor-provider")]
+        "GOSLING_HAVE_LEGACY_TOR_PROVIDER",
+        #[cfg(feature = "mock-tor-provider")]
+        "GOSLING_HAVE_MOCK_TOR_PROVIDER",
+    ];
 
-    // OS features
-    #[cfg(target_os = "windows")]
-    features.push("GOSLING_PLATFORM_WINDOWS");
-    #[cfg(target_os = "macos")]
-    features.push("GOSLING_PLATFORM_MACOS");
-    #[cfg(target_os = "linux")]
-    features.push("GOSLING_PLATFORM_LINUX");
-
-    // tor-provider implementations
-    #[cfg(feature = "arti-client-tor-provider")]
-    features.push("GOSLING_HAVE_ARTI_CLIENT_TOR_PROVIDER");
-    #[cfg(feature = "legacy-tor-provider")]
-    features.push("GOSLING_HAVE_LEGACY_TOR_PROVIDER");
-    #[cfg(feature = "mock-tor-provider")]
-    features.push("GOSLING_HAVE_MOCK_TOR_PROVIDER");
-
-
-    let source = preprocess_any(source, &features);
-    let source = preprocess_all(source, &features);
-
-    source
+    preprocess_all(preprocess_any(source, &features))
 }
 
 fn parse_param(params_raw: &str) -> Vec<Param> {

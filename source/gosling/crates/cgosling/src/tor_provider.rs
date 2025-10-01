@@ -9,6 +9,7 @@ use std::path::Path;
 use std::str::FromStr;
 
 // extern crates
+#[cfg(any(feature = "arti-client-tor-provider", feature = "legacy-tor-provider", feature = "mock-tor-provider"))]
 use anyhow::bail;
 #[cfg(feature = "impl-lib")]
 use cgosling_proc_macros::*;
@@ -57,13 +58,14 @@ define_registry! {BridgeLine}
 
 /// A tor provider config object used to construct a tor provider
 pub struct GoslingTorProviderConfig;
+#[allow(clippy::large_enum_variant)]
 pub(crate) enum TorProviderConfig {
     #[cfg(feature = "arti-client-tor-provider")]
-    ArtiClientTorClientConfig(std::path::PathBuf),
+    ArtiClient(std::path::PathBuf),
     #[cfg(feature = "legacy-tor-provider")]
-    LegacyTorClientConfig(tor_interface::legacy_tor_client::LegacyTorClientConfig),
+    Legacy(tor_interface::legacy_tor_client::LegacyTorClientConfig),
     #[cfg(feature = "mock-tor-provider")]
-    MockTorClientConfig,
+    Mock,
 }
 define_registry! {TorProviderConfig}
 
@@ -410,7 +412,6 @@ pub unsafe extern "C" fn gosling_bridge_line_from_string(
 /// @param arti_client_data_directory: the file system path to store arti-client's state
 /// @param arti_client_data_directory_length: the number of chars in arti_client_data_directory not including any
 ///  null-terminator
-
 /// @param error: filled on error
 #[no_mangle]
 #[cfg(feature = "arti-client-tor-provider")]
@@ -435,7 +436,7 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_arti_client_tor_client_
         let arti_client_data_directory = Path::new(arti_client_data_directory).to_path_buf();
 
         let handle =
-            get_tor_provider_config_registry().insert(TorProviderConfig::ArtiClientTorClientConfig(arti_client_data_directory));
+            get_tor_provider_config_registry().insert(TorProviderConfig::ArtiClient(arti_client_data_directory));
         *out_tor_provider_config = handle as *mut GoslingTorProviderConfig;
 
         Ok(())
@@ -457,7 +458,7 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_mock_client_config(
         ensure_not_null!(out_tor_provider_config);
 
         let handle =
-            get_tor_provider_config_registry().insert(TorProviderConfig::MockTorClientConfig);
+            get_tor_provider_config_registry().insert(TorProviderConfig::Mock);
         *out_tor_provider_config = handle as *mut GoslingTorProviderConfig;
 
         Ok(())
@@ -515,7 +516,7 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_bundled_legacy_client_c
         let tor_working_directory = std::str::from_utf8(tor_working_directory)?;
         let tor_working_directory = Path::new(tor_working_directory).to_path_buf();
         let tor_config = LegacyTorClientConfig::BundledTor {
-            tor_bin_path: tor_bin_path,
+            tor_bin_path,
             data_directory: tor_working_directory,
             proxy_settings: None,
             allowed_ports: None,
@@ -524,7 +525,7 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_bundled_legacy_client_c
         };
 
         let handle = get_tor_provider_config_registry()
-            .insert(TorProviderConfig::LegacyTorClientConfig(tor_config));
+            .insert(TorProviderConfig::Legacy(tor_config));
         *out_tor_provider_config = handle as *mut GoslingTorProviderConfig;
 
         Ok(())
@@ -566,14 +567,14 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_system_legacy_client_co
 
         // constructor tor_socks_addr
         let tor_socks_host = match get_ip_addr_registry().get(tor_socks_host as usize) {
-            Some(tor_socks_host) => tor_socks_host.clone(),
+            Some(tor_socks_host) => *tor_socks_host,
             None => bail_invalid_handle!(tor_socks_host),
         };
         let tor_socks_addr = std::net::SocketAddr::new(tor_socks_host, tor_socks_port);
 
         // construct tor_control_addr
         let tor_control_host = match get_ip_addr_registry().get(tor_control_host as usize) {
-            Some(tor_control_host) => tor_control_host.clone(),
+            Some(tor_control_host) => *tor_control_host,
             None => bail_invalid_handle!(tor_control_host),
         };
         let tor_control_addr = std::net::SocketAddr::new(tor_control_host, tor_control_port);
@@ -591,7 +592,7 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_system_legacy_client_co
         };
 
         let handle = get_tor_provider_config_registry()
-            .insert(TorProviderConfig::LegacyTorClientConfig(tor_config));
+            .insert(TorProviderConfig::Legacy(tor_config));
         *out_tor_provider_config = handle as *mut GoslingTorProviderConfig;
 
         Ok(())
@@ -624,7 +625,7 @@ pub unsafe extern "C" fn gosling_tor_provider_config_set_proxy_config(
 
         match get_tor_provider_config_registry().get_mut(tor_provider_config as usize) {
             Some(tor_provider_config) => match tor_provider_config {
-                TorProviderConfig::LegacyTorClientConfig(LegacyTorClientConfig::BundledTor {
+                TorProviderConfig::Legacy(LegacyTorClientConfig::BundledTor {
                     proxy_settings,
                     ..
                 }) => {
@@ -668,10 +669,10 @@ pub unsafe extern "C" fn gosling_tor_provider_config_set_allowed_ports(
         ensure_not_equal!(allowed_ports_count, 0);
 
         let allowed_ports_slice =
-            std::slice::from_raw_parts(allowed_ports as *const u16, allowed_ports_count);
+            std::slice::from_raw_parts(allowed_ports, allowed_ports_count);
         match get_tor_provider_config_registry().get_mut(tor_provider_config as usize) {
             Some(tor_provider_config) => match tor_provider_config {
-                TorProviderConfig::LegacyTorClientConfig(LegacyTorClientConfig::BundledTor {
+                TorProviderConfig::Legacy(LegacyTorClientConfig::BundledTor {
                     allowed_ports,
                     ..
                 }) => {
@@ -711,7 +712,7 @@ pub unsafe extern "C" fn gosling_tor_provider_config_add_pluggable_transport_con
 
         match get_tor_provider_config_registry().get_mut(tor_provider_config as usize) {
             Some(tor_provider_config) => match tor_provider_config {
-                TorProviderConfig::LegacyTorClientConfig(LegacyTorClientConfig::BundledTor {
+                TorProviderConfig::Legacy(LegacyTorClientConfig::BundledTor {
                     pluggable_transports,
                     ..
                 }) => {
@@ -763,7 +764,7 @@ pub unsafe extern "C" fn gosling_tor_provider_config_add_bridge_line(
 
         match get_tor_provider_config_registry().get_mut(tor_provider_config as usize) {
             Some(tor_provider_config) => match tor_provider_config {
-                TorProviderConfig::LegacyTorClientConfig(LegacyTorClientConfig::BundledTor {
+                TorProviderConfig::Legacy(LegacyTorClientConfig::BundledTor {
                     bridge_lines,
                     ..
                 }) => {
@@ -807,7 +808,7 @@ pub unsafe extern "C" fn gosling_tor_provider_from_tor_provider_config(
             match get_tor_provider_config_registry().get(tor_provider_config as usize) {
                 Some(tor_provider_config) => match tor_provider_config {
                     #[cfg(feature = "arti-client-tor-provider")]
-                    TorProviderConfig::ArtiClientTorClientConfig(data_dir) => {
+                    TorProviderConfig::ArtiClient(data_dir) => {
                         let runtime = match TOKIO_RUNTIME.lock() {
                             Ok(mut runtime) => {
                                 match runtime.deref_mut() {
@@ -822,17 +823,17 @@ pub unsafe extern "C" fn gosling_tor_provider_from_tor_provider_config(
                                 "another thread paniccked while holding the TOKIO_RUNTIME mutex"),
                         };
                         let tor_provider: ArtiClientTorClient =
-                            ArtiClientTorClient::new(runtime, &data_dir)?;
+                            ArtiClientTorClient::new(runtime, data_dir)?;
                         Box::new(tor_provider)
                     },
                     #[cfg(feature = "legacy-tor-provider")]
-                    TorProviderConfig::LegacyTorClientConfig(legacy_tor_config) => {
+                    TorProviderConfig::Legacy(legacy_tor_config) => {
                         let tor_provider: LegacyTorClient =
                             LegacyTorClient::new(legacy_tor_config.clone())?;
                         Box::new(tor_provider)
                     },
                     #[cfg(feature = "mock-tor-provider")]
-                    TorProviderConfig::MockTorClientConfig => {
+                    TorProviderConfig::Mock => {
                         let tor_provider: MockTorClient = Default::default();
                         Box::new(tor_provider)
                     },

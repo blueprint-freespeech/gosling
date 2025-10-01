@@ -40,7 +40,7 @@ pub type GoslingHandshakeHandle = usize;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 /// A native TCP socket handle
 pub type GoslingTcpSocket = RawFd;
-#[cfg(any(target_os = "windows"))]
+#[cfg(target_os = "windows")]
 /// A native TCP socket handle
 pub type GoslingTcpSocket = RawSocket;
 /// A context object associated with a single peer identity

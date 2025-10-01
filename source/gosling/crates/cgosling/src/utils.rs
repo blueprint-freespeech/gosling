@@ -83,7 +83,7 @@ pub unsafe extern "C" fn gosling_ip_address_clone(
         ensure_not_null!(ip_address);
 
         let ip_address = match get_ip_addr_registry().get(ip_address as usize) {
-            Some(ip_address) => ip_address.clone(),
+            Some(ip_address) => *ip_address,
             None => bail_invalid_handle!(ip_address),
         };
         let handle = get_ip_addr_registry().insert(ip_address);
@@ -133,7 +133,7 @@ pub unsafe extern "C" fn gosling_target_address_clone(
 /// @param error: filled on error
 #[no_mangle]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
-pub extern "C" fn gosling_context_connect(
+pub unsafe extern "C" fn gosling_context_connect(
     context: *mut GoslingContext,
     out_tcp_socket: *mut GoslingTcpSocket,
     target_address: *const GoslingTargetAddress,
@@ -263,7 +263,7 @@ pub unsafe extern "C" fn gosling_target_address_from_ip_address(
         ensure_not_null!(ip_address);
 
         let ip_address = match get_ip_addr_registry().get(ip_address as usize) {
-            Some(ip_address) => ip_address.clone(),
+            Some(ip_address) => *ip_address,
             None => bail_invalid_handle!(ip_address),
         };
 
