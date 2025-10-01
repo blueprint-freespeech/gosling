@@ -623,7 +623,6 @@ impl From<ResponseSection> for bson::document::Document {
 ///     }
 /// }
 ///```
-
 pub trait ApiSet {
     /// Returns the namespace of this `ApiSet`.
     fn namespace(&self) -> &str;
