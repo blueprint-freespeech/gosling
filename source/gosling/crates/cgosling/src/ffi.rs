@@ -96,9 +96,10 @@ pub extern "C" fn gosling_library_free(in_library: *mut GoslingLibrary) {
         match TOKIO_RUNTIME.lock() {
             Ok(mut runtime) => {
                 *runtime = None;
-            },
-            Err(_) => unreachable!(
-                "another thread paniccked while holding the TOKIO_RUNTIME mutex"),
+            }
+            Err(_) => {
+                unreachable!("another thread paniccked while holding the TOKIO_RUNTIME mutex")
+            }
         };
 
         GOSLING_LIBRARY_INITED.store(false, Ordering::Relaxed);

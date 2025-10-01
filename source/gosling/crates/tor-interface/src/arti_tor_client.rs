@@ -9,10 +9,10 @@ use std::time::{Duration, Instant};
 use arti_rpc_client_core::{RpcConn, RpcConnBuilder};
 
 // internal crates
+use crate::arti_process::*;
 use crate::tor_crypto::*;
 use crate::tor_provider;
 use crate::tor_provider::*;
-use crate::arti_process::*;
 
 /// [`ArtiTorClient`]-specific error type
 #[derive(thiserror::Error, Debug)]
@@ -51,9 +51,7 @@ pub enum ArtiTorClientConfig {
         arti_bin_path: PathBuf,
         data_directory: PathBuf,
     },
-    SystemArti {
-
-    },
+    SystemArti {},
 }
 
 pub struct ArtiTorClient {
@@ -77,11 +75,13 @@ impl ArtiTorClient {
                 arti_bin_path,
                 data_directory,
             } => {
-
                 // launch arti
-                let daemon =
-                    ArtiProcess::new(arti_bin_path.as_path(), data_directory.as_path(), Arc::downgrade(&pending_log_lines))
-                        .map_err(Error::ArtiProcessCreationFailed)?;
+                let daemon = ArtiProcess::new(
+                    arti_bin_path.as_path(),
+                    data_directory.as_path(),
+                    Arc::downgrade(&pending_log_lines),
+                )
+                .map_err(Error::ArtiProcessCreationFailed)?;
 
                 let rpc_conn = {
                     // try to open an rpc connnection for 5 seconds beore giving up
@@ -90,7 +90,6 @@ impl ArtiTorClient {
 
                     let start = Instant::now();
                     while rpc_conn.is_none() && start.elapsed() < timeout {
-
                         let mut builder = RpcConnBuilder::new();
                         builder.prepend_literal_path(daemon.connect_string().into());
 
@@ -100,15 +99,13 @@ impl ArtiTorClient {
                     if let Some(rpc_conn) = rpc_conn {
                         rpc_conn
                     } else {
-                        return Err(Error::ArtiRpcConnectFailed(timeout))?
+                        return Err(Error::ArtiRpcConnectFailed(timeout))?;
                     }
                 };
 
                 (daemon, rpc_conn)
-            },
-            _ => {
-                return Err(Error::NotImplemented().into())
             }
+            _ => return Err(Error::NotImplemented().into()),
         };
 
         let pending_events = std::vec![TorEvent::LogReceived {
@@ -133,16 +130,23 @@ impl ArtiTorClient {
         rpc_conn: &RpcConn,
         circuit_isolation: &str,
     ) -> Result<std::net::TcpStream, tor_provider::Error> {
-
         // convert TargetAddr to (String, u16) tuple
         let (host, port) = match &target {
-            TargetAddr::Socket(socket_addr) => (format!("{:?}", socket_addr.ip()), socket_addr.port()),
-            TargetAddr::OnionService(OnionAddr::V3(onion_addr)) => (format!("{}.onion", onion_addr.service_id()), onion_addr.virt_port()),
-            TargetAddr::Domain(domain_addr) => (domain_addr.domain().to_string(), domain_addr.port()),
+            TargetAddr::Socket(socket_addr) => {
+                (format!("{:?}", socket_addr.ip()), socket_addr.port())
+            }
+            TargetAddr::OnionService(OnionAddr::V3(onion_addr)) => (
+                format!("{}.onion", onion_addr.service_id()),
+                onion_addr.virt_port(),
+            ),
+            TargetAddr::Domain(domain_addr) => {
+                (domain_addr.domain().to_string(), domain_addr.port())
+            }
         };
 
         // connect to target
-        let stream = rpc_conn.open_stream(None, (host.as_str(), port), circuit_isolation)
+        let stream = rpc_conn
+            .open_stream(None, (host.as_str(), port), circuit_isolation)
             .map_err(Error::ArtiOpenStreamFailed)?;
         Ok(stream)
     }
@@ -192,9 +196,9 @@ impl TorProvider for ArtiTorClient {
                     });
                     pending_events.push(TorEvent::BootstrapComplete);
                 }
-                Err(_) => unreachable!(
-                    "another thread panicked while holding this pending_events mutex"
-                ),
+                Err(_) => {
+                    unreachable!("another thread panicked while holding this pending_events mutex")
+                }
             }
             self.bootstrapped = true;
         }
@@ -250,7 +254,6 @@ impl TorProvider for ArtiTorClient {
         target: TargetAddr,
         circuit_token: Option<CircuitToken>,
     ) -> Result<ConnectHandle, tor_provider::Error> {
-
         // map circuit_token to isolation string for arti
         let isolation = if let Some(circuit_token) = circuit_token {
             if let Some(isolation) = self.circuit_tokens.get(&circuit_token) {
@@ -260,7 +263,8 @@ impl TorProvider for ArtiTorClient {
             }
         } else {
             ""
-        }.to_string();
+        }
+        .to_string();
 
         let handle = self.next_connect_handle;
         self.next_connect_handle += 1usize;
@@ -281,21 +285,17 @@ impl TorProvider for ArtiTorClient {
                                     local_addr: None,
                                     peer_addr: Some(target),
                                 };
-                                TorEvent::ConnectComplete{
-                                    handle,
-                                    stream,
-                                }
-                            },
-                            Err(error) => TorEvent::ConnectFailed{
-                                handle,
-                                error,
-                            },
+                                TorEvent::ConnectComplete { handle, stream }
+                            }
+                            Err(error) => TorEvent::ConnectFailed { handle, error },
                         };
-                        let mut pending_events = pending_events.lock().expect("async_events mutex poisoned");
+                        let mut pending_events =
+                            pending_events.lock().expect("async_events mutex poisoned");
                         pending_events.push(event);
                     }
                 }
-            }).map_err(Error::ConnectAsyncThreadSpawnFailed)?;
+            })
+            .map_err(Error::ConnectAsyncThreadSpawnFailed)?;
         Ok(handle)
     }
 
@@ -312,9 +312,8 @@ impl TorProvider for ArtiTorClient {
         const ISOLATION_TOKEN_LEN: usize = 32;
         let new_token = self.circuit_token_counter;
         self.circuit_token_counter += 1;
-        self.circuit_tokens.insert(
-            new_token,
-            generate_password(ISOLATION_TOKEN_LEN));
+        self.circuit_tokens
+            .insert(new_token, generate_password(ISOLATION_TOKEN_LEN));
 
         new_token
     }

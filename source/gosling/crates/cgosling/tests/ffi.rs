@@ -283,7 +283,9 @@ fn build_arti_client_tor_provider(data_dir_name: &str) -> anyhow::Result<*mut Go
 
 // bundled c-tor
 #[cfg(feature = "legacy-tor-provider")]
-fn build_bundled_legacy_tor_provider(working_dir_name: &str) -> anyhow::Result<*mut GoslingTorProvider> {
+fn build_bundled_legacy_tor_provider(
+    working_dir_name: &str,
+) -> anyhow::Result<*mut GoslingTorProvider> {
     let mut working_dir = std::env::temp_dir();
     working_dir.push(working_dir_name);
     let working_dir: CString = CString::new(working_dir.to_str().unwrap())?;
@@ -310,8 +312,10 @@ fn build_bundled_legacy_tor_provider(working_dir_name: &str) -> anyhow::Result<*
 
 // bundled c-tor with pluggable-transports
 #[cfg(feature = "legacy-tor-provider")]
-fn build_bundled_legacy_pt_tor_provider(teb_path: &str, working_dir_name: &str) -> anyhow::Result<*mut GoslingTorProvider> {
-
+fn build_bundled_legacy_pt_tor_provider(
+    teb_path: &str,
+    working_dir_name: &str,
+) -> anyhow::Result<*mut GoslingTorProvider> {
     // construct a shared pt config using lyrebird
     let mut pt_config: *mut GoslingPluggableTransportConfig = ptr::null_mut();
     let transports: CString = CString::new("obfs4")?;
@@ -473,9 +477,11 @@ fn test_gosling_ffi_handshake_bundled_pt_client() -> anyhow::Result<()> {
 
     let library = test_gosling_ffi_handshake_preamble()?;
 
-    let alice_tor_provider = build_bundled_legacy_pt_tor_provider(&teb_path, "cgosling_bundled_pt_test_alice")?;
+    let alice_tor_provider =
+        build_bundled_legacy_pt_tor_provider(&teb_path, "cgosling_bundled_pt_test_alice")?;
 
-    let pat_tor_provider = build_bundled_legacy_pt_tor_provider(&teb_path, "cgosling_bundled_pt_test_pat")?;
+    let pat_tor_provider =
+        build_bundled_legacy_pt_tor_provider(&teb_path, "cgosling_bundled_pt_test_pat")?;
 
     // do test
     test_gosling_ffi_handshake_impl(library, alice_tor_provider, pat_tor_provider)
@@ -489,9 +495,11 @@ fn test_gosling_ffi_handshake_mixed_arti_client_legacy_client() -> anyhow::Resul
 
     let library = test_gosling_ffi_handshake_preamble()?;
 
-    let alice_tor_provider = build_arti_client_tor_provider("cgosling_mixed_arti_legacy_test_alice")?;
+    let alice_tor_provider =
+        build_arti_client_tor_provider("cgosling_mixed_arti_legacy_test_alice")?;
 
-    let pat_tor_provider = build_bundled_legacy_tor_provider("cgosling_mixed_arti_legacy_test_pat")?;
+    let pat_tor_provider =
+        build_bundled_legacy_tor_provider("cgosling_mixed_arti_legacy_test_pat")?;
 
     // do test
     test_gosling_ffi_handshake_impl(library, alice_tor_provider, pat_tor_provider)
@@ -567,7 +575,8 @@ fn test_gosling_ffi_handshake_impl(
 
     extern "C" fn alice_bootstrap_complete_callback(
         _callback_data: *mut c_void,
-        context: *mut GoslingContext) -> () {
+        context: *mut GoslingContext,
+    ) -> () {
         assert!(!context.is_null());
         ALICE_BOOTSTRAP_COMPLETE.store(true, Ordering::Relaxed);
         println!("--- alice bootstraped");
@@ -590,7 +599,8 @@ fn test_gosling_ffi_handshake_impl(
 
     extern "C" fn alice_identity_server_published_callback(
         _callback_data: *mut c_void,
-        context: *mut GoslingContext) -> () {
+        context: *mut GoslingContext,
+    ) -> () {
         assert!(!context.is_null());
         println!("--- alice identity server published");
 
@@ -616,7 +626,8 @@ fn test_gosling_ffi_handshake_impl(
 
     extern "C" fn pat_bootstrap_complete_callback(
         _callback_data: *mut c_void,
-        context: *mut GoslingContext) -> () {
+        context: *mut GoslingContext,
+    ) -> () {
         assert!(!context.is_null());
 
         println!("--- pat bootstrapped");

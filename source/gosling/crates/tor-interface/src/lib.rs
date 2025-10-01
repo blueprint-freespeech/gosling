@@ -3,11 +3,11 @@
 /// Implementation of an in-process [`arti-client`](https://crates.io/crates/arti-client)-based `TorProvider`
 #[cfg(feature = "arti-client-tor-provider")]
 pub mod arti_client_tor_client;
+#[cfg(feature = "arti-tor-provider")]
+pub mod arti_process;
 /// Implementation of an out-of-process [`arti`](https://crates.io/crates/arti)-based `TorProvider`
 #[cfg(feature = "arti-tor-provider")]
 pub mod arti_tor_client;
-#[cfg(feature = "arti-tor-provider")]
-pub mod arti_process;
 /// Censorship circumvention configuration for pluggable-transports and bridge settings
 #[cfg(feature = "legacy-tor-provider")]
 pub mod censorship_circumvention;

@@ -109,7 +109,8 @@ pub(crate) struct LegacyTorController {
 // with the older COOKIEFILE method
 #[derive(Zeroize)]
 enum AuthenticateMethod {
-    #[zeroize(skip)] Null,
+    #[zeroize(skip)]
+    Null,
     HashedPassword(String),
     SafeCookie([u8; 32]),
 }
@@ -341,7 +342,10 @@ impl LegacyTorController {
     }
 
     // AUTHENTICATE (3.5)
-    fn authenticate_cmd(&mut self, authenticate_method: AuthenticateMethod) -> Result<Reply, Error> {
+    fn authenticate_cmd(
+        &mut self,
+        authenticate_method: AuthenticateMethod,
+    ) -> Result<Reply, Error> {
         let mut command = match authenticate_method {
             AuthenticateMethod::Null => "AUTHENTICATE".to_string(),
             AuthenticateMethod::HashedPassword(password) => {
@@ -349,7 +353,7 @@ impl LegacyTorController {
                 let command = format!("AUTHENTICATE \"{password}\"");
                 password.zeroize();
                 command
-            },
+            }
             AuthenticateMethod::SafeCookie(clienthash) => {
                 let clienthash = HEXLOWER.encode(&clienthash);
                 format!("AUTHENTICATE {clienthash}")
@@ -507,8 +511,9 @@ impl LegacyTorController {
         let mut key_values: Vec<(String, String)> = Default::default();
         for line in reply.reply_lines {
             match line.find('=') {
-                Some(index) => key_values
-                    .push((line[0..index].to_string(), line[index + 1..].to_string())),
+                Some(index) => {
+                    key_values.push((line[0..index].to_string(), line[index + 1..].to_string()))
+                }
                 None => key_values.push((line, String::new())),
             }
         }
@@ -520,11 +525,15 @@ impl LegacyTorController {
     }
 
     pub fn authenticate(&mut self) -> Result<(), Error> {
-        self.authenticate_cmd(AuthenticateMethod::Null).and_then(reply_ok).map(|_| ())
+        self.authenticate_cmd(AuthenticateMethod::Null)
+            .and_then(reply_ok)
+            .map(|_| ())
     }
 
     pub fn authenticate_password(&mut self, password: String) -> Result<(), Error> {
-        self.authenticate_cmd(AuthenticateMethod::HashedPassword(password)).and_then(reply_ok).map(|_| ())
+        self.authenticate_cmd(AuthenticateMethod::HashedPassword(password))
+            .and_then(reply_ok)
+            .map(|_| ())
     }
 
     fn read_cookie_file(cookie_file_path: PathBuf) -> Result<[u8; 32], Error> {
@@ -562,49 +571,83 @@ impl LegacyTorController {
 
         let reply_text = match reply.reply_lines.len() {
             1 => reply.reply_lines.remove(0),
-            _ => return Err(Error::CommandReplyParseFailed("unexpected number of reply lines".to_string()))
+            _ => {
+                return Err(Error::CommandReplyParseFailed(
+                    "unexpected number of reply lines".to_string(),
+                ))
+            }
         };
 
         // parse SERVERHASH and SERVERNONCE
-        let (serverhash, servernonce) = if let Some(caps) = self.authchallenge_pattern.captures(&reply_text) {
-            let serverhash = match caps.name("serverhash") {
-                Some(serverhash) => serverhash.as_str(),
-                None => unreachable!(),
+        let (serverhash, servernonce) =
+            if let Some(caps) = self.authchallenge_pattern.captures(&reply_text) {
+                let serverhash = match caps.name("serverhash") {
+                    Some(serverhash) => serverhash.as_str(),
+                    None => unreachable!(),
+                };
+                let servernonce = match caps.name("servernonce") {
+                    Some(servernonce) => servernonce.as_str(),
+                    None => unreachable!(),
+                };
+                (serverhash, servernonce)
+            } else {
+                return Err(Error::CommandReplyParseFailed(format!(
+                    "failed to parse AUTHCHALLENGE reply: {reply_text}"
+                )));
             };
-            let servernonce = match caps.name("servernonce") {
-                Some(servernonce) => servernonce.as_str(),
-                None => unreachable!(),
-            };
-            (serverhash, servernonce)
-        } else {
-            return Err(Error::CommandReplyParseFailed(format!("failed to parse AUTHCHALLENGE reply: {reply_text}")));
-        };
 
         let serverhash = match HEXUPPER.decode(serverhash.as_bytes()) {
             Ok(serverhash) => serverhash,
-            Err(_) => return Err(Error::CommandReplyParseFailed(format!("failed to parse AUTHCHALLENGE reply's SERVERHASH: {serverhash}"))),
+            Err(_) => {
+                return Err(Error::CommandReplyParseFailed(format!(
+                    "failed to parse AUTHCHALLENGE reply's SERVERHASH: {serverhash}"
+                )))
+            }
         };
-        let serverhash: [u8; 32] = serverhash.try_into().map_err(|_| Error::CommandReplyParseFailed("SERVERHASH wrong length".to_string()))?;
+        let serverhash: [u8; 32] = serverhash
+            .try_into()
+            .map_err(|_| Error::CommandReplyParseFailed("SERVERHASH wrong length".to_string()))?;
 
         let servernonce = match HEXUPPER.decode(servernonce.as_bytes()) {
             Ok(servernonce) => servernonce,
-            Err(_) => return Err(Error::CommandReplyParseFailed(format!("failed to parse AUTHCHALLENGE reply's SERVERNONCE: {servernonce}"))),
+            Err(_) => {
+                return Err(Error::CommandReplyParseFailed(format!(
+                    "failed to parse AUTHCHALLENGE reply's SERVERNONCE: {servernonce}"
+                )))
+            }
         };
-        let servernonce: [u8; 32] = servernonce.try_into().map_err(|_| Error::CommandReplyParseFailed("SERVERNONCE wrong length".to_string()))?;
+        let servernonce: [u8; 32] = servernonce
+            .try_into()
+            .map_err(|_| Error::CommandReplyParseFailed("SERVERNONCE wrong length".to_string()))?;
 
         // verify the received SERVERHASH
-        const SERVER_TO_CONTROLLER_KEY: &str = "Tor safe cookie authentication server-to-controller hash";
-        let hmac = hmac_sha256(SERVER_TO_CONTROLLER_KEY, &cookie, &clientnonce, &servernonce);
-        hmac.verify_slice(&serverhash).map_err(|_| Error::ServerHashInvalid())?;
+        const SERVER_TO_CONTROLLER_KEY: &str =
+            "Tor safe cookie authentication server-to-controller hash";
+        let hmac = hmac_sha256(
+            SERVER_TO_CONTROLLER_KEY,
+            &cookie,
+            &clientnonce,
+            &servernonce,
+        );
+        hmac.verify_slice(&serverhash)
+            .map_err(|_| Error::ServerHashInvalid())?;
 
         // construct CLIENTHASH
-        const CONTROLLER_TO_SERVER_KEY: &str = "Tor safe cookie authentication controller-to-server hash";
-        let hmac = hmac_sha256(CONTROLLER_TO_SERVER_KEY, &cookie, &clientnonce, &servernonce);
+        const CONTROLLER_TO_SERVER_KEY: &str =
+            "Tor safe cookie authentication controller-to-server hash";
+        let hmac = hmac_sha256(
+            CONTROLLER_TO_SERVER_KEY,
+            &cookie,
+            &clientnonce,
+            &servernonce,
+        );
         let clienthash: [u8; 32] = hmac.finalize().into_bytes().into();
 
         cookie.zeroize();
 
-        self.authenticate_cmd(AuthenticateMethod::SafeCookie(clienthash)).and_then(reply_ok).map(|_| ())
+        self.authenticate_cmd(AuthenticateMethod::SafeCookie(clienthash))
+            .and_then(reply_ok)
+            .map(|_| ())
     }
 
     pub fn getinfo(&mut self, keywords: &[&str]) -> Result<Vec<(String, String)>, Error> {
@@ -613,8 +656,9 @@ impl LegacyTorController {
         let mut key_values: Vec<(String, String)> = Default::default();
         for line in reply.reply_lines {
             match line.find('=') {
-                Some(index) => key_values
-                    .push((line[0..index].to_string(), line[index + 1..].to_string())),
+                Some(index) => {
+                    key_values.push((line[0..index].to_string(), line[index + 1..].to_string()))
+                }
                 None => {
                     if line != "OK" {
                         key_values.push((line, String::new()))
@@ -634,7 +678,9 @@ impl LegacyTorController {
         target: Option<SocketAddr>,
         client_auth: Option<&[X25519PublicKey]>,
     ) -> Result<(Option<Ed25519PrivateKey>, V3OnionServiceId), Error> {
-        let reply = self.add_onion_cmd(key, flags, max_streams, virt_port, target, client_auth).and_then(reply_ok)?;
+        let reply = self
+            .add_onion_cmd(key, flags, max_streams, virt_port, target, client_auth)
+            .and_then(reply_ok)?;
 
         let mut private_key: Option<Ed25519PrivateKey> = None;
         let mut service_id: Option<V3OnionServiceId> = None;
@@ -665,8 +711,7 @@ impl LegacyTorController {
                 }
                 index += "PrivateKey=".len();
                 let key_blob_string = &line[index..];
-                private_key = match Ed25519PrivateKey::from_key_blob_legacy(key_blob_string)
-                {
+                private_key = match Ed25519PrivateKey::from_key_blob_legacy(key_blob_string) {
                     Ok(private_key) => Some(private_key),
                     Err(_) => {
                         return Err(Error::CommandReplyParseFailed(format!(
@@ -710,7 +755,9 @@ impl LegacyTorController {
     }
 
     pub fn del_onion(&mut self, service_id: &V3OnionServiceId) -> Result<(), Error> {
-        self.del_onion_cmd(service_id).and_then(reply_ok).map(|_| ())
+        self.del_onion_cmd(service_id)
+            .and_then(reply_ok)
+            .map(|_| ())
     }
 
     // more specific encapulsation of specific command invocations
@@ -806,10 +853,14 @@ fn test_tor_controller() -> anyhow::Result<()> {
 
         // create a tor controller and send authentication command
         let mut tor_controller = LegacyTorController::new(control_stream)?;
-        tor_controller.authenticate_cmd(AuthenticateMethod::HashedPassword(tor_process.get_password().to_string()))?;
+        tor_controller.authenticate_cmd(AuthenticateMethod::HashedPassword(
+            tor_process.get_password().to_string(),
+        ))?;
         assert!(
             tor_controller
-                .authenticate_cmd(AuthenticateMethod::HashedPassword("invalid password".to_string()))?
+                .authenticate_cmd(AuthenticateMethod::HashedPassword(
+                    "invalid password".to_string()
+                ))?
                 .status_code
                 == 515u32
         );
@@ -817,7 +868,9 @@ fn test_tor_controller() -> anyhow::Result<()> {
         // tor controller should have shutdown the connection after failed authentication
         assert!(
             tor_controller
-                .authenticate_cmd(AuthenticateMethod::HashedPassword(tor_process.get_password().to_string()))
+                .authenticate_cmd(AuthenticateMethod::HashedPassword(
+                    tor_process.get_password().to_string()
+                ))
                 .is_err(),
             "expected failure due to closed connection"
         );
@@ -831,7 +884,9 @@ fn test_tor_controller() -> anyhow::Result<()> {
         // create a tor controller and send authentication command
         // all async events are just printed to stdout
         let mut tor_controller = LegacyTorController::new(control_stream)?;
-        tor_controller.authenticate_cmd(AuthenticateMethod::HashedPassword(tor_process.get_password().to_string()))?;
+        tor_controller.authenticate_cmd(AuthenticateMethod::HashedPassword(
+            tor_process.get_password().to_string(),
+        ))?;
 
         // ensure everything is matching our default_torrc settings
         let vals = tor_controller.getconf(&["SocksPort", "AvoidDiskWrites", "DisableNetwork"])?;

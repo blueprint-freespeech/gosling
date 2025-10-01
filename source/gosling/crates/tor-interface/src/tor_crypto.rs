@@ -477,7 +477,6 @@ impl std::fmt::Debug for Ed25519PublicKey {
     }
 }
 
-
 /// A wrapper around `tor_llcrypto::pk::ed25519::Signature`
 impl Ed25519Signature {
     /// Construct an `Ed25519Signature` from an array of bytes.
@@ -700,7 +699,6 @@ impl X25519PublicKey {
     pub(crate) fn inner(&self) -> &pk::curve25519::PublicKey {
         &self.public_key
     }
-
 }
 
 impl std::fmt::Debug for X25519PublicKey {

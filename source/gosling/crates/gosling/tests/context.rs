@@ -4,7 +4,6 @@ use std::net::TcpStream;
 #[cfg(feature = "arti-client-tor-provider")]
 use std::sync::Arc;
 
-
 // extern crates
 use anyhow::bail;
 use bson::doc;
@@ -19,7 +18,6 @@ use tor_interface::legacy_tor_client::*;
 use tor_interface::mock_tor_client::*;
 use tor_interface::tor_crypto::*;
 use tor_interface::tor_provider::*;
-
 
 // internal crates
 use gosling::context::*;
@@ -53,7 +51,6 @@ fn test_legacy_client_gosling_context_bootstrap() -> anyhow::Result<()> {
     gosling_context_bootstrap_test(tor_client)
 }
 
-
 #[test]
 #[serial]
 #[cfg(feature = "arti-client-tor-provider")]
@@ -66,7 +63,6 @@ fn test_arti_client_gosling_context_bootstrap() -> anyhow::Result<()> {
 
     gosling_context_bootstrap_test(tor_client)
 }
-
 
 #[test]
 #[cfg(feature = "mock-tor-provider")]
@@ -109,12 +105,12 @@ fn test_legacy_client_gosling_context() -> anyhow::Result<()> {
     gosling_context_test(alice_tor_client, pat_tor_client)
 }
 
-
 #[test]
 #[serial]
 #[cfg(feature = "arti-client-tor-provider")]
 fn test_arti_client_gosling_context() -> anyhow::Result<()> {
-    let runtime: std::sync::Arc<tokio::runtime::Runtime> = std::sync::Arc::new(tokio::runtime::Runtime::new().unwrap());
+    let runtime: std::sync::Arc<tokio::runtime::Runtime> =
+        std::sync::Arc::new(tokio::runtime::Runtime::new().unwrap());
 
     let mut data_path = std::env::temp_dir();
     data_path.push("test_arti_client_gosling_context_alice");
@@ -128,17 +124,12 @@ fn test_arti_client_gosling_context() -> anyhow::Result<()> {
 }
 
 #[cfg(test)]
-fn gosling_context_bootstrap_test(
-    mut tor_client: Box<dyn TorProvider>,
-) -> anyhow::Result<()> {
+fn gosling_context_bootstrap_test(mut tor_client: Box<dyn TorProvider>) -> anyhow::Result<()> {
     // Bootstrap
     let private_key = Ed25519PrivateKey::generate();
     let service_id = V3OnionServiceId::from_private_key(&private_key);
 
-    println!(
-        "Starting gosling context ({})",
-        service_id.to_string()
-    );
+    println!("Starting gosling context ({})", service_id.to_string());
 
     let mut context = Context::new(
         tor_client,

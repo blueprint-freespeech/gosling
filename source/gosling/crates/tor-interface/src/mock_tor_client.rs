@@ -8,7 +8,6 @@ use crate::tor_crypto::*;
 use crate::tor_provider;
 use crate::tor_provider::*;
 
-
 /// [`MockTorClient`]-specific error type
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -280,19 +279,12 @@ impl TorProvider for MockTorClient {
         target: TargetAddr,
         circuit: Option<CircuitToken>,
     ) -> Result<ConnectHandle, tor_provider::Error> {
-
         let handle = self.next_connect_handle;
         self.next_connect_handle += 1usize;
 
         let event = match self.connect(target, circuit) {
-            Ok(stream) => TorEvent::ConnectComplete{
-                handle,
-                stream,
-            },
-            Err(error) => TorEvent::ConnectFailed{
-                handle,
-                error,
-            },
+            Ok(stream) => TorEvent::ConnectComplete { handle, stream },
+            Err(error) => TorEvent::ConnectFailed { handle, error },
         };
         self.events.push(event);
 
@@ -340,10 +332,14 @@ impl TorProvider for MockTorClient {
         self.events
             .push(TorEvent::OnionServicePublished { service_id });
 
-
-        Ok(OnionListener::new(listener, onion_addr, is_active, |is_active| {
-            is_active.store(false, atomic::Ordering::Relaxed);
-        }))
+        Ok(OnionListener::new(
+            listener,
+            onion_addr,
+            is_active,
+            |is_active| {
+                is_active.store(false, atomic::Ordering::Relaxed);
+            },
+        ))
     }
 
     fn generate_token(&mut self) -> CircuitToken {

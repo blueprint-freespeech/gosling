@@ -55,7 +55,9 @@ fn test_tor_provider_target_addr() -> anyhow::Result<()> {
 
     for target_addr_str in valid_ip_addr {
         match TargetAddr::from_str(target_addr_str) {
-            Ok(TargetAddr::Socket(socket_addr)) => println!("{} => {}", target_addr_str, socket_addr),
+            Ok(TargetAddr::Socket(socket_addr)) => {
+                println!("{} => {}", target_addr_str, socket_addr)
+            }
             Ok(TargetAddr::OnionService(onion_addr)) => panic!(
                 "unexpected conversion: {} => OnionService({})",
                 target_addr_str, onion_addr
@@ -197,7 +199,7 @@ fn test_tor_provider_target_addr() -> anyhow::Result<()> {
 
 #[test]
 #[cfg(feature = "legacy-tor-provider")]
-fn test_tor_provider_system_tor_auth_from_environment()  -> anyhow::Result<()> {
+fn test_tor_provider_system_tor_auth_from_environment() -> anyhow::Result<()> {
     use std::net::SocketAddr;
     use tor_interface::legacy_tor_client::LegacyTorClientConfig;
     use tor_interface::legacy_tor_client::TorAuth;
@@ -229,7 +231,12 @@ fn test_tor_provider_system_tor_auth_from_environment()  -> anyhow::Result<()> {
     std::env::set_var(TOR_SOCKS_PORT, "9050");
     std::env::set_var(TOR_CONTROL_HOST, "2.2.2.2");
     std::env::set_var(TOR_CONTROL_PORT, "9051");
-    if let LegacyTorClientConfig::SystemTor{tor_socks_addr, tor_control_addr, tor_control_auth} = LegacyTorClientConfig::try_from_environment()? {
+    if let LegacyTorClientConfig::SystemTor {
+        tor_socks_addr,
+        tor_control_addr,
+        tor_control_auth,
+    } = LegacyTorClientConfig::try_from_environment()?
+    {
         assert_eq!(tor_socks_addr, SocketAddr::from(([1, 1, 1, 1], 9050)));
         assert_eq!(tor_control_addr, SocketAddr::from(([2, 2, 2, 2], 9051)));
         assert_eq!(tor_control_auth, TorAuth::Null);
@@ -237,8 +244,16 @@ fn test_tor_provider_system_tor_auth_from_environment()  -> anyhow::Result<()> {
 
     // valid cookie, supercedes password lookup
     let cookie_file = std::env::temp_dir().join("cookie");
-    std::env::set_var(TOR_CONTROL_COOKIE_AUTH_FILE, cookie_file.clone().into_os_string());
-    if let LegacyTorClientConfig::SystemTor{tor_socks_addr, tor_control_addr, tor_control_auth} = LegacyTorClientConfig::try_from_environment()? {
+    std::env::set_var(
+        TOR_CONTROL_COOKIE_AUTH_FILE,
+        cookie_file.clone().into_os_string(),
+    );
+    if let LegacyTorClientConfig::SystemTor {
+        tor_socks_addr,
+        tor_control_addr,
+        tor_control_auth,
+    } = LegacyTorClientConfig::try_from_environment()?
+    {
         assert_eq!(tor_socks_addr, SocketAddr::from(([1, 1, 1, 1], 9050)));
         assert_eq!(tor_control_addr, SocketAddr::from(([2, 2, 2, 2], 9051)));
         assert_eq!(tor_control_auth, TorAuth::CookieFile(cookie_file));
@@ -247,7 +262,12 @@ fn test_tor_provider_system_tor_auth_from_environment()  -> anyhow::Result<()> {
     // remove cookie file, use real password
     unsafe { std::env::remove_var(TOR_CONTROL_COOKIE_AUTH_FILE) }
     std::env::set_var(TOR_CONTROL_PASSWD, "pass");
-    if let LegacyTorClientConfig::SystemTor{tor_socks_addr, tor_control_addr, tor_control_auth} = LegacyTorClientConfig::try_from_environment()? {
+    if let LegacyTorClientConfig::SystemTor {
+        tor_socks_addr,
+        tor_control_addr,
+        tor_control_auth,
+    } = LegacyTorClientConfig::try_from_environment()?
+    {
         assert_eq!(tor_socks_addr, SocketAddr::from(([1, 1, 1, 1], 9050)));
         assert_eq!(tor_control_addr, SocketAddr::from(([2, 2, 2, 2], 9051)));
         assert_eq!(tor_control_auth, TorAuth::Password("pass".to_string()));

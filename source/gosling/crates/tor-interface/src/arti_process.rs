@@ -1,12 +1,12 @@
 // standard
 use std::fs;
-#[cfg(unix)]
-use std::os::unix::fs::PermissionsExt;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
 use std::ops::Drop;
-use std::process::{Child, ChildStdout, Command, Stdio};
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
+use std::process::{Child, ChildStdout, Command, Stdio};
 use std::sync::{Mutex, Weak};
 
 #[derive(thiserror::Error, Debug)]
@@ -54,7 +54,11 @@ pub(crate) struct ArtiProcess {
 }
 
 impl ArtiProcess {
-    pub fn new(arti_bin_path: &Path, data_directory: &Path, stdout_lines: Weak<Mutex<Vec<String>>>) -> Result<Self, Error> {
+    pub fn new(
+        arti_bin_path: &Path,
+        data_directory: &Path,
+        stdout_lines: Weak<Mutex<Vec<String>>>,
+    ) -> Result<Self, Error> {
         // verify provided paths are absolute
         if arti_bin_path.is_relative() {
             return Err(Error::ArtiBinPathNotAbsolute(format!(
@@ -81,17 +85,26 @@ impl ArtiProcess {
 
         // arti data directory must not be world-writable on unix platforms when using a unix domain socket endpoint
         #[cfg(unix)]
-        fs::set_permissions(
-            data_directory,
-            PermissionsExt::from_mode(0o700))
-        .map_err(Error::ArtiDataDirectorySetPermissionsFailed)?;
+        fs::set_permissions(data_directory, PermissionsExt::from_mode(0o700))
+            .map_err(Error::ArtiDataDirectorySetPermissionsFailed)?;
 
         // construct paths to arti files file
         let arti_toml = data_directory.join("arti.toml");
-        let cache_dir_string = data_directory.join("cache").display().to_string().escape_default().to_string();
-        let state_dir_string = data_directory.join("state").display().to_string().escape_default().to_string();
+        let cache_dir_string = data_directory
+            .join("cache")
+            .display()
+            .to_string()
+            .escape_default()
+            .to_string();
+        let state_dir_string = data_directory
+            .join("state")
+            .display()
+            .to_string()
+            .escape_default()
+            .to_string();
 
-        let mut arti_toml_content = format!("\
+        let mut arti_toml_content = format!(
+            "\
         [rpc]\n\
         enable = true\n\n\
         [rpc.listen.user-default]\n\
@@ -107,26 +120,43 @@ impl ArtiProcess {
         kind = \"ephemeral\"\n\n\
         [storage.permissions]\n\
         dangerously_trust_everyone = true\n\n\
-        ");
+        "
+        );
 
         let connect_string = if cfg!(unix) {
             // use domain socket for unix
             let unix_rpc_toml_path = data_directory.join("rpc.toml");
-            let unix_rpc_toml_path_string = unix_rpc_toml_path.display().to_string().escape_default().to_string();
+            let unix_rpc_toml_path_string = unix_rpc_toml_path
+                .display()
+                .to_string()
+                .escape_default()
+                .to_string();
 
-            arti_toml_content.push_str(format!("\
+            arti_toml_content.push_str(
+                format!(
+                    "\
             [rpc.listen.unix-point]\n\
             enable = true\n\
             file = \"{unix_rpc_toml_path_string}\"\n\n\
-            ").as_str());
+            "
+                )
+                .as_str(),
+            );
 
-            let socket_path = data_directory.join("rpc.socket").display().to_string().escape_default().to_string();
+            let socket_path = data_directory
+                .join("rpc.socket")
+                .display()
+                .to_string()
+                .escape_default()
+                .to_string();
 
-            let unix_rpc_toml_content = format!("\
+            let unix_rpc_toml_content = format!(
+                "\
             [connect]\n\
             socket = \"unix:{socket_path}\"\n\
             auth = \"none\"\n\
-            ");
+            "
+            );
 
             let mut unix_rpc_toml_file =
                 File::create(&unix_rpc_toml_path).map_err(Error::RpcTomlFileCreationFailed)?;
@@ -138,23 +168,39 @@ impl ArtiProcess {
         } else {
             // use tcp socket everywhere else
             let tcp_rpc_toml_path = data_directory.join("rpc.toml");
-            let tcp_rpc_toml_path_string = tcp_rpc_toml_path.display().to_string().escape_default().to_string();
+            let tcp_rpc_toml_path_string = tcp_rpc_toml_path
+                .display()
+                .to_string()
+                .escape_default()
+                .to_string();
 
-            arti_toml_content.push_str(format!("\
+            arti_toml_content.push_str(
+                format!(
+                    "\
             [rpc.listen.tcp-point]\n\
             enable = true\n\
             file = \"{tcp_rpc_toml_path_string}\"\n\n\
-            ").as_str());
+            "
+                )
+                .as_str(),
+            );
 
-            let cookie_path_string = data_directory.join("rpc.cookie").display().to_string().escape_default().to_string();
+            let cookie_path_string = data_directory
+                .join("rpc.cookie")
+                .display()
+                .to_string()
+                .escape_default()
+                .to_string();
 
             const RPC_PORT: u16 = 18929;
 
-            let tcp_rpc_toml_content = format!("\
+            let tcp_rpc_toml_content = format!(
+                "\
             [connect]\n\
             socket = \"inet:127.0.0.1:{RPC_PORT}\"\n\
             auth = {{ cookie = {{ path = \"{cookie_path_string}\" }} }}\n\
-            ");
+            "
+            );
 
             let mut tcp_rpc_toml_file =
                 File::create(&tcp_rpc_toml_path).map_err(Error::RpcTomlFileCreationFailed)?;
@@ -197,7 +243,10 @@ impl ArtiProcess {
             })
             .map_err(Error::ArtiStdoutReadThreadSpawnFailed)?;
 
-        Ok(ArtiProcess { process, connect_string })
+        Ok(ArtiProcess {
+            process,
+            connect_string,
+        })
     }
 
     pub fn connect_string(&self) -> &str {

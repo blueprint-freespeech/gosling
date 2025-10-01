@@ -15,11 +15,11 @@ use tokio::runtime;
 use tokio_stream::StreamExt;
 use tor_cell::relaycell::msg::Connected;
 use tor_config::ExplicitOrAuto;
-use tor_llcrypto::pk::ed25519::ExpandedKeypair;
-use tor_hsservice::config::OnionServiceConfigBuilder;
 use tor_hsservice::config::restricted_discovery::HsClientNickname;
+use tor_hsservice::config::OnionServiceConfigBuilder;
 use tor_hsservice::{HsNickname, RunningOnionService};
 use tor_keymgr::{config::ArtiKeystoreKind, KeystoreSelector};
+use tor_llcrypto::pk::ed25519::ExpandedKeypair;
 use tor_proto::stream::IncomingStreamRequest;
 use tor_rtcompat::PreferredRuntime;
 
@@ -155,7 +155,8 @@ impl ArtiClientTorClient {
             .storage()
             .cache_dir(CfgPath::new_literal(cache_dir))
             .keystore()
-            .primary().kind(ExplicitOrAuto::Explicit(ArtiKeystoreKind::Ephemeral));
+            .primary()
+            .kind(ExplicitOrAuto::Explicit(ArtiKeystoreKind::Ephemeral));
 
         let mut state_dir = PathBuf::from(root_data_directory);
         state_dir.push("state");
@@ -217,7 +218,8 @@ impl ArtiClientTorClient {
         .map_err(Error::ArtiClientTorAddrError)?;
 
         // connect to target
-        let data_stream = arti_client.connect(arti_target)
+        let data_stream = arti_client
+            .connect(arti_target)
             .await
             .map_err(Error::ArtiClientError)?;
 
@@ -338,7 +340,13 @@ impl TorProvider for ArtiClientTorClient {
         let ed25519_public = Ed25519PublicKey::from_service_id(service_id).unwrap();
         let hs_id = *ed25519_public.as_bytes();
 
-        self.arti_client.insert_service_discovery_key(KeystoreSelector::Primary, hs_id.into(), client_auth.inner().clone().into()).map_err(Error::ArtiClientError)?;
+        self.arti_client
+            .insert_service_discovery_key(
+                KeystoreSelector::Primary,
+                hs_id.into(),
+                client_auth.inner().clone().into(),
+            )
+            .map_err(Error::ArtiClientError)?;
 
         Ok(())
     }
@@ -350,7 +358,9 @@ impl TorProvider for ArtiClientTorClient {
         let ed25519_public = Ed25519PublicKey::from_service_id(service_id).unwrap();
         let hs_id = *ed25519_public.as_bytes();
 
-        self.arti_client.remove_service_discovery_key(KeystoreSelector::Primary, hs_id.into()).map_err(Error::ArtiClientError)?;
+        self.arti_client
+            .remove_service_discovery_key(KeystoreSelector::Primary, hs_id.into())
+            .map_err(Error::ArtiClientError)?;
 
         Ok(())
     }
@@ -368,9 +378,7 @@ impl TorProvider for ArtiClientTorClient {
         let arti_client = self.arti_client.clone();
         let stream = self.tokio_runtime.block_on({
             let target = target.clone();
-            async move {
-                Self::connect_impl(target, arti_client).await
-            }
+            async move { Self::connect_impl(target, arti_client).await }
         })?;
         Ok(OnionStream {
             stream,
@@ -384,7 +392,6 @@ impl TorProvider for ArtiClientTorClient {
         target: TargetAddr,
         circuit: Option<CircuitToken>,
     ) -> Result<ConnectHandle, tor_provider::Error> {
-
         // stream isolation not implemented yet
         if circuit.is_some() {
             return Err(Error::NotImplemented().into());
@@ -406,17 +413,13 @@ impl TorProvider for ArtiClientTorClient {
                             local_addr: None,
                             peer_addr: Some(target),
                         };
-                        TorEvent::ConnectComplete{
-                            handle,
-                            stream,
-                        }
-                    },
-                    Err(error) => TorEvent::ConnectFailed{
-                        handle,
-                        error,
-                    },
+                        TorEvent::ConnectComplete { handle, stream }
+                    }
+                    Err(error) => TorEvent::ConnectFailed { handle, error },
                 };
-                let mut pending_events = pending_events.lock().expect("pending_events mutex poisoned");
+                let mut pending_events = pending_events
+                    .lock()
+                    .expect("pending_events mutex poisoned");
                 pending_events.push(event);
             }
         });
@@ -430,7 +433,6 @@ impl TorProvider for ArtiClientTorClient {
         virt_port: u16,
         authorized_clients: Option<&[X25519PublicKey]>,
     ) -> Result<OnionListener, tor_provider::Error> {
-
         // try to bind to a local address, let OS pick our port
         let socket_addr = SocketAddr::from(([127, 0, 0, 1], 0u16));
         // TODO: make this one async too
@@ -451,41 +453,36 @@ impl TorProvider for ArtiClientTorClient {
         // generate a new HsIdKeypair (from an Ed25519PrivateKey)
         // clone() isn't implemented for ExpandedKeypair >:[
         let secret_key_bytes = private_key.inner().to_secret_key_bytes();
-        let hs_id_keypair = ExpandedKeypair::from_secret_key_bytes(secret_key_bytes)
-            .unwrap();
+        let hs_id_keypair = ExpandedKeypair::from_secret_key_bytes(secret_key_bytes).unwrap();
 
         // create an OnionServiceConfig with the ephemeral nickname
         let mut onion_service_config_builder = OnionServiceConfigBuilder::default();
-        onion_service_config_builder
-            .nickname(hs_nickname);
+        onion_service_config_builder.nickname(hs_nickname);
 
         // add authorised client keys if they exist
         if let Some(authorized_clients) = authorized_clients {
             if !authorized_clients.is_empty() {
-                let restricted_discovery_config = onion_service_config_builder
-                    .restricted_discovery();
+                let restricted_discovery_config =
+                    onion_service_config_builder.restricted_discovery();
                 restricted_discovery_config.enabled(true);
 
                 for (i, key) in authorized_clients.iter().enumerate() {
                     let nickname = format!("client_{i}");
-                    restricted_discovery_config
-                        .static_keys()
-                        .access()
-                        .push((
-                            HsClientNickname::from_str(nickname.as_str()).unwrap(),
-                            (*key.inner()).into(),
-                        ));
+                    restricted_discovery_config.static_keys().access().push((
+                        HsClientNickname::from_str(nickname.as_str()).unwrap(),
+                        (*key.inner()).into(),
+                    ));
                 }
             }
         }
 
-        let onion_service_config = match onion_service_config_builder.build()
-        {
+        let onion_service_config = match onion_service_config_builder.build() {
             Ok(onion_service_config) => onion_service_config,
             Err(err) => Err(Error::OnionServiceConfigBuilderError(err))?,
         };
 
-        let (onion_service, mut rend_requests) = self.arti_client
+        let (onion_service, mut rend_requests) = self
+            .arti_client
             .launch_onion_service_with_hsid(onion_service_config, hs_id_keypair.into())
             .map_err(Error::ArtiClientOnionServiceLaunchError)?;
 
@@ -499,7 +496,9 @@ impl TorProvider for ArtiClientTorClient {
                 if evt.state() == tor_hsservice::status::State::Running {
                     match pending_events.lock() {
                         Ok(mut pending_events) => {
-                            pending_events.push(TorEvent::OnionServicePublished { service_id: service_id_clone });
+                            pending_events.push(TorEvent::OnionServicePublished {
+                                service_id: service_id_clone,
+                            });
                             return;
                         }
                         Err(_) => unreachable!(
@@ -569,7 +568,12 @@ impl TorProvider for ArtiClientTorClient {
 
         let onion_addr = OnionAddr::V3(OnionAddrV3::new(service_id, virt_port));
         // onion-service is torn down when `onion_service` is dropped
-        Ok(OnionListener::new::<Arc<RunningOnionService>>(listener, onion_addr, onion_service, |_|{}))
+        Ok(OnionListener::new::<Arc<RunningOnionService>>(
+            listener,
+            onion_addr,
+            onion_service,
+            |_| {},
+        ))
     }
 
     fn generate_token(&mut self) -> CircuitToken {

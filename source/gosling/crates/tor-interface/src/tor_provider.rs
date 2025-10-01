@@ -17,7 +17,6 @@ use regex::Regex;
 // internal crates
 use crate::tor_crypto::*;
 
-
 /// Various `tor_provider` errors.
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -102,7 +101,10 @@ impl FromStr for OnionAddr {
                 return Ok(OnionAddr::V3(OnionAddrV3::new(service_id, port)));
             }
         }
-        Err(Self::Err::ParseFailure(s.to_string(), "OnionAddr".to_string()))
+        Err(Self::Err::ParseFailure(
+            s.to_string(),
+            "OnionAddr".to_string(),
+        ))
     }
 }
 
@@ -163,17 +165,14 @@ impl TryFrom<(String, u16)> for DomainAddr {
             if let Ok(domain) = Name::<Vec<u8>>::from_str(domain.as_ref()) {
                 let domain = domain.to_string();
                 if !domain.ends_with(".onion") {
-                    return Ok(Self {
-                        domain,
-                        port,
-                    });
+                    return Ok(Self { domain, port });
                 }
             }
         }
-        Err(Self::Error::ParseFailure(format!(
-            "{}:{}",
-            domain, port
-        ), "DomainAddr".to_string()))
+        Err(Self::Error::ParseFailure(
+            format!("{}:{}", domain, port),
+            "DomainAddr".to_string(),
+        ))
     }
 }
 
@@ -194,7 +193,10 @@ impl FromStr for DomainAddr {
                 return Self::try_from((domain, port));
             }
         }
-        Err(Self::Err::ParseFailure(s.to_string(), "DomainAddr".to_string()))
+        Err(Self::Err::ParseFailure(
+            s.to_string(),
+            "DomainAddr".to_string(),
+        ))
     }
 }
 
@@ -232,7 +234,10 @@ impl FromStr for TargetAddr {
         } else if let Ok(domain_addr) = DomainAddr::from_str(s) {
             return Ok(TargetAddr::Domain(domain_addr));
         }
-        Err(Self::Err::ParseFailure(s.to_string(), "TargetAddr".to_string()))
+        Err(Self::Err::ParseFailure(
+            s.to_string(),
+            "TargetAddr".to_string(),
+        ))
     }
 }
 
@@ -276,10 +281,7 @@ pub enum TorEvent {
         stream: OnionStream,
     },
     /// TorProvider::connect_async() call failed
-    ConnectFailed {
-        handle: ConnectHandle,
-        error: Error,
-    },
+    ConnectFailed { handle: ConnectHandle, error: Error },
 }
 
 /// A `CircuitToken` is used to specify circuits used to connect to clearnet services.
@@ -380,19 +382,21 @@ impl OnionListener {
         listener: TcpListener,
         onion_addr: OnionAddr,
         data: T,
-        mut drop: impl FnMut(T) + 'static + Send) -> Self {
+        mut drop: impl FnMut(T) + 'static + Send,
+    ) -> Self {
         // marshall our data into an Any
         let data: Option<Box<dyn Any + Send>> = Some(Box::new(data));
         // marhsall our drop into a function which takes an Any
-        let drop: Option<OnionListenerDropFn>  = Some(Box::new(move |data: Box<dyn std::any::Any>| {
-            // encapsulate extracting our data from the Any
-            if let Ok(data) = data.downcast::<T>() {
-                // and call our provided drop
-                drop(*data);
-            }
-        }));
+        let drop: Option<OnionListenerDropFn> =
+            Some(Box::new(move |data: Box<dyn std::any::Any>| {
+                // encapsulate extracting our data from the Any
+                if let Ok(data) = data.downcast::<T>() {
+                    // and call our provided drop
+                    drop(*data);
+                }
+            }));
 
-        Self{
+        Self {
             listener,
             onion_addr,
             data,

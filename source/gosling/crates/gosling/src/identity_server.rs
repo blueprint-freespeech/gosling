@@ -55,7 +55,7 @@ pub(crate) enum IdentityServerEvent {
     },
 
     HandshakeCompleted {
-        endpoint_private_key:   Ed25519PrivateKey,
+        endpoint_private_key: Ed25519PrivateKey,
         endpoint_name: AsciiString,
         client_service_id: V3OnionServiceId,
         client_auth_public_key: X25519PublicKey,

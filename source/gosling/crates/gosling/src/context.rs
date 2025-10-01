@@ -128,7 +128,6 @@ pub enum ContextEvent {
     //
     // Tor Events
     //
-
     /// Tor bootstrap progress
     TorBootstrapStatusReceived {
         /// Bootstrap percent compeletion
@@ -151,7 +150,6 @@ pub enum ContextEvent {
     //
     // Identity Client Events
     //
-
     /// An identity client has received a challenge request from an identy server
     ///
     /// To continue the handshake, the client must call [`Context::identity_client_handle_challenge_received()`]
@@ -258,7 +256,6 @@ pub enum ContextEvent {
     //
     // Endpoint Client Events
     //
-
     /// An endpoint client has successfully completed an endpoint handshake and may now communicate freely with the endpoint server.
     EndpointClientHandshakeCompleted {
         /// The handle of the completed handshake
@@ -282,7 +279,6 @@ pub enum ContextEvent {
     //
     // Endpint Server Events
     //
-
     /// The endpoint server’s onion-service has been published and may be reachable by endpoint clients.
     EndpointServerPublished {
         /// The onion-service service-id of the published endpoint server
@@ -893,7 +889,7 @@ impl Context {
                             *published = true;
                         }
                     }
-                },
+                }
                 _ => (),
             }
         }

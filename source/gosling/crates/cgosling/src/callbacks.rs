@@ -26,11 +26,14 @@ pub(crate) struct EventCallbacks {
     pub tor_log_received_callback_data: usize,
 
     // identity client events
-    pub identity_client_challenge_response_size_callback: GoslingIdentityClientHandshakeChallengeResponseSizeCallback,
+    pub identity_client_challenge_response_size_callback:
+        GoslingIdentityClientHandshakeChallengeResponseSizeCallback,
     pub identity_client_challenge_response_size_callback_data: usize,
-    pub identity_client_build_challenge_response_callback: GoslingIdentityClientHandshakeBuildChallengeResponseCallback,
+    pub identity_client_build_challenge_response_callback:
+        GoslingIdentityClientHandshakeBuildChallengeResponseCallback,
     pub identity_client_build_challenge_response_callback_data: usize,
-    pub identity_client_handshake_completed_callback: GoslingIdentityClientHandshakeCompletedCallback,
+    pub identity_client_handshake_completed_callback:
+        GoslingIdentityClientHandshakeCompletedCallback,
     pub identity_client_handshake_completed_callback_data: usize,
     pub identity_client_handshake_failed_callback: GoslingIdentityClientHandshakeFailedCallback,
     pub identity_client_handshake_failed_callback_data: usize,
@@ -40,17 +43,22 @@ pub(crate) struct EventCallbacks {
     pub identity_server_published_callback_data: usize,
     pub identity_server_handshake_started_callback: GoslingIdentityServerHandshakeStartedCallback,
     pub identity_server_handshake_started_callback_data: usize,
-    pub identity_server_client_allowed_callback: GoslingIdentityServerHandshakeClientAllowedCallback,
+    pub identity_server_client_allowed_callback:
+        GoslingIdentityServerHandshakeClientAllowedCallback,
     pub identity_server_client_allowed_callback_data: usize,
     pub identity_server_endpoint_supported_callback: GoslingIdentityServerEndpointSupportedCallback,
     pub identity_server_endpoint_supported_callback_data: usize,
-    pub identity_server_challenge_size_callback: GoslingIdentityServerHandshakeChallengeSizeCallback,
+    pub identity_server_challenge_size_callback:
+        GoslingIdentityServerHandshakeChallengeSizeCallback,
     pub identity_server_challenge_size_callback_data: usize,
-    pub identity_server_build_challenge_callback: GoslingIdentityServerHandshakeBuildChallengeCallback,
+    pub identity_server_build_challenge_callback:
+        GoslingIdentityServerHandshakeBuildChallengeCallback,
     pub identity_server_build_challenge_callback_data: usize,
-    pub identity_server_verify_challenge_response_callback: GoslingIdentityServerHandshakeVerifyChallengeResponseCallback,
+    pub identity_server_verify_challenge_response_callback:
+        GoslingIdentityServerHandshakeVerifyChallengeResponseCallback,
     pub identity_server_verify_challenge_response_callback_data: usize,
-    pub identity_server_handshake_completed_callback: GoslingIdentityServerHandshakeCompletedCallback,
+    pub identity_server_handshake_completed_callback:
+        GoslingIdentityServerHandshakeCompletedCallback,
     pub identity_server_handshake_completed_callback_data: usize,
     pub identity_server_handshake_rejected_callback: GoslingIdentityServerHandshakeRejectedCallback,
     pub identity_server_handshake_rejected_callback_data: usize,
@@ -58,7 +66,8 @@ pub(crate) struct EventCallbacks {
     pub identity_server_handshake_failed_callback_data: usize,
 
     // endpoint client events
-    pub endpoint_client_handshake_completed_callback: GoslingEndpointClientHandshakeCompletedCallback,
+    pub endpoint_client_handshake_completed_callback:
+        GoslingEndpointClientHandshakeCompletedCallback,
     pub endpoint_client_handshake_completed_callback_data: usize,
     pub endpoint_client_handshake_failed_callback: GoslingEndpointClientHandshakeFailedCallback,
     pub endpoint_client_handshake_failed_callback_data: usize,
@@ -70,7 +79,8 @@ pub(crate) struct EventCallbacks {
     pub endpoint_server_handshake_started_callback_data: usize,
     pub endpoint_server_channel_supported_callback: GoslingEndpointServerChannelSupportedCallback,
     pub endpoint_server_channel_supported_callback_data: usize,
-    pub endpoint_server_handshake_completed_callback: GoslingEndpointServerHandshakeCompletedCallback,
+    pub endpoint_server_handshake_completed_callback:
+        GoslingEndpointServerHandshakeCompletedCallback,
     pub endpoint_server_handshake_completed_callback_data: usize,
     pub endpoint_server_handshake_rejected_callback: GoslingEndpointServerHandshakeRejectedCallback,
     pub endpoint_server_handshake_rejected_callback_data: usize,
@@ -109,9 +119,7 @@ pub type GoslingTorBootstrapStatusReceivedCallback = Option<
 ///  setting this callback
 /// @param context: the context associated with this event
 pub type GoslingTorBootstrapCompletedCallback =
-    Option<extern "C" fn(
-        callback_data: *mut c_void,
-        context: *mut GoslingContext) -> ()>;
+    Option<extern "C" fn(callback_data: *mut c_void, context: *mut GoslingContext) -> ()>;
 
 /// The function pointer type for the tor log received callback. This callback is called
 /// whenever the context's tor daemon prints new log lines.
@@ -126,7 +134,8 @@ pub type GoslingTorLogReceivedCallback = Option<
         callback_data: *mut c_void,
         context: *mut GoslingContext,
         line: *const c_char,
-        line_length: usize) -> (),
+        line_length: usize,
+    ) -> (),
 >;
 
 /// The function pointer type for the client handshake challenge response size
@@ -235,11 +244,8 @@ pub type GoslingIdentityClientHandshakeFailedCallback = Option<
 /// @param callback_data: arbitrary pointer to developer-defined memory provided when
 ///  setting this callback
 /// @param context: the context associated with this event
-pub type GoslingIdentityServerPublishedCallback = Option<
-    extern "C" fn(
-        callback_data: *mut c_void,
-        context: *mut GoslingContext) -> (),
->;
+pub type GoslingIdentityServerPublishedCallback =
+    Option<extern "C" fn(callback_data: *mut c_void, context: *mut GoslingContext) -> ()>;
 
 /// The function pointer type of the identity server handshake started callback. This callback
 /// is called whenever the identity server is initially connected to.
@@ -252,7 +258,8 @@ pub type GoslingIdentityServerHandshakeStartedCallback = Option<
     extern "C" fn(
         callback_data: *mut c_void,
         context: *mut GoslingContext,
-        handshake_handle: GoslingHandshakeHandle) -> (),
+        handshake_handle: GoslingHandshakeHandle,
+    ) -> (),
 >;
 
 /// The function pointer type of the identity server handshake client allowed callback.
@@ -314,7 +321,8 @@ pub type GoslingIdentityServerHandshakeChallengeSizeCallback = Option<
     extern "C" fn(
         callback_data: *mut c_void,
         context: *mut GoslingContext,
-        handshake_handle: GoslingHandshakeHandle) -> usize,
+        handshake_handle: GoslingHandshakeHandle,
+    ) -> usize,
 >;
 
 /// The function pointer type for the server handshake build challenge callback.
@@ -514,7 +522,8 @@ pub type GoslingEndpointServerHandshakeStartedCallback = Option<
     extern "C" fn(
         callback_data: *mut c_void,
         context: *mut GoslingContext,
-        handshake_handle: GoslingHandshakeHandle) -> (),
+        handshake_handle: GoslingHandshakeHandle,
+    ) -> (),
 >;
 
 /// The function pointer type of the endpoint server channel supported callback. This
@@ -670,7 +679,13 @@ pub extern "C" fn gosling_context_set_tor_bootstrap_completed_callback(
     callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
-    impl_callback_setter!(tor_bootstrap_completed_callback, context, callback, callback_data, error);
+    impl_callback_setter!(
+        tor_bootstrap_completed_callback,
+        context,
+        callback,
+        callback_data,
+        error
+    );
 }
 
 /// Sets the tor log received callback for the specified context.
@@ -687,7 +702,13 @@ pub extern "C" fn gosling_context_set_tor_log_received_callback(
     callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
-    impl_callback_setter!(tor_log_received_callback, context, callback, callback_data, error);
+    impl_callback_setter!(
+        tor_log_received_callback,
+        context,
+        callback,
+        callback_data,
+        error
+    );
 }
 
 /// Sets the identity challenge challenge response size callback for the specified
@@ -797,7 +818,13 @@ pub extern "C" fn gosling_context_set_identity_server_published_callback(
     callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
-    impl_callback_setter!(identity_server_published_callback, context, callback, callback_data, error);
+    impl_callback_setter!(
+        identity_server_published_callback,
+        context,
+        callback,
+        callback_data,
+        error
+    );
 }
 
 /// Set the identity server handshake started callback for the specified context.
@@ -864,7 +891,6 @@ pub extern "C" fn gosling_context_set_identity_server_endpoint_supported_callbac
         identity_server_endpoint_supported_callback,
         context,
         callback,
-
         callback_data,
         error
     );
@@ -1068,7 +1094,13 @@ pub extern "C" fn gosling_context_set_endpoint_server_published_callback(
     callback_data: *mut c_void,
     error: *mut *mut GoslingError,
 ) {
-    impl_callback_setter!(endpoint_server_published_callback, context, callback, callback_data, error);
+    impl_callback_setter!(
+        endpoint_server_published_callback,
+        context,
+        callback,
+        callback_data,
+        error
+    );
 }
 
 /// Set the endpoint server handshake started callback for the specified context.

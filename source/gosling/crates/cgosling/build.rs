@@ -55,8 +55,10 @@ struct Data {
 }
 
 fn preprocess_any(source: String, features: &Vec<&str>) -> String {
-
-    let block_regex = Regex::new(r"(?m)(?<anyblock>#if \(?(defined\(([A-Z_]+)\)( \|\| )?)+\)?([^#]*\n)*#endif\n\n)").unwrap();
+    let block_regex = Regex::new(
+        r"(?m)(?<anyblock>#if \(?(defined\(([A-Z_]+)\)( \|\| )?)+\)?([^#]*\n)*#endif\n\n)",
+    )
+    .unwrap();
 
     if !block_regex.is_match(&source) {
         return source;
@@ -86,7 +88,9 @@ fn preprocess_any(source: String, features: &Vec<&str>) -> String {
 }
 
 fn preprocess_all(source: String) -> String {
-    let block_regex = Regex::new(r"(?m)(?<anyblock>#if \((defined\(([A-Z_]+)\)( && )?)+\)([^#]*\n)*#endif)").unwrap();
+    let block_regex =
+        Regex::new(r"(?m)(?<anyblock>#if \((defined\(([A-Z_]+)\)( && )?)+\)([^#]*\n)*#endif)")
+            .unwrap();
 
     if block_regex.is_match(&source) {
         panic!("unexpected #[cfg(all(..))]");
@@ -168,7 +172,9 @@ fn parse_header(source: &str) -> Data {
     let mut functions: Vec<Function> = Default::default();
 
     config_flags.push(ConfigFlag {
-        comments: vec!["Defined if cgosling is built with arti-client tor-provider support".to_string()],
+        comments: vec![
+            "Defined if cgosling is built with arti-client tor-provider support".to_string(),
+        ],
         name: "GOSLING_HAVE_ARTI_CLIENT_TOR_PROVIDER".to_string(),
         enabled: cfg!(feature = "arti-client-tor-provider"),
     });

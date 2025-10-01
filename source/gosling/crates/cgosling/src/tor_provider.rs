@@ -1,8 +1,8 @@
 // standard
-#[cfg(any(feature = "arti-client-tor-provider", feature = "legacy-tor-provider"))]
-use std::os::raw::c_char;
 #[cfg(feature = "arti-client-tor-provider")]
 use std::ops::DerefMut;
+#[cfg(any(feature = "arti-client-tor-provider", feature = "legacy-tor-provider"))]
+use std::os::raw::c_char;
 #[cfg(any(feature = "arti-client-tor-provider", feature = "legacy-tor-provider"))]
 use std::path::Path;
 #[cfg(feature = "legacy-tor-provider")]
@@ -36,7 +36,8 @@ use crate::utils::*;
 
 /// tokio::runtime for use with ArtiClientTorClients
 #[cfg(feature = "arti-client-tor-provider")]
-pub(crate) static TOKIO_RUNTIME:  std::sync::Mutex<Option<std::sync::Arc<tokio::runtime::Runtime>>> =  std::sync::Mutex::new(None);
+pub(crate) static TOKIO_RUNTIME: std::sync::Mutex<Option<std::sync::Arc<tokio::runtime::Runtime>>> =
+    std::sync::Mutex::new(None);
 
 /// Proxy settings object used by tor provider to connect to the tor network
 #[cfg(feature = "legacy-tor-provider")]
@@ -435,8 +436,8 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_arti_client_tor_client_
         let arti_client_data_directory = std::str::from_utf8(arti_client_data_directory)?;
         let arti_client_data_directory = Path::new(arti_client_data_directory).to_path_buf();
 
-        let handle =
-            get_tor_provider_config_registry().insert(TorProviderConfig::ArtiClient(arti_client_data_directory));
+        let handle = get_tor_provider_config_registry()
+            .insert(TorProviderConfig::ArtiClient(arti_client_data_directory));
         *out_tor_provider_config = handle as *mut GoslingTorProviderConfig;
 
         Ok(())
@@ -457,8 +458,7 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_mock_client_config(
     translate_failures((), error, || -> anyhow::Result<()> {
         ensure_not_null!(out_tor_provider_config);
 
-        let handle =
-            get_tor_provider_config_registry().insert(TorProviderConfig::Mock);
+        let handle = get_tor_provider_config_registry().insert(TorProviderConfig::Mock);
         *out_tor_provider_config = handle as *mut GoslingTorProviderConfig;
 
         Ok(())
@@ -524,8 +524,8 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_bundled_legacy_client_c
             bridge_lines: None,
         };
 
-        let handle = get_tor_provider_config_registry()
-            .insert(TorProviderConfig::Legacy(tor_config));
+        let handle =
+            get_tor_provider_config_registry().insert(TorProviderConfig::Legacy(tor_config));
         *out_tor_provider_config = handle as *mut GoslingTorProviderConfig;
 
         Ok(())
@@ -591,8 +591,8 @@ pub unsafe extern "C" fn gosling_tor_provider_config_new_system_legacy_client_co
             tor_control_auth,
         };
 
-        let handle = get_tor_provider_config_registry()
-            .insert(TorProviderConfig::Legacy(tor_config));
+        let handle =
+            get_tor_provider_config_registry().insert(TorProviderConfig::Legacy(tor_config));
         *out_tor_provider_config = handle as *mut GoslingTorProviderConfig;
 
         Ok(())
@@ -668,8 +668,7 @@ pub unsafe extern "C" fn gosling_tor_provider_config_set_allowed_ports(
         ensure_not_null!(allowed_ports);
         ensure_not_equal!(allowed_ports_count, 0);
 
-        let allowed_ports_slice =
-            std::slice::from_raw_parts(allowed_ports, allowed_ports_count);
+        let allowed_ports_slice = std::slice::from_raw_parts(allowed_ports, allowed_ports_count);
         match get_tor_provider_config_registry().get_mut(tor_provider_config as usize) {
             Some(tor_provider_config) => match tor_provider_config {
                 TorProviderConfig::Legacy(LegacyTorClientConfig::BundledTor {
@@ -793,7 +792,11 @@ pub unsafe extern "C" fn gosling_tor_provider_config_add_bridge_line(
 /// @param tor_provider_config: tor provider configuration
 /// @param error: filled on error
 #[no_mangle]
-#[cfg(any(feature = "arti-client-tor-provider", feature = "legacy-tor-provider", feature = "mock-tor-provider"))]
+#[cfg(any(
+    feature = "arti-client-tor-provider",
+    feature = "legacy-tor-provider",
+    feature = "mock-tor-provider"
+))]
 #[cfg_attr(feature = "impl-lib", rename_impl)]
 pub unsafe extern "C" fn gosling_tor_provider_from_tor_provider_config(
     out_tor_provider: *mut *mut GoslingTorProvider,
@@ -810,33 +813,33 @@ pub unsafe extern "C" fn gosling_tor_provider_from_tor_provider_config(
                     #[cfg(feature = "arti-client-tor-provider")]
                     TorProviderConfig::ArtiClient(data_dir) => {
                         let runtime = match TOKIO_RUNTIME.lock() {
-                            Ok(mut runtime) => {
-                                match runtime.deref_mut() {
-                                    Some(runtime) => runtime.clone(),
-                                    None => {
-                                       *runtime.deref_mut() = Some(std::sync::Arc::new(runtime::Runtime::new()?));
-                                       runtime.as_mut().unwrap().clone()
-                                    }
+                            Ok(mut runtime) => match runtime.deref_mut() {
+                                Some(runtime) => runtime.clone(),
+                                None => {
+                                    *runtime.deref_mut() =
+                                        Some(std::sync::Arc::new(runtime::Runtime::new()?));
+                                    runtime.as_mut().unwrap().clone()
                                 }
                             },
                             Err(_) => unreachable!(
-                                "another thread paniccked while holding the TOKIO_RUNTIME mutex"),
+                                "another thread paniccked while holding the TOKIO_RUNTIME mutex"
+                            ),
                         };
                         let tor_provider: ArtiClientTorClient =
                             ArtiClientTorClient::new(runtime, data_dir)?;
                         Box::new(tor_provider)
-                    },
+                    }
                     #[cfg(feature = "legacy-tor-provider")]
                     TorProviderConfig::Legacy(legacy_tor_config) => {
                         let tor_provider: LegacyTorClient =
                             LegacyTorClient::new(legacy_tor_config.clone())?;
                         Box::new(tor_provider)
-                    },
+                    }
                     #[cfg(feature = "mock-tor-provider")]
                     TorProviderConfig::Mock => {
                         let tor_provider: MockTorClient = Default::default();
                         Box::new(tor_provider)
-                    },
+                    }
                 },
                 None => bail_invalid_handle!(tor_provider_config),
             };

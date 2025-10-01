@@ -467,7 +467,7 @@ macro_rules! get_callback {
         paste::paste! {
             ($callbacks.[<$callback_type>], $callbacks.[<$callback_type _data>] as *mut c_void)
         }
-    }
+    };
 }
 
 fn handle_context_event(
@@ -484,7 +484,9 @@ fn handle_context_event(
             tag,
             summary,
         } => {
-            if let (Some(callback), data) = get_callback!(callbacks, tor_bootstrap_status_received_callback) {
+            if let (Some(callback), data) =
+                get_callback!(callbacks, tor_bootstrap_status_received_callback)
+            {
                 let tag_len = tag.len();
                 let tag0 = CString::new(tag).expect(
                     "bootstrap status tag string should not have an intermediate null byte",
@@ -505,7 +507,9 @@ fn handle_context_event(
             }
         }
         ContextEvent::TorBootstrapCompleted => {
-            if let (Some(callback), data) = get_callback!(callbacks, tor_bootstrap_completed_callback) {
+            if let (Some(callback), data) =
+                get_callback!(callbacks, tor_bootstrap_completed_callback)
+            {
                 callback(data, context);
             }
         }
@@ -584,7 +588,9 @@ fn handle_context_event(
             endpoint_name,
             client_auth_private_key,
         } => {
-            if let (Some(callback), data) = get_callback!(callbacks, identity_client_handshake_completed_callback) {
+            if let (Some(callback), data) =
+                get_callback!(callbacks, identity_client_handshake_completed_callback)
+            {
                 let (identity_service_id, endpoint_service_id) = {
                     let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
                     let identity_service_id =
@@ -624,7 +630,9 @@ fn handle_context_event(
             }
         }
         ContextEvent::IdentityClientHandshakeFailed { handle, reason } => {
-            if let (Some(callback), data) = get_callback!(callbacks, identity_client_handshake_failed_callback) {
+            if let (Some(callback), data) =
+                get_callback!(callbacks, identity_client_handshake_failed_callback)
+            {
                 let key = get_error_registry().insert(Error::new(format!("{:?}", reason).as_str()));
                 callback(data, context, handle, key as *const GoslingError);
                 get_error_registry().remove(key);
@@ -634,12 +642,16 @@ fn handle_context_event(
         // Identity Server Events
         //
         ContextEvent::IdentityServerPublished => {
-            if let (Some(callback), data) = get_callback!(callbacks, identity_server_published_callback) {
+            if let (Some(callback), data) =
+                get_callback!(callbacks, identity_server_published_callback)
+            {
                 callback(data, context);
             }
         }
         ContextEvent::IdentityServerHandshakeStarted { handle } => {
-            if let (Some(callback), data) = get_callback!(callbacks, identity_server_handshake_started_callback) {
+            if let (Some(callback), data) =
+                get_callback!(callbacks, identity_server_handshake_started_callback)
+            {
                 callback(data, context, handle);
             }
         }
@@ -648,7 +660,9 @@ fn handle_context_event(
             client_service_id,
             requested_endpoint,
         } => {
-            let client_allowed = if let (Some(callback), data) = get_callback!(callbacks, identity_server_client_allowed_callback) {
+            let client_allowed = if let (Some(callback), data) =
+                get_callback!(callbacks, identity_server_client_allowed_callback)
+            {
                 let client_service_id =
                     get_v3_onion_service_id_registry().insert(client_service_id);
                 callback(
@@ -661,7 +675,9 @@ fn handle_context_event(
                 bail!("missing required identity_server_client_allowed() callback");
             };
 
-            let endpoint_supported = if let (Some(callback), data) = get_callback!(callbacks, identity_server_endpoint_supported_callback) {
+            let endpoint_supported = if let (Some(callback), data) =
+                get_callback!(callbacks, identity_server_endpoint_supported_callback)
+            {
                 let requested_endpoint_len = requested_endpoint.len();
                 let requested_endpoint0 = CString::new(requested_endpoint).expect(
                     "requested_endpoint should be a valid ASCII string and not have an intermediate null byte",
@@ -684,7 +700,8 @@ fn handle_context_event(
                 get_callback!(callbacks, identity_server_build_challenge_callback),
             ) {
                 // get the challenge size in bytes
-                let challenge_size = challenge_size_callback(challenge_size_callback_data, context, handle);
+                let challenge_size =
+                    challenge_size_callback(challenge_size_callback_data, context, handle);
 
                 if challenge_size < SMALLEST_BSON_DOC_SIZE {
                     bail!("identity_server_challenge_size_callback returned an impossibly small size '{}', smallest possible is {}", challenge_size, SMALLEST_BSON_DOC_SIZE);
@@ -723,8 +740,10 @@ fn handle_context_event(
             handle,
             challenge_response,
         } => {
-            let challenge_response_valid = if let (Some(callback), data) = get_callback!(callbacks,
-                identity_server_verify_challenge_response_callback) {
+            let challenge_response_valid = if let (Some(callback), data) = get_callback!(
+                callbacks,
+                identity_server_verify_challenge_response_callback
+            ) {
                 let mut challenge_response_buffer: Vec<u8> = Default::default();
                 challenge_response
                         .to_writer(&mut challenge_response_buffer).expect("challenge_response should be a valid bson::document::Document and therefore serializable to Vec<u8>");
@@ -757,7 +776,9 @@ fn handle_context_event(
             client_service_id,
             client_auth_public_key,
         } => {
-            if let (Some(callback), data) = get_callback!(callbacks, identity_server_handshake_completed_callback) {
+            if let (Some(callback), data) =
+                get_callback!(callbacks, identity_server_handshake_completed_callback)
+            {
                 let endpoint_private_key = {
                     let mut ed25519_private_key_registry = get_ed25519_private_key_registry();
                     ed25519_private_key_registry.insert(endpoint_private_key)
@@ -804,7 +825,9 @@ fn handle_context_event(
             client_auth_signature_valid,
             challenge_response_valid,
         } => {
-            if let (Some(callback), data) = get_callback!(callbacks, identity_server_handshake_rejected_callback) {
+            if let (Some(callback), data) =
+                get_callback!(callbacks, identity_server_handshake_rejected_callback)
+            {
                 callback(
                     data,
                     context,
@@ -818,7 +841,9 @@ fn handle_context_event(
             }
         }
         ContextEvent::IdentityServerHandshakeFailed { handle, reason } => {
-            if let (Some(callback), data) = get_callback!(callbacks, identity_server_handshake_failed_callback) {
+            if let (Some(callback), data) =
+                get_callback!(callbacks, identity_server_handshake_failed_callback)
+            {
                 let key = get_error_registry().insert(Error::new(format!("{:?}", reason).as_str()));
                 callback(data, context, handle, key as *const GoslingError);
                 get_error_registry().remove(key);
@@ -833,7 +858,9 @@ fn handle_context_event(
             channel_name,
             stream,
         } => {
-            if let (Some(callback), data) = get_callback!(callbacks, endpoint_client_handshake_completed_callback) {
+            if let (Some(callback), data) =
+                get_callback!(callbacks, endpoint_client_handshake_completed_callback)
+            {
                 let endpoint_service_id = {
                     let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
                     v3_onion_service_id_registry.insert(endpoint_service_id)
@@ -864,7 +891,9 @@ fn handle_context_event(
             }
         }
         ContextEvent::EndpointClientHandshakeFailed { handle, reason } => {
-            if let (Some(callback), data) = get_callback!(callbacks, endpoint_client_handshake_failed_callback) {
+            if let (Some(callback), data) =
+                get_callback!(callbacks, endpoint_client_handshake_failed_callback)
+            {
                 let key = get_error_registry().insert(Error::new(format!("{:?}", reason).as_str()));
                 callback(data, context, handle, key as *const GoslingError);
                 get_error_registry().remove(key);
@@ -877,7 +906,9 @@ fn handle_context_event(
             endpoint_service_id,
             endpoint_name,
         } => {
-            if let (Some(callback), data) = get_callback!(callbacks, endpoint_server_published_callback) {
+            if let (Some(callback), data) =
+                get_callback!(callbacks, endpoint_server_published_callback)
+            {
                 let endpoint_service_id = {
                     let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
                     v3_onion_service_id_registry.insert(endpoint_service_id)
@@ -899,7 +930,9 @@ fn handle_context_event(
             }
         }
         ContextEvent::EndpointServerHandshakeStarted { handle } => {
-            if let (Some(callback), data) = get_callback!(callbacks, endpoint_server_handshake_started_callback) {
+            if let (Some(callback), data) =
+                get_callback!(callbacks, endpoint_server_handshake_started_callback)
+            {
                 callback(data, context, handle);
             }
         }
@@ -908,7 +941,9 @@ fn handle_context_event(
             client_service_id,
             requested_channel,
         } => {
-            let channel_supported: bool = if let (Some(callback), data) = get_callback!(callbacks, endpoint_server_channel_supported_callback) {
+            let channel_supported: bool = if let (Some(callback), data) =
+                get_callback!(callbacks, endpoint_server_channel_supported_callback)
+            {
                 let client_service_id = {
                     let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
                     v3_onion_service_id_registry.insert(client_service_id)
@@ -946,7 +981,9 @@ fn handle_context_event(
             channel_name,
             stream,
         } => {
-            if let (Some(callback), data) = get_callback!(callbacks, endpoint_server_handshake_completed_callback) {
+            if let (Some(callback), data) =
+                get_callback!(callbacks, endpoint_server_handshake_completed_callback)
+            {
                 let (endpoint_service_id, client_service_id) = {
                     let mut v3_onion_service_id_registry = get_v3_onion_service_id_registry();
                     let endpoint_service_id =
@@ -991,7 +1028,9 @@ fn handle_context_event(
             client_requested_channel_valid,
             client_proof_signature_valid,
         } => {
-            if let (Some(callback), data) = get_callback!(callbacks, endpoint_server_handshake_rejected_callback) {
+            if let (Some(callback), data) =
+                get_callback!(callbacks, endpoint_server_handshake_rejected_callback)
+            {
                 callback(
                     data,
                     context,
@@ -1003,7 +1042,9 @@ fn handle_context_event(
             }
         }
         ContextEvent::EndpointServerHandshakeFailed { handle, reason } => {
-            if let (Some(callback), data) = get_callback!(callbacks, endpoint_server_handshake_failed_callback) {
+            if let (Some(callback), data) =
+                get_callback!(callbacks, endpoint_server_handshake_failed_callback)
+            {
                 let key = get_error_registry().insert(Error::new(format!("{:?}", reason).as_str()));
                 callback(data, context, handle, key as *const GoslingError);
                 get_error_registry().remove(key);

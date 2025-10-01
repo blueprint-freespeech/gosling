@@ -110,7 +110,9 @@ pub enum Error {
     PluggableTransportBinaryNameNotUtf8Representnable(std::ffi::OsString),
 
     #[error("{0}")]
-    PluggableTransportConfigError(#[source] crate::censorship_circumvention::PluggableTransportConfigError),
+    PluggableTransportConfigError(
+        #[source] crate::censorship_circumvention::PluggableTransportConfigError,
+    ),
 
     #[error("pluggable transport multiply defines '{0}' bridge transport type")]
     BridgeTransportTypeMultiplyDefined(String),
@@ -188,24 +190,49 @@ impl LegacyTorClientConfig {
         const TOR_SOCKS_PORT: &str = "TOR_SOCKS_PORT";
         let tor_socks_addr = match (var(TOR_SOCKS_HOST), var(TOR_SOCKS_PORT)) {
             (Ok(host), Ok(port)) => {
-                let ip = IpAddr::from_str(host.as_str()).map_err(|_| Error::EnvironmentConfigurationInvalid(format!("cannot parse TOR_SOCKS_HOST value '{host}' as ip address")))?;
-                let port = u16::from_str(port.as_str()).map_err(|_| Error::EnvironmentConfigurationInvalid(format!("cannot parse TOR_SOCKS_PORT value '{port}' as port")))?;
+                let ip = IpAddr::from_str(host.as_str()).map_err(|_| {
+                    Error::EnvironmentConfigurationInvalid(format!(
+                        "cannot parse TOR_SOCKS_HOST value '{host}' as ip address"
+                    ))
+                })?;
+                let port = u16::from_str(port.as_str()).map_err(|_| {
+                    Error::EnvironmentConfigurationInvalid(format!(
+                        "cannot parse TOR_SOCKS_PORT value '{port}' as port"
+                    ))
+                })?;
                 SocketAddr::new(ip, port)
-            },
-            _ => return Err(Error::EnvironmentConfigurationInvalid("environment variables TOR_SOCKS_HOST and TOR_SOCKS_PORT must be defined".to_string())),
+            }
+            _ => {
+                return Err(Error::EnvironmentConfigurationInvalid(
+                    "environment variables TOR_SOCKS_HOST and TOR_SOCKS_PORT must be defined"
+                        .to_string(),
+                ))
+            }
         };
 
         // get control port address
         const TOR_CONTROL_HOST: &str = "TOR_CONTROL_HOST";
         const TOR_CONTROL_PORT: &str = "TOR_CONTROL_PORT";
-        let tor_control_addr = match (var(TOR_CONTROL_HOST), var(TOR_CONTROL_PORT)) {
-            (Ok(host), Ok(port)) => {
-                let ip = IpAddr::from_str(host.as_str()).map_err(|_| Error::EnvironmentConfigurationInvalid(format!("cannot parse TOR_CONTROL_HOST value '{host}' as ip address")))?;
-                let port = u16::from_str(port.as_str()).map_err(|_| Error::EnvironmentConfigurationInvalid(format!("cannot parse TOR_CONTROL_PORT value '{port}' as port")))?;
-                SocketAddr::new(ip, port)
-            },
-            _ => return Err(Error::EnvironmentConfigurationInvalid("environment variables TOR_CONTROL_HOST and TOR_CONTROL_PORT must be defined".to_string())),
-        };
+        let tor_control_addr =
+            match (var(TOR_CONTROL_HOST), var(TOR_CONTROL_PORT)) {
+                (Ok(host), Ok(port)) => {
+                    let ip = IpAddr::from_str(host.as_str()).map_err(|_| {
+                        Error::EnvironmentConfigurationInvalid(format!(
+                            "cannot parse TOR_CONTROL_HOST value '{host}' as ip address"
+                        ))
+                    })?;
+                    let port = u16::from_str(port.as_str()).map_err(|_| {
+                        Error::EnvironmentConfigurationInvalid(format!(
+                            "cannot parse TOR_CONTROL_PORT value '{port}' as port"
+                        ))
+                    })?;
+                    SocketAddr::new(ip, port)
+                }
+                _ => return Err(Error::EnvironmentConfigurationInvalid(
+                    "environment variables TOR_CONTROL_HOST and TOR_CONTROL_PORT must be defined"
+                        .to_string(),
+                )),
+            };
 
         // get control auth (prefer cookie file)
         const TOR_CONTROL_COOKIE_AUTH_FILE: &str = "TOR_CONTROL_COOKIE_AUTH_FILE";
@@ -217,11 +244,19 @@ impl LegacyTorClientConfig {
             match var(TOR_CONTROL_PASSWD) {
                 Ok(control_password) => TorAuth::Password(control_password),
                 Err(std::env::VarError::NotPresent) => TorAuth::Null,
-                _ => return Err(Error::EnvironmentConfigurationInvalid("Failed to read TOR_CONTROL_PASSWD".to_string())),
+                _ => {
+                    return Err(Error::EnvironmentConfigurationInvalid(
+                        "Failed to read TOR_CONTROL_PASSWD".to_string(),
+                    ))
+                }
             }
         };
 
-        Ok(Self::SystemTor{tor_socks_addr, tor_control_addr, tor_control_auth})
+        Ok(Self::SystemTor {
+            tor_socks_addr,
+            tor_control_addr,
+            tor_control_auth,
+        })
     }
 }
 
@@ -312,7 +347,8 @@ impl LegacyTorClient {
             TorAuth::Null => controller.authenticate(),
             TorAuth::Password(pass) => controller.authenticate_password(std::mem::take(pass)),
             TorAuth::CookieFile(file) => controller.authenticate_safecookie(std::mem::take(file)),
-        }.map_err(Error::LegacyTorProcessAuthenticationFailed)?;
+        }
+        .map_err(Error::LegacyTorProcessAuthenticationFailed)?;
 
         // min required version for v3 client auth (see control-spec.txt)
         let min_required_version = LegacyTorVersion {
@@ -570,7 +606,8 @@ impl LegacyTorClient {
                 &username,
                 &password,
             ),
-        }.map_err(Error::Socks5ConnectionFailed)?;
+        }
+        .map_err(Error::Socks5ConnectionFailed)?;
         Ok(stream)
     }
 }
@@ -657,7 +694,10 @@ impl TorProvider for LegacyTorClient {
         }
 
         // append any new async events
-        let mut async_events = self.async_events.lock().expect("async_events mutex poisoned");
+        let mut async_events = self
+            .async_events
+            .lock()
+            .expect("async_events mutex poisoned");
         if !async_events.is_empty() {
             events.append(&mut std::mem::take(&mut *async_events));
         }
@@ -707,11 +747,13 @@ impl TorProvider for LegacyTorClient {
 
         let socks_listener = self.socks_listener()?;
         let socks_credentials = match circuit {
-            Some(circuit) => if let Some(circuit) = self.circuit_tokens.get(&circuit) {
-                Some((circuit.username.clone(), circuit.password.clone()))
-            } else {
-                return Err(Error::CircuitTokenInvalid())?;
-            },
+            Some(circuit) => {
+                if let Some(circuit) = self.circuit_tokens.get(&circuit) {
+                    Some((circuit.username.clone(), circuit.password.clone()))
+                } else {
+                    return Err(Error::CircuitTokenInvalid())?;
+                }
+            }
             None => None,
         };
 
@@ -729,14 +771,15 @@ impl TorProvider for LegacyTorClient {
         target: TargetAddr,
         circuit: Option<CircuitToken>,
     ) -> Result<ConnectHandle, tor_provider::Error> {
-
         let socks_listener = self.socks_listener()?;
         let socks_credentials = match circuit {
-            Some(circuit) => if let Some(circuit) = self.circuit_tokens.get(&circuit) {
-                Some((circuit.username.clone(), circuit.password.clone()))
-            } else {
-                return Err(Error::CircuitTokenInvalid())?;
-            },
+            Some(circuit) => {
+                if let Some(circuit) = self.circuit_tokens.get(&circuit) {
+                    Some((circuit.username.clone(), circuit.password.clone()))
+                } else {
+                    return Err(Error::CircuitTokenInvalid())?;
+                }
+            }
             None => None,
         };
 
@@ -757,20 +800,16 @@ impl TorProvider for LegacyTorClient {
                                 local_addr: None,
                                 peer_addr: Some(target),
                             };
-                            TorEvent::ConnectComplete{
-                                handle,
-                                stream,
-                            }
-                        },
-                        Err(error) => TorEvent::ConnectFailed{
-                            handle,
-                            error,
-                        },
+                            TorEvent::ConnectComplete { handle, stream }
+                        }
+                        Err(error) => TorEvent::ConnectFailed { handle, error },
                     };
-                    let mut async_events = async_events.lock().expect("async_events mutex poisoned");
+                    let mut async_events =
+                        async_events.lock().expect("async_events mutex poisoned");
                     async_events.push(event);
                 }
-            }).map_err(Error::ConnectAsyncThreadSpawnFailed)?;
+            })
+            .map_err(Error::ConnectAsyncThreadSpawnFailed)?;
 
         Ok(handle)
     }
@@ -821,9 +860,14 @@ impl TorProvider for LegacyTorClient {
         self.onion_services
             .push((service_id, Arc::clone(&is_active)));
 
-        Ok(OnionListener::new(listener, onion_addr, is_active, |is_active| {
-            is_active.store(false, atomic::Ordering::Relaxed);
-        }))
+        Ok(OnionListener::new(
+            listener,
+            onion_addr,
+            is_active,
+            |is_active| {
+                is_active.store(false, atomic::Ordering::Relaxed);
+            },
+        ))
     }
 
     fn generate_token(&mut self) -> CircuitToken {
