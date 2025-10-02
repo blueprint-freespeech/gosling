@@ -9,6 +9,9 @@ description = "A library for developing fully anonymous, peer-to-peer, metadata-
 homepage = "https://blueprint-freespeech.github.io/gosling/index.xhtml"
 repository = "https://github.com/blueprint-freespeech/gosling"
 
+[package.metadata.docs.rs]
+features = ["arti-client-tor-provider", "legacy-tor-provider", "mock-tor-provider"]
+
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(fuzzing)'] }
 
