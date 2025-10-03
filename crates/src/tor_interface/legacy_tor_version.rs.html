@@ -164,134 +164,136 @@
 <a href=#164 id=164 data-nosnippet>164</a>    }
 <a href=#165 id=165 data-nosnippet>165</a>}
 <a href=#166 id=166 data-nosnippet>166</a>
-<a href=#167 id=167 data-nosnippet>167</a><span class="kw">impl </span>ToString <span class="kw">for </span>LegacyTorVersion {
-<a href=#168 id=168 data-nosnippet>168</a>    <span class="kw">fn </span>to_string(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+<a href=#167 id=167 data-nosnippet>167</a><span class="kw">impl </span>std::fmt::Display <span class="kw">for </span>LegacyTorVersion {
+<a href=#168 id=168 data-nosnippet>168</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
 <a href=#169 id=169 data-nosnippet>169</a>        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.status_tag {
-<a href=#170 id=170 data-nosnippet>170</a>            <span class="prelude-val">Some</span>(status_tag) =&gt; <span class="macro">format!</span>(
-<a href=#171 id=171 data-nosnippet>171</a>                <span class="string">"{}.{}.{}.{}-{}"</span>,
-<a href=#172 id=172 data-nosnippet>172</a>                <span class="self">self</span>.major, <span class="self">self</span>.minor, <span class="self">self</span>.micro, <span class="self">self</span>.patch_level, status_tag
-<a href=#173 id=173 data-nosnippet>173</a>            ),
-<a href=#174 id=174 data-nosnippet>174</a>            <span class="prelude-val">None </span>=&gt; <span class="macro">format!</span>(
-<a href=#175 id=175 data-nosnippet>175</a>                <span class="string">"{}.{}.{}.{}"</span>,
-<a href=#176 id=176 data-nosnippet>176</a>                <span class="self">self</span>.major, <span class="self">self</span>.minor, <span class="self">self</span>.micro, <span class="self">self</span>.patch_level
-<a href=#177 id=177 data-nosnippet>177</a>            ),
-<a href=#178 id=178 data-nosnippet>178</a>        }
-<a href=#179 id=179 data-nosnippet>179</a>    }
-<a href=#180 id=180 data-nosnippet>180</a>}
-<a href=#181 id=181 data-nosnippet>181</a>
-<a href=#182 id=182 data-nosnippet>182</a><span class="kw">impl </span>PartialEq <span class="kw">for </span>LegacyTorVersion {
-<a href=#183 id=183 data-nosnippet>183</a>    <span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
-<a href=#184 id=184 data-nosnippet>184</a>        <span class="self">self</span>.major == other.major
-<a href=#185 id=185 data-nosnippet>185</a>            &amp;&amp; <span class="self">self</span>.minor == other.minor
-<a href=#186 id=186 data-nosnippet>186</a>            &amp;&amp; <span class="self">self</span>.micro == other.micro
-<a href=#187 id=187 data-nosnippet>187</a>            &amp;&amp; <span class="self">self</span>.patch_level == other.patch_level
-<a href=#188 id=188 data-nosnippet>188</a>            &amp;&amp; <span class="self">self</span>.status_tag == other.status_tag
-<a href=#189 id=189 data-nosnippet>189</a>    }
-<a href=#190 id=190 data-nosnippet>190</a>}
-<a href=#191 id=191 data-nosnippet>191</a>
-<a href=#192 id=192 data-nosnippet>192</a><span class="kw">impl </span>PartialOrd <span class="kw">for </span>LegacyTorVersion {
-<a href=#193 id=193 data-nosnippet>193</a>    <span class="kw">fn </span>partial_cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Ordering&gt; {
-<a href=#194 id=194 data-nosnippet>194</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(order) = <span class="self">self</span>.major.partial_cmp(<span class="kw-2">&amp;</span>other.major) {
-<a href=#195 id=195 data-nosnippet>195</a>            <span class="kw">if </span>order != Ordering::Equal {
-<a href=#196 id=196 data-nosnippet>196</a>                <span class="kw">return </span><span class="prelude-val">Some</span>(order);
-<a href=#197 id=197 data-nosnippet>197</a>            }
-<a href=#198 id=198 data-nosnippet>198</a>        }
-<a href=#199 id=199 data-nosnippet>199</a>
-<a href=#200 id=200 data-nosnippet>200</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(order) = <span class="self">self</span>.minor.partial_cmp(<span class="kw-2">&amp;</span>other.minor) {
-<a href=#201 id=201 data-nosnippet>201</a>            <span class="kw">if </span>order != Ordering::Equal {
-<a href=#202 id=202 data-nosnippet>202</a>                <span class="kw">return </span><span class="prelude-val">Some</span>(order);
-<a href=#203 id=203 data-nosnippet>203</a>            }
-<a href=#204 id=204 data-nosnippet>204</a>        }
-<a href=#205 id=205 data-nosnippet>205</a>
-<a href=#206 id=206 data-nosnippet>206</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(order) = <span class="self">self</span>.micro.partial_cmp(<span class="kw-2">&amp;</span>other.micro) {
-<a href=#207 id=207 data-nosnippet>207</a>            <span class="kw">if </span>order != Ordering::Equal {
-<a href=#208 id=208 data-nosnippet>208</a>                <span class="kw">return </span><span class="prelude-val">Some</span>(order);
-<a href=#209 id=209 data-nosnippet>209</a>            }
-<a href=#210 id=210 data-nosnippet>210</a>        }
-<a href=#211 id=211 data-nosnippet>211</a>
-<a href=#212 id=212 data-nosnippet>212</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(order) = <span class="self">self</span>.patch_level.partial_cmp(<span class="kw-2">&amp;</span>other.patch_level) {
-<a href=#213 id=213 data-nosnippet>213</a>            <span class="kw">if </span>order != Ordering::Equal {
-<a href=#214 id=214 data-nosnippet>214</a>                <span class="kw">return </span><span class="prelude-val">Some</span>(order);
-<a href=#215 id=215 data-nosnippet>215</a>            }
-<a href=#216 id=216 data-nosnippet>216</a>        }
-<a href=#217 id=217 data-nosnippet>217</a>
-<a href=#218 id=218 data-nosnippet>218</a>        <span class="comment">// version-spect.txt *does* say that we should compare tags lexicgraphically
-<a href=#219 id=219 data-nosnippet>219</a>        // if all of the version numbers are the same when comparing, but we are
-<a href=#220 id=220 data-nosnippet>220</a>        // going to diverge here and say we can only compare tags for equality.
-<a href=#221 id=221 data-nosnippet>221</a>        //
-<a href=#222 id=222 data-nosnippet>222</a>        // In practice we will be comparing tor daemon tags against tagless (stable)
-<a href=#223 id=223 data-nosnippet>223</a>        // versions so this shouldn't be an issue
-<a href=#224 id=224 data-nosnippet>224</a>
-<a href=#225 id=225 data-nosnippet>225</a>        </span><span class="kw">if </span><span class="self">self</span>.status_tag == other.status_tag {
-<a href=#226 id=226 data-nosnippet>226</a>            <span class="kw">return </span><span class="prelude-val">Some</span>(Ordering::Equal);
-<a href=#227 id=227 data-nosnippet>227</a>        }
-<a href=#228 id=228 data-nosnippet>228</a>
-<a href=#229 id=229 data-nosnippet>229</a>        <span class="prelude-val">None
-<a href=#230 id=230 data-nosnippet>230</a>    </span>}
-<a href=#231 id=231 data-nosnippet>231</a>}
-<a href=#232 id=232 data-nosnippet>232</a>
-<a href=#233 id=233 data-nosnippet>233</a><span class="attr">#[test]
-<a href=#234 id=234 data-nosnippet>234</a></span><span class="kw">fn </span>test_version() -&gt; anyhow::Result&lt;()&gt; {
-<a href=#235 id=235 data-nosnippet>235</a>    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">"1.2.3"</span>)<span class="question-mark">? </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>)<span class="question-mark">?</span>);
-<a href=#236 id=236 data-nosnippet>236</a>    <span class="macro">assert!</span>(
-<a href=#237 id=237 data-nosnippet>237</a>        LegacyTorVersion::from_str(<span class="string">"1.2.3.4"</span>)<span class="question-mark">? </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">None</span>)<span class="question-mark">?
-<a href=#238 id=238 data-nosnippet>238</a>    </span>);
-<a href=#239 id=239 data-nosnippet>239</a>    <span class="macro">assert!</span>(
-<a href=#240 id=240 data-nosnippet>240</a>        LegacyTorVersion::from_str(<span class="string">"1.2.3-test"</span>)<span class="question-mark">?
-<a href=#241 id=241 data-nosnippet>241</a>            </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="string">"test"</span>))<span class="question-mark">?
-<a href=#242 id=242 data-nosnippet>242</a>    </span>);
-<a href=#243 id=243 data-nosnippet>243</a>    <span class="macro">assert!</span>(
-<a href=#244 id=244 data-nosnippet>244</a>        LegacyTorVersion::from_str(<span class="string">"1.2.3.4-test"</span>)<span class="question-mark">?
-<a href=#245 id=245 data-nosnippet>245</a>            </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">Some</span>(<span class="string">"test"</span>))<span class="question-mark">?
-<a href=#246 id=246 data-nosnippet>246</a>    </span>);
-<a href=#247 id=247 data-nosnippet>247</a>    <span class="macro">assert!</span>(
-<a href=#248 id=248 data-nosnippet>248</a>        LegacyTorVersion::from_str(<span class="string">"1.2.3 (extra_info)"</span>)<span class="question-mark">?
-<a href=#249 id=249 data-nosnippet>249</a>            </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>)<span class="question-mark">?
-<a href=#250 id=250 data-nosnippet>250</a>    </span>);
-<a href=#251 id=251 data-nosnippet>251</a>    <span class="macro">assert!</span>(
-<a href=#252 id=252 data-nosnippet>252</a>        LegacyTorVersion::from_str(<span class="string">"1.2.3.4 (extra_info)"</span>)<span class="question-mark">?
-<a href=#253 id=253 data-nosnippet>253</a>            </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">None</span>)<span class="question-mark">?
-<a href=#254 id=254 data-nosnippet>254</a>    </span>);
-<a href=#255 id=255 data-nosnippet>255</a>    <span class="macro">assert!</span>(
-<a href=#256 id=256 data-nosnippet>256</a>        LegacyTorVersion::from_str(<span class="string">"1.2.3.4-tag (extra_info)"</span>)<span class="question-mark">?
-<a href=#257 id=257 data-nosnippet>257</a>            </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">Some</span>(<span class="string">"tag"</span>))<span class="question-mark">?
-<a href=#258 id=258 data-nosnippet>258</a>    </span>);
-<a href=#259 id=259 data-nosnippet>259</a>
-<a href=#260 id=260 data-nosnippet>260</a>    <span class="macro">assert!</span>(
-<a href=#261 id=261 data-nosnippet>261</a>        LegacyTorVersion::from_str(<span class="string">"1.2.3.4-tag (extra_info) (extra_info)"</span>)<span class="question-mark">?
-<a href=#262 id=262 data-nosnippet>262</a>            </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">Some</span>(<span class="string">"tag"</span>))<span class="question-mark">?
-<a href=#263 id=263 data-nosnippet>263</a>    </span>);
-<a href=#264 id=264 data-nosnippet>264</a>
-<a href=#265 id=265 data-nosnippet>265</a>    <span class="macro">assert!</span>(LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">Some</span>(<span class="string">"spaced tag"</span>)).is_err());
-<a href=#266 id=266 data-nosnippet>266</a>    <span class="macro">assert!</span>(LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">Some</span>(<span class="string">"" </span><span class="comment">/* empty tag */</span>)).is_err());
-<a href=#267 id=267 data-nosnippet>267</a>    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">""</span>).is_err());
-<a href=#268 id=268 data-nosnippet>268</a>    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">"1.2"</span>).is_err());
-<a href=#269 id=269 data-nosnippet>269</a>    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">"1.2-foo"</span>).is_err());
-<a href=#270 id=270 data-nosnippet>270</a>    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">"1.2.3.4-foo bar"</span>).is_err());
-<a href=#271 id=271 data-nosnippet>271</a>    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">"1.2.3.4-foo bar (extra_info)"</span>).is_err());
-<a href=#272 id=272 data-nosnippet>272</a>    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">"1.2.3.4-foo (extra_info) badtext"</span>).is_err());
-<a href=#273 id=273 data-nosnippet>273</a>    <span class="macro">assert!</span>(
-<a href=#274 id=274 data-nosnippet>274</a>        LegacyTorVersion::new(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="prelude-val">Some</span>(<span class="number">0</span>), <span class="prelude-val">None</span>)<span class="question-mark">?
-<a href=#275 id=275 data-nosnippet>275</a>            </span>&lt; LegacyTorVersion::new(<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="prelude-val">Some</span>(<span class="number">0</span>), <span class="prelude-val">None</span>)<span class="question-mark">?
-<a href=#276 id=276 data-nosnippet>276</a>    </span>);
-<a href=#277 id=277 data-nosnippet>277</a>    <span class="macro">assert!</span>(
-<a href=#278 id=278 data-nosnippet>278</a>        LegacyTorVersion::new(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="prelude-val">Some</span>(<span class="number">0</span>), <span class="prelude-val">None</span>)<span class="question-mark">?
-<a href=#279 id=279 data-nosnippet>279</a>            </span>&lt; LegacyTorVersion::new(<span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="prelude-val">Some</span>(<span class="number">0</span>), <span class="prelude-val">None</span>)<span class="question-mark">?
-<a href=#280 id=280 data-nosnippet>280</a>    </span>);
-<a href=#281 id=281 data-nosnippet>281</a>    <span class="macro">assert!</span>(
-<a href=#282 id=282 data-nosnippet>282</a>        LegacyTorVersion::new(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="prelude-val">Some</span>(<span class="number">0</span>), <span class="prelude-val">None</span>)<span class="question-mark">?
-<a href=#283 id=283 data-nosnippet>283</a>            </span>&lt; LegacyTorVersion::new(<span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="prelude-val">Some</span>(<span class="number">0</span>), <span class="prelude-val">None</span>)<span class="question-mark">?
-<a href=#284 id=284 data-nosnippet>284</a>    </span>);
-<a href=#285 id=285 data-nosnippet>285</a>
-<a href=#286 id=286 data-nosnippet>286</a>    <span class="comment">// ensure status tags make comparison between equal versions (apart from
-<a href=#287 id=287 data-nosnippet>287</a>    // tags) unknowable
-<a href=#288 id=288 data-nosnippet>288</a>    </span><span class="kw">let </span>zero_version = LegacyTorVersion::new(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="prelude-val">Some</span>(<span class="number">0</span>), <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
-<a href=#289 id=289 data-nosnippet>289</a>    <span class="kw">let </span>zero_version_tag = LegacyTorVersion::new(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="prelude-val">Some</span>(<span class="number">0</span>), <span class="prelude-val">Some</span>(<span class="string">"tag"</span>))<span class="question-mark">?</span>;
-<a href=#290 id=290 data-nosnippet>290</a>
-<a href=#291 id=291 data-nosnippet>291</a>    <span class="macro">assert!</span>(!(zero_version &lt; zero_version_tag));
-<a href=#292 id=292 data-nosnippet>292</a>    <span class="macro">assert!</span>(!(zero_version &lt;= zero_version_tag));
-<a href=#293 id=293 data-nosnippet>293</a>    <span class="macro">assert!</span>(!(zero_version &gt; zero_version_tag));
-<a href=#294 id=294 data-nosnippet>294</a>    <span class="macro">assert!</span>(!(zero_version &gt;= zero_version_tag));
-<a href=#295 id=295 data-nosnippet>295</a>
-<a href=#296 id=296 data-nosnippet>296</a>    <span class="prelude-val">Ok</span>(())
-<a href=#297 id=297 data-nosnippet>297</a>}</code></pre></div></section></main></body></html>
+<a href=#170 id=170 data-nosnippet>170</a>            <span class="prelude-val">Some</span>(status_tag) =&gt; <span class="macro">write!</span>(
+<a href=#171 id=171 data-nosnippet>171</a>                f,
+<a href=#172 id=172 data-nosnippet>172</a>                <span class="string">"{}.{}.{}.{}-{}"</span>,
+<a href=#173 id=173 data-nosnippet>173</a>                <span class="self">self</span>.major, <span class="self">self</span>.minor, <span class="self">self</span>.micro, <span class="self">self</span>.patch_level, status_tag
+<a href=#174 id=174 data-nosnippet>174</a>            ),
+<a href=#175 id=175 data-nosnippet>175</a>            <span class="prelude-val">None </span>=&gt; <span class="macro">write!</span>(
+<a href=#176 id=176 data-nosnippet>176</a>                f,
+<a href=#177 id=177 data-nosnippet>177</a>                <span class="string">"{}.{}.{}.{}"</span>,
+<a href=#178 id=178 data-nosnippet>178</a>                <span class="self">self</span>.major, <span class="self">self</span>.minor, <span class="self">self</span>.micro, <span class="self">self</span>.patch_level
+<a href=#179 id=179 data-nosnippet>179</a>            ),
+<a href=#180 id=180 data-nosnippet>180</a>        }
+<a href=#181 id=181 data-nosnippet>181</a>    }
+<a href=#182 id=182 data-nosnippet>182</a>}
+<a href=#183 id=183 data-nosnippet>183</a>
+<a href=#184 id=184 data-nosnippet>184</a><span class="kw">impl </span>PartialEq <span class="kw">for </span>LegacyTorVersion {
+<a href=#185 id=185 data-nosnippet>185</a>    <span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
+<a href=#186 id=186 data-nosnippet>186</a>        <span class="self">self</span>.major == other.major
+<a href=#187 id=187 data-nosnippet>187</a>            &amp;&amp; <span class="self">self</span>.minor == other.minor
+<a href=#188 id=188 data-nosnippet>188</a>            &amp;&amp; <span class="self">self</span>.micro == other.micro
+<a href=#189 id=189 data-nosnippet>189</a>            &amp;&amp; <span class="self">self</span>.patch_level == other.patch_level
+<a href=#190 id=190 data-nosnippet>190</a>            &amp;&amp; <span class="self">self</span>.status_tag == other.status_tag
+<a href=#191 id=191 data-nosnippet>191</a>    }
+<a href=#192 id=192 data-nosnippet>192</a>}
+<a href=#193 id=193 data-nosnippet>193</a>
+<a href=#194 id=194 data-nosnippet>194</a><span class="kw">impl </span>PartialOrd <span class="kw">for </span>LegacyTorVersion {
+<a href=#195 id=195 data-nosnippet>195</a>    <span class="kw">fn </span>partial_cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Ordering&gt; {
+<a href=#196 id=196 data-nosnippet>196</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(order) = <span class="self">self</span>.major.partial_cmp(<span class="kw-2">&amp;</span>other.major) {
+<a href=#197 id=197 data-nosnippet>197</a>            <span class="kw">if </span>order != Ordering::Equal {
+<a href=#198 id=198 data-nosnippet>198</a>                <span class="kw">return </span><span class="prelude-val">Some</span>(order);
+<a href=#199 id=199 data-nosnippet>199</a>            }
+<a href=#200 id=200 data-nosnippet>200</a>        }
+<a href=#201 id=201 data-nosnippet>201</a>
+<a href=#202 id=202 data-nosnippet>202</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(order) = <span class="self">self</span>.minor.partial_cmp(<span class="kw-2">&amp;</span>other.minor) {
+<a href=#203 id=203 data-nosnippet>203</a>            <span class="kw">if </span>order != Ordering::Equal {
+<a href=#204 id=204 data-nosnippet>204</a>                <span class="kw">return </span><span class="prelude-val">Some</span>(order);
+<a href=#205 id=205 data-nosnippet>205</a>            }
+<a href=#206 id=206 data-nosnippet>206</a>        }
+<a href=#207 id=207 data-nosnippet>207</a>
+<a href=#208 id=208 data-nosnippet>208</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(order) = <span class="self">self</span>.micro.partial_cmp(<span class="kw-2">&amp;</span>other.micro) {
+<a href=#209 id=209 data-nosnippet>209</a>            <span class="kw">if </span>order != Ordering::Equal {
+<a href=#210 id=210 data-nosnippet>210</a>                <span class="kw">return </span><span class="prelude-val">Some</span>(order);
+<a href=#211 id=211 data-nosnippet>211</a>            }
+<a href=#212 id=212 data-nosnippet>212</a>        }
+<a href=#213 id=213 data-nosnippet>213</a>
+<a href=#214 id=214 data-nosnippet>214</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(order) = <span class="self">self</span>.patch_level.partial_cmp(<span class="kw-2">&amp;</span>other.patch_level) {
+<a href=#215 id=215 data-nosnippet>215</a>            <span class="kw">if </span>order != Ordering::Equal {
+<a href=#216 id=216 data-nosnippet>216</a>                <span class="kw">return </span><span class="prelude-val">Some</span>(order);
+<a href=#217 id=217 data-nosnippet>217</a>            }
+<a href=#218 id=218 data-nosnippet>218</a>        }
+<a href=#219 id=219 data-nosnippet>219</a>
+<a href=#220 id=220 data-nosnippet>220</a>        <span class="comment">// version-spect.txt *does* say that we should compare tags lexicgraphically
+<a href=#221 id=221 data-nosnippet>221</a>        // if all of the version numbers are the same when comparing, but we are
+<a href=#222 id=222 data-nosnippet>222</a>        // going to diverge here and say we can only compare tags for equality.
+<a href=#223 id=223 data-nosnippet>223</a>        //
+<a href=#224 id=224 data-nosnippet>224</a>        // In practice we will be comparing tor daemon tags against tagless (stable)
+<a href=#225 id=225 data-nosnippet>225</a>        // versions so this shouldn't be an issue
+<a href=#226 id=226 data-nosnippet>226</a>
+<a href=#227 id=227 data-nosnippet>227</a>        </span><span class="kw">if </span><span class="self">self</span>.status_tag == other.status_tag {
+<a href=#228 id=228 data-nosnippet>228</a>            <span class="kw">return </span><span class="prelude-val">Some</span>(Ordering::Equal);
+<a href=#229 id=229 data-nosnippet>229</a>        }
+<a href=#230 id=230 data-nosnippet>230</a>
+<a href=#231 id=231 data-nosnippet>231</a>        <span class="prelude-val">None
+<a href=#232 id=232 data-nosnippet>232</a>    </span>}
+<a href=#233 id=233 data-nosnippet>233</a>}
+<a href=#234 id=234 data-nosnippet>234</a>
+<a href=#235 id=235 data-nosnippet>235</a><span class="attr">#[test]
+<a href=#236 id=236 data-nosnippet>236</a></span><span class="kw">fn </span>test_version() -&gt; anyhow::Result&lt;()&gt; {
+<a href=#237 id=237 data-nosnippet>237</a>    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">"1.2.3"</span>)<span class="question-mark">? </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>)<span class="question-mark">?</span>);
+<a href=#238 id=238 data-nosnippet>238</a>    <span class="macro">assert!</span>(
+<a href=#239 id=239 data-nosnippet>239</a>        LegacyTorVersion::from_str(<span class="string">"1.2.3.4"</span>)<span class="question-mark">? </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">None</span>)<span class="question-mark">?
+<a href=#240 id=240 data-nosnippet>240</a>    </span>);
+<a href=#241 id=241 data-nosnippet>241</a>    <span class="macro">assert!</span>(
+<a href=#242 id=242 data-nosnippet>242</a>        LegacyTorVersion::from_str(<span class="string">"1.2.3-test"</span>)<span class="question-mark">?
+<a href=#243 id=243 data-nosnippet>243</a>            </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="string">"test"</span>))<span class="question-mark">?
+<a href=#244 id=244 data-nosnippet>244</a>    </span>);
+<a href=#245 id=245 data-nosnippet>245</a>    <span class="macro">assert!</span>(
+<a href=#246 id=246 data-nosnippet>246</a>        LegacyTorVersion::from_str(<span class="string">"1.2.3.4-test"</span>)<span class="question-mark">?
+<a href=#247 id=247 data-nosnippet>247</a>            </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">Some</span>(<span class="string">"test"</span>))<span class="question-mark">?
+<a href=#248 id=248 data-nosnippet>248</a>    </span>);
+<a href=#249 id=249 data-nosnippet>249</a>    <span class="macro">assert!</span>(
+<a href=#250 id=250 data-nosnippet>250</a>        LegacyTorVersion::from_str(<span class="string">"1.2.3 (extra_info)"</span>)<span class="question-mark">?
+<a href=#251 id=251 data-nosnippet>251</a>            </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>)<span class="question-mark">?
+<a href=#252 id=252 data-nosnippet>252</a>    </span>);
+<a href=#253 id=253 data-nosnippet>253</a>    <span class="macro">assert!</span>(
+<a href=#254 id=254 data-nosnippet>254</a>        LegacyTorVersion::from_str(<span class="string">"1.2.3.4 (extra_info)"</span>)<span class="question-mark">?
+<a href=#255 id=255 data-nosnippet>255</a>            </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">None</span>)<span class="question-mark">?
+<a href=#256 id=256 data-nosnippet>256</a>    </span>);
+<a href=#257 id=257 data-nosnippet>257</a>    <span class="macro">assert!</span>(
+<a href=#258 id=258 data-nosnippet>258</a>        LegacyTorVersion::from_str(<span class="string">"1.2.3.4-tag (extra_info)"</span>)<span class="question-mark">?
+<a href=#259 id=259 data-nosnippet>259</a>            </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">Some</span>(<span class="string">"tag"</span>))<span class="question-mark">?
+<a href=#260 id=260 data-nosnippet>260</a>    </span>);
+<a href=#261 id=261 data-nosnippet>261</a>
+<a href=#262 id=262 data-nosnippet>262</a>    <span class="macro">assert!</span>(
+<a href=#263 id=263 data-nosnippet>263</a>        LegacyTorVersion::from_str(<span class="string">"1.2.3.4-tag (extra_info) (extra_info)"</span>)<span class="question-mark">?
+<a href=#264 id=264 data-nosnippet>264</a>            </span>== LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">Some</span>(<span class="string">"tag"</span>))<span class="question-mark">?
+<a href=#265 id=265 data-nosnippet>265</a>    </span>);
+<a href=#266 id=266 data-nosnippet>266</a>
+<a href=#267 id=267 data-nosnippet>267</a>    <span class="macro">assert!</span>(LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">Some</span>(<span class="string">"spaced tag"</span>)).is_err());
+<a href=#268 id=268 data-nosnippet>268</a>    <span class="macro">assert!</span>(LegacyTorVersion::new(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="prelude-val">Some</span>(<span class="number">4</span>), <span class="prelude-val">Some</span>(<span class="string">"" </span><span class="comment">/* empty tag */</span>)).is_err());
+<a href=#269 id=269 data-nosnippet>269</a>    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">""</span>).is_err());
+<a href=#270 id=270 data-nosnippet>270</a>    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">"1.2"</span>).is_err());
+<a href=#271 id=271 data-nosnippet>271</a>    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">"1.2-foo"</span>).is_err());
+<a href=#272 id=272 data-nosnippet>272</a>    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">"1.2.3.4-foo bar"</span>).is_err());
+<a href=#273 id=273 data-nosnippet>273</a>    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">"1.2.3.4-foo bar (extra_info)"</span>).is_err());
+<a href=#274 id=274 data-nosnippet>274</a>    <span class="macro">assert!</span>(LegacyTorVersion::from_str(<span class="string">"1.2.3.4-foo (extra_info) badtext"</span>).is_err());
+<a href=#275 id=275 data-nosnippet>275</a>    <span class="macro">assert!</span>(
+<a href=#276 id=276 data-nosnippet>276</a>        LegacyTorVersion::new(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="prelude-val">Some</span>(<span class="number">0</span>), <span class="prelude-val">None</span>)<span class="question-mark">?
+<a href=#277 id=277 data-nosnippet>277</a>            </span>&lt; LegacyTorVersion::new(<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="prelude-val">Some</span>(<span class="number">0</span>), <span class="prelude-val">None</span>)<span class="question-mark">?
+<a href=#278 id=278 data-nosnippet>278</a>    </span>);
+<a href=#279 id=279 data-nosnippet>279</a>    <span class="macro">assert!</span>(
+<a href=#280 id=280 data-nosnippet>280</a>        LegacyTorVersion::new(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="prelude-val">Some</span>(<span class="number">0</span>), <span class="prelude-val">None</span>)<span class="question-mark">?
+<a href=#281 id=281 data-nosnippet>281</a>            </span>&lt; LegacyTorVersion::new(<span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="prelude-val">Some</span>(<span class="number">0</span>), <span class="prelude-val">None</span>)<span class="question-mark">?
+<a href=#282 id=282 data-nosnippet>282</a>    </span>);
+<a href=#283 id=283 data-nosnippet>283</a>    <span class="macro">assert!</span>(
+<a href=#284 id=284 data-nosnippet>284</a>        LegacyTorVersion::new(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="prelude-val">Some</span>(<span class="number">0</span>), <span class="prelude-val">None</span>)<span class="question-mark">?
+<a href=#285 id=285 data-nosnippet>285</a>            </span>&lt; LegacyTorVersion::new(<span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="prelude-val">Some</span>(<span class="number">0</span>), <span class="prelude-val">None</span>)<span class="question-mark">?
+<a href=#286 id=286 data-nosnippet>286</a>    </span>);
+<a href=#287 id=287 data-nosnippet>287</a>
+<a href=#288 id=288 data-nosnippet>288</a>    <span class="comment">// ensure status tags make comparison between equal versions (apart from
+<a href=#289 id=289 data-nosnippet>289</a>    // tags) unknowable
+<a href=#290 id=290 data-nosnippet>290</a>    </span><span class="kw">let </span>zero_version = LegacyTorVersion::new(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="prelude-val">Some</span>(<span class="number">0</span>), <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+<a href=#291 id=291 data-nosnippet>291</a>    <span class="kw">let </span>zero_version_tag = LegacyTorVersion::new(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="prelude-val">Some</span>(<span class="number">0</span>), <span class="prelude-val">Some</span>(<span class="string">"tag"</span>))<span class="question-mark">?</span>;
+<a href=#292 id=292 data-nosnippet>292</a>
+<a href=#293 id=293 data-nosnippet>293</a>    <span class="macro">assert!</span>(!(zero_version &lt; zero_version_tag));
+<a href=#294 id=294 data-nosnippet>294</a>    <span class="macro">assert!</span>(!(zero_version &lt;= zero_version_tag));
+<a href=#295 id=295 data-nosnippet>295</a>    <span class="macro">assert!</span>(!(zero_version &gt; zero_version_tag));
+<a href=#296 id=296 data-nosnippet>296</a>    <span class="macro">assert!</span>(!(zero_version &gt;= zero_version_tag));
+<a href=#297 id=297 data-nosnippet>297</a>
+<a href=#298 id=298 data-nosnippet>298</a>    <span class="prelude-val">Ok</span>(())
+<a href=#299 id=299 data-nosnippet>299</a>}</code></pre></div></section></main></body></html>

@@ -42,7 +42,7 @@
 <a href=#42 id=42 data-nosnippet>42</a>        <span class="kw">let </span>transport_pattern = TRANSPORT_PATTERN.get_or_init(init_transport_pattern);
 <a href=#43 id=43 data-nosnippet>43</a>        <span class="comment">// validate each transport
 <a href=#44 id=44 data-nosnippet>44</a>        </span><span class="kw">for </span>transport <span class="kw">in </span><span class="kw-2">&amp;</span>transports {
-<a href=#45 id=45 data-nosnippet>45</a>            <span class="kw">if </span>!transport_pattern.is_match(<span class="kw-2">&amp;</span>transport) {
+<a href=#45 id=45 data-nosnippet>45</a>            <span class="kw">if </span>!transport_pattern.is_match(transport) {
 <a href=#46 id=46 data-nosnippet>46</a>                <span class="kw">return </span><span class="prelude-val">Err</span>(PluggableTransportConfigError::TransportNameInvalid(
 <a href=#47 id=47 data-nosnippet>47</a>                    transport.clone(),
 <a href=#48 id=48 data-nosnippet>48</a>                ));
@@ -166,7 +166,7 @@
 <a href=#166 id=166 data-nosnippet>166</a>
 <a href=#167 id=167 data-nosnippet>167</a>        <span class="comment">// validate key-values
 <a href=#168 id=168 data-nosnippet>168</a>        </span><span class="kw">for </span>(key, value) <span class="kw">in </span><span class="kw-2">&amp;</span>keyvalues {
-<a href=#169 id=169 data-nosnippet>169</a>            <span class="kw">if </span>key.contains(<span class="string">' '</span>) || key.contains(<span class="string">'='</span>) || key.len() == <span class="number">0 </span>{
+<a href=#169 id=169 data-nosnippet>169</a>            <span class="kw">if </span>key.contains(<span class="string">' '</span>) || key.contains(<span class="string">'='</span>) || key.is_empty() {
 <a href=#170 id=170 data-nosnippet>170</a>                <span class="kw">return </span><span class="prelude-val">Err</span>(BridgeLineError::KeyValueInvalid(<span class="macro">format!</span>(<span class="string">"{key}={value}"</span>)));
 <a href=#171 id=171 data-nosnippet>171</a>            }
 <a href=#172 id=172 data-nosnippet>172</a>        }
@@ -249,8 +249,8 @@
 <a href=#249 id=249 data-nosnippet>249</a>            .get_or_init(|| Regex::new(<span class="string">r"(?m)^(?&lt;key&gt;[^=]+)=(?&lt;value&gt;.*)$"</span>).unwrap());
 <a href=#250 id=250 data-nosnippet>250</a>
 <a href=#251 id=251 data-nosnippet>251</a>        <span class="kw">let </span><span class="kw-2">mut </span>keyvalues: Vec&lt;(String, String)&gt; = Default::default();
-<a href=#252 id=252 data-nosnippet>252</a>        <span class="kw">while let </span><span class="prelude-val">Some</span>(keyvalue) = tokens.next() {
-<a href=#253 id=253 data-nosnippet>253</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>(caps) = bridge_option_pattern.captures(<span class="kw-2">&amp;</span>keyvalue) {
+<a href=#252 id=252 data-nosnippet>252</a>        <span class="kw">for </span>keyvalue <span class="kw">in </span>tokens {
+<a href=#253 id=253 data-nosnippet>253</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>(caps) = bridge_option_pattern.captures(keyvalue) {
 <a href=#254 id=254 data-nosnippet>254</a>                <span class="kw">let </span>key = caps
 <a href=#255 id=255 data-nosnippet>255</a>                    .name(<span class="string">"key"</span>)
 <a href=#256 id=256 data-nosnippet>256</a>                    .expect(<span class="string">"missing key group"</span>)
