@@ -432,7 +432,7 @@ impl LegacyTorClient {
             if let Some(allowed_ports) = allowed_ports {
                 let allowed_addresses: Vec<String> = allowed_ports
                     .iter()
-                    .map(|port| format!("*{{}}:{port}"))
+                    .map(|port| format!("*:{port}"))
                     .collect();
                 let allowed_addresses = allowed_addresses.join(", ");
                 controller
