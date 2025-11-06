@@ -91,7 +91,7 @@ impl PluggableTransportConfig {
 pub struct BridgeLine {
     transport: String,
     address: SocketAddr,
-    fingerprint: String,
+    fingerprint: Option<String>,
     keyvalues: Vec<(String, String)>,
 }
 
@@ -134,13 +134,13 @@ pub enum BridgeLineError {
 /// A `BridgeLine` contains the information required to connect to a bridge through the means of a particular pluggable-transport (defined in a `PluggableTransportConfi`). For more information, see:
 /// - [https://tb-manual.torproject.org/bridges/](https://tb-manual.torproject.org/bridges/)
 impl BridgeLine {
-    /// Construct a new `BridgeLine` from its constiuent parts. The `transport` argument must be a valid C identifier and must have an associated `transport` defined in an associated `PluggableTransportConfig`. The `address` must have a non-zero port. The `fingerprint` is a length 40 base16-encoded string. Finally, the keys in the `keyvalues` list must not contain space (` `) or equal (`=`) characters.
+    /// Construct a new `BridgeLine` from its constituent parts. The `transport` argument must be a valid C identifier and must have an associated `transport` defined in an associated `PluggableTransportConfig`. The `address` must have a non-zero port. The `fingerprint` is a length 40 base16-encoded string. Finally, the keys in the `keyvalues` list must not contain space (` `) or equal (`=`) characters.
     ///
     /// In practice, bridge lines are distributed as entire strings so most consumers of these APIs are not likely to need this particular function.
     pub fn new(
         transport: String,
         address: SocketAddr,
-        fingerprint: String,
+        fingerprint: Option<String>,
         keyvalues: Vec<(String, String)>,
     ) -> Result<BridgeLine, BridgeLineError> {
         let transport_pattern = TRANSPORT_PATTERN.get_or_init(init_transport_pattern);
@@ -155,14 +155,15 @@ impl BridgeLine {
             return Err(BridgeLineError::AddressPortInvalid);
         }
 
-        static BRIDGE_FINGERPRINT_PATTERN: OnceLock<Regex> = OnceLock::new();
-        let bridge_fingerprint_pattern = BRIDGE_FINGERPRINT_PATTERN
-            .get_or_init(|| Regex::new(r"(?m)^[0-9a-fA-F]{40}$").unwrap());
-
-        // fingerprint should be a sha1 hash
-        if !bridge_fingerprint_pattern.is_match(&fingerprint) {
-            return Err(BridgeLineError::FingerprintInvalid(fingerprint));
-        }
+        let fingerprint = if let Some(fingerprint) = fingerprint {
+            // fingerprint should be a sha1 hash
+            if !Self::is_bridge_fingerprint_pattern(&fingerprint) {
+                return Err(BridgeLineError::FingerprintInvalid(fingerprint));
+            }
+            Some(fingerprint)
+        } else {
+            None
+        };
 
         // validate key-values
         for (key, value) in &keyvalues {
@@ -179,6 +180,14 @@ impl BridgeLine {
         })
     }
 
+    fn is_bridge_fingerprint_pattern(fingerprint: &str) -> bool {
+        static BRIDGE_FINGERPRINT_PATTERN: OnceLock<Regex> = OnceLock::new();
+        let bridge_fingerprint_pattern = BRIDGE_FINGERPRINT_PATTERN
+            .get_or_init(|| Regex::new(r"(?m)^[0-9a-fA-F]{40}$").unwrap());
+
+        bridge_fingerprint_pattern.is_match(fingerprint)
+    }
+
     /// Get a reference to this `BridgeLine`'s transport field.
     pub fn transport(&self) -> &String {
         &self.transport
@@ -190,7 +199,7 @@ impl BridgeLine {
     }
 
     /// Get a reference to this `BridgeLine`'s fingerprint field.
-    pub fn fingerprint(&self) -> &String {
+    pub fn fingerprint(&self) -> &Option<String> {
         &self.fingerprint
     }
 
@@ -204,7 +213,6 @@ impl BridgeLine {
     pub fn as_legacy_tor_setconf_value(&self) -> String {
         let transport = &self.transport;
         let address = self.address.to_string();
-        let fingerprint = self.fingerprint.to_string();
         let keyvalues: Vec<String> = self
             .keyvalues
             .iter()
@@ -212,14 +220,18 @@ impl BridgeLine {
             .collect();
         let keyvalues = keyvalues.join(" ");
 
-        format!("{transport} {address} {fingerprint} {keyvalues}")
+        if let Some(fingerprint) = &self.fingerprint {
+            format!("{transport} {address} {fingerprint} {keyvalues}")
+        } else {
+            format!("{transport} {address} {keyvalues}")
+        }
     }
 }
 
 impl FromStr for BridgeLine {
     type Err = BridgeLineError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut tokens = s.split(' ');
+        let mut tokens = s.split(' ').peekable();
         // get transport name
         let transport = if let Some(transport) = tokens.next() {
             transport
@@ -237,10 +249,14 @@ impl FromStr for BridgeLine {
             return Err(BridgeLineError::AddressMissing(s.to_string()));
         };
         // get the bridge fingerprint
-        let fingerprint = if let Some(fingerprint) = tokens.next() {
-            fingerprint
+        let fingerprint = if let Some(fingerprint) = tokens.peek() {
+            if Self::is_bridge_fingerprint_pattern(fingerprint) {
+                Some(tokens.next().unwrap().to_string())
+            } else {
+                None
+            }
         } else {
-            return Err(BridgeLineError::FingerprintMissing(s.to_string()));
+            None
         };
 
         // get the bridge options
@@ -267,11 +283,6 @@ impl FromStr for BridgeLine {
             }
         }
 
-        BridgeLine::new(
-            transport.to_string(),
-            address,
-            fingerprint.to_string(),
-            keyvalues,
-        )
+        BridgeLine::new(transport.to_string(), address, fingerprint, keyvalues)
     }
 }
