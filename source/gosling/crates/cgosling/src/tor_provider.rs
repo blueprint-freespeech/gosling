@@ -9,7 +9,11 @@ use std::path::Path;
 use std::str::FromStr;
 
 // extern crates
-#[cfg(any(feature = "arti-client-tor-provider", feature = "legacy-tor-provider", feature = "mock-tor-provider"))]
+#[cfg(any(
+    feature = "arti-client-tor-provider",
+    feature = "legacy-tor-provider",
+    feature = "mock-tor-provider"
+))]
 use anyhow::bail;
 #[cfg(feature = "impl-lib")]
 use cgosling_proc_macros::*;
