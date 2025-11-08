@@ -2,6 +2,36 @@
 
 ---
 
+## 2025-11-08 - New Release: tor-interface 0.6.1, gosling 0.5.1, cgosling 0.5.1 {.news-title}
+
+Today, we published new versions of the [tor-interface](https://crates.io/crates/tor-interface) and [gosling](https://crates.io/crates/gosling) crates to **crates.io** based on commit [](https://github.com/blueprint-freespeech/gosling/commit/).
+
+The major changes since tor-interface 0.6.0, gosling 0.5.0, and cgosling 0.5.0 follow:
+
+    - tor-interface
+        - fix bug in LegacyTorClient SETCONF ReachableAddresses call
+        - fix bug in bridge line parsing
+
+## 2025-10-03 - New Release: honk-rpc 0.3.1, tor-interface 0.6.0, gosling 0.5.0, cgosling 0.5.0 {.news-title}
+
+We have published new versions of the [honk-rpc](https://crates.io/crates/honk-rpc), [tor-interface](https://crates.io/crates/tor-interface), and [gosling](https://crates.io/crates/gosling) crates to **crates.io** based on commit [aff524511ced4bc7b6aa6268a23e6ddbf4c16931](https://github.com/blueprint-freespeech/gosling/commit/aff524511ced4bc7b6aa6268a23e6ddbf4c16931).
+
+The major changes since honk-rpc 0.3.0, tor-interface 0.5.0, gosling 0.4.0, and cgosling 0.4.0 follow:
+
+    - honk-rpc
+        - fix clippy and formatting errors
+    - tor-interface
+        - initial incomplete arti TorProvider implementation
+        - updated arti-csliient crate (and dependencies) to 0.33.0
+        - implement SAFECOOKIE and NULL authorisation for LegacyTorClient
+        - implement LegacyTorClientConfig::try_from_environment() function to read tor settings from environment variables
+        - add connect_async() function to TorPrvider trait and implement for all implementations
+        - make Ed25519PrivateKey::from_key_blob_legacy() function public
+    - gosling
+        - fix clippy and formatting errors
+    - cgosling
+        - fix clippy and formatting errors
+
 ## 2024-11-17 - New Release: tor-interface 0.5.0, gosling 0.4.0, and cgosling 0.4.0  {.news-title}
 ### by morgan {.news-author}
 
