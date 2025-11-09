@@ -54,10 +54,9 @@ which provide anonymous, secure, and private peer-to-peer functionality
 using Tor onion services.</p>
 <p>Gosling is:</p>
 <ul>
-<li>Open source</li>
-<li>Free to download, use, modify and contribute to</li>
-<li>Security conscious – it is written in Rust, a memory-safe language,
-and has already has been audited by an independent, external security
+<li>Open source – free to download, use, modify and contribute to</li>
+<li>Security conscious – written in Rust, a memory-safe language, and
+has already has been audited by an independent, external security
 service</li>
 <li>A work in progress – it is not done yet, but you can definitely
 explore and contribute to the code on our <a
@@ -82,51 +81,22 @@ trying to create secure and anonymous peer-to-peer applications. By not
 having to delve too deeply into protocol design or the Tor
 specifications, software developers will find it easier to improve
 privacy and anonymity, and to do so with more security assurance.</p>
-<p>Gosling is both a research project (“How do we modularise
-onion-service-providing code?”) and a practical Internet building-block
-(“Let’s build a functional prototype, which we can test and verify that
-it works”).</p>
-<h3 id="the-technical-weeds">The Technical Weeds</h3>
-<p>There are a class of libraries known as Tor Controllers which allow
-developers to programmatically control and manage the tor daemon. Some
-examples include <a href="https://stem.torproject.org/">Stem</a>, <a
-href="https://github.com/cretz/bine">Bine</a>, and <a
-href="https://github.com/Dhole/rust-tor-controller">rust-tor-controller</a>.
-These basically serve as a bridge to expose tor functionality to their
-respective programming languages. Gosling is built on top of a <a
-href="https://crates.io/crates/tor-interface">similar controller
-library</a>, but abstracts away most of the tor details leaving only
-high-level functionality.</p>
-<p>Server software (ssh, http, etc) already works well with tor. The tor
-daemon was originally created with these types of systems in mind. It is
-reasonable to setup the tor daemon through configuration files and the
-like when using these types of software. However, for client facing
-applications meant to be installed on users’ devices, this complexity
-becomes a burden. Tor integration and cryptographic implementation
-details represent an additional overhead that gets in the way of and
-limits the number of developers who can safely build applications in
-this space without potentially harming their users.</p>
-<p>Developers prefer to focus on the primary functionality of their
-application. In an ideal world, client applications would be able to use
-higher level APIs to communicate with each other. As an analogy, web
-developers can simply use XmlHttpRequests in JavaScript, without needing
-to first implement and fully understand the HTTP protocol. The security
-considerations and cryptographic complexities mean that there’s good
-reason for helping general developers avoid getting involved in the
-low-level Tor communications. Much can go wrong, and the consequences
-can be very bad indeed for users who want to rely on anonymity.</p>
-<p>Gosling provides an authentication and authorisation handshake which
-may be customised per protocol. For example, a chat protocol may include
-some additional information like an invite code, while other protocols
-may require some proof-of-work, or some additional verification via some
-other out-of-band channel like a QR code. For more information, please
-see our <a href="./gosling-spec.xhtml">specs</a> and <a
-href="https://github.com/blueprint-freespeech/gosling/tree/main/source/examples">example</a>
-projects!</p>
+<h3 id="getting-started">Getting Started</h3>
+<p>For a deeper-dive into the problems Gosling is designed to solve and
+our threat-model, please see our <a href="./design-doc.xhtml">design
+document</a>.</p>
+<p>For an overview of how to use the gosling Rust crate, please see the
+<a href="./usage-guide.xhtml">usage guide</a>.</p>
+<p>To see Gosling used in a toy application, see our Rust and C++
+examples in the <a
+href="https://github.com/blueprint-freespeech/gosling/tree/main/source/examples"><code>/source/examples</code></a>
+directory.</p>
+<p>For specifics about the Gosling protocol, please see our <a
+href="./gosling-spec.xhtml">protocol specification</a>.</p>
       <hr/>
       <footer>
         <p>&copy; 2023-2025 <a href="https://www.blueprintforfreespeech.net">Blueprint for Free Speech</a>. All rights reserved.</p>
-        <p><i>Page last modified date: 2024-02-01</i></p>
+        <p><i>Page last modified date: 2025-11-08</i></p>
       </footer>
     </div>
   </div>
