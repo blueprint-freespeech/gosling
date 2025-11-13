@@ -554,7 +554,7 @@ checksum = "9555578bc9e57714c812a1f84e4fc5b4d21fcb063490c624de019f7464c91268"
 
 [[package]]
 name = "cgosling"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "anyhow",
  "bson",
@@ -1630,7 +1630,7 @@ checksum = "9985c9503b412198aa4197559e9a318524ebc4519c229bfa05a535828c950b9d"
 
 [[package]]
 name = "gosling"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "anyhow",
  "bson",
@@ -4575,7 +4575,7 @@ dependencies = [
 
 [[package]]
 name = "tor-interface"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "anyhow",
  "arti-client",
