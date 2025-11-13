@@ -2,9 +2,18 @@
 
 ---
 
+## 2025-11-13 - New Release: tor-interface 0.6.2, gosling 0.5.2, cgosling 0.5.2 {.news-title}
+
+Today, we published new versions of the [tor-interface](https://crates.io/crates/tor-interface) and [gosling](https://crates.io/crates/gosling) crates to **crates.io** based on commit [e7be9bd5739f63d7fe362c7449812996b7dba9c1](https://github.com/blueprint-freespeech/gosling/commit/e7be9bd5739f63d7fe362c7449812996b7dba9c1).
+
+The major changes since tor-interface 0.6.1, gosling 0.5.1, and cgosling 0.5.1 follow:
+
+    - tor-interface
+        - fix bug in LegacyTorClient when setting up pluggable-transports
+
 ## 2025-11-08 - New Release: tor-interface 0.6.1, gosling 0.5.1, cgosling 0.5.1 {.news-title}
 
-Today, we published new versions of the [tor-interface](https://crates.io/crates/tor-interface) and [gosling](https://crates.io/crates/gosling) crates to **crates.io** based on commit [](https://github.com/blueprint-freespeech/gosling/commit/).
+Today, we published new versions of the [tor-interface](https://crates.io/crates/tor-interface) and [gosling](https://crates.io/crates/gosling) crates to **crates.io** based on commit [34e4063f398ed6eb97bb84ca0cea09b9b115f47f](https://github.com/blueprint-freespeech/gosling/commit/34e4063f398ed6eb97bb84ca0cea09b9b115f47f).
 
 The major changes since tor-interface 0.6.0, gosling 0.5.0, and cgosling 0.5.0 follow:
 
