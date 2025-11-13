@@ -94,16 +94,16 @@ pub enum Error {
     #[error("tor not bootstrapped")]
     LegacyTorNotBootstrapped(),
 
-    #[error("{0}")]
-    PluggableTransportConfigDirectoryCreationFailed(#[source] std::io::Error),
+    #[error("failed to create pluggable-transport directory: {0}")]
+    PluggableTransportDirectoryCreationFailed(#[source] std::io::Error),
 
     #[error("unable to create pluggable-transport directory because file with same name already exists: {0:?}")]
     PluggableTransportDirectoryNameCollision(PathBuf),
 
-    #[error("{0}")]
+    #[error("failed to remove old pluggable-transport symlink: {0}")]
     PluggableTransportSymlinkRemovalFailed(#[source] std::io::Error),
 
-    #[error("{0}")]
+    #[error("failed to create pluggable-transport symlink: {0}")]
     PluggableTransportSymlinkCreationFailed(#[source] std::io::Error),
 
     #[error("pluggable transport binary name not representable as utf8: {0:?}")]
@@ -454,7 +454,7 @@ impl LegacyTorClient {
                 if !std::path::Path::exists(&pt_directory) {
                     // path does not exist so create it
                     std::fs::create_dir(&pt_directory)
-                        .map_err(Error::PluggableTransportConfigDirectoryCreationFailed)?;
+                        .map_err(Error::PluggableTransportDirectoryCreationFailed)?;
                 } else if !std::path::Path::is_dir(&pt_directory) {
                     // path exists but it is not a directory
                     return Err(Error::PluggableTransportDirectoryNameCollision(
@@ -481,8 +481,8 @@ impl LegacyTorClient {
                         ));
                     };
 
-                    // remove any file that may exist with the same name
-                    if std::path::Path::exists(&pt_symlink) {
+                    // remove previous symlink if it exists
+                    if std::fs::read_link(&pt_symlink).is_ok() {
                         std::fs::remove_file(&pt_symlink)
                             .map_err(Error::PluggableTransportSymlinkRemovalFailed)?;
                     }
