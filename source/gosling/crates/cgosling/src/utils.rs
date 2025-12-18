@@ -159,7 +159,7 @@ pub unsafe extern "C" fn gosling_context_connect(
         let onion_stream = context.0.connect(target_address, Some(circuit_token))?;
         let tcp_stream: TcpStream = onion_stream.into();
 
-        #[cfg(any(target_os = "linux", target_os = "macos"))]
+        #[cfg(target_family = "unix")]
         let tcp_socket = tcp_stream.into_raw_fd();
         #[cfg(target_os = "windows")]
         let tcp_socket = tcp_stream.into_raw_socket();

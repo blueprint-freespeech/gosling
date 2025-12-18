@@ -8,7 +8,7 @@ if (BUILD_JAVA_BINDINGS)
         message(FATAL_ERROR "Java JNI not found; will not generate Java bindings")
     endif()
     set(gosling_java_bindings_sources
-        ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/cgosling.json
+        ${PROFILE_DIR}/cgosling.json
         build_java_bindings.rs
         Cargo.toml
         Gosling.java.handlebars
@@ -36,7 +36,7 @@ if (BUILD_JAVA_BINDINGS)
         OUTPUT ${gosling_java_bindings_outputs}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/src/net/blueprintforfreespeech/gosling
         # generate java source
-        COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo run ${CARGO_FLAGS} --bin build_java_bindings ${gosling_jni_library_name} ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/cgosling.json Gosling.java.handlebars ${CMAKE_CURRENT_BINARY_DIR}/src/net/blueprintforfreespeech/gosling/Gosling.java
+        COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo run ${CARGO_FLAGS} --bin build_java_bindings ${gosling_jni_library_name} ${PROFILE_DIR}/cgosling.json Gosling.java.handlebars ${CMAKE_CURRENT_BINARY_DIR}/src/net/blueprintforfreespeech/gosling/Gosling.java
         # build java classes and generate jni header
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/jar
         COMMAND javac -h ${CMAKE_CURRENT_BINARY_DIR} -d ${CMAKE_CURRENT_BINARY_DIR}/jar ${CMAKE_CURRENT_BINARY_DIR}/src/net/blueprintforfreespeech/gosling/Gosling.java
@@ -44,7 +44,7 @@ if (BUILD_JAVA_BINDINGS)
         COMMAND jar -cvf ${CMAKE_CURRENT_BINARY_DIR}/Gosling.jar -C ${CMAKE_CURRENT_BINARY_DIR}/jar/ .
         # build jni shared library sources
         COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_CURRENT_BINARY_DIR}/net_blueprintforfreespeech_gosling_Gosling.h ${CMAKE_CURRENT_BINARY_DIR}/GoslingJNI.h
-        COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo run ${CARGO_FLAGS} --bin build_java_bindings ${gosling_jni_library_name} ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/cgosling.json GoslingJNI.cpp.handlebars ${CMAKE_CURRENT_BINARY_DIR}/GoslingJNI.cpp
+        COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo run ${CARGO_FLAGS} --bin build_java_bindings ${gosling_jni_library_name} ${PROFILE_DIR}/cgosling.json GoslingJNI.cpp.handlebars ${CMAKE_CURRENT_BINARY_DIR}/GoslingJNI.cpp
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
