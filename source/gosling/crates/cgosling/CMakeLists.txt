@@ -76,7 +76,7 @@ add_custom_command(
 #
 if (ENABLE_TESTS)
     add_test(NAME cgosling_cargo_test
-        COMMAND env TEB_PATH=${TEB_PATH} CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo test ${CARGO_FLAGS} ${CGOSLING_FEATURES} -- --nocapture
+        COMMAND env TEB_PATH=${TEB_PATH} CARGO_TARGET_DIR=${CARGO_TARGET_DIR} PROFILE_DIR=${PROFILE_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo test ${CARGO_FLAGS} ${CGOSLING_FEATURES} -- --nocapture
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
     if (ENABLE_TOR_EXPERT_BUNDLE)
@@ -89,7 +89,7 @@ endif()
 #
 if (ENABLE_FUZZ_TESTS)
     add_test(NAME cgosling_cargo_fuzz_test
-        COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo fuzz run fuzz_cgosling -- -max_total_time=${FUZZ_TEST_MAX_TOTAL_TIME}
+        COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} PROFILE_DIR=${PROFILE_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo fuzz run fuzz_cgosling -- -max_total_time=${FUZZ_TEST_MAX_TOTAL_TIME}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
 endif()
