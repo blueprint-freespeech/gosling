@@ -16,8 +16,8 @@ set(tor_interface_sources
     src/tor_provider.rs)
 
 set(tor_interface_outputs
-    ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/libtor_interface.d
-    ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/libtor_interface.rlib)
+    ${PROFILE_DIR}/libtor_interface.d
+    ${PROFILE_DIR}/libtor_interface.rlib)
 
 #
 # tor-interface crate feature flags
@@ -48,7 +48,7 @@ endif()
 add_custom_command(
     DEPENDS ${tor_interface_sources}
     OUTPUT ${tor_interface_outputs}
-    COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo build ${CARGO_FLAGS} ${TOR_INTERFACE_FEATURES}
+    COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${CROSSRUSTFLAGS} cargo build ${CROSS_CARGO_FLAGS} ${TOR_INTERFACE_FEATURES}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_custom_target(tor_interface_target

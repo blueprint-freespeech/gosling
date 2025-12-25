@@ -23,7 +23,7 @@ endif()
 #
 
 set(gosling_c_header_sources
-    ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/cgosling.json
+    ${PROFILE_DIR}/cgosling.json
     build_c_bindings.rs
     Cargo.toml
     cgosling.h.handlebars)
@@ -32,7 +32,7 @@ add_custom_command(
     DEPENDS ${gosling_c_header_sources}
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cgosling.h
     # generate c header
-    COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo run ${CARGO_FLAGS} --bin build_c_bindings ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/cgosling.json cgosling.h.handlebars ${CMAKE_CURRENT_BINARY_DIR}/cgosling.h
+    COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo run ${CARGO_FLAGS} --bin build_c_bindings ${PROFILE_DIR}/cgosling.json cgosling.h.handlebars ${CMAKE_CURRENT_BINARY_DIR}/cgosling.h
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 add_custom_target(gosling_c_header_target
@@ -47,10 +47,10 @@ endif()
 #
 
 add_custom_command(
-    DEPENDS ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_STATIC}
+    DEPENDS ${PROFILE_DIR}/${CGOSLING_STATIC}
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CGOSLING_STATIC}
     # copy cargo-built static lib to current directory
-    COMMAND ${CMAKE_COMMAND} -E copy ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_STATIC} ${CMAKE_CURRENT_BINARY_DIR}/${CGOSLING_STATIC}
+    COMMAND ${CMAKE_COMMAND} -E copy ${PROFILE_DIR}/${CGOSLING_STATIC} ${CMAKE_CURRENT_BINARY_DIR}/${CGOSLING_STATIC}
 )
 add_custom_target(gosling_c_static_lib_target
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CGOSLING_STATIC})
@@ -101,7 +101,7 @@ add_dependencies(gosling_c_static_bindings_target gosling_c_static_bindings)
 
 # generate cgosling.c
 set(gosling_c_shared_bindings_sources
-    ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/cgosling.json
+    ${PROFILE_DIR}/cgosling.json
     build_c_bindings.rs
     Cargo.toml
     cgosling.c.handlebars)
@@ -111,7 +111,7 @@ add_custom_command(
     DEPENDS ${gosling_c_shared_bindings_sources}
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cgosling.c
     # generate c source
-    COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo run ${CARGO_FLAGS} --bin build_c_bindings ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/cgosling.json cgosling.c.handlebars ${CMAKE_CURRENT_BINARY_DIR}/cgosling.c
+    COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo run ${CARGO_FLAGS} --bin build_c_bindings ${PROFILE_DIR}/cgosling.json cgosling.c.handlebars ${CMAKE_CURRENT_BINARY_DIR}/cgosling.c
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 add_custom_target(gosling_c_shared_sources_target ALL
@@ -126,7 +126,7 @@ set_target_properties(gosling_c_shared_bindings
     OUTPUT_NAME cgosling
     VERSION ${CGOSLING_VERSION}
     SOVERSION ${CGOSLING_MAJOR_VERSION})
-target_link_libraries(gosling_c_shared_bindings PRIVATE ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/${CGOSLING_IMPL_STATIC})
+target_link_libraries(gosling_c_shared_bindings PRIVATE ${PROFILE_DIR}/${CGOSLING_IMPL_STATIC})
 
 if (ENABLE_ARTI_CLIENT_TOR_PROVIDER)
     target_link_libraries(gosling_c_shared_bindings PRIVATE OpenSSL::SSL)
