@@ -194,6 +194,21 @@ fn test_tor_provider_target_addr() -> anyhow::Result<()> {
         }
     }
 
+    let valid_host_port_tuple: &[(String, u16)] = &[
+        ("127.0.0.1".to_string(), 443u16),
+        ("[::1]".to_string(), 8080u16),
+        ("[2001:db8:0000:0042:0000:8a2e:0370:7334]".to_string(), 3306u16),
+        ("6l62fw7tqctlu5fesdqukvpoxezkaxbzllrafa2ve6ewuhzphxczsjyd.onion".to_string(), 1234u16),
+        ("example.com".to_string(), 80u16),
+    ];
+
+    for host_port_tuple in valid_host_port_tuple {
+        match TargetAddr::try_from(host_port_tuple.clone()) {
+            Ok(target_addr) => println!("{host_port_tuple:?} => {target_addr}"),
+            Err(err) => Err(err)?,
+        }
+    }
+
     Ok(())
 }
 

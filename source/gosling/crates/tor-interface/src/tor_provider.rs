@@ -241,6 +241,17 @@ impl FromStr for TargetAddr {
     }
 }
 
+impl TryFrom<(String, u16)> for TargetAddr {
+    type Error = Error;
+
+    fn try_from(value: (String, u16)) -> Result<Self, Self::Error> {
+        let host = value.0;
+        let port = value.1;
+        let address = format!("{host}:{port}");
+        TargetAddr::from_str(&address)
+    }
+}
+
 impl std::fmt::Display for TargetAddr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
