@@ -2,6 +2,14 @@
 
 ---
 
+## 2026-02-01: Gosling: Build Anonymous, Secure, and Metadata- Resistant Peer-to-Peer Applications using Tor Onion Services
+
+A talk given at [FOSDEM 2026](https://fosdem.org/2026/schedule/event/U9QZSJ-gosling-p2p-onion-services/) about the privacy and security properties of Gosling and how it can be used to build peer-to-peer applications.
+
+#### Slides: [2026-02-01 - fosdem2026-slides.pdf](<pdfs/2026-02-01 - fosdem2026-slides.pdf>)
+
+#### Video: [https://video.fosdem.org/2026/ud2218a/U9QZSJ-gosling-p2p-onion-services.av1.webm](https://video.fosdem.org/2026/ud2218a/U9QZSJ-gosling-p2p-onion-services.av1.webm)
+
 ## 2025-08-09: Gosling: Build Anonymous, Secure, and Metadata-Resistant Peer-to-Peer Applications Using Tor Onion Services
 
 A talk given at [WHY2025](https://why2025.org/) about Gosling, how it works, and how it can be used.
