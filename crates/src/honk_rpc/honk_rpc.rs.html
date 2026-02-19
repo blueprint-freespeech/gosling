@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/honk-rpc/src/honk_rpc.rs`."><title>honk_rpc.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-e56847b5.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="honk_rpc" data-themes="" data-resource-suffix="" data-rustdoc-version="1.91.0 (f8297e351 2025-10-28)" data-channel="1.91.0" data-search-js="search-e256b49e.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../static.files/storage-e2aeef58.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-6dc2a7f3.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">honk_rpc/</div>honk_rpc.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="comment">// standard
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/honk-rpc/src/honk_rpc.rs`."><title>honk_rpc.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-ca0dd0c4.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="honk_rpc" data-themes="" data-resource-suffix="" data-rustdoc-version="1.93.0 (254b59607 2026-01-19)" data-channel="1.93.0" data-search-js="search-9e2438ea.js" data-stringdex-js="stringdex-a3946164.js" data-settings-js="settings-c38705f0.js" ><script src="../../static.files/storage-e2aeef58.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-a410ff4d.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">honk_rpc/</div>honk_rpc.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="comment">// standard
 <a href=#2 id=2 data-nosnippet>2</a></span><span class="kw">use </span>std::collections::VecDeque;
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span>std::fmt::Debug;
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span>std::io::{Cursor, ErrorKind};
@@ -474,7 +474,7 @@
 <a href=#474 id=474 data-nosnippet>474</a>
 <a href=#475 id=475 data-nosnippet>475</a>        request_section.insert(<span class="string">"function"</span>, value.function);
 <a href=#476 id=476 data-nosnippet>476</a>
-<a href=#477 id=477 data-nosnippet>477</a>        <span class="kw">if </span>value.version != <span class="number">0i32 </span>{
+<a href=#477 id=477 data-nosnippet>477</a>        <span class="kw">if </span>value.<span class="macro">version !</span>= <span class="number">0i32 </span>{
 <a href=#478 id=478 data-nosnippet>478</a>            request_section.insert(<span class="string">"version"</span>, value.version);
 <a href=#479 id=479 data-nosnippet>479</a>        }
 <a href=#480 id=480 data-nosnippet>480</a>
@@ -1214,7 +1214,7 @@
 <a href=#1214 id=1214 data-nosnippet>1214</a>        <span class="kw">let </span>pending_bytes: usize = pending_data.len();
 <a href=#1215 id=1215 data-nosnippet>1215</a>        <span class="kw">let </span><span class="kw-2">mut </span>bytes_written: usize = <span class="number">0usize</span>;
 <a href=#1216 id=1216 data-nosnippet>1216</a>
-<a href=#1217 id=1217 data-nosnippet>1217</a>        <span class="kw">while </span>bytes_written != pending_bytes {
+<a href=#1217 id=1217 data-nosnippet>1217</a>        <span class="kw">while </span><span class="macro">bytes_written !</span>= pending_bytes {
 <a href=#1218 id=1218 data-nosnippet>1218</a>            <span class="kw">match </span><span class="self">self</span>.stream.write(pending_data) {
 <a href=#1219 id=1219 data-nosnippet>1219</a>                <span class="prelude-val">Err</span>(err) =&gt; {
 <a href=#1220 id=1220 data-nosnippet>1220</a>                    <span class="kw">let </span>kind = err.kind();
@@ -1588,7 +1588,7 @@
 <a href=#1588 id=1588 data-nosnippet>1588</a>        std::time::Instant::now().duration_since(start)
 <a href=#1589 id=1589 data-nosnippet>1589</a>    );
 <a href=#1590 id=1590 data-nosnippet>1590</a>    pat.client_call(<span class="string">"namespace"</span>, <span class="string">"function"</span>, <span class="number">0</span>, <span class="macro">doc!</span> {})<span class="question-mark">?</span>;
-<a href=#1591 id=1591 data-nosnippet>1591</a>    <span class="kw">while </span>alice_apiset.call_count != <span class="number">1 </span>{
+<a href=#1591 id=1591 data-nosnippet>1591</a>    <span class="kw">while </span>alice_apiset.<span class="macro">call_count !</span>= <span class="number">1 </span>{
 <a href=#1592 id=1592 data-nosnippet>1592</a>        pat.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
 <a href=#1593 id=1593 data-nosnippet>1593</a>        alice.update(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut </span>[<span class="kw-2">&amp;mut </span>alice_apiset]))<span class="question-mark">?</span>;
 <a href=#1594 id=1594 data-nosnippet>1594</a>    }
@@ -1607,7 +1607,7 @@
 <a href=#1607 id=1607 data-nosnippet>1607</a>        std::time::Instant::now().duration_since(start)
 <a href=#1608 id=1608 data-nosnippet>1608</a>    );
 <a href=#1609 id=1609 data-nosnippet>1609</a>    pat.client_call(<span class="string">"namespace"</span>, <span class="string">"function"</span>, <span class="number">0</span>, <span class="macro">doc!</span> {})<span class="question-mark">?</span>;
-<a href=#1610 id=1610 data-nosnippet>1610</a>    <span class="kw">while </span>alice_apiset.call_count != <span class="number">2 </span>{
+<a href=#1610 id=1610 data-nosnippet>1610</a>    <span class="kw">while </span>alice_apiset.<span class="macro">call_count !</span>= <span class="number">2 </span>{
 <a href=#1611 id=1611 data-nosnippet>1611</a>        pat.update(<span class="prelude-val">None</span>)<span class="question-mark">?</span>;
 <a href=#1612 id=1612 data-nosnippet>1612</a>        alice.update(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut </span>[<span class="kw-2">&amp;mut </span>alice_apiset]))<span class="question-mark">?</span>;
 <a href=#1613 id=1613 data-nosnippet>1613</a>    }
@@ -1632,4 +1632,5 @@
 <a href=#1632 id=1632 data-nosnippet>1632</a>        <span class="prelude-val">Err</span>(err) =&gt; <span class="macro">panic!</span>(<span class="string">"unexpected error: {:?}"</span>, err),
 <a href=#1633 id=1633 data-nosnippet>1633</a>    }
 <a href=#1634 id=1634 data-nosnippet>1634</a>    <span class="prelude-val">Ok</span>(())
-<a href=#1635 id=1635 data-nosnippet>1635</a>}</code></pre></div></section></main></body></html>
+<a href=#1635 id=1635 data-nosnippet>1635</a>}
+</code></pre></div></section></main></body></html>
