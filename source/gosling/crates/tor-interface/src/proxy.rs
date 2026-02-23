@@ -9,7 +9,7 @@ pub enum ProxyConfigError {
     Generic(String),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 /// Configuration for a SOCKS4 proxy
 pub struct Socks4ProxyConfig {
     pub(crate) address: TargetAddr,
@@ -35,7 +35,7 @@ impl Socks4ProxyConfig {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 /// Configuration for a SOCKS5 proxy
 pub struct Socks5ProxyConfig {
     pub(crate) address: TargetAddr,
@@ -88,7 +88,7 @@ impl Socks5ProxyConfig {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 /// Configuration for an HTTP CONNECT proxy (`HTTPSProxy` in c-tor torrc configuration)
 pub struct HttpsProxyConfig {
     pub(crate) address: TargetAddr,
@@ -133,7 +133,7 @@ impl HttpsProxyConfig {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 /// An enum representing a possible proxy server configuration with address and possible credentials.
 pub enum ProxyConfig {
     /// A SOCKS4 proxy

@@ -87,7 +87,7 @@ impl PluggableTransportConfig {
 }
 
 /// Configuration for a bridge line to be used with a pluggable-transport
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct BridgeLine {
     transport: String,
     address: SocketAddr,
