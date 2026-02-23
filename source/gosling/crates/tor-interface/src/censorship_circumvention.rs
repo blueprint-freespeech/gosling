@@ -208,7 +208,6 @@ impl BridgeLine {
         &self.keyvalues
     }
 
-    #[cfg(feature = "legacy-tor-provider")]
     /// Serialise this `BridgeLine` to the value set via `SETCONF Bridge...` legacy c-tor control-port command.
     pub fn as_legacy_tor_setconf_value(&self) -> String {
         let transport = &self.transport;
@@ -225,6 +224,12 @@ impl BridgeLine {
         } else {
             format!("{transport} {address} {keyvalues}")
         }
+    }
+}
+
+impl ToString for BridgeLine {
+    fn to_string(&self) -> String {
+        self.as_legacy_tor_setconf_value()
     }
 }
 
