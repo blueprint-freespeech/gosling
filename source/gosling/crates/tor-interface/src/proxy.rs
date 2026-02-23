@@ -33,6 +33,10 @@ impl Socks4ProxyConfig {
 
         Ok(Self { address })
     }
+
+    pub fn address(&self) -> &TargetAddr {
+        &self.address
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -86,6 +90,18 @@ impl Socks5ProxyConfig {
             password,
         })
     }
+
+    pub fn address(&self) -> &TargetAddr {
+        &self.address
+    }
+
+    pub fn username(&self) -> &Option<String> {
+        &self.username
+    }
+
+    pub fn  password(&self) -> &Option<String> {
+        &self.password
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -130,6 +146,18 @@ impl HttpsProxyConfig {
             username,
             password,
         })
+    }
+
+    pub fn address(&self) -> &TargetAddr {
+        &self.address
+    }
+
+    pub fn username(&self) -> &Option<String> {
+        &self.username
+    }
+
+    pub fn  password(&self) -> &Option<String> {
+        &self.password
     }
 }
 
