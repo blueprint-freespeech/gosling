@@ -1,3 +1,9 @@
+gosling (0.5.3-1) unstable; urgency=low
+
+  * Updated cgosling crate to 0.5.3
+
+ -- morgan <morgan@blueprintforfreespeech.net>  Mon, 23 Feb 2026 00:00:00 +0000
+
 gosling (0.5.2-1) unstable; urgency=low
 
   * Updated cgosling crate to 0.5.2
