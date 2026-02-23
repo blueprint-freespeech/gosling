@@ -9,7 +9,8 @@ set(copy_sources
     "2024-05-02 - ripe-community-projects-fund.pdf"
     "2024-11-12 - radically-open-security.pdf"
     "2024-11-20 - state-of-the-onion.pdf"
-    "2025-08-09 - why2025-slides.pdf")
+    "2025-08-09 - why2025-slides.pdf"
+    "2026-02-01 - fosdem2026-slides.pdf")
 
 foreach(file ${copy_sources})
     add_custom_command(
