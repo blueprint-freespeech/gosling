@@ -215,12 +215,24 @@ pub enum TargetAddr {
     Domain(DomainAddr),
 }
 
-impl From<(V3OnionServiceId, u16)> for TargetAddr {
-    fn from(target_tuple: (V3OnionServiceId, u16)) -> Self {
-        TargetAddr::OnionService(OnionAddr::V3(OnionAddrV3::new(
-            target_tuple.0,
-            target_tuple.1,
-        )))
+impl TargetAddr {
+    pub fn host(&self) -> String {
+        match self {
+            TargetAddr::Socket(addr) => addr.ip().to_string(),
+            TargetAddr::OnionService(OnionAddr::V3(addr)) => {
+                let service_id = addr.service_id();
+                format!("{service_id}.onion")
+            },
+            TargetAddr::Domain(addr) => addr.domain().to_string(),
+        }
+    }
+
+    pub fn port(&self) -> u16 {
+        match self {
+            TargetAddr::Socket(addr) => addr.port(),
+            TargetAddr::OnionService(OnionAddr::V3(addr)) => addr.virt_port(),
+            TargetAddr::Domain(addr) => addr.port(),
+        }
     }
 }
 
@@ -238,6 +250,15 @@ impl FromStr for TargetAddr {
             s.to_string(),
             "TargetAddr".to_string(),
         ))
+    }
+}
+
+impl From<(V3OnionServiceId, u16)> for TargetAddr {
+    fn from(target_tuple: (V3OnionServiceId, u16)) -> Self {
+        TargetAddr::OnionService(OnionAddr::V3(OnionAddrV3::new(
+            target_tuple.0,
+            target_tuple.1,
+        )))
     }
 }
 
