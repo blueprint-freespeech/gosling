@@ -272,18 +272,10 @@ fn main() {
     if cfg!(not(feature = "impl-lib")) {
         // set by cargo
         let crate_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-        // set by cargo
-        let profile = match std::env::var("PROFILE") {
-            Ok(target) => target,
-            Err(_) => panic!("PROFILE not set"),
-        };
-        // set by cmake
-        let target_dir = match std::env::var("CARGO_TARGET_DIR") {
-            Ok(target) => PathBuf::from(target).join(profile),
-            Err(_) => panic!("CARGO_TARGET_DIR not set"),
-        };
+        
+        let profile_dir = PathBuf::from(std::env::var("PROFILE_DIR").unwrap());
 
-        let header_file_path = target_dir.join("cgosling.h");
+        let header_file_path = profile_dir.join("cgosling.h");
         println!("cargo:rerun-if-changed={}", header_file_path.display());
 
         // generate libgosling.h C header
@@ -302,7 +294,7 @@ fn main() {
         let idl = parse_header(source.as_str());
 
         // and write json IDL to disk
-        let json_file_path = target_dir.join("cgosling.json");
+        let json_file_path = profile_dir.join("cgosling.json");
         println!("cargo:rerun-if-changed={}", json_file_path.display());
         let mut json_file = match File::create(json_file_path) {
             Ok(file) => file,
