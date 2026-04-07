@@ -2,6 +2,36 @@
 
 ---
 
+## 2026-04-07 - New Release: tor-interface 0.6.5 {.news-title}
+
+Published new version of the [tor-interface](https://crates.io/crates/tor-interface) crate to **crates.io** based on commit [b3a7336cc1458e7d29e68e29f58b7f1467a183e3](https://github.com/blueprint-freespeech/gosling/commit/b3a7336cc1458e7d29e68e29f58b7f1467a183e3).
+
+The major changes since tor-interface 0.6.4 follow:
+
+    - tor-interface
+        - implement/derive Eq, Ord, PartialEq, and PartialOrd for public key types
+
+## 2026-02-23 - New Release: tor-interface 0.6.4, gosling 0.5.3, and cgosling 0.5.3 {.news-title}
+
+Published new versions of the [tor-interface](https://crates.io/crates/tor-interface) and [gosling](https://crates.io/crates/gosling) crates to **crates.io** based on commit [bd11d540c8a44faaca308fc6b08c6f889d901e32](https://github.com/blueprint-freespeech/gosling/commit/bd11d540c8a44faaca308fc6b08c6f889d901e32).
+
+The major changes since tor-interface 0.63, gosling 0.5.2, and cgosling 0.5.2 follow:
+
+    - tor-interface
+        - implement pass-through getters for TargetAddr
+        - derive PartialEq BridgeLine and ProxyConfig types
+        - implement ToString trait for BridgeLine
+        - add getters to ProxyConfig types
+
+## 2026-02-18 - New Release: tor-interface 0.6.3 {.news-title}
+
+Published new version of the [tor-interface](https://crates.io/crates/tor-interface) crate to **crates.io** based on commit [acfcefb61c7812f254631454edff0fb24b1afcaf](https://github.com/blueprint-freespeech/gosling/commit/acfcefb61c7812f254631454edff0fb24b1afcaf).
+
+The major changes since tor-interface 0.6.2 follow:
+
+    - tor-interface
+        - implemented TryFrom<String,u16> for TargetAddr
+
 ## 2025-11-13 - New Release: tor-interface 0.6.2, gosling 0.5.2, cgosling 0.5.2 {.news-title}
 
 Today, we published new versions of the [tor-interface](https://crates.io/crates/tor-interface) and [gosling](https://crates.io/crates/gosling) crates to **crates.io** based on commit [e7be9bd5739f63d7fe362c7449812996b7dba9c1](https://github.com/blueprint-freespeech/gosling/commit/e7be9bd5739f63d7fe362c7449812996b7dba9c1).
