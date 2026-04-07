@@ -132,7 +132,7 @@ pub struct Ed25519PrivateKey {
 /// An ed25519 public key.
 ///
 /// This key type is derived from [`Ed25519PrivateKey`] and can be converted to a [`V3OnionServiceId`]. It can also be used to verify a [`Ed25519Signature`].
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct Ed25519PublicKey {
     public_key: pk::ed25519::PublicKey,
 }
@@ -150,13 +150,13 @@ pub struct X25519PrivateKey {
 }
 
 /// An x25519 public key
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct X25519PublicKey {
     public_key: pk::curve25519::PublicKey,
 }
 
 /// A v3 onion-service id
-#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct V3OnionServiceId {
     data: [u8; V3_ONION_SERVICE_ID_STRING_LENGTH],
 }
@@ -465,9 +465,15 @@ impl Ed25519PublicKey {
     }
 }
 
-impl PartialEq for Ed25519PublicKey {
-    fn eq(&self, other: &Self) -> bool {
-        self.public_key.eq(&other.public_key)
+impl PartialOrd for Ed25519PublicKey {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.as_bytes().partial_cmp(other.as_bytes())
+    }
+}
+
+impl Ord for Ed25519PublicKey {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.as_bytes().cmp(other.as_bytes())
     }
 }
 
