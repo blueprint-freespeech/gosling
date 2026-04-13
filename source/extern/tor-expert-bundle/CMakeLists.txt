@@ -1,6 +1,6 @@
 # TEB shorthand for tor-expert-bundle
 if (NOT TEB_VERSION)
-    set(TEB_VERSION 15.0.6)
+    set(TEB_VERSION 15.0.9)
 endif()
 
 # Guess if TEB_TARGET not manually specified
