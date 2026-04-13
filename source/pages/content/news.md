@@ -2,6 +2,16 @@
 
 ---
 
+## 2026-04-13 - New Release: tor-interface 0.6.6 {.news-title}
+
+Published new version of the [tor-interface](https://crates.io/crates/tor-interface) crate to **crates.io** based on commit [cfa60b8b1251b8bc3cd5df7d92f8112014dcc0af](https://github.com/blueprint-freespeech/gosling/commit/cfa60b8b1251b8bc3cd5df7d92f8112014dcc0af).
+
+The major changes since tor-interface 0.6.5 follow:
+
+    - tor-interface
+        - fix typo in X25519PrivateKey::from_raw() which prevented key round-tripping
+
+
 ## 2026-04-07 - New Release: tor-interface 0.6.5 {.news-title}
 
 Published new version of the [tor-interface](https://crates.io/crates/tor-interface) crate to **crates.io** based on commit [b3a7336cc1458e7d29e68e29f58b7f1467a183e3](https://github.com/blueprint-freespeech/gosling/commit/b3a7336cc1458e7d29e68e29f58b7f1467a183e3).
