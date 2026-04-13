@@ -2,6 +2,16 @@
 
 ---
 
+## 2026-04-13 - New Release: tor-interface 0.6.7 {.news-title}
+
+Published new version of the [tor-interface](https://crates.io/crates/tor-interface) crate to **crates.io** based on commit [11df30efb536b06f055b8ecc4efbf756543f04e8](https://github.com/blueprint-freespeech/gosling/commit/11df30efb536b06f055b8ecc4efbf756543f04e8).
+
+The major changes since tor-interface 0.6.6 follow:
+
+    - tor-interface
+        - X25519PrivateKey no longer needs to check for clamping; version 2.0.1 of the x25519-dalek crate no longer clamsp on construction
+
+
 ## 2026-04-13 - New Release: tor-interface 0.6.6 {.news-title}
 
 Published new version of the [tor-interface](https://crates.io/crates/tor-interface) crate to **crates.io** based on commit [cfa60b8b1251b8bc3cd5df7d92f8112014dcc0af](https://github.com/blueprint-freespeech/gosling/commit/cfa60b8b1251b8bc3cd5df7d92f8112014dcc0af).
