@@ -23,7 +23,7 @@ num_enum = "0.6"
 rand = "0.9"
 thiserror = "1.0"
 tokio = { version = "1", features = ["full"], optional = true }
-tor-interface = { version = "0.6.4", path = "../tor-interface" }
+tor-interface = { path = "../tor-interface" }
 
 [dev-dependencies]
 anyhow = "1.0"
