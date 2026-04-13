@@ -86,6 +86,15 @@ fn test_crypto_ed25519() -> Result<(), anyhow::Error> {
         Err(err) => panic!("unexpected error: {:?}", err),
     }
 
+    // ensure round tripping works
+    for _ in 0..255 {
+        let private = Ed25519PrivateKey::generate();
+        assert!(Ed25519PrivateKey::from_raw(&private.to_bytes()).is_ok());
+
+        let public = Ed25519PublicKey::from_private_key(&private);
+        assert!(Ed25519PublicKey::from_raw(&public.as_bytes()).is_ok());
+    }
+
     Ok(())
 }
 
@@ -134,6 +143,12 @@ fn test_crypto_x25519() -> Result<(), anyhow::Error> {
 
     let (signature, signbit) = private_key.sign_message(message)?;
     assert!(signature.verify_x25519(message, &public_key, signbit));
+
+    // ensure round tripping works
+    for _ in 0..255 {
+        let private = X25519PrivateKey::generate();
+        assert!(X25519PrivateKey::from_raw(&private.to_bytes()).is_ok());
+    }
 
     Ok(())
 }

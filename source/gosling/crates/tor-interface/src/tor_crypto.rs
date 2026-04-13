@@ -546,14 +546,9 @@ impl X25519PrivateKey {
     ///
     /// To securely generate a valid `X25519PrivateKey`, use [`X25519PrivateKey::generate()`].
     pub fn from_raw(raw: &[u8; X25519_PRIVATE_KEY_SIZE]) -> Result<X25519PrivateKey, Error> {
-        // see: https://docs.rs/x25519-dalek/2.0.0-pre.1/src/x25519_dalek/x25519.rs.html#277
-        if raw[0] == raw[0] & 248 && raw[31] == (raw[31] & 127) | 64 {
-            Ok(X25519PrivateKey {
-                secret_key: pk::curve25519::StaticSecret::from(*raw),
-            })
-        } else {
-            Err(Error::KeyInvalid)
-        }
+        Ok(X25519PrivateKey {
+            secret_key: pk::curve25519::StaticSecret::from(*raw),
+        })
     }
 
     /// Create an `X25519PrivateKey` from a [`String`] in the legacy c-tor daemon key blob format used in the `ONION_CLIENT_AUTH_ADD` control-port command. From the c-tor control [specification](https://spec.torproject.org/control-spec/commands.html#onion_client_auth_add):
