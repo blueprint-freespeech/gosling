@@ -10,8 +10,8 @@ set(gosling_sources
     src/lib.rs)
 
 set(gosling_outputs
-    ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/libgosling.d
-    ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/libgosling.rlib)
+    ${PROFILE_DIR}/libgosling.d
+    ${PROFILE_DIR}/libgosling.rlib)
 
 #
 # gosling crate feature flags
@@ -39,7 +39,7 @@ endif()
 add_custom_command(
     DEPENDS ${gosling_sources}
     OUTPUT ${gosling_outputs}
-    COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} cargo build ${CARGO_FLAGS} ${GOSLING_FEATURES}
+    COMMAND env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${CROSSRUSTFLAGS} cargo build ${CROSS_CARGO_FLAGS} ${GOSLING_FEATURES}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_custom_target(gosling_target

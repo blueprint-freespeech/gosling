@@ -23,7 +23,19 @@ else()
     message(FATAL_ERROR "CMAKE_BUILD_TYPE not defined")
 endif()
 
+string(APPEND CROSSRUSTFLAGS " ${RUSTFLAGS}")
+
 set(CARGO_TARGET_DIR ${CMAKE_CURRENT_BINARY_DIR}/gosling)
+
+if(CARGO_TARGET)
+    separate_arguments(CROSS_CARGO_FLAGS UNIX_COMMAND "${CARGO_FLAGS} --target ${CARGO_TARGET}")
+
+    set(PROFILE_DIR ${CARGO_TARGET_DIR}/${CARGO_TARGET}/${CARGO_PROFILE})
+else()
+    set(CROSS_CARGO_FLAGS ${CARGO_FLAGS})
+
+    set(PROFILE_DIR ${CARGO_TARGET_DIR}/${CARGO_PROFILE})
+endif()
 
 # enable link-time opitmisation (if supported by platform)
 include(CheckIPOSupported)

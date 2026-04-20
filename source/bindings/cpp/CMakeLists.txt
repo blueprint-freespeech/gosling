@@ -3,7 +3,7 @@
 #
 
 set(gosling_cpp_header_sources
-    ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/cgosling.json
+    ${PROFILE_DIR}/cgosling.json
     build_cpp_bindings.rs
     Cargo.toml
     cgosling.hpp.handlebars)
@@ -11,7 +11,7 @@ set(gosling_cpp_header_sources
 add_custom_command(
     DEPENDS ${gosling_cpp_header_sources}
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cgosling.hpp
-    COMMAND  env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo run ${CARGO_FLAGS} --bin build_cpp_bindings ${CARGO_TARGET_DIR}/${CARGO_PROFILE}/cgosling.json cgosling.hpp.handlebars ${CMAKE_CURRENT_BINARY_DIR}/cgosling.hpp
+    COMMAND  env CARGO_TARGET_DIR=${CARGO_TARGET_DIR} RUSTFLAGS=${RUSTFLAGS} RUST_BACKTRACE=full cargo run ${CARGO_FLAGS} --bin build_cpp_bindings ${PROFILE_DIR}/cgosling.json cgosling.hpp.handlebars ${CMAKE_CURRENT_BINARY_DIR}/cgosling.hpp
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 add_custom_target(gosling_cpp_header_target
