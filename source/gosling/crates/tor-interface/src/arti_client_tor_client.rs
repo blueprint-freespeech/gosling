@@ -264,6 +264,70 @@ impl ArtiClientTorClient {
             .map_err(Error::TcpStreamIntoFailed)?;
         Ok::<std::net::TcpStream, tor_provider::Error>(client_stream)
     }
+
+    fn spawn_rend_handler(
+        runtime: &runtime::Runtime,
+        mut rend_requests: impl tokio_stream::Stream<Item = tor_hsservice::RendRequest> + Send + Unpin + 'static,
+        virt_port: u16,
+        socket_addr: SocketAddr,
+    ) {
+        // start a task which accepts every RendRequest to get a StreamRequest
+        runtime.spawn(async move {
+            while let Some(request) = rend_requests.next().await {
+                let mut stream_requests = match request.accept().await {
+                    Ok(stream_requests) => stream_requests,
+                    // TODO: probably not our problem?
+                    _ => return,
+                };
+                // spawn a new task to consume the stream requsts
+                tokio::task::spawn(async move {
+                    while let Some(stream_request) = stream_requests.next().await {
+                        let should_accept =
+                            if let IncomingStreamRequest::Begin(begin) = stream_request.request() {
+                                // we only accept connections on the virt port
+                                begin.port() == virt_port
+                            } else {
+                                false
+                            };
+
+                        if should_accept {
+                            let data_stream =
+                                match stream_request.accept(Connected::new_empty()).await {
+                                    Ok(data_stream) => data_stream,
+                                    // TODO: probably not our problem
+                                    _ => continue,
+                                };
+                            let (data_reader, data_writer) = data_stream.split();
+
+                            let (tcp_reader, tcp_writer) =
+                                match TcpStream::connect(socket_addr).await {
+                                    Ok(tcp_stream) => tcp_stream.into_split(),
+                                    // TODO: possibly our problem?
+                                    _ => continue,
+                                };
+                            // now spawn new tasks to forward traffic to/from the onion listener
+
+                            let pump_alive = Arc::new(AtomicBool::new(true));
+                            // read from connected client and write to local socket
+                            tokio::task::spawn({
+                                let pump_alive = pump_alive.clone();
+                                async move {
+                                    forward_stream(pump_alive, data_reader, tcp_writer).await;
+                                }
+                            });
+                            // read from local socket and write to connected client
+                            tokio::task::spawn(async move {
+                                forward_stream(pump_alive, tcp_reader, data_writer).await;
+                            });
+                        } else {
+                            // either requesting the wrong port or the wrong type of stream request
+                            let _ = stream_request.shutdown_circuit();
+                        }
+                    }
+                });
+            }
+        });
+    }
 }
 
 impl TorProvider for ArtiClientTorClient {
@@ -481,10 +545,28 @@ impl TorProvider for ArtiClientTorClient {
             Err(err) => Err(Error::OnionServiceConfigBuilderError(err))?,
         };
 
-        let (onion_service, mut rend_requests) = self
+        // launch_onion_service_with_hsid inserts the key with overwrite=false,
+        // so it fails with KeyAlreadyExists if the same service was previously
+        // launched (the key persists in the keystore after RunningOnionService
+        // is dropped).
+        // Fall back to launch_onion_service which reads the existing key.
+        let onion_service = match self
             .arti_client
-            .launch_onion_service_with_hsid(onion_service_config, hs_id_keypair.into())
-            .map_err(Error::ArtiClientOnionServiceLaunchError)?;
+            .launch_onion_service_with_hsid(onion_service_config.clone(), hs_id_keypair.into())
+        {
+            Ok((onion_service, rend_requests)) => {
+                Self::spawn_rend_handler(&self.tokio_runtime, rend_requests, virt_port, socket_addr);
+                onion_service
+            }
+            Err(_) => {
+                let (onion_service, rend_requests) = self
+                    .arti_client
+                    .launch_onion_service(onion_service_config)
+                    .map_err(Error::ArtiClientOnionServiceLaunchError)?;
+                Self::spawn_rend_handler(&self.tokio_runtime, rend_requests, virt_port, socket_addr);
+                onion_service
+            }
+        };
 
         // start a task to signal onion service published
         let pending_events = self.pending_events.clone();
@@ -506,63 +588,6 @@ impl TorProvider for ArtiClientTorClient {
                         ),
                     }
                 }
-            }
-        });
-
-        // start a task which accepts every RendRequest to get a StreamRequest
-        self.tokio_runtime.spawn(async move {
-            while let Some(request) = rend_requests.next().await {
-                let mut stream_requests = match request.accept().await {
-                    Ok(stream_requests) => stream_requests,
-                    // TODO: probably not our problem?
-                    _ => return,
-                };
-                // spawn a new task to consume the stream requsts
-                tokio::task::spawn(async move {
-                    while let Some(stream_request) = stream_requests.next().await {
-                        let should_accept =
-                            if let IncomingStreamRequest::Begin(begin) = stream_request.request() {
-                                // we only accept connections on the virt port
-                                begin.port() == virt_port
-                            } else {
-                                false
-                            };
-
-                        if should_accept {
-                            let data_stream =
-                                match stream_request.accept(Connected::new_empty()).await {
-                                    Ok(data_stream) => data_stream,
-                                    // TODO: probably not our problem
-                                    _ => continue,
-                                };
-                            let (data_reader, data_writer) = data_stream.split();
-
-                            let (tcp_reader, tcp_writer) =
-                                match TcpStream::connect(socket_addr).await {
-                                    Ok(tcp_stream) => tcp_stream.into_split(),
-                                    // TODO: possibly our problem?
-                                    _ => continue,
-                                };
-                            // now spawn new tasks to forward traffic to/from the onion listener
-
-                            let pump_alive = Arc::new(AtomicBool::new(true));
-                            // read from connected client and write to local socket
-                            tokio::task::spawn({
-                                let pump_alive = pump_alive.clone();
-                                async move {
-                                    forward_stream(pump_alive, data_reader, tcp_writer).await;
-                                }
-                            });
-                            // read from local socket and write to connected client
-                            tokio::task::spawn(async move {
-                                forward_stream(pump_alive, tcp_reader, data_writer).await;
-                            });
-                        } else {
-                            // either requesting the wrong port or the wrong type of stream request
-                            let _ = stream_request.shutdown_circuit();
-                        }
-                    }
-                });
             }
         });
 
