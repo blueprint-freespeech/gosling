@@ -493,7 +493,7 @@ impl TorProvider for ArtiClientTorClient {
 
         self.tokio_runtime.spawn(async move {
             while let Some(evt) = status_events.next().await {
-                if evt.state() == tor_hsservice::status::State::Running {
+                if evt.state().is_fully_reachable() {
                     match pending_events.lock() {
                         Ok(mut pending_events) => {
                             pending_events.push(TorEvent::OnionServicePublished {
