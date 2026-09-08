@@ -103,8 +103,13 @@ pub enum Error {
     #[error("failed to remove old pluggable-transport symlink: {0}")]
     PluggableTransportSymlinkRemovalFailed(#[source] std::io::Error),
 
+    #[cfg(not(target_os = "windows"))]
     #[error("failed to create pluggable-transport symlink: {0}")]
     PluggableTransportSymlinkCreationFailed(#[source] std::io::Error),
+
+    #[cfg(target_os = "windows")]
+    #[error("failed to copy pluggable-transport: {0}")]
+    PluggableTransportCopyFailed(#[source] std::io::Error),
 
     #[error("pluggable transport binary name not representable as utf8: {0:?}")]
     PluggableTransportBinaryNameNotUtf8Representnable(std::ffi::OsString),
@@ -481,19 +486,28 @@ impl LegacyTorClient {
                         ));
                     };
 
-                    // remove previous symlink if it exists
-                    if std::fs::read_link(&pt_symlink).is_ok() {
-                        std::fs::remove_file(&pt_symlink)
-                            .map_err(Error::PluggableTransportSymlinkRemovalFailed)?;
-                    }
-
-                    // create new symlink
+                    // copy binaries to pluggable-transports directory to handle potential spaces in path
                     #[cfg(windows)]
-                    std::os::windows::fs::symlink_file(path_to_binary, &pt_symlink)
-                        .map_err(Error::PluggableTransportSymlinkCreationFailed)?;
+                    {
+                        let pt_copy = &pt_symlink;
+                        // remove prevoius binary if it exists; failure is ok
+                        let _ = std::fs::remove_file(pt_copy);
+
+                        // copy binary
+                        std::fs::copy(path_to_binary, pt_copy).map_err(Error::PluggableTransportCopyFailed)?;
+                    }
+                    // create new symlink to handle potential spaces in path
                     #[cfg(unix)]
-                    std::os::unix::fs::symlink(path_to_binary, &pt_symlink)
-                        .map_err(Error::PluggableTransportSymlinkCreationFailed)?;
+                    {
+                        // remove previous symlink if it exists
+                        if std::fs::read_link(&pt_symlink).is_ok() {
+                            std::fs::remove_file(&pt_symlink)
+                                .map_err(Error::PluggableTransportSymlinkRemovalFailed)?;
+                        }
+
+                        std::os::unix::fs::symlink(path_to_binary, &pt_symlink)
+                            .map_err(Error::PluggableTransportSymlinkCreationFailed)?;
+                    }
 
                     // verify a bridge-type support has not been defined for multiple pluggable-transports
                     for transport in pt_settings.transports() {
