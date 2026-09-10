@@ -37,7 +37,7 @@ const SMALLEST_BSON_DOC_SIZE: usize = 5;
 
 /// A handle for an in-progress identity handhskae
 pub type GoslingHandshakeHandle = usize;
-#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[cfg(target_family = "unix")]
 /// A native TCP socket handle
 pub type GoslingTcpSocket = RawFd;
 #[cfg(target_os = "windows")]
@@ -869,7 +869,7 @@ fn handle_context_event(
                 let channel_name0 = CString::new(channel_name)
                     .expect("channel_name should be a valid ASCII string and not have an intermediate null byte");
 
-                #[cfg(any(target_os = "linux", target_os = "macos"))]
+                #[cfg(target_family = "unix")]
                 let stream = stream.into_raw_fd();
                 #[cfg(target_os = "windows")]
                 let stream = stream.into_raw_socket();
@@ -996,7 +996,7 @@ fn handle_context_event(
                 let channel_name0 = CString::new(channel_name)
                     .expect("channel_name should be a valid ASCII string and not have an intermediate null byte");
 
-                #[cfg(any(target_os = "linux", target_os = "macos"))]
+                #[cfg(target_family = "unix")]
                 let stream = stream.into_raw_fd();
                 #[cfg(target_os = "windows")]
                 let stream = stream.into_raw_socket();
